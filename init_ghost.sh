@@ -1,4 +1,4 @@
 sudo mkdir /ghost
-chown admin /ghost
-chmod 700 /ghost
+sudo chown admin /ghost
+sudo chmod 700 /ghost
 
