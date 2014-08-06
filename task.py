@@ -13,7 +13,7 @@ role = "webserver"
 git_login = "morea-deploy"
 git_password = "***REMOVED***"
 git_path = "github.com/***REMOVED***.git"
-bucket_s3 = "s3://staging.worldsbestbars"
+bucket_s3 = "s3://deploy-811874869762"
 
 git_repo = git_path.split('/')
 git_repo = git_repo[len(git_repo)-1][:-4]
