@@ -1,0 +1,24 @@
+Requirements:
+Sur instance2:
+- jq (transformation JSON en ligne de commande)
+- python pip boto awscli
+- s3cmd (prendre version GitHub sinon cela ne fonctionne pas)
+- Role IAM avec Policy :
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "s3:Get*",
+        "s3:List*",
+        "ec2:DescribeTags"
+      ],
+      "Resource": "*"
+    }
+  ]
+}
+
+Sur bastion:
+- python pip boto awscli
+- les dépendances sur les scripts predeploy (ex: php5 avec memcached, gd...)
