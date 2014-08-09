@@ -113,6 +113,7 @@ def package_app():
 
 # task_init_app()
 if __name__ == '__main__':
+    # task_init_app()
     task_deploy_app(branch="staging")
     # task_predeploy_app()
 

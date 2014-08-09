@@ -2,19 +2,17 @@
 #!/usr/bin/env python
 
 from flask import Flask, request, jsonify, render_template
-from flask_sockets import Sockets
 # from flask.ext.mail import Message, Mail
 from rq.job import Job
 # from task import queue, redis_conn_queue
 import logging
-from task import task_deploy
+from task import task_deploy_app
 import os
 from models import db, CDApp
 
 
 app = Flask(__name__)
 app.debug = True
-sockets = Sockets(app)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///ghost.db'
 logger = logging.getLogger(__name__)
 # mail = Mail()
@@ -95,13 +93,6 @@ def get_deploy_log():
     """
     pass
 
-
-@sockets.route('/echo')
-def echo_socket(ws):
-    while ws.socket is not None:
-        message = ws.receive()
-        ws.send("HelloWorld")
-        gevent.sleep(5)
 
 if __name__ == '__main__':
     app.run()

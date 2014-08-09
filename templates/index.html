@@ -1,29 +1,15 @@
-<html>
-  <head>
-    <script>
-      function debug(string) {
-        var element = document.getElementById("debug");
-        var p = document.createElement("p");
-        p.appendChild(document.createTextNode(string));
-        element.appendChild(p);
-      }
- 
-      var ws = new WebSocket("ws://localhost:8000/");
-      ws.onopen = function() {
-        debug("WebSocket open");
-        ws.send("Hello you...");
-        debug("Websocket ready ? " + ws.readyState);
-      };
-      ws.onmessage = function(event) {
-        debug("WebSocket open, readyState = " + ws.readyState);
-        ws.send("foo");
-      };
-      ws.onclose = function(event) {
-        debug("WebSocket closed");
-      }
-    </script>
-  </head>
-  <body>
-    <div id="debug"></div>
-  </body>
-</html>
+<script src="//ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js"></script>
+<script src="/socket.io/socket.io.js"></script>
+<script>
+io = io.connect()
+room = prompt('type a room name')
+
+// Emit ready event with room name.
+io.emit('ready', room)
+
+// Listen for the announce event.
+io.on('new-data', function(data) {
+    $('body').append(data.value)
+})
+
+</script>
