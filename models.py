@@ -17,21 +17,25 @@ class CDApp(db.Model):
     app = db.Column(db.String(50))
     role = db.Column(db.String(50))
     env = db.Column(db.String(50))
-    git_repo = db.Column(db.String(256))
-    git_user = db.Column(db.String(50))
+    git_path = db.Column(db.String(256))
+    git_login = db.Column(db.String(50))
     git_password = db.Column(db.String(50))
     key_path = db.Column(db.String(256))
+    bucket_s3 = db.Column(db.String(256))
+    aws_region = db.Column(db.String(50))
     tasks = db.relationship("Task", backref="app")
 
-    def __init__(self, app, role, env, git_repo, git_user, git_password, key_path, name=""):
+    def __init__(self, app, role, env, git_path, git_login, git_password, key_path, bucket_s3, aws_region, name=""):
         self.name = name
         self.app = app
         self.role = role
         self.env = env
-        self.git_repo = git_repo
-        self.git_user = git_user
+        self.git_path = git_path
+        self.git_login = git_login
         self.git_password = git_password
         self.key_path = key_path
+        self.bucket_s3 = bucket_s3
+        self.aws_region = aws_region
 
     def __str__(self):
         return "<id: %s, app: %s, name: %s, role: %s, env: %s>" % (self.id, self.app, self.name, self.role, self.env)
@@ -59,7 +63,7 @@ class Task(db.Model):
     status = db.Column(db.String(100))
 
     def __init__(self, app_id, action, job, status):
-        self.app = app
+        self.app_id = app_id
         self.action = action
         self.job = job
         self.created_at = datetime.datetime.now()

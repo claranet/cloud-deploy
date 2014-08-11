@@ -1,13 +1,17 @@
 app = require('express.io')()
 Tail = require('./tail').Tail;
 
-LOG_PATH = "./"
-//LOG_PATH="/var/log/ghost/"
+//LOG_PATH = "./"
+LOG_PATH="/var/log/ghost/"
+var re = /\b[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}\b/; 
 
 app.http().io()
 
 function sanitize_job(job_id) {
-    return true;
+    if (job_id.match(re)) {
+        return true;
+    }
+    return false;
 }
 
 // Setup the ready route, join room and broadcast to room.
@@ -29,6 +33,12 @@ app.io.route('ready', function(req) {
                    value: err.message
             });
         }
+    }
+    else {
+        return req.io.emit('new-data', {
+                channel: 'stderr',
+                value: 'Invalid job_id'
+        });
     }
     /* req.io.room(req.data).broadcast('announce', {
         message: 'New client in the ' + req.data + ' room. '
