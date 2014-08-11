@@ -2,7 +2,7 @@
 #
 # use s3cmd --config /tmp/s3cmfg ...
 #
-S3_BUCKET=staging.worldsbestbars
+S3_BUCKET=deploy-811874869762
 
 # Get credentials
 # IAM=$(curl http://169.254.169.254/latest/meta-data/iam/info 2>/dev/null | grep InstanceProfileArn | awk -F"/" '{print $2}'| tr -d '"|,')

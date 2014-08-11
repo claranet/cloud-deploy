@@ -78,3 +78,5 @@ if __name__ == "__main__":
     with app.app_context():
         db.metadata.create_all(db.engine)
         db.session.commit()
+        tas = Task.query.filter("app_id=:app_id AND status != 'done' AND status != 'failed'").params(app_id=1).first()
+        print(tas.job)

@@ -25,8 +25,9 @@ class CallException(Exception):
         return repr(self.value)
 
 
-def gcall(args, cmd_description):
+def gcall(args, cmd_description, logger=logging.getLogger(__name__)):
     global log_file
+    logger.info("CMD: %s" % cmd_description)
     ret = call(args, stdout=log_file, stderr=log_file, shell=True)
     if (ret != 0):
         raise CallException("ERROR: %s" % cmd_description)
@@ -38,54 +39,57 @@ def prepare_task(func):
         job = get_current_job()
         db = connect_db()
         logging.basicConfig(filename='{log_path}/{job_id}'.format(log_path=LOG_PATH, job_id=job.id), format='%(levelname)s:%(message)s', level=logging.INFO)
+        logger = logging.getLogger(__name__)
         task_init_log_file(job.id)
         task = Task(kwargs['app_id'], func.__name__, job.id, 'in_progress')
         db.add(task)
         db.commit()
         try:
+            logger.info("Starting task...")
             task_update_progress(job, 'In Progress', percent=0)
-            result = func(db=db, job=job, *args, **kwargs)
+            result = func(db=db, job=job, logger=logger, *args, **kwargs)
             task_update_progress(job, 'Done', percent=100)
             task.status = 'done'
         except CallException, e:
             logging.error(e)
             task_update_progress(job, 'Failed', percent=100)
             task.status = 'failed'
+        logger.info("END.")
         task_close_log_file()
         db.commit()
     return wrapit
 
 
 @prepare_task
-def task_init_app():
+def task_init_app(app, logger=logging.getLogger(__name__)):
     os.chdir("/ghost")
     try:
         os.makedirs("%s/%s/%s" % (app, env, role))
     except:
         raise CallException("Init app, creating directory")
     os.chdir("/ghost/%s/%s/%s" % (app, env, role))
-    gcall("git clone https://%s:%s@%s" % (git_login, git_password, git_path), "Git clone")
+    gcall("git clone https://%s:%s@%s" % (git_login, git_password, git_path), "Git clone", logger)
     os.chdir(get_git_repo(app))
 
 
-def task_predeploy_app(app):
+def task_predeploy_app(app, logger=logging.getLogger(__name__)):
     """
     Execute tasks before packaging application (ie: install lib dependencies)
     """
     predeploy = os.path.join(ROOT_PATH, 'predeploy', 'symfony_predeploy.sh')
     shutil.copy(predeploy, get_app_path(app))
     os.chdir(get_app_path(app))
-    gcall('./symfony_predeploy.sh %s' % app.env, 'Predeploy script')
+    gcall('./symfony_predeploy.sh %s' % app.env, 'Predeploy script', logger)
 
 
-def task_postdeploy_app(app):
+def task_postdeploy_app(app, logger=logging.getLogger(__name__)):
     """
     Execute tasks after deployment (ie: clear cache)
     """
     postdeploy = os.path.join(ROOT_PATH, 'postdeploy', 'symfony_postdeploy.sh')
     shutil.copy(postdeploy, get_app_path(app))
     os.chdir(get_app_path(app))
-    gcall('./symfony_postdeploy.sh %s' % app.env, 'Postdeploy script')
+    gcall('./symfony_postdeploy.sh %s' % app.env, 'Postdeploy script', logger)
 
 def search_autoscale():
     pass
@@ -96,11 +100,11 @@ def start_autoscale():
 def stop_autoscale():
     pass
 
-def sync_instances(app, task_name):
-    # os.chdir(ROOT_PATH)
-    # cmd = "fab set_hosts:ghost_app={app},ghost_env={env},ghost_role={role} {task_name}".format(app=app.app, env=app.env, role=app.role, task_name=task_name)
-    # gcall(cmd, "Updating current instances")
-    pass
+def sync_instances(app, task_name, logger=logging.getLogger(__name__)):
+    os.chdir(ROOT_PATH)
+    cmd = "/usr/local/bin/fab -i {app.key_path} set_hosts:ghost_app={app.app},ghost_env={app.env},ghost_role={app.role} {task_name}".format(app=app, task_name=task_name)
+    logger.info(cmd)
+    gcall(cmd, "Updating current instances")
 
 def connect_db():
     db_path = os.path.join(ROOT_PATH, SQLITE_DB_PATH)
@@ -140,13 +144,13 @@ def task_init_log_file(job_id):
     global log_file
     log_file = open("{log_path}/{job_id}".format(log_path=LOG_PATH, job_id=job_id), 'a')
 
-def task_close_log_file(job_id):
+def task_close_log_file():
     global log_file
     log_file.close()
 
 
 @prepare_task
-def task_deploy_app(app_id, branch=None, commit=None, job=None, db=None):
+def task_deploy_app(app_id, branch=None, commit=None, job=None, db=None,logger=logging.getLogger(__name__)):
     """
     0) Update sourcecode
     1) Stop Autoscaling
@@ -162,24 +166,24 @@ def task_deploy_app(app_id, branch=None, commit=None, job=None, db=None):
     checkout = branch if branch else commit
     if (not checkout):
         raise CallException("No commit/branch specified")
-    gcall("git pull", "Git pull")
-    gcall("git checkout %s" % checkout, "Git checkout: %s" % checkout)
-    task_predeploy_app(app)
-    pkg_name = package_app(app)
+    gcall("git pull", "Git pull", logger=logger)
+    gcall("git checkout %s" % checkout, "Git checkout: %s" % checkout, logger=logger)
+    task_predeploy_app(app, logger=logger)
+    pkg_name = package_app(app, logger=logger)
     manifest, manifest_path = tempfile.mkstemp()
     os.write(manifest, "%s" % pkg_name)
     stop_autoscale()
-    gcall("s3cmd put %s %s/%s/%s/%s/MANIFEST" % (manifest_path, app.bucket_s3, app.app, app.env, app.role), "Upload manifest")
-    sync_instances(app, 'deploy')
+    gcall("s3cmd put %s %s/%s/%s/%s/MANIFEST" % (manifest_path, app.bucket_s3, app.app, app.env, app.role), "Upload manifest", logger=logger)
+    sync_instances(app, 'deploy', logger=logger)
     os.close(manifest)
     start_autoscale()
 
 
-def package_app(app):
+def package_app(app, logger=logging.getLogger(__name__)):
     os.chdir("/ghost/%s/%s/%s/%s" % (app.app, app.env, app.role, get_git_repo(app)))
     pkg_name = "%s_%s.tar.gz" % (datetime.datetime.now().strftime("%Y%m%d%H%M"), get_git_repo(app))
-    gcall("tar cvzf ../%s ." % pkg_name, "Creating package: %s" % pkg_name)
-    gcall("s3cmd put ../%s %s/%s/%s/%s/" % (pkg_name, app.bucket_s3, app.app, app.env, app.role), "Uploading package: %s" % pkg_name)
+    gcall("tar cvzf ../%s . > /dev/null" % pkg_name, "Creating package: %s" % pkg_name, logger=logger)
+    gcall("s3cmd put ../%s %s/%s/%s/%s/" % (pkg_name, app.bucket_s3, app.app, app.env, app.role), "Uploading package: %s" % pkg_name, logger=logger)
     return pkg_name
 
 # task_init_app()

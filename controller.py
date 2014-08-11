@@ -11,6 +11,7 @@ import logging
 from task import task_deploy_app
 import os
 from models import db, CDApp, Task
+from sqlalchemy import or_
 from redis import Redis
 
 redis_conn_queue = Redis()
@@ -83,9 +84,8 @@ def deploy_app():
     app_exist = CDApp.query.filter_by(app=data['app'], role=data['role'], env=data['env']).first()
     if not app_exist:
         return jsonify({'status': 400, 'message': 'Application is not registered in the system, contact Morea'}), 400
-    task_exist = Task.query.filter('app_id' == app_exist.id, 'status' != 'done', 'status' != 'failed').first()
+    task_exist = Task.query.filter("app_id=:app_id AND status != 'done' AND status != 'failed'").params(app_id=app_exist.id).first()
     if task_exist:
-        print(task_exist)
         return jsonify({'status': 400, 'message': 'Task already exist wait for it to complete', 'job_id': '%s' % task_exist.job}), 400
     job = queue.enqueue(task_deploy_app, app_id=app_exist.id, commit=commit)
     return jsonify({'status': 200, 'message': 'Job launched', 'job_id': job.id})

@@ -1,4 +1,4 @@
-from fabric.api import run, sudo, task, env
+from fabric.api import run, sudo, task, env, put
 from boto import ec2
 from task import CallException
 
@@ -15,8 +15,10 @@ def find_ec2_instances(ghost_app, ghost_env, ghost_role):
     return res
 
 @task
-def deploy(package):
+def deploy():
+    sudo('rm -f /tmp/boostrap.sh')
     put('postdeploy/bootstrap.sh', '/tmp/')
+    sudo('chmod +x /tmp/bootstrap.sh')
     sudo('/tmp/bootstrap.sh')
 
 
