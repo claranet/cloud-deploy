@@ -8,7 +8,7 @@ from rq import Queue
 from rq_dashboard import RQDashboard
 # from task import queue, redis_conn_queue
 import logging
-from task import task_deploy_app
+import worker
 import os
 from models import db, CDApp, Task
 from sqlalchemy import or_
@@ -87,7 +87,8 @@ def deploy_app():
     task_exist = Task.query.filter("app_id=:app_id AND status != 'done' AND status != 'failed'").params(app_id=app_exist.id).first()
     if task_exist:
         return jsonify({'status': 400, 'message': 'Task already exist wait for it to complete', 'job_id': '%s' % task_exist.job}), 400
-    job = queue.enqueue(task_deploy_app, app_id=app_exist.id, commit=commit)
+    async_work = worker.Worker(app_exist)
+    job = queue.enqueue(async_work.deploy_app, commit=commit)
     return jsonify({'status': 200, 'message': 'Job launched', 'job_id': job.id})
 
 
