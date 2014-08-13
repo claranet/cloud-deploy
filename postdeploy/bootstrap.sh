@@ -44,4 +44,5 @@ rm /tmp/$PACKAGE
 chown -R www-data:www-data /ghost/$TIMESTAMP
 rm /var/www
 ln -s /ghost/$TIMESTAMP /var/www
+rm -rf /var/www/app/cache/*
 service apache2 restart
