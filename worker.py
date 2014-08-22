@@ -5,18 +5,15 @@ import os
 import shutil
 import tempfile
 import logging
-from boto import ec2
+from boto import sns
 from redis import Redis
 from rq import Queue
 from rq import get_current_job
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
-from models import Task, CDApp
-
+from pymongo import MongoClient
 
 LOG_PATH='/var/log/ghost'
-SQLITE_DB_PATH='ghost.db'
 ROOT_PATH=os.path.dirname(os.path.realpath(__file__))
+
 
 class CallException(Exception):
     def __init__(self, value):
@@ -28,23 +25,34 @@ def prepare_task(func):
     @functools.wraps(func)
     def wrapper(*args, **kwargs):
         args[0]._job = get_current_job()
+        print('before connect')
         args[0]._connect_db()
+        print('after connect')
         args[0]._init_log_file()
-        args[0]._task = Task(args[0]._app.id, func.__name__, args[0]._job.id, 'in_progress')
-        args[0]._db.add(args[0]._task)
-        args[0]._db.commit()
+        print('App: %s' % (args[0]._app['app']))
+        args[0]._task = \
+                {
+                        'app_id': args[0]._app['_id'],
+                        'action': func.__name__,
+                        'job_id': args[0]._job.id,
+                        'status': 'in_progress',
+                        'created_at': datetime.datetime.now()
+                }
+        args[0]._db.tasks.insert(args[0]._task)
         args[0]._set_git_repo()
         args[0]._set_app_path()
         try:
             args[0]._update_progress('In Progress', percent=0)
             result = func(*args, **kwargs)
             args[0]._update_progress('Done', percent=100)
-            args[0]._task.status = 'done'
+            args[0]._update_task('done')
         except CallException, e:
             args[0]._update_progress('Failed', percent=100)
-            args[0]._task.status = 'failed'
+            args[0]._update_task('failed', message=e.message)
         args[0]._close_log_file()
-        args[0]._db.commit()
+        args[0]._notif_action()
+        args[0]._mail_log_action()
+        args[0]._disconnect_db()
     return wrapper
 
 
@@ -82,7 +90,7 @@ class Worker:
         predeploy = os.path.join(ROOT_PATH, 'predeploy', 'symfony_predeploy.sh')
         shutil.copy(predeploy, self._app_path)
         os.chdir(self._app_path)
-        self._gcall('./symfony_predeploy.sh %s' % self._app.env, 'Predeploy script')
+        self._gcall('./symfony_predeploy.sh %s' % self._app['env'], 'Predeploy script')
 
 
     def _postdeploy_app(self):
@@ -92,7 +100,7 @@ class Worker:
         postdeploy = os.path.join(ROOT_PATH, 'postdeploy', 'symfony_postdeploy.sh')
         shutil.copy(postdeploy, self._app_path)
         os.chdir(self._app_path)
-        self._gcall('./symfony_postdeploy.sh %s' % self._app.env, 'Postdeploy script')
+        self._gcall('./symfony_postdeploy.sh %s' % self._app['env'], 'Postdeploy script')
 
 
     def _search_autoscale(self):
@@ -109,19 +117,15 @@ class Worker:
 
     def _sync_instances(self, task_name):
         os.chdir(ROOT_PATH)
-        cmd = "/usr/local/bin/fab -i {app.key_path} set_hosts:ghost_app={app.app},ghost_env={app.env},ghost_role={app.role} {task_name}".format(app=self._app, task_name=task_name)
+        cmd = "/usr/local/bin/fab -i {key_path} set_hosts:ghost_app={app},ghost_env={env},ghost_role={role} {0}".format(task_name, **self._app)
         self._gcall(cmd, "Updating current instances")
 
 
     def _connect_db(self):
-        db_path = os.path.join(ROOT_PATH, SQLITE_DB_PATH)
-        engine = create_engine('sqlite:///' + db_path, echo=True)
-        # create a configured "Session" class
-        Session = sessionmaker(bind=engine)
-        # create a Session
-        session = Session()
-        session._model_changes = {}
-        self._db = session
+        self._db = MongoClient().ghost
+
+    def _disconnect_db(self):
+        MongoClient().disconnect()
 
 
     def _update_progress(self, message, **kwargs):
@@ -134,14 +138,20 @@ class Worker:
     def _update_status(self, status):
         pass
 
+    def _update_task(self, task_status, message=None):
+        self._task['status'] = task_status
+        if message:
+            self._task['message'] = message
+        self._db.tasks.update({ '_id': self._task['_id']}, {'$set': {'status': task_status, 'message': message, 'updated_at': datetime.datetime.now()}})
+
 
     def _set_app_path(self):
-        self._app_path = os.path.join('/', 'ghost', self._app.app, self._app.env, self._app.role, self._git_repo)
+        self._app_path = os.path.join('/', 'ghost', self._app['app'], self._app['env'], self._app['role'], self._git_repo)
 
 
 # FIXME: handle incorrect Git repo path with try/except
     def _set_git_repo(self):
-        git_repo = self._app.git_path.split('/')
+        git_repo = self._app['git_repo'].split('/')
         self._git_repo = git_repo[len(git_repo)-1][:-4]
 
 
@@ -154,23 +164,39 @@ class Worker:
 
 
     def _package_app(self):
-        os.chdir("/ghost/{app.app}/{app.env}/{app.role}/{git_repo}".format(app=self._app, git_repo=self._git_repo))
+        os.chdir("/ghost/{app}/{env}/{role}/{0}".format(self._git_repo, **self._app))
         pkg_name = "%s_%s.tar.gz" % (datetime.datetime.now().strftime("%Y%m%d%H%M"), self._git_repo)
         self._gcall("tar cvzf ../%s . > /dev/null" % pkg_name, "Creating package: %s" % pkg_name)
-        self._gcall("s3cmd put ../{pkg_name} {app.bucket_s3}/{app.app}/{app.env}/{app.role}/".format(pkg_name=pkg_name, app=self._app), "Uploading package: %s" % pkg_name)
+        self._gcall("s3cmd put ../{0} {bucket_s3}/{app}/{env}/{role}/".format(pkg_name, **self._app), "Uploading package: %s" % pkg_name)
         return pkg_name
 
+
+    def _notif_action(self):
+        conn = sns.connect_to_region(self._app['aws_region'])
+        title = "App: {app_name} - {action} : {status}".format(app_name=self._app['app'], action=self._task['action'], status=self._task['status'])
+        message = "Application: {app_name}\nEnvironment: {env}\nAction: {action}\nStatus: {status}".format(env=self._app['env'], app_name=self._app['app'], action=self._task['action'], status=self._task['status'])
+        if 'error_message' in self._task.keys():
+            message = "{message}\nError: {error_message}".format(message=message, error_message=self._task['error_message'])
+        conn.publish(self._app['notif_arn'], message, title) 
+
+
+    def _mail_log_action(self):
+        pass
+
+
+    def _purge_old_package(self):
+        pass
 
     @prepare_task
     def init_app(self, options={}):
         os.chdir("/ghost")
         try:
-            os.makedirs("{app.app}/{app.env}/{app.role}".format(app=self._app))
+            os.makedirs("{app}/{env}/{role}".format(**self._app))
         except:
             raise CallException("Init app, creating directory")
-        os.chdir("/ghost/{app.app}/{app.env}/{app.role}".format(app=self._app))
-        self._gcall("git clone https://{app.git_login}:{app.git_password}@{app.git_path}".format(app=self._app), "Git clone")
-        os.chdir(_get_git_repo())
+        os.chdir("/ghost/{app}/{env}/{role}".format(**self._app))
+        self._gcall("git clone https://{git_login}:{git_password}@{git_repo}".format(**self._app), "Git clone")
+        os.chdir(self._git_repo)
 
 
     @prepare_task
@@ -191,7 +217,7 @@ class Worker:
         manifest, manifest_path = tempfile.mkstemp()
         os.write(manifest, "%s" % pkg_name)
         self._stop_autoscale()
-        self._gcall("s3cmd put {manifest_path} {app.bucket_s3}/{app.app}/{app.env}/{app.role}/MANIFEST".format(manifest_path=manifest_path, app=self._app), "Upload manifest")
+        self._gcall("s3cmd put {0} {bucket_s3}/{app}/{env}/{role}/MANIFEST".format(manifest_path, **self._app), "Upload manifest")
         self._sync_instances('deploy')
         os.close(manifest)
         self._start_autoscale()

@@ -10,19 +10,28 @@ from rq_dashboard import RQDashboard
 import logging
 import worker
 import os
-from models import db, CDApp, Task
-from sqlalchemy import or_
 from redis import Redis
+from pymongo import MongoClient
+import logging
+import sys
+
+root = logging.getLogger()
+root.setLevel(logging.DEBUG)
+
+ch = logging.StreamHandler(sys.stdout)
+ch.setLevel(logging.DEBUG)
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+ch.setFormatter(formatter)
+root.addHandler(ch)
 
 redis_conn_queue = Redis()
 queue = Queue(connection=redis_conn_queue)
 
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///ghost.db'
-logger = logging.getLogger(__name__)
 # mail = Mail()
-db.init_app(app)
 RQDashboard(app)
+client = MongoClient()
+db = client.ghost
 
 @app.route('/', methods=['GET'])
 def index():
@@ -48,21 +57,32 @@ def register_app():
     try:
         data = request.get_json(force=True)
         check_mandatory = ['app', 'role', 'env', 'git_repo', 'git_login',
-                'git_password', 'key_path', 'bucket_s3', 'aws_region']
+                'git_password', 'key_path', 'bucket_s3', 'aws_region', 'notif_arn']
         for key in check_mandatory:
             try:
                 data[key]
             except KeyError, e:
                 return jsonify({'status': 400, 'message': 'Malformed request, check key attributes: %s' % e}), 400
-        app_exist = CDApp.query.filter_by(app=data['app'], role=data['role'], env=data['env']).first()
+        app_exist = db.apps.find_one({'$and' : [ {'app': data['app']}, {'role': data['role']}, {'env': data['env']}]})
         if (app_exist):
             return jsonify({'status': 400, 'message': 'App configuration already exist'}), 400
-        new_app = CDApp(data['app'], data['role'], data['env'], data['git_repo'],
-        data['git_login'], data['git_password'], data['key_path'], data['bucket_s3'], data['aws_region'])
-        db.session.add(new_app)
-        db.session.commit()
+        new_app = \
+                {
+                        'app': data['app'],
+                        'role': data['role'],
+                        'env': data['env'],
+                        'git_repo': data['git_repo'],
+                        'git_login': data['git_login'],
+                        'git_password': data['git_password'],
+                        'bucket_s3': data['bucket_s3'],
+                        'aws_region': data['aws_region'],
+                        'log_notifications': data['log_notifications'],
+                        'key_path': data['key_path'],
+                        'notif_arn': data['notif_arn']
+                }
+        db.apps.insert(new_app)
     except Exception, e:
-        return jsonify({'status': 400, 'message': e}), 400
+        return jsonify({'status': 400, 'message': e.message}), 400
     return jsonify({'status': 200, 'message': 'Registered'}), 200
 
 @app.route('/deploy', methods=['POST'])
@@ -81,13 +101,13 @@ def deploy_app():
         commit = data['branch']
     elif 'commit' in data.keys():
         commit = data['commit']
-    app_exist = CDApp.query.filter_by(app=data['app'], role=data['role'], env=data['env']).first()
+    app_exist = db.apps.find_one({'$and' : [ {'app': data['app']}, {'role': data['role']}, {'env': data['env']}]})
     if not app_exist:
         return jsonify({'status': 400, 'message': 'Application is not registered in the system, contact Morea'}), 400
-    task_exist = Task.query.filter("app_id=:app_id AND status != 'done' AND status != 'failed'").params(app_id=app_exist.id).first()
+    task_exist = db.tasks.find_one({ '$and' : [{ 'status' : 'in_progress'}, {'app_id': app_exist['_id']} ] })
     if task_exist:
-        return jsonify({'status': 400, 'message': 'Task already exist wait for it to complete', 'job_id': '%s' % task_exist.job}), 400
-    async_work = worker.Worker(app_exist)
+        return jsonify({'status': 400, 'message': 'Task already exist wait for it to complete', 'job_id': '%s' % task_exist['job_id']}), 400
+    async_work = worker.Worker(app_exist, dry_run=True)
     job = queue.enqueue(async_work.deploy_app, commit=commit)
     return jsonify({'status': 200, 'message': 'Job launched', 'job_id': job.id})
 
@@ -100,6 +120,11 @@ def get_deploy_log():
     pass
 
 
+@app.route('/configure', methods=['POST'])
+def configure():
+    data = request.get_json(force=True)
+    check_mandatory = ['aws_key', 'aws_secret']
+
+
 if __name__ == '__main__':
-    app.debug = True
-    app.run()
+    app.run(debug=True)
