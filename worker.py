@@ -117,7 +117,7 @@ class Worker:
 
     def _sync_instances(self, task_name):
         os.chdir(ROOT_PATH)
-        cmd = "/usr/local/bin/fab -i {key_path} set_hosts:ghost_app={app},ghost_env={env},ghost_role={role} {0}".format(task_name, **self._app)
+        cmd = "/usr/local/bin/fab -i {key_path} set_hosts:ghost_app={app},ghost_env={env},ghost_role={role},region={aws_region} {0}".format(task_name, **self._app)
         self._gcall(cmd, "Updating current instances")
 
 
@@ -184,8 +184,10 @@ class Worker:
         pass
 
 
-    def _purge_old_package(self):
-        pass
+    def _purge_package(self, pkg_name):
+        task_name = "purge:{0}".format(pkg_name)
+        self._gcall("/usr/local/bin/fab -i {key_path} set_hosts:ghost_app={app},ghost_env={env},ghost_role={role},region={aws_region} {0}".format(task_name, **self._app), "Purging package: %s" % pkg_name)
+
 
     @prepare_task
     def init_app(self, options={}):
@@ -221,7 +223,10 @@ class Worker:
         self._sync_instances('deploy')
         os.close(manifest)
         self._start_autoscale()
-
+        self._db.apps.update({'_id': self._app['_id']}, { '$push': {'deploy': pkg_name} })
+        if len(self._app['deploy']) > 3:
+            self._purge_package(self._app['deploy'][0])
+            self._db.apps.update({'_id': self._app['_id']}, { '$pop': {'deploy': -1} })
 
 # task_init_app()
 if __name__ == '__main__':

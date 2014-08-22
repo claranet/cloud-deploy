@@ -2,8 +2,8 @@ from fabric.api import run, sudo, task, env, put
 from boto import ec2
 from task import CallException
 
-def find_ec2_instances(ghost_app, ghost_env, ghost_role):
-    conn = ec2.connect_to_region('us-east-1')
+def find_ec2_instances(ghost_app, ghost_env, ghost_role, region):
+    conn = ec2.connect_to_region(region)
     #reservations = conn.get_all_instances()
     reservations = conn.get_all_instances(filters={"tag:Env": ghost_env, "tag:Role": ghost_role, "tag:App": ghost_app})
     res = []
@@ -15,6 +15,10 @@ def find_ec2_instances(ghost_app, ghost_env, ghost_role):
     return res
 
 @task
+def purge(pkg_name):
+    sudo('rm -rf /ghost/{0}'.format(pkg_name))
+
+@task
 def deploy():
     sudo('rm -f /tmp/boostrap.sh')
     put('postdeploy/bootstrap.sh', '/tmp/')
@@ -23,7 +27,7 @@ def deploy():
 
 
 @task
-def set_hosts(ghost_app=None, ghost_env=None, ghost_role=None):
+def set_hosts(ghost_app=None, ghost_env=None, ghost_role=None, region=None):
     env.hosts = find_ec2_instances(ghost_app, ghost_env, ghost_role)
     print(env.hosts)
 
