@@ -181,7 +181,8 @@ class Worker:
 
     def _package_app(self):
         os.chdir("/ghost/{app}/{env}/{role}/{0}".format(self._git_repo, **self._app))
-        pkg_name = "%s_%s.tar.gz" % (datetime.datetime.now().strftime("%Y%m%d%H%M"), self._git_repo)
+        timestamp = datetime.datetime.now().strftime("%Y%m%d%H%M")
+        pkg_name = "%s_%s.tar.gz" % (timestamp, self._git_repo)
         self._gcall("tar cvzf ../%s . > /dev/null" % pkg_name, "Creating package: %s" % pkg_name)
         self._gcall("s3cmd put ../{0} {bucket_s3}/{app}/{env}/{role}/".format(pkg_name, **self._app), "Uploading package: %s" % pkg_name)
         return pkg_name
@@ -198,7 +199,7 @@ class Worker:
     def _notif_action(self):
         title, message = self._format_notif()
         conn = sns.connect_to_region(self._app['aws_region'])
-        conn.publish(self._app['notif_arn'], message, title) 
+        conn.publish(self._app['notif_arn'], message, title)
 
 
     def _mail_log_action(self):
@@ -253,7 +254,8 @@ class Worker:
         self._db.apps.update({'_id': self._app['_id']}, { '$push': {'deploy': pkg_name} })
         self._app = self._db.apps.find_one({'_id': self._app['_id']})
         if len(self._app['deploy']) > 3:
-            self._purge_package(self._app['deploy'][0])
+            pkg_timestamped = self._app['deploy'][0].split('_')[0]
+            self._purge_package(pkg_timestamped)
             self._db.apps.update({'_id': self._app['_id']}, { '$pop': {'deploy': -1} })
 
 
