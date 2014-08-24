@@ -22,3 +22,8 @@ Sur instance2:
 Sur bastion:
 - python pip boto awscli
 - les dépendances sur les scripts predeploy (ex: php5 avec memcached, gd...)
+- mongodb
+- les packages contenu dans requirements.txt
+
+Configuration:
+db.config.insert({ "ses_settings": {"aws_access_key": "SES_AWS_ACCESS_KEY", "aws_secret_key": "SES_AWS_SECRET_KEY", "region": "eu-west-1"}})

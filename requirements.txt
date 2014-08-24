@@ -1,4 +1,4 @@
 Flask==0.10.1
 rq==0.4.6
 rq-dashboard
-sqlalchemy
+pymongo

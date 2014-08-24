@@ -6,13 +6,16 @@ import shutil
 import tempfile
 import logging
 from boto import sns
+from boto.ec2 import autoscale
 from redis import Redis
 from rq import Queue
 from rq import get_current_job
 from pymongo import MongoClient
+from notification import Notification
 
 LOG_PATH='/var/log/ghost'
 ROOT_PATH=os.path.dirname(os.path.realpath(__file__))
+MAIL_LOG_FROM='no-reply@morea.fr'
 
 
 class CallException(Exception):
@@ -25,11 +28,9 @@ def prepare_task(func):
     @functools.wraps(func)
     def wrapper(*args, **kwargs):
         args[0]._job = get_current_job()
-        print('before connect')
         args[0]._connect_db()
-        print('after connect')
+        args[0]._config = args[0]._db.config.find_one()
         args[0]._init_log_file()
-        print('App: %s' % (args[0]._app['app']))
         args[0]._task = \
                 {
                         'app_id': args[0]._app['_id'],
@@ -41,6 +42,7 @@ def prepare_task(func):
         args[0]._db.tasks.insert(args[0]._task)
         args[0]._set_git_repo()
         args[0]._set_app_path()
+        args[0]._set_autoscale_group()
         try:
             args[0]._update_progress('In Progress', percent=0)
             result = func(*args, **kwargs)
@@ -57,6 +59,7 @@ def prepare_task(func):
 
 
 class Worker:
+    _config = None
     _job = None
     _db = None
     _task = None
@@ -65,6 +68,8 @@ class Worker:
     _app_path = None
     _git_repo = None
     _dry_run = None
+    _as_conn = None
+    _as_group = None
 
     def __init__(self, app, dry_run=False):
         self._app = app
@@ -103,16 +108,25 @@ class Worker:
         self._gcall('./symfony_postdeploy.sh %s' % self._app['env'], 'Postdeploy script')
 
 
-    def _search_autoscale(self):
-        pass
+    def _set_as_conn(self):
+        self._as_conn = autoscale.connect_to_region(self._app['aws_region'])
+
+
+    def _set_autoscale_group(self):
+        if not self._as_conn:
+            self._set_as_conn()
+        if 'as_name' in self._app.keys():
+            self._as_group = self._as_conn.get_all_groups(names=self._app['as_name'])
 
 
     def _start_autoscale(self):
-        pass
+        if (self._as_group):
+            self._as_conn.resume_processes(self._as_group)
 
 
     def _stop_autoscale(self):
-        pass
+        if (self._as_group):
+            self._as_conn.suspend_processes(self._as_group)
 
 
     def _sync_instances(self, task_name):
@@ -123,6 +137,7 @@ class Worker:
 
     def _connect_db(self):
         self._db = MongoClient().ghost
+
 
     def _disconnect_db(self):
         MongoClient().disconnect()
@@ -137,6 +152,7 @@ class Worker:
 
     def _update_status(self, status):
         pass
+
 
     def _update_task(self, task_status, message=None):
         self._task['status'] = task_status
@@ -171,17 +187,27 @@ class Worker:
         return pkg_name
 
 
-    def _notif_action(self):
-        conn = sns.connect_to_region(self._app['aws_region'])
+    def _format_notif(self):
         title = "App: {app_name} - {action} : {status}".format(app_name=self._app['app'], action=self._task['action'], status=self._task['status'])
         message = "Application: {app_name}\nEnvironment: {env}\nAction: {action}\nStatus: {status}".format(env=self._app['env'], app_name=self._app['app'], action=self._task['action'], status=self._task['status'])
         if 'error_message' in self._task.keys():
             message = "{message}\nError: {error_message}".format(message=message, error_message=self._task['error_message'])
+        return title, message
+
+
+    def _notif_action(self):
+        title, message = self._format_notif()
+        conn = sns.connect_to_region(self._app['aws_region'])
         conn.publish(self._app['notif_arn'], message, title) 
 
 
     def _mail_log_action(self):
-        pass
+        ses_settings = self._config['ses_settings']
+        notif = Notification(aws_access_key=ses_settings['aws_access_key'], aws_secret_key=ses_settings['aws_secret_key'], region=ses_settings['region'])
+        subject, body = self._format_notif()
+        log = "{log_path}/{job_id}".format(log_path=LOG_PATH, job_id=self._job.id)
+        for mail in self._app['log_notifications']:
+            notif.send_mail(From=MAIL_LOG_FROM, To=mail, subject=subject, body=body, attachments=[log])
 
 
     def _purge_package(self, pkg_name):
@@ -218,6 +244,7 @@ class Worker:
         pkg_name = self._package_app()
         manifest, manifest_path = tempfile.mkstemp()
         os.write(manifest, "%s" % pkg_name)
+        self._set_as_conn()
         self._stop_autoscale()
         self._gcall("s3cmd put {0} {bucket_s3}/{app}/{env}/{role}/MANIFEST".format(manifest_path, **self._app), "Upload manifest")
         self._sync_instances('deploy')
@@ -227,6 +254,13 @@ class Worker:
         if len(self._app['deploy']) > 3:
             self._purge_package(self._app['deploy'][0])
             self._db.apps.update({'_id': self._app['_id']}, { '$pop': {'deploy': -1} })
+
+
+    @prepare_task
+    def execute(self, command=""):
+        os.chdir(self._app_path)
+        self._gcall(command, command)
+
 
 # task_init_app()
 if __name__ == '__main__':
