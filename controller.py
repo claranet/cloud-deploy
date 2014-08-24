@@ -115,7 +115,7 @@ def deploy_app(data):
     task_exist = db.tasks.find_one({ '$and' : [{ 'status' : 'in_progress'}, {'app_id': app_exist['_id']} ] })
     if task_exist:
         return jsonify({'status': 400, 'message': 'Task already exist wait for it to complete', 'job_id': '%s' % task_exist['job_id']}), 400
-    async_work = worker.Worker(app_exist, dry_run=True)
+    async_work = worker.Worker(app_exist)
     job = queue.enqueue(async_work.deploy_app, commit=commit)
     return jsonify({'status': 200, 'message': 'Job launched', 'job_id': job.id})
 
@@ -128,7 +128,7 @@ def execute(data):
     task_exist = db.tasks.find_one({ '$and' : [{ 'status' : 'in_progress'}, {'app_id': app_exist['_id']} ] })
     if task_exist:
         return jsonify({'status': 400, 'message': 'Task already exist wait for it to complete', 'job_id': '%s' % task_exist['job_id']}), 400
-    async_work = worker.Worker(app_exist, dry_run=True)
+    async_work = worker.Worker(app_exist)
     job = queue.enqueue(async_work.execute, command=data['command'])
     return jsonify({'status': 200, 'message': 'Job launched', 'job_id': job.id})
 
