@@ -172,7 +172,7 @@ class Worker:
 
 
     def _init_log_file(self):
-        self._log_file = open("{log_path}/{job_id}".format(log_path=LOG_PATH, job_id=self._job.id), 'a')
+        self._log_file = open("{log_path}/{job_id}".format(log_path=LOG_PATH, job_id=self._job.id), 'a', 1)
 
 
     def _close_log_file(self):
