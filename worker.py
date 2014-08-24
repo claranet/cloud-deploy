@@ -251,7 +251,7 @@ class Worker:
         os.close(manifest)
         self._start_autoscale()
         self._db.apps.update({'_id': self._app['_id']}, { '$push': {'deploy': pkg_name} })
-        self._app = self._db.apps.find_one({'_id': self._app})
+        self._app = self._db.apps.find_one({'_id': self._app['_id']})
         if len(self._app['deploy']) > 3:
             self._purge_package(self._app['deploy'][0])
             self._db.apps.update({'_id': self._app['_id']}, { '$pop': {'deploy': -1} })
