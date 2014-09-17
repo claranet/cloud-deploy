@@ -9,7 +9,8 @@ def find_ec2_instances(ghost_app, ghost_env, ghost_role, region):
     res = []
     for reservation in reservations:
         instance = reservation.instances[0]
-        res.append(instance.private_ip_address)
+        if instance.private_ip_address:
+            res.append(instance.private_ip_address)
     if (len(res) == 0):
         raise CallException("No instance found with tags App:%s, Role:%s, Env:%s" % (app, role, env))
     return res
