@@ -12,7 +12,7 @@ def find_ec2_instances(ghost_app, ghost_env, ghost_role, region):
         if instance.private_ip_address:
             res.append(instance.private_ip_address)
     if (len(res) == 0):
-        raise CallException("No instance found with tags App:%s, Role:%s, Env:%s" % (app, role, env))
+        raise CallException("No instance found with tags App:%s, Role:%s, Env:%s" % (ghost_app, ghost_role, ghost_env))
     return res
 
 @task
