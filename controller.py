@@ -116,7 +116,7 @@ def deploy_app(data):
     if task_exist:
         return jsonify({'status': 400, 'message': 'Task already exist wait for it to complete', 'job_id': '%s' % task_exist['job_id']}), 400
     async_work = worker.Worker(app_exist)
-    job = queue.enqueue(async_work.deploy_app, commit=commit)
+    job = queue.enqueue_call(func=async_work.deploy_app, args=(commit=commit,), timeout=1800)
     return jsonify({'status': 200, 'message': 'Job launched', 'job_id': job.id})
 
 @app.route('/execute', methods=['POST'])
@@ -129,7 +129,7 @@ def execute(data):
     if task_exist:
         return jsonify({'status': 400, 'message': 'Task already exist wait for it to complete', 'job_id': '%s' % task_exist['job_id']}), 400
     async_work = worker.Worker(app_exist)
-    job = queue.enqueue(async_work.execute, command=data['command'])
+    job = queue.enqueue_call(func=async_work.execute, args=(command=data['command'],), timeout=1800)
     return jsonify({'status': 200, 'message': 'Job launched', 'job_id': job.id})
 
 
