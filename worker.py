@@ -239,6 +239,7 @@ class Worker:
         5) Start Autoscaling
         """
         os.chdir(self._app_path)
+        self._gcall("git stash", "Stashing git repository")
         self._gcall("git pull", "Git pull")
         self._gcall("git checkout %s" % commit, "Git checkout: %s" % commit)
         self._predeploy_app()
