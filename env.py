@@ -1,0 +1,5 @@
+env = [
+'prod',
+'preprod',
+'dev'
+]
