@@ -19,20 +19,11 @@ ROLE=$(echo $TAGS | jq -r ".Tags[] | { key: .Key, value: .Value } | [.] | from_e
 ENV=$(echo $TAGS | jq -r ".Tags[] | { key: .Key, value: .Value } | [.] | from_entries" | jq -r '.["Env"] | select (.!=null)')
 APP=$(echo $TAGS | jq -r ".Tags[] | { key: .Key, value: .Value } | [.] | from_entries" | jq -r '.["App"] | select (.!=null)')
 
-# Build s3cmd credential file
-cat > ~/.s3cfg <<EOM
-[default]
-access_key =
-secret_key =
-security_token =
-region = $EC2_REGION
-EOM
-
-s3cmd --force get s3://$S3_BUCKET/$APP/$ENV/$ROLE/MANIFEST /tmp/
+/usr/local/bin/aws s3 cp s3://$S3_BUCKET/$APP/$ENV/$ROLE/MANIFEST /tmp/
 [ $? -ne 0 ] && exit 10
 PACKAGE=$(head -n 1 /tmp/MANIFEST)
 rm /tmp/MANIFEST
-s3cmd --force get s3://$S3_BUCKET/$APP/$ENV/$ROLE/$PACKAGE /tmp/
+/usr/local/bin/aws s3 cp s3://$S3_BUCKET/$APP/$ENV/$ROLE/$PACKAGE /tmp/
 [ $? -ne 0 ] && exit 10
 IFS='_' read -a array <<< "$PACKAGE"
 TIMESTAMP=${array[0]}
