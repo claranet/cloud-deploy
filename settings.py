@@ -1,3 +1,4 @@
+import jobs
 # Let's just use the local mongod instance. Edit as needed.
 
 # Please note that MONGO_HOST and MONGO_PORT could very well be left
@@ -17,33 +18,9 @@ RESOURCE_METHODS = ['GET', 'POST', 'DELETE']
 # individual items  (defaults to read-only item access).
 ITEM_METHODS = ['GET', 'PATCH', 'PUT', 'DELETE']
 
-jobs_schema = {
-'command': {'type':'list', 'allowed':['deploy'],'required': True},
-'timestap':{'type':'datetime','required': True}
-'parameters': {
-	'type':'dict',
-	'schema': {
-		options : {'type':'string'},
-		app_id : {'type': 'integer'},
-		module : {'type':'dict',
-			'schema': {
-				name : {'type':'string'},
-				rev  : {'type':'string', 'default':'HEAD'}
-			}
-		} 
-	}
 
-},
-'status':{'type':'list', 'allowed':['pending','done','deleted']}
-
-}
-
-jobs = {
-	'item_title': 'job',
-	'schema' :jobs_schema
-}
 
 DOMAIN = {
-    'jobs': jobs
+    'jobs': jobs.jobs
 }
 
