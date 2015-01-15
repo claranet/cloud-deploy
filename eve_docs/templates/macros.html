@@ -1,0 +1,69 @@
+{% macro accordian(domain, paths) -%}
+  <div class="panel panel-default">
+    <div class="panel-heading">
+      <h4 class="panel-title"><a class="accordion-toggle" data-toggle="collapse" 
+        data-parent="accordion-{{ domain }}" href="#collapse-{{ domain }}">
+         /{{ domain }}
+      </a></h4>
+    </div>
+    <div id="collapse-{{ domain }}" class="panel-collapse collapse">
+      <div class="panel-body">
+        {% for path, method in paths|dictsort %}
+          {% for method, attrs in method.items() %}
+            {{ method_details(path, method, attrs) }}
+          {% endfor %}
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+{%- endmacro %}
+
+{% macro method_details(path, method, attrs) -%}
+{% set pathid = path|replace("{", "")|replace("}", "")|replace("/", "") %}
+<div class="method {{ method }}">
+  <a href="#{{ pathid }}-{{ method }}" data-toggle="collapse">
+    <div class="method_header">
+      <span class="method_verb {{ method }}">
+        {{ method }}
+      </span>
+      <span class="method_path">
+        {{ path }}
+      </span>
+      <span class="method_label">
+        {{ attrs.label }}
+      </span>
+      </span>
+    </div>
+  </a>
+  {% if attrs.params %}
+  <div id="{{ pathid }}-{{ method }}" class="collapse">
+    {{ params_table(attrs.params) }}
+  </div>
+  {%- endif %}
+</div>
+{%- endmacro %}
+
+{% macro params_table(params) -%}
+  <table class="table table-striped">
+    <thead>
+      <tr>
+        <th>Parameter</th>
+        <th>Type</th>
+        <th>Required</th>
+        <th>Other Attributes</th>
+      </tr>
+    </thead>
+  {% for param in params %}
+    <tr>
+      <td>{{ param.pop('name') }}</td>
+      <td>{{ param.pop('type') }}</td>
+      <td>{{ param.pop('required') }}</td>
+      <td>
+        {% for key, value in param.items() %}
+          {{ key }}: {{ value }}<br/>
+        {% endfor %}
+      </td>
+    </tr>
+  {% endfor %}
+  </table>
+{%- endmacro %}

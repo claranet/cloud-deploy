@@ -1,0 +1,23 @@
+{% extends "bootstrap/base.html" %}
+
+{% block head -%}
+{{super()}}
+{% include 'evedocstyle.html' %}
+{%- endblock head %}
+
+{% from 'macros.html' import accordian %}
+
+{% block content %}
+<div class="container">
+    <div class="api">
+        <h1>{{ cfg['api_name'] }}</h1>
+        <p class="lead"><a href="http://{{ cfg['server_name'] }}"><code>@{{ cfg['server_name'] }}</code></a></p>
+        <div class="panel-group">
+        {% for domain, paths  in cfg['domains']|dictsort %}
+            {{ accordian(domain, paths) }}
+        {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
