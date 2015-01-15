@@ -27,3 +27,4 @@ DOMAIN = {
     'apps': apps.apps
 }
 
+DEBUG = True
