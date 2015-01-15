@@ -35,3 +35,7 @@ apps = {
 'item_title' : 'app',
 'schema' : apps_schema
 }
+
+
+def pre_GET_apps(request, lookup):
+    print 'A GET request on apps endpoint has just been received!'
