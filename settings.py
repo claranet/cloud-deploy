@@ -23,7 +23,7 @@ ITEM_METHODS = ['GET', 'PATCH', 'PUT', 'DELETE']
 
 
 DOMAIN = {
-    'jobs': jobs.jobs
+    'jobs': jobs.jobs,
     'apps': apps.apps
 }
 

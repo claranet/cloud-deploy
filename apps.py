@@ -4,7 +4,7 @@ import instance_role
 import salt_features
 import aws_data
 
-apps = {
+apps_schema = {
     # TODO required filds
     # TODO validate name
     'name' : {'type':'string'},#, 'regex':'^[a-zA-Z0-9_.]$'},
@@ -18,13 +18,20 @@ apps = {
     'env': {'type':'string', 'allowed':env.env},
     'features':{'type':'list', 'allowed':salt_features.recipes},
     'role' : {'type':'string', 'allowed':instance_role.role},
-    'log_notifications' : {'type':'list','items':[
-        {'type':'string'}]},#'regex':'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$'}},
+    'log_notifications' : {'type':'list','items':[{'type':'string'}]
+        #'regex':'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$'}},
+    },
     'ami': {'type':'string'},
     'instance_type': {'type':'string', 'allowed':aws_data.instance_type},
     'autoscale': { 'type': 'dict', 'schema': {
         'min': {'type':'integer'},#, min:0},
         'max': {'type':'integer'},#, min:1},
         'current': {'type':'integer'}
-    }}
+        }
+    }
+}
+
+apps = {
+'item_title' : 'app',
+'schema' : apps_schema
 }
