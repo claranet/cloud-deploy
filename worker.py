@@ -265,6 +265,12 @@ class Worker:
         os.chdir(self._app_path)
         self._gcall(command, command)
 
+    @prepare_task
+    def init(self, ghost_job):
+
+        pass
+
+
 
 # task_init_app()
 if __name__ == '__main__':

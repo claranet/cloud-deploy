@@ -1,3 +1,4 @@
 eve
 rq==0.4.6
 rq-dashboard
+boto
