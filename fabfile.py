@@ -30,5 +30,6 @@ def deploy():
 @task
 def set_hosts(ghost_app=None, ghost_env=None, ghost_role=None, region=None):
     env.hosts = find_ec2_instances(ghost_app, ghost_env, ghost_role, region)
+    env.user = 'admin'
     print(env.hosts)
 
