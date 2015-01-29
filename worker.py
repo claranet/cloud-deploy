@@ -52,7 +52,6 @@ def prepare_task(func):
             args[0]._update_progress('Failed', percent=100)
             args[0]._update_task('failed', message=e.message)
         args[0]._close_log_file()
-        args[0]._notif_action()
         args[0]._mail_log_action()
         args[0]._disconnect_db()
     return wrapper
