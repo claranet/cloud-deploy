@@ -17,10 +17,13 @@ apps_schema = {
     'vpc': {'type':'string'},
     'modules': {'type':'list','schema':{
         'name': {'type':'string'},
-        'git_repo': {'type':'string'},
-        'scope': {'type':'string', 'allowed':['system','code']},
-        'code_deploy' : {'type':'dict', 'schema':code_deploy.code_deploy},
-        'build_pack':{'type':'media'}}
+        'git_repo': {'type':'string', 'required':'true'},
+        'scope': {'type':'string', 'required':'true','allowed':['system','code']},
+        #'code_deploy' : {'type':'dict', 'schema':code_deploy.code_deploy},
+        'build_pack':{'type':'media'},
+        'pre_deploy':{'type':'media'},
+        'post_deploy':{'type':'media'},
+        'path':{'type':'string', 'required':'true'}}
     },
     'log_notifications' : {'type':'list','items':[{'type':'string',
         'regex':'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$'}]
