@@ -1,0 +1,10 @@
+{
+    "name":"App_1",
+    "env":"prod",
+    "modules": [{
+    "name":"wordpress",
+    "scope":"code",
+    "path":"/var/www",
+    "git_repos":"https://my_git_repo.com"
+    }]
+}
