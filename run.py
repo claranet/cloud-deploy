@@ -34,15 +34,15 @@ def pre_insert_job(items):
                                   {'app_id': app_id}]})
     if job:
         abort(422)
-
     items[0]['status'] = 'init'
-    async_work = worker.Worker(app)
-    job_id = queue.enqueue(async_work.execute, command=items[0])
-    items[0]['job_id'] = job_id
 
+def post_insert_job(items):
+    async_work = worker.Worker()
+    job_id = queue.enqueue(async_work.execute, job_id=items[0]['_id'])
 
 ghost.on_insert_apps += pre_insert_app
 ghost.on_insert_jobs += pre_insert_job
+ghost.on_inserted_jobs += post_insert_job
 
 Bootstrap(ghost)
 ghost.register_blueprint(eve_docs, url_prefix='/docs')

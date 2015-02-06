@@ -27,39 +27,43 @@ class CallException(Exception):
 def prepare_task(func):
     @functools.wraps(func)
     def wrapper(*args, **kwargs):
-        args[0]._job = get_current_job()
+        args[0]._worker_job = get_current_job()
         args[0]._connect_db()
-        args[0]._config = args[0]._db.config.find_one()
+        args[0]._job = args[0]._db.jobs.find_one({'_id': args[0]._worker_job.id})
+        args[0]._app = args[0]._db.apps.find_one({'_id': args[0]._job['app_id']})
+        #args[0]._config = args[0]._db.config.find_one()
         args[0]._init_log_file()
-        args[0]._task = \
-                {
-                        'app_id': args[0]._app['_id'],
-                        'action': func.__name__,
-                        'job_id': args[0]._job.id,
-                        'status': 'in_progress',
-                        'created_at': datetime.datetime.now()
-                }
-        args[0]._db.tasks.insert(args[0]._task)
-        args[0]._set_git_repo()
-        args[0]._set_app_path()
-        args[0]._set_autoscale_group()
+       # args[0]._task = \
+        #                {
+        #                'app_id': args[0]._app['_id'],
+        #                'action': func.__name__,
+        #                'job_id': args[0]._worker_job.id,
+        #                'status': 'in_progress',
+        #                'created_at': datetime.datetime.now()
+        #        }
+        #args[0]._db.tasks.insert(args[0]._task)
+        #args[0]._set_git_repo()
+        #args[0]._set_app_path()
+        #args[0]._set_autoscale_group()
         try:
-            args[0]._update_progress('In Progress', percent=0)
+            #    args[0]._update_progress('In Progress', percent=0)
             result = func(*args, **kwargs)
-            args[0]._update_progress('Done', percent=100)
-            args[0]._update_task('done')
+            #args[0]._update_progress('Done', percent=100)
+            #args[0]._update_task('done')
         except CallException, e:
-            args[0]._update_progress('Failed', percent=100)
-            args[0]._update_task('failed', message=e.message)
+            #args[0]._update_progress('Failed', percent=100)
+            #args[0]._update_task('failed', message=e.message)
+            pass
         args[0]._close_log_file()
-        args[0]._notif_action()
-        args[0]._mail_log_action()
+        #args[0]._notif_action()
+        #args[0]._mail_log_action()
         args[0]._disconnect_db()
     return wrapper
 
 
 class Worker:
     _config = None
+    _worker_job = None
     _job = None
     _db = None
     _task = None
@@ -71,10 +75,8 @@ class Worker:
     _as_conn = None
     _as_group = None
 
-    def __init__(self, app, dry_run=False):
-        self._app = app
+    def __init__(self, dry_run=False):
         self._dry_run = dry_run
-
 
     def _log(self, message):
         self._log_file.write("{message}\n".format(message=message))
@@ -144,10 +146,10 @@ class Worker:
 
 
     def _update_progress(self, message, **kwargs):
-        self._job.meta['progress_message'] = message
+        self._worker_job.meta['progress_message'] = message
         if kwargs and kwargs['percent']:
-            self._job.meta['progress_completion'] = kwargs['percent']
-        self._job.save()
+            self._worker_job.meta['progress_completion'] = kwargs['percent']
+        self._worker_job.save()
 
 
     def _update_status(self, status):
@@ -172,7 +174,7 @@ class Worker:
 
 
     def _init_log_file(self):
-        self._log_file = open("{log_path}/{job_id}".format(log_path=LOG_PATH, job_id=self._job.id), 'a', 1)
+        self._log_file = open("{log_path}/{job_id}".format(log_path=LOG_PATH, job_id=self._worker_job.id), 'a', 1)
 
 
     def _close_log_file(self):
@@ -206,7 +208,7 @@ class Worker:
         ses_settings = self._config['ses_settings']
         notif = Notification(aws_access_key=ses_settings['aws_access_key'], aws_secret_key=ses_settings['aws_secret_key'], region=ses_settings['region'])
         subject, body = self._format_notif()
-        log = "{log_path}/{job_id}".format(log_path=LOG_PATH, job_id=self._job.id)
+        log = "{log_path}/{job_id}".format(log_path=LOG_PATH, job_id=self._worker_job.id)
         for mail in self._app['log_notifications']:
             notif.send_mail(From=MAIL_LOG_FROM, To=mail, subject=subject, body=body, attachments=[log])
 
