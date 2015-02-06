@@ -7,7 +7,7 @@ jobs_schema = {
 'parameters': {
 	'type':'dict',
 	'schema': {
-        'options' : {'type':'list', 'items':[{'type':'string'}]},
+        'options' : {'type':'list', 'schema':{'type':'string'}},
 		'modules' : {'type':'list',
 			'schema': {
 				'name' : {'type':'string'},
