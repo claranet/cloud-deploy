@@ -5,12 +5,15 @@ import os
 import shutil
 import tempfile
 import logging
+from settings import MONGO_DBNAME
 from boto import sns
 from boto.ec2 import autoscale
 from redis import Redis
 from rq import Queue
 from rq import get_current_job
 from pymongo import MongoClient
+from bson.objectid import ObjectId
+from pprint import pprint
 from notification import Notification
 
 LOG_PATH='/var/log/ghost'
@@ -27,10 +30,14 @@ class CallException(Exception):
 def prepare_task(func):
     @functools.wraps(func)
     def wrapper(*args, **kwargs):
+        print("CURRENT JOB: " + get_current_job().id)
         args[0]._worker_job = get_current_job()
         args[0]._connect_db()
-        args[0]._job = args[0]._db.jobs.find_one({'_id': args[0]._worker_job.id})
-        args[0]._app = args[0]._db.apps.find_one({'_id': args[0]._job['app_id']})
+        print("ARGS 1  : " + args[1])
+        args[0]._job = args[0]._db.jobs.find_one({'_id': ObjectId(args[1])})
+        pprint(args[0]._job)
+        args[0]._app = args[0]._db.apps.find_one({'_id': ObjectId(args[0]._job['app_id'])})
+        pprint(args[0]._app)
         #args[0]._config = args[0]._db.config.find_one()
         args[0]._init_log_file()
        # args[0]._task = \
@@ -138,7 +145,7 @@ class Worker:
 
 
     def _connect_db(self):
-        self._db = MongoClient().ghost
+        self._db = MongoClient()[MONGO_DBNAME]
 
 
     def _disconnect_db(self):
