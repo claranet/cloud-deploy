@@ -9,9 +9,6 @@ from eve_docs import eve_docs
 from eve import Eve
 
 
-ghost = Eve()
-redis_conn_queue = Redis()
-queue = Queue(connection=redis_conn_queue, default_timeout=0)
 
 def pre_insert_app(items):
     print 'begin'
@@ -43,6 +40,9 @@ def post_insert_job(items):
     async_work = worker.Worker()
     job_id = queue.enqueue(async_work.execute, str(items[0]['_id']))
 
+ghost = Eve()
+redis_conn_queue = Redis()
+queue = Queue(connection=redis_conn_queue, default_timeout=0)
 
 ghost.on_insert_apps += pre_insert_app
 ghost.on_insert_jobs += pre_insert_job
@@ -54,4 +54,4 @@ ghost.register_blueprint(eve_docs, url_prefix='/docs')
 RQDashboard(ghost)
 
 if __name__ == '__main__':
-    ghost.run(host='0.0.0.0', debug=True)
+    ghost.run(debug=True)
