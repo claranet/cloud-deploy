@@ -11,11 +11,12 @@ apps_schema = {
     'aws_region': {'type': 'string', 'allowed':['us-east-1','eu-west-1']},
     'instance_type': {'type': 'string', 'allowed':aws_data.instance_type},
     'env': {'type': 'string', 'allowed':env.env},
-    'features':{'type':'list', 'schema':salt_features.recipes},
+    'features':{'type':'list', 'allowed':salt_features.recipes},
     'role': {'type':'string', 'allowed':instance_role.role},
     'ami': {'type':'string'},
     'vpc': {'type':'string'},
     'modules': {'type':'list','schema':{
+        'initialized': {'type':'boolean', 'readonly':True},
         'name': {'type':'string'},
         'git_repo': {'type':'string', 'required':'true'},
         'scope': {'type':'string', 'required':'true','allowed':['system','code']},
