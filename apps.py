@@ -8,7 +8,7 @@ import ressources
 apps_schema = {
     # TODO required filds
     'name': {'type': 'string', 'regex': '^[a-zA-Z0-9_.+-]*$'},
-    'aws_region': {'type': 'string', 'allowed':['us-east-1','eu-weast-1']},
+    'aws_region': {'type': 'string', 'allowed':['us-east-1','eu-west-1']},
     'instance_type': {'type': 'string', 'allowed':aws_data.instance_type},
     'env': {'type': 'string', 'allowed':env.env},
     'features':{'type':'list', 'allowed':salt_features.recipes},
