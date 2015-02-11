@@ -14,8 +14,10 @@ redis_conn_queue = Redis()
 queue = Queue(connection=redis_conn_queue, default_timeout=0)
 
 def pre_insert_app(items):
+    print 'begin'
     name = items[0].get('name')
     role = items[0].get('role')
+    role = 'test'
     env = items[0].get('env')
     apps = ghost.data.driver.db['apps']
     app = apps.find_one({'$and' : [{'name': name}, {'role': role}, {'env': env}]})
@@ -52,4 +54,4 @@ ghost.register_blueprint(eve_docs, url_prefix='/docs')
 RQDashboard(ghost)
 
 if __name__ == '__main__':
-    ghost.run(host='0.0.0.0')
+    ghost.run(host='0.0.0.0', debug=True)
