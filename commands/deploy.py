@@ -1,7 +1,7 @@
 import os
 from pymongo import MongoClient
-from tools import GCallException, gcall, log
-from initrepo import InitRepo
+from commands.tools import GCallException, gcall, log
+from commands.initrepo import InitRepo
 
 
 class Deploy():
@@ -14,10 +14,29 @@ class Deploy():
     _as_conn = None
     _as_group = None
 
-    def __init__(app, job, log_fd):
+    def __init__(self, app, job, log_fd):
         self._app = app
         self._job = job
         self._log_fd = log_fd
+        # FIXME Deal with multiple job modules.
+        # Deal only with first (0) job module for now
+        module = self._find_module_by_name(job['parameters']['modules'][0]['name'])
+        self._app_path = app['modules'][module]['path']
+        self._git_repo = app['modules'][module]['git_repo']
+        # FIXME execute predeploy
+        print 'pre deploy'
+        # FIXME execute buildpack
+        print 'deploy buildpack'
+        # FIXME execute postdeploy
+        print 'post deploy'
+
+    def _find_module_by_name(self, name):
+        i = 0
+        for module in self._app['modules']:
+            if module['name'] == name:
+                return i
+            else:
+                i += 1
 
     def _predeploy_app(self):
         """
