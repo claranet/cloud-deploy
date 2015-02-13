@@ -26,8 +26,8 @@ apps_schema = {
         'post_deploy':{'type':'media'},
         'path':{'type':'string', 'required':'true'}}
     },
-    'log_notifications' : {'type':'list','items':[{'type':'string',
-        'regex':'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$'}]
+    'log_notifications' : {'type':'list','schema':{'type':'string',
+        'regex':'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$'}
     },
     'autoscale': { 'type': 'dict', 'schema': {
         '_min': {'type':'integer', 'min':0},
