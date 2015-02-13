@@ -8,7 +8,7 @@ jobs_schema = {
 	'type':'dict',
 	'schema': {
         'options' : {'type':'list', 'schema':{'type':'string'}},
-		'modules' : {'type':'list',
+        'modules' : {'type':'list',
 			'schema': {
 				'name' : {'type':'string'},
 				'rev'  : {'type':'string', 'default':'HEAD'}

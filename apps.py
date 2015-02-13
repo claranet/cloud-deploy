@@ -17,7 +17,7 @@ apps_schema = {
     'vpc': {'type':'string'},
     'modules': {'type':'list','schema':{
         'initialized': {'type':'boolean', 'readonly':True},
-        'name': {'type':'string'},
+        'name': {'type':'string', 'required':'true'},
         'git_repo': {'type':'string', 'required':'true'},
         'scope': {'type':'string', 'required':'true','allowed':['system','code']},
         #'code_deploy' : {'type':'dict', 'schema':code_deploy.code_deploy},
