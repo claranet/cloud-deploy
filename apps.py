@@ -18,13 +18,13 @@ apps_schema = {
     'modules': {'type':'list','schema':{ 'type':'dict', 'schema': {
         'initialized': {'type':'boolean', 'readonly':True},
         'name': {'type':'string'},
-        'git_repo': {'type':'string', 'required':'true'},
-        'scope': {'type':'string', 'required':'true','allowed':['system','code']},
+        'git_repo': {'type':'string', 'required':True},
+        'scope': {'type':'string', 'required':True,'allowed':['system','code']},
         #'code_deploy' : {'type':'dict', 'schema':code_deploy.code_deploy},
         'build_pack':{'type':'media'},
         'pre_deploy':{'type':'media'},
         'post_deploy':{'type':'media'},
-        'path':{'type':'string', 'required':'true'}}}
+        'path':{'type':'string', 'required':True}}}
     },
     'log_notifications' : {'type':'list','schema':{'type':'string',
         'regex':'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$'}
