@@ -1,6 +1,6 @@
 import os
 from pymongo import MongoClient
-from tools import GCallException, gcall, log
+from commands.tools import GCallException, gcall, log
 
 class InitRepo():
 
