@@ -6,28 +6,27 @@ import aws_data
 import ressources
 
 apps_schema = {
-    # TODO required filds
-    'name': {'type': 'string', 'regex': '^[a-zA-Z0-9_.+-]*$'},
+    'name': {'type': 'string', 'regex': '^[a-zA-Z0-9_.+-]*$', 'required':True },
     'aws_region': {'type': 'string', 'allowed':['us-east-1','eu-west-1']},
     'instance_type': {'type': 'string', 'allowed':aws_data.instance_type},
-    'env': {'type': 'string', 'allowed':env.env},
+    'env': {'type': 'string', 'allowed':env.env, 'required':True},
     'features':{'type':'list', 'schema':salt_features.recipes},
-    'role': {'type':'string', 'allowed':instance_role.role},
+    'role': {'type':'string', 'allowed':instance_role.role,'required':True},
     'ami': {'type':'string'},
     'vpc': {'type':'string'},
-    'modules': {'type':'list','schema':{
+    'modules': {'type':'list','schema':{ 'type':'dict', 'schema': {
         'initialized': {'type':'boolean', 'readonly':True},
-        'name': {'type':'string', 'required':'true'},
-        'git_repo': {'type':'string', 'required':'true'},
-        'scope': {'type':'string', 'required':'true','allowed':['system','code']},
+        'name': {'type':'string', 'required':True},
+        'git_repo': {'type':'string', 'required':True},
+        'scope': {'type':'string', 'required':True,'allowed':['system','code']},
         #'code_deploy' : {'type':'dict', 'schema':code_deploy.code_deploy},
         'build_pack':{'type':'media'},
         'pre_deploy':{'type':'media'},
         'post_deploy':{'type':'media'},
-        'path':{'type':'string', 'required':'true'}}
+        'path':{'type':'string', 'required':True}}}
     },
-    'log_notifications' : {'type':'list','items':[{'type':'string',
-        'regex':'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$'}]
+    'log_notifications' : {'type':'list','schema':{'type':'string',
+        'regex':'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$'}
     },
     'autoscale': { 'type': 'dict', 'schema': {
         '_min': {'type':'integer', 'min':0},
