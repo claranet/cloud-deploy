@@ -7,9 +7,9 @@ from rq_dashboard import RQDashboard
 import worker
 from eve_docs import eve_docs
 from eve import Eve
+from  auth import BCryptAuth
 
-
-ghost = Eve()
+ghost = Eve(auth=BCryptAuth)
 redis_conn_queue = Redis()
 queue = Queue(connection=redis_conn_queue, default_timeout=0)
 
