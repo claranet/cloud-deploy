@@ -10,6 +10,10 @@ from pymongo import MongoClient
 from bson.objectid import ObjectId
 from pprint import pprint
 from notification import Notification
+import os
+
+from commands import Deploy
+
 
 LOG_PATH='/var/log/ghost'
 ROOT_PATH=os.path.dirname(os.path.realpath(__file__))
@@ -85,7 +89,8 @@ class Worker:
         self._app = self._db.apps.find_one({'_id': ObjectId(self._job['app_id'])})
         self._init_log_file()
         #FIXME INTROSPECTION ie: commands/deploy Deploy
-        result = func(*args, **kwargs)
+        result = Deploy(self._app, self._job, self._log_file)
+        #result = Deploy(self._app, self._job)
         self._close_log_file()
         self._mail_log_action()
         self._disconnect_db()
