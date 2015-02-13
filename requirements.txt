@@ -5,3 +5,4 @@ boto
 flask
 flask-bootstrap
 mongo
+bcrypt
