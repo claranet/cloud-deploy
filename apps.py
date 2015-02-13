@@ -15,7 +15,7 @@ apps_schema = {
     'role': {'type':'string', 'allowed':instance_role.role},
     'ami': {'type':'string'},
     'vpc': {'type':'string'},
-    'modules': {'type':'list','schema':{
+    'modules': {'type':'list','schema':{ 'type':'dict', 'schema': {
         'initialized': {'type':'boolean', 'readonly':True},
         'name': {'type':'string'},
         'git_repo': {'type':'string', 'required':'true'},
@@ -24,7 +24,7 @@ apps_schema = {
         'build_pack':{'type':'media'},
         'pre_deploy':{'type':'media'},
         'post_deploy':{'type':'media'},
-        'path':{'type':'string', 'required':'true'}}
+        'path':{'type':'string', 'required':'true'}}}
     },
     'log_notifications' : {'type':'list','schema':{'type':'string',
         'regex':'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$'}
