@@ -20,7 +20,7 @@ class Deploy():
         self._log_fd = log_fd
         # FIXME Deal with multiple job modules.
         # Deal only with first (0) job module for now
-        module = self._find_module_by_name(job['parameters']['modules'][0]['name'])
+        module = self._find_module_by_name(job['modules'][0]['name'])
         self._app_path = app['modules'][module]['path']
         self._git_repo = app['modules'][module]['git_repo']
         # FIXME execute predeploy
@@ -31,12 +31,7 @@ class Deploy():
         print 'post deploy'
 
     def _find_module_by_name(self, name):
-        i = 0
-        for module in self._app['modules']:
-            if module['name'] == name:
-                return i
-            else:
-                i += 1
+        (item for item in self._app['modules'] if item['name'] == name).next()
 
     def _predeploy_app(self):
         """

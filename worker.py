@@ -12,7 +12,7 @@ from pprint import pprint
 from notification import Notification
 import os
 
-from commands import Deploy
+from commands import *
 
 
 LOG_PATH='/var/log/ghost'
@@ -90,7 +90,6 @@ class Worker:
         self._init_log_file()
         #FIXME INTROSPECTION ie: commands/deploy Deploy
         result = Deploy(self._app, self._job, self._log_file)
-        #result = Deploy(self._app, self._job)
         self._close_log_file()
         self._mail_log_action()
         self._disconnect_db()
