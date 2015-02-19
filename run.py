@@ -7,7 +7,7 @@ from rq_dashboard import RQDashboard
 import worker
 from eve_docs import eve_docs
 from eve import Eve
-from  auth import BCryptAuth
+from auth import BCryptAuth
 
 ghost = Eve(auth=BCryptAuth)
 redis_conn_queue = Redis()
@@ -31,6 +31,9 @@ def pre_insert_job(items):
     app = apps.find_one({'_id': ObjectId(app_id)})
     if not app:
         abort(404)
+    for module in jobs['parameters']['modules']:
+        if not exist_in_app(app,module):
+            abort(404)
     job = jobs.find_one({'$and': [{'status': {'$ne': 'done'}},
                                   {'status': {'$ne': 'failed'}},
                                   {'app_id': app_id}]})
