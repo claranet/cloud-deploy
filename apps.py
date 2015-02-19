@@ -8,13 +8,18 @@ import ressources
 apps_schema = {
     # TODO required filds
     'name': {'type': 'string', 'regex': '^[a-zA-Z0-9_.+-]*$'},
-    'aws_region': {'type': 'string', 'allowed':['us-east-1','eu-west-1']},
+    'region': {'type': 'string', 'allowed':['us-east-1','eu-west-1']},
     'instance_type': {'type': 'string', 'allowed':aws_data.instance_type},
     'env': {'type': 'string', 'allowed':env.env},
     'features':{'type':'list', 'schema':salt_features.recipes},
     'role': {'type':'string', 'allowed':instance_role.role},
-    'ami': {'type':'string'},
-    'vpc': {'type':'string'},
+    'ami': {'type':'string', 'regex': '^ami-[a-z0-9]*$'},
+    'source_ami' : {'type': 'string', 'regex': '^ami-[a-z0-9]*$'},
+    'ami_name': {'type': 'string'},
+    'ssh_username': {'type': 'string','regex': '^[a-z0-9]*$'},
+    'subnet_id': {'type': 'regex': '^subnet-[a-z0-9]*$'},
+    'vpc_id': {'type':'string', 'regex': '^vpc-[a-z0-9]*$'},
+    'associate_public_ip_address': {'type': 'integer', 'min':0, 'max':1},
     'modules': {'type':'list','schema':{ 'type':'dict', 'schema': {
         'initialized': {'type':'boolean', 'readonly':True},
         'name': {'type':'string'},
