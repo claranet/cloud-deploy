@@ -13,6 +13,7 @@ apps_schema = {
     'features':{'type':'list', 'schema':salt_features.recipes},
     'role': {'type':'string', 'allowed':instance_role.role,'required':True},
     'ami': {'type':'string'},
+    'ami_ref': {'type':'string'},
     'vpc': {'type':'string'},
     'modules': {'type':'list','schema':{ 'type':'dict', 'schema': {
         'initialized': {'type':'boolean', 'readonly':True},
