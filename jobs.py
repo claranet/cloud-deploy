@@ -1,6 +1,6 @@
 jobs_schema = {
 'command': {'type':'string',
-            'allowed':['deploy','maintenance'],
+            'allowed':['deploy','build_image','maintenance'],
             'required': True},
 'app_id' : {'type': 'string',
             'regex':'^[a-f0-9]{24}$',
@@ -11,10 +11,10 @@ jobs_schema = {
 'status':{'type':'string', 'readonly':True},
 'user': {'type':'string','required':True},
 'options' : {'type':'list', 'schema':{'type':'string'}},
-'modules' : {'type':'list', 'schema': {
-    	     'name':{'type':'string'},
+'modules' : {'type':'list', 'schema': { 'type':'dict', 'schema': {
+    	     'name':{'type':'string','required': True}, 
              'rev' :{'type':'string', 'default':'HEAD'}
-	            }
+	            }}
             }
 }
 
