@@ -31,9 +31,17 @@ def pre_insert_job(items):
     app = apps.find_one({'_id': ObjectId(app_id)})
     if not app:
         abort(404)
-    for module in jobs['parameters']['modules']:
-        if not exist_in_app(app,module):
-            abort(404)
+    for module in items[0]['modules']:
+        not_exist = True
+        for mod in app['modules']:
+            print 'app module name is: '+mod['name']
+            if module['name'] == mod['name']:
+                not_exist = False
+        if not_exist:
+            abort(422)
+    if items[0]['command'] == 'build_image':
+        if not ('build_infos' in app.viewkeys()):
+            abort(422)
     job = jobs.find_one({'$and': [{'status': {'$ne': 'done'}},
                                   {'status': {'$ne': 'failed'}},
                                   {'app_id': app_id}]})
