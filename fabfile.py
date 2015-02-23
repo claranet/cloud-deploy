@@ -5,7 +5,7 @@ from task import CallException
 def find_ec2_instances(ghost_app, ghost_env, ghost_role, region):
     conn = ec2.connect_to_region(region)
     #reservations = conn.get_all_instances()
-    reservations = conn.get_all_instances(filters={"tag:Env": ghost_env, "tag:Role": ghost_role, "tag:App": ghost_app})
+    reservations = conn.get_all_instances(filters={"tag:Env": ghost_env, "tag:Role": ghost_role, "tag:App": ghost_app, "instance-state-name":"running"})
     res = []
     for reservation in reservations:
         instance = reservation.instances[0]
