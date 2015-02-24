@@ -46,8 +46,8 @@ class Deploy():
         path = self._get_path_from_module(module)
         try:
             shutil.rmtree(path)
-        except FileNotFoundError:
-            pass
+        except (OSError, IOError) as e:
+            print(e)
         try:
             os.makedirs(path)
         except:
