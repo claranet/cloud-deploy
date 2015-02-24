@@ -30,7 +30,8 @@ apps_schema = {
     'autoscale': { 'type': 'dict', 'schema': {
         'min': {'type':'integer', 'min':0},
         'max': {'type':'integer', 'min':1},
-        'current': {'type':'integer'}
+        'current': {'type':'integer'},
+        'name': {'type': 'string'}
         }
     },
     'build_infos':{ 'type': 'dict', 'schema': {
