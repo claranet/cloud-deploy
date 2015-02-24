@@ -72,10 +72,6 @@ def post_insert_job(items):
     async_work = worker.Worker()
     job_id = queue.enqueue(async_work.execute, str(items[0]['_id']))
 
-ghost = Eve()
-redis_conn_queue = Redis()
-queue = Queue(connection=redis_conn_queue, default_timeout=0)
-
 ghost.on_update_apps += pre_update_app
 ghost.on_replace_apps += pre_replace_app
 ghost.on_delete_apps += pre_delete_app
