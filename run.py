@@ -13,8 +13,24 @@ ghost = Eve(auth=BCryptAuth)
 redis_conn_queue = Redis()
 queue = Queue(connection=redis_conn_queue, default_timeout=0)
 
+
+#FIXME: Implement modules update (reinitialized ?)
+def pre_update_app(updates, original):
+   print(updates)
+   print(original)
+   
+
+#FIXME: Implement (or not ?) application replacement
+def pre_replace_app(item, original):
+    print(item)
+    print(original)
+
+#FIXME: implement purge of application (git repo)
+def pre_delete_app(item):
+    print(item)
+
 def pre_insert_app(items):
-    print 'begin'
+    print('begin')
     name = items[0].get('name')
     role = items[0].get('role')
     role = 'test'
@@ -23,6 +39,8 @@ def pre_insert_app(items):
     app = apps.find_one({'$and' : [{'name': name}, {'role': role}, {'env': env}]})
     if app:
         abort(422)
+    for module in items[0].get('modules'):
+        module['initialized'] = False
 
 def pre_insert_job(items):
     app_id = items[0].get('app_id')
@@ -34,7 +52,7 @@ def pre_insert_job(items):
     for module in items[0]['modules']:
         not_exist = True
         for mod in app['modules']:
-            print 'app module name is: '+mod['name']
+            print('app module name is: '+mod['name'])
             if module['name'] == mod['name']:
                 not_exist = False
         if not_exist:
@@ -55,6 +73,9 @@ def post_insert_job(items):
     job_id = queue.enqueue(async_work.execute, str(items[0]['_id']))
 
 
+ghost.on_update_apps += pre_update_app
+ghost.on_replace_apps += pre_replace_app
+ghost.on_delete_apps += pre_delete_app
 ghost.on_insert_apps += pre_insert_app
 ghost.on_insert_jobs += pre_insert_job
 ghost.on_inserted_jobs += post_insert_job
