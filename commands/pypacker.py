@@ -11,7 +11,9 @@ import re
 PACKER_JSON_PATH="/tmp/packer/"
 SALT_LOCAL_TREE="/tmp/salt/"
 
-class Builder:
+logging.basicConfig(filename="packer.log")
+
+class Packer:
     def __init__(self, packer_config):
         self.packer_config = json.loads(packer_config)
         self.unique = str(uuid4())
@@ -28,7 +30,7 @@ class Builder:
         self.salt_top_path = self.salt_path + '/' + 'top.sls'
         stream = file(self.salt_top_path, 'w')
         logging.debug("Writing Salt Top state to: {0}".format(self.salt_top_path))
-        data = {'*': {'base': ["common","ghost"]}}
+        data = {'base': {'*': ["common","ghost"]}}
         yaml.dump(data, stream, default_flow_style=False)
 
     def _build_packer_json(self):
@@ -53,6 +55,7 @@ class Builder:
         packer_json['builders'] = builders
         packer_json['provisioners'] = provisioners
         self.packer_file_path = PACKER_JSON_PATH + self.unique + ".json" 
+        print(self.packer_file_path)
         stream = file(self.packer_file_path, 'w')
         logging.debug("Writing Packer definition to: {0}", self.packer_file_path)
         json.dump(packer_json, stream, sort_keys=True, indent=4, separators=(',', ': '))
@@ -62,10 +65,12 @@ class Builder:
         self._build_packer_json()
         try:
             result = packer.build(self.packer_file_path)
+            print(result)
             ami = re.findall('ami-[a-z0-9]*$', result.rstrip())[0]
         except sh.ErrorReturnCode, e:
             print "---- ERROR ----\n" + e.stdout
-        print ami
+            ami = "ERROR"
+        return ami
 
 json_datas = {
     'region': 'eu-west-1',
@@ -80,5 +85,5 @@ json_datas = {
 datas = json.dumps(json_datas, sort_keys=True, indent=4, separators=(',', ': '))
 
 if __name__ == "__main__":
-    builder = Builder(packer_config=datas)
-    builder.build_image()
+    builder = Packer(packer_config=datas)
+    print builder.build_image()

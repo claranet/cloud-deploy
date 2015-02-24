@@ -11,7 +11,7 @@ from auth import BCryptAuth
 
 ghost = Eve(auth=BCryptAuth)
 redis_conn_queue = Redis()
-queue = Queue(connection=redis_conn_queue, default_timeout=0)
+queue = Queue(connection=redis_conn_queue, default_timeout=3600)
 
 
 #FIXME: Implement modules update (reinitialized ?)
