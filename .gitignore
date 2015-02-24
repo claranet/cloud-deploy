@@ -10,3 +10,4 @@ parts
 src/*.egg-info
 .ropeproject
 *.swp
+config.yml

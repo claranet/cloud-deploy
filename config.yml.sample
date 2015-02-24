@@ -1,0 +1,7 @@
+ses_settings:
+    - aws_access_key: XXXXXXXXXXXXXXXXXX
+    - aws_secret_key: XXXXXXXXXXXXXXXXXX
+    - region: eu-west-1
+bucket_s3: ghost-eu-west-1-***REMOVED***
+key_path: /Users/adrien/secure/my_key.pem
+
