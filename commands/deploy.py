@@ -7,7 +7,7 @@ import shutil
 import tempfile
 from sh import git
 from pymongo import MongoClient
-from commands.tools import GCallException, gcall, log
+from commands.tools import GCallException, gcall, log, find_ec2_instances
 from commands.initrepo import InitRepo
 from boto.ec2 import autoscale
 
@@ -103,9 +103,13 @@ class Deploy():
 
     def _sync_instances(self, task_name):
         os.chdir(ROOT_PATH)
-        cmd = "/usr/local/bin/fab -i {key_path} set_hosts:ghost_app={app},ghost_env={env},ghost_role={role},region={aws_region} {0}".format(task_name, \
-                key_path=self._config['key_path'], app=self._app['name'], env=self._app['env'], role=self._app['role'], aws_region=self._app['region'])
-        gcall(cmd, "Updating current instances", self._log_file)
+        hosts = find_ec2_instances(self._app['name'], self._app['env'], self._app['role'], self._app['region'])
+        if len(hosts) > 0:
+            cmd = "/usr/local/bin/fab -i {key_path} set_hosts:ghost_app={app},ghost_env={env},ghost_role={role},region={aws_region} {0}".format(task_name, \
+                    key_path=self._config['key_path'], app=self._app['name'], env=self._app['env'], role=self._app['role'], aws_region=self._app['region'])
+            gcall(cmd, "Updating current instances", self._log_file)
+        else:
+            log("WARNING: no instance available to sync deployment", self._log_file)
 
     def _package_module(self, module, ts, commit):
         os.chdir(self._get_path_from_module(module))
@@ -118,6 +122,9 @@ class Deploy():
     #def _purge_package(self, pkg_name):
     #    task_name = "purge:{0}".format(pkg_name)
     #    gcall("/usr/local/bin/fab -i {key_path} set_hosts:ghost_app={app},ghost_env={env},ghost_role={role},region={aws_region} {0}".format(task_name, **self._app), "Purging package: %s" % pkg_name)
+
+    def _purge_old_modules(self, module):
+        pass
 
     def _get_module_revision(self, module_name):
         for module in self._job['modules']:
