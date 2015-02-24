@@ -1,7 +1,7 @@
 from ..packer import Packer
 from commands.tools import log
 
-class BuildImage():
+class Buildimage():
     _app = None
     _job = None
     _log_file = -1
