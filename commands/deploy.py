@@ -1,4 +1,5 @@
 import os
+import sys
 import datetime
 import calendar
 import time
@@ -165,7 +166,10 @@ class Deploy():
         print('execute buildpack')
         pkg_name = self._package_module(module, ts, commit)
         manifest, manifest_path = tempfile.mkstemp()
-        os.write(manifest, bytes(pkg_name, 'UTF-8'))
+        if sys.version > '3':
+            os.write(manifest, bytes(pkg_name, 'UTF-8'))
+        else:
+            os.write(manifest, pkg_name)
         self._set_as_conn()
         self._stop_autoscale()
         gcall("aws s3 cp {0} s3://{bucket_s3}{path}/MANIFEST".format(manifest_path, \
