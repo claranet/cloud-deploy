@@ -8,3 +8,4 @@ pymongo
 bcrypt
 pyyaml
 sh
+six>=1.4.1
