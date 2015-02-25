@@ -12,6 +12,7 @@ class Buildimage():
         self._app = worker.app
         self._job = worker.job
         self._db = worker._db
+        self._worker = worker
         self._log_file = worker.log_file
         self._ami_name = '{0}.{1}'.format(self._app['name'], time.strftime("%Y%m%d-%H%M%S"))
 
@@ -29,7 +30,8 @@ class Buildimage():
         return json.dumps(datas, sort_keys=True, indent=4, separators=(',', ': '))
 
     def _update_app_ami(self, ami_id):
-        self._db.apps.update({'_id': self._app['_id']},{'$set': {'ami': ami_id, 'ami_name': self._ami_name}})
+            self._db.apps.update({'_id': self._app['_id']},{'$set': {'ami': ami_id, 'ami_name': self._ami_name}})
+            self._worker.update_status("done")
 
     def execute(self):
         json_packer = self._format_packer_from_app()
