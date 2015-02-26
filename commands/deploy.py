@@ -5,11 +5,12 @@ import calendar
 import time
 import shutil
 import tempfile
-from sh import git
+from sh import git,bash
 from pymongo import MongoClient
 from commands.tools import GCallException, gcall, log, find_ec2_instances
 from commands.initrepo import InitRepo
 from boto.ec2 import autoscale
+import base64
 
 ROOT_PATH = os.path.dirname(os.path.realpath(__file__))
 
@@ -171,6 +172,14 @@ class Deploy():
         self._predeploy_module(module)
         # FIXME execute buildpack
         print('execute buildpack')
+        buildpack_source = base64.b64decode(module['build_pack'])
+        buildpack, buildpack_path = tempfile.mkstemp()
+        if sys.version > '3':
+            os.write(buildpack, bytes(buildpack_source, 'UTF-8'))
+        else:
+            os.write(buildpack, buildpack_source)
+        gcall("bash "+buildpack_path,'Buildpack execute' ,self._log_file)
+        #create manifest
         pkg_name = self._package_module(module, ts, commit)
         manifest, manifest_path = tempfile.mkstemp()
         if sys.version > '3':
