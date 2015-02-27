@@ -29,6 +29,19 @@ class Buildimage():
         }
         return json.dumps(datas, sort_keys=True, indent=4, separators=(',', ': '))
 
+    def _format_salt_top_from_app_features(self):
+        top = []
+        for i in self._app['features']:
+            top.append(i['name'].encode('utf-8'))
+        return top
+
+    def _format_salt_pillar_from_app_features(self):
+        pillar = {}
+        for i in self._app['features']:
+            pillar[i['name'].encode('utf-8')] = {}
+            pillar[i['name'].encode('utf-8')] = {'version': i['version'].encode('utf-8')}
+        return pillar
+
     def _update_app_ami(self, ami_id):
             self._db.apps.update({'_id': self._app['_id']},{'$set': {'ami': ami_id, 'ami_name': self._ami_name}})
             self._worker.update_status("done")
@@ -38,7 +51,7 @@ class Buildimage():
         log("Generating a new AMI", self._log_file)
         log(json_packer, self._log_file)
         pack = Packer(json_packer)
-        ami_id = pack.build_image()
+        ami_id = pack.build_image(self._format_salt_top_from_app_features(), self._format_salt_pillar_from_app_features())
         log("Update app in MongoDB to update AMI: {0}".format(ami_id), self._log_file)
         self._update_app_ami(ami_id)
 
