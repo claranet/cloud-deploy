@@ -80,6 +80,8 @@ class Packer:
         self._build_salt_top(salt_params)
         self._build_salt_pillar(features)
         self._build_packer_json()
+        if not os.path.isdir('/tmp/root'):
+            os.makedirs('/tmp/root')
         try:
             result = packer.build(self.packer_file_path)
             print(result)
