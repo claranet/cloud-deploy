@@ -1,5 +1,5 @@
 #!/bin/bash
-S3_BUCKET={{ s3_bucket }}
+S3_BUCKET={{ bucket_s3 }}
 TS=$(date +%Y%m%H%m%S)
 LOGFILE=$(echo $TS_deploy.txt)
 

@@ -11,6 +11,7 @@ from commands.tools import GCallException, gcall, log, find_ec2_instances
 from commands.initrepo import InitRepo
 from boto.ec2 import autoscale
 import boto.s3
+import jinja
 import base64
 
 ROOT_PATH = os.path.dirname(os.path.realpath(__file__))
@@ -62,26 +63,6 @@ class Deploy():
         gcall("git clone {git_repo} {path}".format(git_repo=module['git_repo'], path=path), "Git clone", self._log_file)
         self._worker.module_initialized(module['name'])
 
-    def _predeploy_module(self, module):
-        """
-        Execute tasks before packaging application (ie: install lib dependencies)
-        """
-        #predeploy = os.path.join(ROOT_PATH, 'predeploy', 'symfony_predeploy.sh')
-        #shutil.copy(predeploy, self._app_path)
-        #os.chdir(self._app_path)
-        #gcall('./symfony_predeploy.sh %s' % self._app['env'], 'Predeploy script')
-        pass
-
-    def _postdeploy_module(self, module):
-        """
-        Execute tasks after deployment (ie: clear cache)
-        """
-        #postdeploy = os.path.join(ROOT_PATH, 'postdeploy', 'symfony_postdeploy.sh')
-        #shutil.copy(postdeploy, self._app_path)
-        #os.chdir(self._app_path)
-        #gcall('./symfony_postdeploy.sh %s' % self._app['env'], 'Postdeploy script')
-        pass
-
     def _set_as_conn(self):
         self._as_conn = autoscale.connect_to_region(self._app['region'])
 
@@ -109,8 +90,9 @@ class Deploy():
     def _sync_instances(self, task_name):
         os.chdir(ROOT_PATH)
         hosts = find_ec2_instances(self._app['name'], self._app['env'], self._app['role'], self._app['region'])
+        task_name = "deploy:{0}".format(self._config['bucket_s3'])
         if len(hosts) > 0:
-            cmd = "/usr/local/bin/fab -i {key_path} set_hosts:ghost_app={app},ghost_env={env},ghost_role={role},region={aws_region} {0}".format(task_name, \
+            cmd = "/usr/local/bin/fab -i {key_path} set_hosts:ghost_app={app},ghost_env={env},ghost_role={role},region={aws_region},s3_bucket={bucket} {0}".format(task_name, \
                     key_path=self._config['key_path'], app=self._app['name'], env=self._app['env'], role=self._app['role'], aws_region=self._app['region'])
             gcall(cmd, "Updating current instances", self._log_file)
         else:
@@ -118,18 +100,19 @@ class Deploy():
 
     def _package_module(self, module, ts, commit):
         os.chdir(self._get_path_from_module(module))
-        pkg_name = "{0}_{1}_{2}.tar.gz".format(ts, module['name'], commit)
+        pkg_name = "{0}_{1}_{2}".format(ts, module['name'], commit)
         gcall("tar cvzf ../%s . > /dev/null" % pkg_name, "Creating package: %s" % pkg_name, self._log_file)
         gcall("aws s3 cp ../{0} s3://{bucket_s3}{path}/".format(pkg_name, \
                 bucket_s3=self._config['bucket_s3'], path=self._get_path_from_module(module)), "Uploading package: %s" % pkg_name, self._log_file)
+        gcall("rm -rf ../{0}".format(pkg_name), "Deleting local package: %s" % pkg_name, self._log_file)
         return pkg_name
 
-    #def _purge_package(self, pkg_name):
-    #    task_name = "purge:{0}".format(pkg_name)
-    #    gcall("/usr/local/bin/fab -i {key_path} set_hosts:ghost_app={app},ghost_env={env},ghost_role={role},region={aws_region} {0}".format(task_name, **self._app), "Purging package: %s" % pkg_name)
-
     def _purge_old_modules(self, module):
-        pass
+        histories = self._worker._db.deploy_histories.find({'app_id': self._app['_id'], 'module': module['name']}).order({ 'timestamp': -1 }).limit(5)
+        if len(histories) > 4:
+            to_delete = histories[3]
+        task_name = "purge:{0}".format(to_delete)
+        gcall("/usr/local/bin/fab -i {key_path} set_hosts:ghost_app={app},ghost_env={env},ghost_role={role},region={aws_region} {0}".format(task_name, **self._app), "Purging package: %s" % pkg_name)
 
     def _get_module_revision(self, module_name):
         for module in self._job['modules']:
@@ -194,14 +177,6 @@ class Deploy():
         key.set_contents_from_filename(manifest_path)
 
     def _execute_deploy(self, module):
-        """
-        0) Update sourcecode
-        1) Stop Autoscaling
-        2) Update MANIFEST on S3
-        3) Deploy package on Running EC2 instances
-        4) Restart Webserver
-        5) Start Autoscaling
-        """
         now = datetime.datetime.utcnow()
         ts = calendar.timegm(now.timetuple())
         os.chdir(self._get_path_from_module(module))
@@ -212,8 +187,7 @@ class Deploy():
         commit = git('rev-parse', '--short', 'HEAD').strip()
         # FIXME execute predeploy
         print('pre deploy')
-        self._predeploy_module(module)
-        # FIXME execute buildpack
+        # Execute buildpack
         if 'build_pack' in module:
             print('execute buildpack')
             buildpack_source = base64.b64decode(module['build_pack'])
@@ -223,27 +197,21 @@ class Deploy():
             else:
                 os.write(buildpack, buildpack_source)
             gcall("bash "+buildpack_path,'Buildpack execute' ,self._log_file)
-        #create manifest
-        pkg_name = self._package_module(module, ts, commit)
-        manifest, manifest_path = tempfile.mkstemp()
-        if sys.version > '3':
-            os.write(manifest, bytes(pkg_name, 'UTF-8'))
-        else:
-            os.write(manifest, pkg_name)
+        # Store postdeploy script in tarball
+        if 'post_deploy' in module:
+            postdeploy_source = base64.b64decode(module['post_deploy'])
+            with open(self.get_path_from_module(module) + '/postdeploy', 'w') as f:
+                if sys.version > '3':
+                    f.write(bytes(postdeploy_source, 'UTF-8'))
+                else:
+                    f.write(postdeploy_source)
         self._set_as_conn()
         self._stop_autoscale()
         self._update_manifest(module, pkg_name)
         self._sync_instances('deploy')
         self._start_autoscale()
-        # FIXME execute postdeploy
-        print('post deploy')
-        #self._app = self._db.apps.find_one({'_id': self._app['_id']})
-        #if len(self._app['deploy']) > 3:
-        #    pkg_timestamped = self._app['deploy'][0].split('_')[0]
-        #    self._purge_package(pkg_timestamped)
-        #    self._db.apps.update({'_id': self._app['_id']}, { '$pop': {'deploy': -1} })
         self._purge_old_modules(module)
-        deployment = {'app_id': self._app['_id'], 'job_id': self._job['_id'], 'module': module['name'], 'commit': commit, 'timestamp': ts}
+        deployment = {'app_id': self._app['_id'], 'job_id': self._job['_id'], 'module': module['name'], 'commit': commit, 'timestamp': ts, 'package': pkg_name}
         self._worker._db.deploy_histories.insert(deployment)
 
     def finish():
