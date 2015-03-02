@@ -6,7 +6,7 @@ import time
 import shutil
 import tempfile
 from sh import git,bash
-from pymongo import MongoClient
+from pymongo import MongoClient, ASCENDING, DESCENDING
 from commands.tools import GCallException, gcall, log, find_ec2_instances
 from commands.initrepo import InitRepo
 from boto.ec2 import autoscale
@@ -86,7 +86,7 @@ class Deploy():
             log("Stopping autoscaling", self._log_file)
             self._as_conn.suspend_processes(self._as_group)
 
-    def _sync_instances(self, task_name):
+    def _sync_instances(self):
         os.chdir(ROOT_PATH)
         hosts = find_ec2_instances(self._app['name'], self._app['env'], self._app['role'], self._app['region'])
         task_name = "deploy:{0}".format(self._config['bucket_s3'])
@@ -107,7 +107,7 @@ class Deploy():
         return pkg_name
 
     def _purge_old_modules(self, module):
-        histories = self._worker._db.deploy_histories.find({'app_id': self._app['_id'], 'module': module['name']}).order({ 'timestamp': -1 }).limit(5)
+        histories = self._worker._db.deploy_histories.find({'app_id': self._app['_id'], 'module': module['name']}).sort('timestamp', DESCENDING).limit(5)
         if len(histories) > 4:
             to_delete = histories[3]
         task_name = "purge:{0}".format(to_delete)
@@ -204,10 +204,11 @@ class Deploy():
                     f.write(bytes(postdeploy_source, 'UTF-8'))
                 else:
                     f.write(postdeploy_source)
+        pkg_name = self._package_module(module, ts, commit)
         self._set_as_conn()
         self._stop_autoscale()
         self._update_manifest(module, pkg_name)
-        self._sync_instances('deploy')
+        self._sync_instances()
         self._start_autoscale()
         self._purge_old_modules(module)
         deployment = {'app_id': self._app['_id'], 'job_id': self._job['_id'], 'module': module['name'], 'commit': commit, 'timestamp': ts, 'package': pkg_name}
