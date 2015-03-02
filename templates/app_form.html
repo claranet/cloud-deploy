@@ -15,7 +15,7 @@
 <!--<form class="box login" method="POST" action="http://localhost:5000/apps"
     enctype="multipart/form-data" >-->
 	<fieldset class="boxBody">
-      <p align=center>App</p>
+      <h2 align=center>App</h2>
 	  <label>Name</label>
 	  <input type="text" tabindex="1" placeholder="Application Name" name="name" required>
 
@@ -49,10 +49,7 @@
             <option>{{vpc}}</option>
        {% endfor %}
       </select>
-
-	</fieldset>
-	<footer>
-        <p align=center>Module</p>
+        <h3 align=center>Module</h3>
         <label>Name</label>
         <input type="text" tabindex="" placeholder="Module Name" name="module-name" required>
         <label>Git repository</label>
@@ -66,10 +63,12 @@
         </select>
         <label>Buildback</label>
         <input type="file" tabindex=""  name="module-build_pack" required>
+        <label>Post deploy</label>
+        <input type="file" tabindex=""  name="module-post_deploy" required>
 
-        <!--<textarea tabindex="5"  name="modules[0][build_pack]"
-            placeholder="Your file in base 64"></textarea>-->
-	</footer>
+	</fieldset>
+	<footer>
+        	</footer>
 	<input type="submit" class="btnLogin" value="Register" tabindex="">
 </form>
 </body>
