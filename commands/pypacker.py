@@ -32,7 +32,7 @@ class Packer:
         logging.debug("Writing Salt Top state to: {0}".format(self.salt_top_path))
         data = {'base': {'*': []}}
         data['base']['*'] = params
-        print 'state: top.sls: {0}'.format(data)
+        print('state: top.sls: {0}'.format(data))
         yaml.dump(data, stream, default_flow_style=False)
 
     def _build_salt_pillar(self, features):
@@ -42,11 +42,11 @@ class Packer:
         #Creating top.sls to call features.sls
         stream_top = file(self.salt_pillar_top_path, 'w')
         data_top = {'base': {'*': ['features']}}
-        print 'pillar: top.sls: {0}'.format(data_top)
+        print('pillar: top.sls: {0}'.format(data_top))
         yaml.dump(data_top, stream_top, default_flow_style=False)
         #Creating features.sls file based on ghost app features
         stream_features = file(self.salt_pillar_features_path, 'w')
-        print 'pillar: features.sls: {0}'.format(features)
+        print('pillar: features.sls: {0}'.format(features))
         yaml.dump(features, stream_features, default_flow_style=False)
 
     def _build_packer_json(self):
@@ -86,8 +86,8 @@ class Packer:
             result = packer.build(self.packer_file_path)
             print(result)
             ami = re.findall('ami-[a-z0-9]*$', result.rstrip())[0]
-        except sh.ErrorReturnCode, e:
-            print "---- ERROR ----\n" + e.stdout + "\n" + e.stderr
+        except sh.ErrorReturnCode as e:
+            print("---- ERROR ----\n" + e.stdout + "\n" + e.stderr)
             ami = "ERROR"
         #ami = "DEV in progress"
         return ami
@@ -106,4 +106,4 @@ datas = json.dumps(json_datas, sort_keys=True, indent=4, separators=(',', ': '))
 
 if __name__ == "__main__":
     builder = Packer(packer_config=datas)
-    print builder.build_image()
+    print(builder.build_image())

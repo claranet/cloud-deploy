@@ -10,6 +10,7 @@ from pymongo import MongoClient
 from commands.tools import GCallException, gcall, log, find_ec2_instances
 from commands.initrepo import InitRepo
 from boto.ec2 import autoscale
+import boto.s3
 import base64
 
 ROOT_PATH = os.path.dirname(os.path.realpath(__file__))
@@ -40,6 +41,9 @@ class Deploy():
                 for item in self._app['modules']:
                     if 'name' in item and item['name'] == module['name']:
                         yield item
+
+    def _get_path_from_app(self):
+        return "/ghost/{name}/{env}/{role}".format(name=self._app['name'], env=self._app['env'], role=self._app['role'])
 
     def _get_path_from_module(self, module):
         return "/ghost/{name}/{env}/{role}/{module}".format(name=self._app['name'], env=self._app['env'], role=self._app['role'], module=module['name'])
@@ -149,6 +153,45 @@ class Deploy():
         except GCallException as e:
             self._worker.update_status("failed", message=str(e))
 
+    def _update_manifest(self, module, package):
+        key_path = self._get_path_from_app() + '/MANIFEST'
+        conn = boto.s3.connect_to_region(self._app['region'])
+        bucket = conn.get_bucket(self._config['bucket_s3'])
+        key = bucket.get_key(key_path)
+        modules = []
+        module_exist = False
+        data = ""
+        if key:
+            manifest = key.get_contents_as_string()
+            if sys.version > '3':
+                manifest = manifest.decode('utf-8')
+            for line in manifest.split('\n'):
+                if line:
+                    mod = {}
+                    tmp = line.split(':')
+                    mod['name'] = tmp[0]
+                    if mod['name'] == module['name']:
+                        mod['package'] = package
+                        mod['path'] = module['path']
+                        module_exist = True
+                    else:
+                        print(tmp)
+                        mod['package'] = tmp[1]
+                        mod['path'] = tmp[2]
+                    modules.append(mod)
+        if not key:
+            key = bucket.new_key(key_path)
+        if not module_exist:
+            modules.append({ 'name': module['name'], 'package': package, 'path': module['path']})
+        for mod in modules:
+            data = data + mod['name'] + ':' + mod['package'] + ':' + mod['path'] + '\n'
+        manifest, manifest_path = tempfile.mkstemp()
+        if sys.version > '3':
+            os.write(manifest, bytes(data, 'UTF-8'))
+        else:
+            os.write(manifest, data)
+        os.close(manifest)
+        key.set_contents_from_filename(manifest_path)
 
     def _execute_deploy(self, module):
         """
@@ -171,14 +214,15 @@ class Deploy():
         print('pre deploy')
         self._predeploy_module(module)
         # FIXME execute buildpack
-        print('execute buildpack')
-        buildpack_source = base64.b64decode(module['build_pack'])
-        buildpack, buildpack_path = tempfile.mkstemp()
-        if sys.version > '3':
-            os.write(buildpack, bytes(buildpack_source, 'UTF-8'))
-        else:
-            os.write(buildpack, buildpack_source)
-        gcall("bash "+buildpack_path,'Buildpack execute' ,self._log_file)
+        if 'build_pack' in module:
+            print('execute buildpack')
+            buildpack_source = base64.b64decode(module['build_pack'])
+            buildpack, buildpack_path = tempfile.mkstemp()
+            if sys.version > '3':
+                os.write(buildpack, bytes(buildpack_source, 'UTF-8'))
+            else:
+                os.write(buildpack, buildpack_source)
+            gcall("bash "+buildpack_path,'Buildpack execute' ,self._log_file)
         #create manifest
         pkg_name = self._package_module(module, ts, commit)
         manifest, manifest_path = tempfile.mkstemp()
@@ -188,10 +232,8 @@ class Deploy():
             os.write(manifest, pkg_name)
         self._set_as_conn()
         self._stop_autoscale()
-        gcall("aws s3 cp {0} s3://{bucket_s3}{path}/MANIFEST".format(manifest_path, \
-                bucket_s3=self._config['bucket_s3'], path=self._get_path_from_module(module)), "Uploading manifest", self._log_file)
+        self._update_manifest(module, pkg_name)
         self._sync_instances('deploy')
-        os.close(manifest)
         self._start_autoscale()
         # FIXME execute postdeploy
         print('post deploy')
