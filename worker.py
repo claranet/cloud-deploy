@@ -54,10 +54,8 @@ class Worker:
 
 
     def update_status(self, status, message=None):
-        #self._task['status'] = task_status
-        #if message:
-        #    self._task['message'] = message
         self.job['status'] = status
+        self.job['message'] = message
         self._db.jobs.update({ '_id': self.job['_id']}, {'$set': {'status': status, 'message': message, 'updated_at': datetime.datetime.now()}})
 
     def module_initialized(self, module_name):
@@ -74,9 +72,10 @@ class Worker:
 
     def _format_notif(self):
         title = "App: {app_name} - {action} : {status}".format(app_name=self.app['name'], action=self.job['command'], status=self.job['status'])
-        message = "Application: {app_name}\nEnvironment: {env}\nAction: {action}\nStatus: {status}".format(env=self.app['env'], app_name=self.app['name'], action=self.job['command'], status=self.job['status'])
-        if 'error_message' in self.job.keys():
-            message = "{message}\nError: {error_message}".format(message=message, error_message=self.job['error_message'])
+        message = "Application: {app_name}\nEnvironment: {env}\nAction: {action}\nStatus: {status}\nMessage: {message}".format(env=self.app['env'], \
+                app_name=self.app['name'], \
+                action=self.job['command'], \
+                status=self.job['status'], message=self.job['message'])
         return title, message
 
 

@@ -1,5 +1,5 @@
+import os
 from fabric.api import run, sudo, task, env, put
-from boto import ec2
 from commands.tools import GCallException, find_ec2_instances
 from jinja2 import Environment, FileSystemLoader
 
@@ -15,6 +15,7 @@ def deploy(bucket_s3):
     template.render(bucket_s3=bucket_s3).stream(name='bootstrap').dump(bootstrap_path)
     sudo('rm -f /tmp/boostrap.sh')
     put('%s' % bootstrap_path, '/tmp/bootstrap.sh')
+    os.remove(bootstrap_path)
     sudo('chmod +x /tmp/bootstrap.sh')
     sudo('/tmp/bootstrap.sh')
 

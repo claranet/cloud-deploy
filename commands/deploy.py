@@ -11,7 +11,6 @@ from commands.tools import GCallException, gcall, log, find_ec2_instances
 from commands.initrepo import InitRepo
 from boto.ec2 import autoscale
 import boto.s3
-import jinja
 import base64
 
 ROOT_PATH = os.path.dirname(os.path.realpath(__file__))
@@ -92,7 +91,7 @@ class Deploy():
         hosts = find_ec2_instances(self._app['name'], self._app['env'], self._app['role'], self._app['region'])
         task_name = "deploy:{0}".format(self._config['bucket_s3'])
         if len(hosts) > 0:
-            cmd = "/usr/local/bin/fab -i {key_path} set_hosts:ghost_app={app},ghost_env={env},ghost_role={role},region={aws_region},s3_bucket={bucket} {0}".format(task_name, \
+            cmd = "/usr/local/bin/fab -i {key_path} set_hosts:ghost_app={app},ghost_env={env},ghost_role={role},region={aws_region} {0}".format(task_name, \
                     key_path=self._config['key_path'], app=self._app['name'], env=self._app['env'], role=self._app['role'], aws_region=self._app['region'])
             gcall(cmd, "Updating current instances", self._log_file)
         else:
@@ -104,7 +103,7 @@ class Deploy():
         gcall("tar cvzf ../%s . > /dev/null" % pkg_name, "Creating package: %s" % pkg_name, self._log_file)
         gcall("aws s3 cp ../{0} s3://{bucket_s3}{path}/".format(pkg_name, \
                 bucket_s3=self._config['bucket_s3'], path=self._get_path_from_module(module)), "Uploading package: %s" % pkg_name, self._log_file)
-        gcall("rm -rf ../{0}".format(pkg_name), "Deleting local package: %s" % pkg_name, self._log_file)
+        gcall("rm -f ../{0}".format(pkg_name), "Deleting local package: %s" % pkg_name, self._log_file)
         return pkg_name
 
     def _purge_old_modules(self, module):
