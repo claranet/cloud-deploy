@@ -5,7 +5,7 @@ import calendar
 import time
 import shutil
 import tempfile
-from sh import git,bash
+from sh import git
 from pymongo import MongoClient, ASCENDING, DESCENDING
 from commands.tools import GCallException, gcall, log, find_ec2_instances
 from commands.initrepo import InitRepo
@@ -188,14 +188,15 @@ class Deploy():
         print('pre deploy')
         # Execute buildpack
         if 'build_pack' in module:
-            print('execute buildpack')
+            print('Buildpack: Creating')
             buildpack_source = base64.b64decode(module['build_pack'])
-            buildpack, buildpack_path = tempfile.mkstemp()
+            buildpack, buildpack_path = tempfile.mkstemp(dir=module['path'])
             if sys.version > '3':
                 os.write(buildpack, bytes(buildpack_source, 'UTF-8'))
             else:
                 os.write(buildpack, buildpack_source)
-            gcall("bash "+buildpack_path,'Buildpack execute' ,self._log_file)
+            os.close(buildpack)
+            gcall("cd "+buildpack_path+"; bash "+buildpack_path,'Buildpack: Execute' ,self._log_file)
         # Store postdeploy script in tarball
         if 'post_deploy' in module:
             postdeploy_source = base64.b64decode(module['post_deploy'])
