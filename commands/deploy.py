@@ -190,13 +190,13 @@ class Deploy():
         if 'build_pack' in module:
             print('Buildpack: Creating')
             buildpack_source = base64.b64decode(module['build_pack'])
-            buildpack, buildpack_path = tempfile.mkstemp(dir=module['path'])
+            buildpack, buildpack_path = tempfile.mkstemp(dir=self._get_path_from_module(module))
             if sys.version > '3':
                 os.write(buildpack, bytes(buildpack_source, 'UTF-8'))
             else:
                 os.write(buildpack, buildpack_source)
             os.close(buildpack)
-            gcall("cd "+buildpack_path+"; bash "+buildpack_path,'Buildpack: Execute' ,self._log_file)
+            gcall("cd "+self._get_path_from_module(module)+"; bash "+buildpack_path,'Buildpack: Execute' ,self._log_file)
         # Store postdeploy script in tarball
         if 'post_deploy' in module:
             postdeploy_source = base64.b64decode(module['post_deploy'])
