@@ -8,7 +8,7 @@ def purge(pkg_name):
     sudo('rm -rf /ghost/{0}'.format(pkg_name))
 
 @task
-def deploy(bucket_s3):
+def deploy(bucket_s3, module):
     bootstrap, bootstrap_path = tempfile.mkstemp()
     jinja_env = Environment(loader=FileSystemLoader('scripts'))
     template = jinja_env.get_template('bootstrap.sh')
@@ -17,7 +17,7 @@ def deploy(bucket_s3):
     put('%s' % bootstrap_path, '/tmp/bootstrap.sh')
     os.remove(bootstrap_path)
     sudo('chmod +x /tmp/bootstrap.sh')
-    sudo('/tmp/bootstrap.sh')
+    sudo('/tmp/bootstrap.sh %s' % module)
 
 @task
 def set_hosts(ghost_app=None, ghost_env=None, ghost_role=None, region=None):
