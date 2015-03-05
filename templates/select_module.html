@@ -1,0 +1,28 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+<title>Deploy Module</title>
+<meta charset="UTF-8" />
+<link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='reset.css')}}">
+<link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='structure.css')}}">
+</head>
+
+<body>
+<form class="box login" method="POST" action="/create-job"
+    enctype="multipart/form-data">
+	<fieldset class="boxBody">
+
+	  <label>Choisir un module</label>
+      <select name="module-name">
+       {% for module in modules %}
+       <option>{{module['name']}}</option>
+       {% endfor %}
+      </select>
+      <input type=hidden value={{id}} name="app-id">
+	</fieldset>
+	<footer>
+        	</footer>
+	<input type="submit" class="btnLogin" value="Register" tabindex="">
+</form>
+</body>
+</html>

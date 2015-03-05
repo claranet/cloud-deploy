@@ -24,11 +24,39 @@ def convert_to_base64(script):
     return result
 
 app = Flask(__name__)
+headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
+url = 'http://localhost:5000/apps'
 
 @app.route('/app_form')
 def req():
     return render_template('app_form.html',types=aws_data.instance_type,
             roles=instance_role.role, envs=env.env, vpcs=get_vpc())
+
+
+@app.route('/deploy')
+def select_app():
+    return render_template('select_app.html',apps=requests.get(url, headers=headers, auth=('api','api')).json()['_items'])
+
+@app.route('/module-deploy', methods=['POST'])
+def select_module():
+    modules = requests.get(url+'/'+request.form['_id'], headers=headers, auth=('api','api')).json()['modules']
+    return render_template('select_module.html',id=request.form['_id'], modules=modules)
+
+
+@app.route('/create-job', methods=['POST'])
+def create_job():
+    job = {}
+    job['user']='web'
+    job['command']='deploy'
+    job['app_id']=request.form['app-id']
+    module = {}
+    module['name']=request.form['module-name']
+    modules = []
+    modules.append(module)
+    job['modules']=modules
+    result = requests.post(url='http://localhost:5000/jobs',data=json.dumps(job), headers=headers, auth=('api','api'))
+    resp = make_response(result.content+"</br><a href='/deploy'>return to deploy page</a>")
+    return resp
 
 
 @app.route('/result', methods=['POST'])
@@ -53,9 +81,7 @@ def res():
     #app['autoscale'] = autoscale
     #app['build_infos'] = build_infos
     app['modules'] = [module]
-    print app
-    headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
-    url = 'http://localhost:5000/apps'
+    #print app
     eve_response = requests.post(url, data=json.dumps(app), headers=headers, auth=('api','api'))
     print(eve_response.content)
     resp = make_response(eve_response.content+"</br><a href='/app_form'>return</a>")
