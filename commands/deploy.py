@@ -200,7 +200,7 @@ class Deploy():
         # Store postdeploy script in tarball
         if 'post_deploy' in module:
             postdeploy_source = base64.b64decode(module['post_deploy'])
-            with open(self.get_path_from_module(module) + '/postdeploy', 'w') as f:
+            with open(self._get_path_from_module(module) + '/postdeploy', 'w') as f:
                 if sys.version > '3':
                     f.write(bytes(postdeploy_source, 'UTF-8'))
                 else:
