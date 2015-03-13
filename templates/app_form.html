@@ -1,0 +1,75 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+<title>Simple Login Form</title>
+<meta charset="UTF-8" />
+<meta name="Designer" content="PremiumPixels.com">
+<meta name="Author" content="$hekh@r d-Ziner, CSSJUNTION.com">
+<link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='reset.css')}}">
+<link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='structure.css')}}">
+</head>
+
+<body>
+<form class="box login" method="POST" action="result"
+    enctype="multipart/form-data">
+<!--<form class="box login" method="POST" action="http://localhost:5000/apps"
+    enctype="multipart/form-data" >-->
+	<fieldset class="boxBody">
+      <h2 align=center>App</h2>
+	  <label>Name</label>
+	  <input type="text" tabindex="1" placeholder="Application Name" name="name" required>
+
+	  <label>Region</label>
+      <select name="region">
+          <option>eu-west-1</option>
+          <option>us-east-1</option>
+      </select>
+	  <label>Instance Type</label>
+      <select name="instance_type">
+       {% for it in types %}
+            <option>{{it}}</option>
+       {% endfor %}
+      </select>
+	  <label>Env</label>
+      <select name="env">
+       {% for env in envs %}
+            <option>{{env}}</option>
+       {% endfor %}
+      </select>
+
+	  <label>Role</label>
+      <select name="role">
+       {% for role in roles %}
+            <option>{{role}}</option>
+       {% endfor %}
+      </select>
+      <label>VPC</label>
+      <select name="vpc_id">
+       {% for vpc in vpcs %}
+            <option>{{vpc}}</option>
+       {% endfor %}
+      </select>
+        <h3 align=center>Module</h3>
+        <label>Name</label>
+        <input type="text" tabindex="" placeholder="Module Name" name="module-name" required>
+        <label>Git repository</label>
+        <input type="text" tabindex="" placeholder="https://github.com/test/test"  name="module-git_repo" required>
+        <label>Path</label>
+        <input type="text" tabindex="" placeholder="/var/www/test"  name="module-path" required>
+	    <label>Scope</label>
+        <select name="module-scope"  tabindex="">
+            <option>code</option>
+            <option>system</option>
+        </select>
+        <label>Buildback</label>
+        <input type="file" tabindex=""  name="module-build_pack" required>
+        <label>Post deploy</label>
+        <input type="file" tabindex=""  name="module-post_deploy" required>
+
+	</fieldset>
+	<footer>
+        	</footer>
+	<input type="submit" class="btnLogin" value="Register" tabindex="">
+</form>
+</body>
+</html>

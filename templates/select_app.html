@@ -1,0 +1,27 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+<title>Deploy</title>
+<meta charset="UTF-8" />
+<link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='reset.css')}}">
+<link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='structure.css')}}">
+</head>
+
+<body>
+<form class="box login" method="POST" action="module-deploy"
+    enctype="multipart/form-data">
+	<fieldset class="boxBody">
+
+	  <label>Choisir une application</label>
+      <select name="_id">
+       {% for app in apps %}
+       <option value="{{app['_id']}}">{{app['name']}}</option>
+       {% endfor %}
+      </select>
+	</fieldset>
+	<footer>
+        	</footer>
+	<input type="submit" class="btnLogin" value="Register" tabindex="">
+</form>
+</body>
+</html>
