@@ -83,27 +83,9 @@ class Packer:
         if not os.path.isdir('/tmp/root'):
             os.makedirs('/tmp/root')
         try:
-            result = packer.build(self.packer_file_path)
-            print(result)
+            result = packer.build(self.packer_file_path,_out='/tmp/packer.out')
             ami = re.findall('ami-[a-z0-9]*$', result.rstrip())[0]
         except sh.ErrorReturnCode as e:
-            print("---- ERROR ----\n" + e.stdout + "\n" + e.stderr)
             ami = "ERROR"
         #ami = "DEV in progress"
         return ami
-
-json_datas = {
-    'region': 'eu-west-1',
-    'ami_name': 'cegos.apache-php.frontend.generated-ami.'+time.strftime("%Y%m%d-%H%M%S"),
-    'source_ami': 'ami-cd36b0ba',
-    'instance_type': 't2.micro',
-    'ssh_username': 'admin',
-    'vpc_id': 'vpc-09bb696c',
-    'subnet_id': 'subnet-79850e1c',
-    'associate_public_ip_address': '1'
-}
-datas = json.dumps(json_datas, sort_keys=True, indent=4, separators=(',', ': '))
-
-if __name__ == "__main__":
-    builder = Packer(packer_config=datas)
-    print(builder.build_image())
