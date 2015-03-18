@@ -16,8 +16,9 @@ queue = Queue(connection=redis_conn_queue, default_timeout=3600)
 
 #FIXME: Implement modules update (reinitialized ?)
 def pre_update_app(updates, original):
-   print(updates)
-   print(original)
+    if 'modules' in updates:
+        for module in updates['modules']:
+            module['initialized'] = False
    
 
 #FIXME: Implement (or not ?) application replacement
