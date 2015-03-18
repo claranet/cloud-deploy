@@ -11,7 +11,7 @@ import re
 PACKER_JSON_PATH="/tmp/packer/"
 SALT_LOCAL_TREE="/tmp/salt/"
 
-logging.basicConfig(filename="packer.log")
+logging.basicConfig(filename="/tmp/packer.log")
 
 class Packer:
     def __init__(self, packer_config):
