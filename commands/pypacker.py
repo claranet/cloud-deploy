@@ -84,7 +84,7 @@ class Packer:
         if not os.path.isdir('/tmp/root'):
             os.makedirs('/tmp/root')
         try:
-            result = packer.build(self.packer_file_path,_out='/tmp/packer.out')
+            result = packer.build(self.packer_file_path)
             ami = re.findall('ami-[a-z0-9]*$', result.rstrip())[0]
         except sh.ErrorReturnCode as e:
             ami = "ERROR"
