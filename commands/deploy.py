@@ -111,7 +111,7 @@ class Deploy():
         if len(histories) > 4:
             to_delete = histories[3]
             task_name = "purge:{0}".format(to_delete)
-            gcall("/usr/local/bin/fab -i {key_path} set_hosts:ghost_app={app},ghost_env={env},ghost_role={role},region={aws_region} {0}".format(task_name, **self._app), "Purging package: %s" % pkg_name)
+            gcall("/usr/local/bin/fab -i {1} set_hosts:ghost_app={app},ghost_env={env},ghost_role={role},region={aws_region} {0}".format(task_name, self._config['key_path'], **self._app), "Purging package: %s" % pkg_name)
 
     def _get_module_revision(self, module_name):
         for module in self._job['modules']:
