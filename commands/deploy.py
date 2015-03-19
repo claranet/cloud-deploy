@@ -134,9 +134,16 @@ class Deploy():
             for module in self._apps_modules:
                 self._execute_deploy(module)
 
-            self._worker.update_status("done", message="Deployment OK")
+            module_list = []
+            for module in self._apps_modules:
+                if 'name' in module:
+                    module_list.append(module['name'])
+
+            str = ', '
+            module_list = str.join(module_list)
+            self._worker.update_status("done", message="Deployment OK: [{0}]".format(module_list))
         except GCallException as e:
-            self._worker.update_status("failed", message=str(e))
+            self._worker.update_status("failed", message="Deployment Failed: [{0}]\n{1}".format(module_list, str(e)))
 
     def _update_manifest(self, module, package):
         key_path = self._get_path_from_app() + '/MANIFEST'
