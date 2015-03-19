@@ -24,11 +24,7 @@ class Packer:
             os.makedirs(SALT_LOCAL_TREE)
         os.makedirs(SALT_LOCAL_TREE + self.unique)
         logging.debug("Getting Salt Morea Formulas")
-<<<<<<< HEAD
         git.clone(["git@bitbucket.org:morea/morea-salt-formulas.git", SALT_LOCAL_TREE + self.unique + '/'])
-=======
-        git.clone(["bitbucket.org:morea/morea-salt-formulas.git", SALT_LOCAL_TREE + self.unique + '/'])
->>>>>>> 3b5e8fd477ea244addc1713b11a758f1524417cf
 
     def _build_salt_top(self, params):
         self.salt_path = SALT_LOCAL_TREE + self.unique + '/salt'
