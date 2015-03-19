@@ -61,7 +61,7 @@ if [ $? -ne 0 ]; then
     exit_deployment 10
 fi
 # Deploy only one module
-if [ -z "$1" ]; then
+if [ -n "$1" ]; then
     MODULE=$(find_module $1)
     deploy_module $MODULE
     exit_deployment 0
