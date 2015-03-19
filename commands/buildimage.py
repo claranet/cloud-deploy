@@ -2,6 +2,7 @@ import time
 import json
 from commands.pypacker import Packer
 from commands.tools import log
+import re
 
 class Buildimage():
     _app = None
