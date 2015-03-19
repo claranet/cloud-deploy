@@ -2,6 +2,7 @@ import time
 import json
 from commands.pypacker import Packer
 from commands.tools import log
+import re
 
 class Buildimage():
     _app = None
@@ -32,6 +33,8 @@ class Buildimage():
     def _format_salt_top_from_app_features(self):
         top = []
         for i in self._app['features']:
+            if re.search('^php-(.*)|5-(.*)',i['name']):
+                continue
             top.append(i['name'].encode('utf-8'))
         return top
 
