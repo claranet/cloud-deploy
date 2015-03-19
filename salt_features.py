@@ -6,7 +6,10 @@ recipes = { 'type': 'dict', 'allowed':[
     {'name':'apache2','version':'2.4'},
     {'name':'php5','version':'5.5'},
     {'name':'php5','version':'5.4'},
-    {'name':'php5','version':'5.6'}
+    {'name':'php5','version':'5.6'},
+    {'name':'varnish'},
+    {'name':'hhvm'}
+
 ]
 
 }
