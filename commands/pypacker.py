@@ -15,6 +15,7 @@ logging.basicConfig(filename="packer.log")
 
 class Packer:
     def __init__(self, packer_config):
+        print("Packer __init__ start")
         self.packer_config = json.loads(packer_config)
         self.unique = str(uuid4())
         if not os.path.exists(PACKER_JSON_PATH):
@@ -23,7 +24,7 @@ class Packer:
             os.makedirs(SALT_LOCAL_TREE)
         os.makedirs(SALT_LOCAL_TREE + self.unique)
         logging.debug("Getting Salt Morea Formulas")
-        git.clone(["https://apestel:***REMOVED***@bitbucket.org/morea/morea-salt-formulas.git", SALT_LOCAL_TREE + self.unique + '/'])
+        git.clone(["git@bitbucket.org:morea/morea-salt-formulas.git", SALT_LOCAL_TREE + self.unique + '/'])
 
     def _build_salt_top(self, params):
         self.salt_path = SALT_LOCAL_TREE + self.unique + '/salt'
