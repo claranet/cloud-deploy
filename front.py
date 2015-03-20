@@ -27,23 +27,23 @@ app = Flask(__name__)
 headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
 url = 'http://localhost:5000/apps'
 
-@app.route('/app_form')
+@app.route('/web/app_form')
 def req():
     return render_template('app_form.html',types=aws_data.instance_type,
             roles=instance_role.role, envs=env.env, vpcs=get_vpc())
 
 
-@app.route('/deploy')
+@app.route('/web/deploy')
 def select_app():
     return render_template('select_app.html',apps=requests.get(url, headers=headers, auth=('api','api')).json()['_items'])
 
-@app.route('/module-deploy', methods=['POST'])
+@app.route('/web/module-deploy', methods=['POST'])
 def select_module():
     modules = requests.get(url+'/'+request.form['_id'], headers=headers, auth=('api','api')).json()['modules']
     return render_template('select_module.html',id=request.form['_id'], modules=modules)
 
 
-@app.route('/create-job', methods=['POST'])
+@app.route('/web/create-job', methods=['POST'])
 def create_job():
     job = {}
     job['user']='web'
@@ -59,7 +59,7 @@ def create_job():
     return resp
 
 
-@app.route('/result', methods=['POST'])
+@app.route('/web/result', methods=['POST'])
 def res():
     app = {}
     module = {}
