@@ -43,7 +43,7 @@ function find_module() {
         MODULE_TAR=$(echo $line | awk -F':' '{print $2}')
         MODULE_PATH=$(echo $line | awk -F':' '{print $3}')
 	    if [ "$1" == "$MODULE_NAME" ]; then
-            deploy_module $MODULE_NAME $MODULE_TAR $MODULE_PATH
+            echo $MODULE_NAME $MODULE_TAR $MODULE_PATH
         fi
     done
 }
@@ -61,7 +61,7 @@ if [ $? -ne 0 ]; then
     exit_deployment 10
 fi
 # Deploy only one module
-if [ -z "$1" ]; then
+if [ -n "$1" ]; then
     MODULE=$(find_module $1)
     deploy_module $MODULE
     exit_deployment 0

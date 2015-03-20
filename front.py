@@ -40,7 +40,11 @@ def select_app():
 @app.route('/web/module-deploy', methods=['POST'])
 def select_module():
     modules = requests.get(url+'/'+request.form['_id'], headers=headers, auth=('api','api')).json()['modules']
-    return render_template('select_module.html',id=request.form['_id'], modules=modules)
+    code_modules=[]
+    for module in modules:
+        if module['scope'] == 'code':
+            code_modules.append(module)
+    return render_template('select_module.html',id=request.form['_id'], modules=code_modules)
 
 
 @app.route('/web/create-job', methods=['POST'])

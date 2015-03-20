@@ -109,9 +109,12 @@ class Deploy():
     def _purge_old_modules(self, module):
         histories = list(self._worker._db.deploy_histories.find({'app_id': self._app['_id'], 'module': module['name']}).sort('timestamp', DESCENDING).limit(5))
         if len(histories) > 4:
-            to_delete = histories[3]
-            task_name = "purge:{0}".format(to_delete)
-            gcall("/usr/local/bin/fab -i {key_path} set_hosts:ghost_app={app},ghost_env={env},ghost_role={role},region={aws_region} {0}".format(task_name, **self._app), "Purging package: %s" % pkg_name)
+            if 'package' in histories[3]:
+                to_delete = histories[3]['package']
+                task_name = "purge:{0}".format(to_delete)
+                cmd = "/usr/local/bin/fab -i {key_path} set_hosts:ghost_app={app},ghost_env={env},ghost_role={role},region={aws_region} {0}".format(task_name, \
+                        key_path=self._config['key_path'], app=self._app['name'], env=self._app['env'], role=self._app['role'], aws_region=self._app['region'])
+                gcall(cmd, "Purging module", self._log_file)
 
     def _get_module_revision(self, module_name):
         for module in self._job['modules']:
@@ -131,9 +134,16 @@ class Deploy():
             for module in self._apps_modules:
                 self._execute_deploy(module)
 
-            self._worker.update_status("done", message="Deployment OK")
+            module_list = []
+            for module in self._apps_modules:
+                if 'name' in module:
+                    module_list.append(module['name'])
+
+            str = ', '
+            module_list = str.join(module_list)
+            self._worker.update_status("done", message="Deployment OK: [{0}]".format(module_list))
         except GCallException as e:
-            self._worker.update_status("failed", message=str(e))
+            self._worker.update_status("failed", message="Deployment Failed: [{0}]\n{1}".format(module_list, str(e)))
 
     def _update_manifest(self, module, package):
         key_path = self._get_path_from_app() + '/MANIFEST'
