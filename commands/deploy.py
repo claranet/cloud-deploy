@@ -124,8 +124,15 @@ class Deploy():
                 return 'master'
 
     def execute(self):
+        self._apps_modules = self._find_modules_by_name(self._job['modules'])
+        module_list = []
+        for module in self._apps_modules:
+            if 'name' in module:
+                module_list.append(module['name'])
+        split_comma = ', '
+        module_list = split_comma.join(module_list)
+        print(module_list)
         try:
-            self._apps_modules = self._find_modules_by_name(self._job['modules'])
             for module in self._apps_modules:
                 if not module['initialized']:
                     self._initialize_module(module)
@@ -134,13 +141,11 @@ class Deploy():
             for module in self._apps_modules:
                 self._execute_deploy(module)
 
-            module_list = []
             for module in self._apps_modules:
                 if 'name' in module:
+                    print("Module: {0} - {1}".format(module, module['name']))
                     module_list.append(module['name'])
 
-            str = ', '
-            module_list = str.join(module_list)
             self._worker.update_status("done", message="Deployment OK: [{0}]".format(module_list))
         except GCallException as e:
             self._worker.update_status("failed", message="Deployment Failed: [{0}]\n{1}".format(module_list, str(e)))
