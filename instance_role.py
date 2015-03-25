@@ -2,5 +2,6 @@ role = [
 'webfront',
 'varnish',
 'worker',
-'bastion'
+'bastion',
+'webapi'
 ]
