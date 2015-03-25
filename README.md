@@ -1,3 +1,5 @@
+- Necessite une version de Fabric >= 1.10.1 (Bug encoding fixed)
+
 JOB
 {
 	command: "deploy",
