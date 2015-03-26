@@ -42,6 +42,7 @@ class Deploy():
                 for item in self._app['modules']:
                     if 'name' in item and item['name'] == module['name']:
                         modules.append(item)
+        print(modules)
         return modules
 
     def _get_path_from_app(self):
