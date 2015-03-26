@@ -36,11 +36,13 @@ class Deploy():
         # Deal only with first (0) job module for now
 
     def _find_modules_by_name(self, modules):
+        modules = []
         for module in modules:
             if 'name' in module:
                 for item in self._app['modules']:
                     if 'name' in item and item['name'] == module['name']:
-                        yield item
+                        modules.append(item)
+        return modules
 
     def _get_path_from_app(self):
         return "/ghost/{name}/{env}/{role}".format(name=self._app['name'], env=self._app['env'], role=self._app['role'])
@@ -136,7 +138,6 @@ class Deploy():
                 if not module['initialized']:
                     self._initialize_module(module)
 
-            self._apps_modules = self._find_modules_by_name(self._job['modules'])
             for module in self._apps_modules:
                 self._execute_deploy(module)
 
