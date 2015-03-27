@@ -59,7 +59,7 @@ def create_job():
     modules.append(module)
     job['modules']=modules
     result = requests.post(url='http://localhost:5000/jobs',data=json.dumps(job), headers=headers, auth=('api','api'))
-    resp = make_response(result.content+"</br><a href='/deploy'>return to deploy page</a>")
+    resp = make_response(result.content+"</br><a href='/web/deploy'>return to deploy page</a>")
     return resp
 
 
