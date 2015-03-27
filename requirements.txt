@@ -7,5 +7,6 @@ flask-bootstrap
 pymongo
 bcrypt
 pyyaml
+requests
 sh
 six>=1.4.1
