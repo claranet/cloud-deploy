@@ -61,7 +61,7 @@ class Deploy():
         except:
             raise GCallException("Init module: {0} failed, creating directory".format(module['name']))
         os.chdir(path)
-        gcall("git clone {git_repo} {path}".format(git_repo=module['git_repo'], path=path), "Git clone", self._log_file)
+        gcall("git clone --recursive {git_repo} {path}".format(git_repo=module['git_repo'], path=path), "Git clone", self._log_file)
         self._worker.module_initialized(module['name'])
 
     def _set_as_conn(self):

@@ -17,7 +17,7 @@ class InitRepo():
         except:
             raise CallException("Init app, creating directory")
         os.chdir("/ghost/{app}/{env}/{role}".format(**self._app))
-        self._gcall("git clone https://{git_login}:{git_password}@{git_repo}".format(**self._app), "Git clone")
+        self._gcall("git clone --recursive {git_repo}".format(**self._app), "Git clone")
         os.chdir(self._git_repo)
 
     def execute():
