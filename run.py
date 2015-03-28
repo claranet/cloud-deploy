@@ -1,6 +1,6 @@
 from flask import abort
 from bson.objectid import ObjectId
-from flask.ext.bootstrap import Bootstrap
+from flask_bootstrap import Bootstrap
 from redis import Redis
 from rq import Queue
 from rq_dashboard import RQDashboard

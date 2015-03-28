@@ -11,3 +11,4 @@ src/*.egg-info
 .ropeproject
 *.swp
 config.yml
+venv-ghost
