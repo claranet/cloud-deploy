@@ -69,7 +69,7 @@ class Rollback():
         key.set_contents_from_filename(manifest_path)
 
     def _get_deploy_infos(deploy_id):
-        deploy_infos = self.worker._db.deploy_histories.find_one({'_id': deploy_id}))
+        deploy_infos = self.worker._db.deploy_histories.find_one({'_id': deploy_id})
         if deploy_infos:
             module = {}
             module['path'] = deploy_infos['module_path']
