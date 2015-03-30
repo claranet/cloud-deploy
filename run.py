@@ -50,14 +50,15 @@ def pre_insert_job(items):
     app = apps.find_one({'_id': ObjectId(app_id)})
     if not app:
         abort(404)
-    for module in items[0]['modules']:
-        not_exist = True
-        for mod in app['modules']:
-            print('app module name is: '+mod['name'])
-            if module['name'] == mod['name']:
-                not_exist = False
-        if not_exist:
-            abort(422)
+    if items[0].get('command') == 'deploy':
+        for module in items[0]['modules']:
+            not_exist = True
+            for mod in app['modules']:
+                print('app module name is: '+mod['name'])
+                if 'name' in module and module['name'] == mod['name']:
+                    not_exist = False
+            if not_exist:
+                abort(422)
     if items[0]['command'] == 'build_image':
         if not ('build_infos' in app.viewkeys()):
             abort(422)
@@ -68,6 +69,7 @@ def pre_insert_job(items):
     #if job:
     #    abort(422)
     items[0]['status'] = 'init'
+    items[0]['message'] = 'Initializing job'
 
 def post_insert_job(items):
     async_work = worker.Worker()

@@ -1,6 +1,11 @@
 import time
 import json
+import os
+import sys
+import tempfile
+import boto.s3
 from pymongo import MongoClient, ASCENDING, DESCENDING
+from bson.objectid import ObjectId
 from commands.tools import GCallException, gcall, log, find_ec2_instances
 
 ROOT_PATH = os.path.dirname(os.path.realpath(__file__))
@@ -9,12 +14,14 @@ class Rollback():
     _app = None
     _job = None
     _log_file = -1
+    _config = None
 
     def __init__(self, worker):
         self._app = worker.app
         self._job = worker.job
         self._db = worker._db
         self._worker = worker
+        self._config = worker._config
         self._log_file = worker.log_file
 
     def _find_modules_by_name(self, modules):
@@ -68,8 +75,8 @@ class Rollback():
         os.close(manifest)
         key.set_contents_from_filename(manifest_path)
 
-    def _get_deploy_infos(deploy_id):
-        deploy_infos = self.worker._db.deploy_histories.find_one({'_id': deploy_id})
+    def _get_deploy_infos(self, deploy_id):
+        deploy_infos = self._db.deploy_histories.find_one({'_id': ObjectId(deploy_id)})
         if deploy_infos:
             module = {}
             module['path'] = deploy_infos['module_path']
@@ -99,7 +106,7 @@ class Rollback():
     def execute(self):
         log("Rollbacking module", self._log_file)
         if 'options' in self._job:
-            if len(self._job['options'] > 0):
+            if len(self._job['options']) > 0:
                 deploy_id = self._job['options'][0]
                 try:
                     self._execute_rollback(deploy_id)

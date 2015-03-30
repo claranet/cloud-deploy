@@ -9,7 +9,6 @@ from redis import Redis
 from rq import get_current_job, Connection
 from pymongo import MongoClient
 from bson.objectid import ObjectId
-from pprint import pprint
 from notification import Notification
 import os
 
@@ -85,7 +84,8 @@ class Worker:
         subject, body = self._format_notif()
         log = "{log_path}/{job_id}.txt".format(log_path=LOG_PATH, job_id=self._worker_job.id)
         for mail in self.app['log_notifications']:
-            notif.send_mail(From=MAIL_LOG_FROM, To=mail, subject=subject, body=body, attachments=[log])
+            #notif.send_mail(From=MAIL_LOG_FROM, To=mail, subject=subject, body=body, attachments=[log])
+            pass
 
 
     def execute(self, job_id):

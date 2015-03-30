@@ -25,6 +25,7 @@ class Deploy():
     _as_conn = None
     _as_group = None
     _worker = None
+    _config = None
 
     def __init__(self, worker):
         self._app = worker.app
