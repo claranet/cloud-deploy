@@ -1,6 +1,6 @@
 jobs_schema = {
 'command': {'type':'string',
-    'allowed':['deploy','buildimage','maintenance','createinstance','destroyinstance'],
+            'allowed':['deploy','buildimage','maintenance', 'rollback'],
             'required': True},
 'app_id' : {'type': 'string',
             'regex':'^[a-f0-9]{24}$',
