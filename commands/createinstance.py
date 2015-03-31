@@ -1,7 +1,7 @@
 from commands.tools import log
 from base64 import b64encode
 from fabric.api import *
-from fabric.colors import green as _green, yellow as _yellow
+from fabric.colors import green as _green, yellow as _yellow, red as _red
 import boto
 import boto.ec2
 import os
@@ -33,19 +33,19 @@ class Createinstance():
         root_ghost_path=os.path.dirname(os.path.dirname(os.path.realpath(os.path.        realpath(__file__))))
 
         log(_green("STATE: Started"), self._log_file)
-        log(_yellow("INFO: Creating User-Data"), self._log_file)
+        log(_yellow(" INFO: Creating User-Data"), self._log_file)
 
-        log(_yellow("INFO: Bootstrap path: %s/scripts" % root_ghost_path), self._log_file)
+        log(_yellow(" INFO: Bootstrap path: %s/scripts" % root_ghost_path), self._log_file)
         loader=FileSystemLoader('%s/scripts' % root_ghost_path)
         jinja_env = Environment(loader=loader)
         template = jinja_env.get_template('bootstrap.sh')
         userdata = b64encode(template.render(bucket_s3=self._config['bucket_s3']))
         #log(userdata, self._log_file)
 
-        log(_yellow("INFO: Creating EC2 instance"), self._log_file)
+        log(_yellow(" INFO: Creating EC2 instance"), self._log_file)
         if(self._app['ami']):
-            log("AMI: {0}".format(self._app['ami']), self._log_file)
-            log("Region: {0}".format(self._app['region']), self._log_file)
+            log(" CONF: AMI: {0}".format(self._app['ami']), self._log_file)
+            log(" CONF: Region: {0}".format(self._app['region']), self._log_file)
             conn = boto.ec2.connect_to_region(self._app['region'])
             image = self._app['ami']
             interface = boto.ec2.networkinterface.NetworkInterfaceSpecification( \
@@ -65,21 +65,20 @@ class Createinstance():
             conn.create_tags([instance.id], {"role":self._app['role']})
             conn.create_tags([instance.id], {"app":self._app['name']})
             while instance.state == u'pending':
-                log(_yellow("Instance state: %s" % instance.state), self._log_file)
+                log(_yellow("STATE: Instance state: %s" % instance.state), self._log_file)
                 time.sleep(10)
                 instance.update()
 
-            log(_green("Public IP: %s" % instance.ip_address), self._log_file)
-            log(_green("Instance state: %s" % instance.state), self._log_file)
+            log(" CONF: Public IP: %s" % instance.ip_address, self._log_file)
+            self._worker.update_status("done", message="Creating Instance OK: [{0}]\n\nPublic IP: {1}".format(self._app['name'], str(instance.ip_address)))
+            log(_green("STATE: Instance state: %s" % instance.state), self._log_file)
+            log(_green("STATE: End"), self._log_file)
         else:
-            print("No AMI set, please use buildimage before")
+            log(_red("ERROR: No AMI set, please use buildimage before"), self._log_file)
             self._worker.update_status("failed", message="Creating Instance Failed: [{0}]\n{1}".format(self._app['name'], str(e)))
-
+            log(_red("STATE: END"), self._log_file)
 
         return instance.ip_address
 
     def execute(self):
-        ip = self._create_server()
-        self._worker.update_status("done", message="Deployment OK: [{0}]\nPublic IP: {1}".format(self._app['name'], str(ip)))
-
-
+        self._create_server()
