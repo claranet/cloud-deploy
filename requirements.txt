@@ -4,6 +4,7 @@ rq-dashboard
 boto
 flask
 flask-bootstrap
+flask-wtf
 pymongo
 bcrypt
 pyyaml
