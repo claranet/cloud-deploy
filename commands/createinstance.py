@@ -74,7 +74,7 @@ class Createinstance():
                     conn.create_tags([instance.id], {"env":self._app['env']})
                     conn.create_tags([instance.id], {"role":self._app['role']})
                     conn.create_tags([instance.id], {"app":self._app['name']})
-
+                    conn.create_tags([instance.id], {"app_id":self._app['_id']})
                     #Check instance state
                     while instance.state == u'pending':
                         log(_yellow("STATE: Instance state: %s" % instance.state), self._log_file)
