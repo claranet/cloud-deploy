@@ -40,7 +40,6 @@ class Destroyinstance():
             conn.terminate_instances(instance_ids=instances)
 
             self._worker.update_status("done", message="Instance deletion OK: [{0}]".format(self._app['name']))
-            log(_green("STATE: Instance state: %s" % instance.state), self._log_file)
             log(_green("STATE: End"), self._log_file)
         except IOError as e:
             log(_red("I/O error({0}): {1}".format(e.errno, e.strerror)), self._log_file)
