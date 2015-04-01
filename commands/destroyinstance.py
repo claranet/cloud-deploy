@@ -39,13 +39,7 @@ class Destroyinstance():
             log(instances, self._log_file)
             conn.terminate_instances(instance_ids=instances)
 
-            #Check instance state
-            while instance.state != u'terminated':
-                log(_yellow("STATE: Instance state: %s" % instance.state), self._log_file)
-                time.sleep(10)
-                instance.update()
-
-            self._worker.update_status("done", message="Creating Instance OK: [{0}]\n\nPublic IP: {1}".format(self._app['name'], str(instance.ip_address)))
+            self._worker.update_status("done", message="Instance deletion OK: [{0}]".format(self._app['name']))
             log(_green("STATE: Instance state: %s" % instance.state), self._log_file)
             log(_green("STATE: End"), self._log_file)
         except IOError as e:
