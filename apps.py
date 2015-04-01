@@ -44,7 +44,14 @@ apps_schema = {
         }
     },
     # TODO solve storing password in cleartext
-    'ressources': {'type':'list', 'schema':ressources.available}
+    'ressources': {'type':'list', 'schema':ressources.available},
+    'environment_infos': {'type': 'dict', 'schema': {
+        'security_groups' : {'type':'list','schema':{'type':'string', 'regex': '^sg-[a-z0-9]*$'}},
+        'subnet_ids' : {'type':'list','schema':{'type':'string', 'regex': '^subnet-[a-z0-9]*$'}},
+        'instance_profile' : {'type': 'string'},
+        'key_name' : {'type': 'string'}
+        }
+    }
 }
 
 apps = {
