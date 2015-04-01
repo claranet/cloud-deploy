@@ -41,7 +41,7 @@ class Createinstance():
             loader=FileSystemLoader(jinja_templates_path)
             jinja_env = Environment(loader=loader)
             template = jinja_env.get_template('bootstrap.sh')
-            userdata = b64encode(template.render(bucket_s3=self._config['bucket_s3']))
+            userdata = template.render(bucket_s3=self._config['bucket_s3'])
             log(_green("STATE: User-Data Created"), self._log_file)
         else:
             log(_red("WARNING: bootstrap.sh not found, you will not have user-data in your instance. You must use a deployment after this job"), self._log_file)
