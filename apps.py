@@ -1,7 +1,6 @@
 import env
 import code_deploy
 import instance_role
-import salt_features
 import aws_data
 import ressources
 
@@ -10,7 +9,16 @@ apps_schema = {
     'region': {'type': 'string', 'allowed':['us-east-1','eu-west-1']},
     'instance_type': {'type': 'string', 'allowed':aws_data.instance_type},
     'env': {'type': 'string', 'allowed':env.env, 'required':True},
-    'features':{'type':'list', 'schema':salt_features.recipes},
+    'features': {
+        'type': 'list',
+        'schema': {
+            'type':'dict',
+            'schema': {
+                'name' : {'type':'string', 'regex': '^[a-zA-Z0-9]*$', 'required':True},
+                'version' : {'type':'string', 'regex': '^[a-zA-Z0-9\.]*$', 'required':False}
+            }
+        }
+    },
     'role': {'type':'string', 'allowed':instance_role.role,'required':True},
     'ami': {'type':'string', 'regex': '^ami-[a-z0-9]*$', 'readonly':True },
     'vpc_id': {'type':'string', 'regex': '^vpc-[a-z0-9]*$', 'required':True},
