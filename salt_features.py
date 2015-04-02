@@ -8,7 +8,8 @@ recipes = { 'type': 'dict', 'allowed':[
     {'name':'php5','version':'5.4'},
     {'name':'php5','version':'5.6'},
     {'name':'varnish'},
-    {'name':'hhvm'}
+    {'name':'hhvm'},
+    {'name':'solr'}
 
 ]
 
