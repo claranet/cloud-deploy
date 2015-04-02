@@ -3,5 +3,8 @@ role = [
 'varnish',
 'worker',
 'bastion',
-'webapi'
+'webapi',
+'database',
+'search',
+'loadbalancer'
 ]
