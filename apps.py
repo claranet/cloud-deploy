@@ -14,8 +14,8 @@ apps_schema = {
         'schema': {
             'type':'dict',
             'schema': {
-                'name' : {'type':'string', 'regex': '^[a-zA-Z0-9]*$', 'required':True},
-                'version' : {'type':'string', 'regex': '^[a-zA-Z0-9\.]*$', 'required':False}
+                'name' : {'type':'string', 'regex': '^[a-zA-Z0-9\.\-\_]*$', 'required':True},
+                'version' : {'type':'string', 'regex': '^[a-zA-Z0-9\.\-\_]*$', 'required':False}
             }
         }
     },
