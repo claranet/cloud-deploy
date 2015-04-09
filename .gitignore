@@ -12,3 +12,5 @@ src/*.egg-info
 *.swp
 config.yml
 venv-ghost
+.project
+.pydevproject
