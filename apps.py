@@ -46,9 +46,7 @@ apps_schema = {
         'ssh_username': {'type': 'string', 'required':True},
         'source_ami' : {'type': 'string', 'regex': '^ami-[a-z0-9]*$', 'required':True},
         'ami_name' : {'type': 'string', 'required':True},
-        'subnet_id': {'type': 'string','regex': '^subnet-[a-z0-9]*$', 'required':True},
-        'associate_EIP': {'type':'string',
-                          'regex': '^([01]?\\d\\d?|2[0-4]\\d|25[0-5])\\.([01]?\\d\\d?|2[0-4]\\d|25[0-5])\\.([01]?\\d\\d?|2[0-4]\\d|25[0-5])\\.([01]?\\d\\d?|2[0-4]\\d|25[0-5])$'},
+        'subnet_id': {'type': 'string','regex': '^subnet-[a-z0-9]*$', 'required':True}
         }
     },
     # TODO solve storing password in cleartext
