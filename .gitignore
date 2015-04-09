@@ -14,3 +14,4 @@ config.yml
 venv-ghost
 .project
 .pydevproject
+.settings/
