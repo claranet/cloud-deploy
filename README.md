@@ -8,7 +8,7 @@ Checking for updates:
     $ pip-review
 
 Running unit tests:
-    $ python -m doctest -v web_ui/__init__.py
+    $ python -m doctest -v web_ui/*.py
 
 # Deployment
 
