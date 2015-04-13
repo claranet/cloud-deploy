@@ -4,16 +4,12 @@ from eve.auth import BasicAuth
 
 class BCryptAuth(BasicAuth):
 
-    _accounts = [
-        {'user':'api','pass':'api'}
-        ]
+    _accounts = { 'api': 'api' }
 
     def check_auth(self, username, password, allowed_roles, resource, method):
         # use Eve's own db driver; no additional connections/resources are used
-        if sys.version > '3':
-            account = next(item for item in self._accounts if item["user"] == username)
-        else:
-            account = (item for item in self._accounts if item["user"] == username).next()
+        stored_password = self._accounts[username]
+
         #return account and bcrypt.hashpw(password, account['pass']) == account['pass']
-        return account and password == account['pass']
+        return stored_password == password
 
