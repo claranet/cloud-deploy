@@ -14,6 +14,7 @@ class Buildimage():
         self._job = worker.job
         self._db = worker._db
         self._worker = worker
+        self._config = worker._config
         self._log_file = worker.log_file
         self._ami_name = '{0}.{1}'.format(self._app['name'], time.strftime("%Y%m%d-%H%M%S"))
 
@@ -54,7 +55,7 @@ class Buildimage():
         log("Generating a new AMI", self._log_file)
         log(json_packer, self._log_file)
         print("Packer start")
-        pack = Packer(json_packer)
+        pack = Packer(json_packer, self._config)
         print("Packer end")
         ami_id = pack.build_image(self._format_salt_top_from_app_features(), self._format_salt_pillar_from_app_features())
         log("Update app in MongoDB to update AMI: {0}".format(ami_id), self._log_file)
