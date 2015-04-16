@@ -36,6 +36,8 @@ class Buildimage():
         for i in self._app['features']:
             if re.search('^php-(.*)|5-(.*)',i['name']):
                 continue
+            if re.search('^zabbix-(.*)',i['name']):
+                continue
             top.append(i['name'].encode('utf-8'))
         return top
 
