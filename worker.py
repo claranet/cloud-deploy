@@ -83,10 +83,10 @@ class Worker:
         notif = Notification(aws_access_key=ses_settings['aws_access_key'], aws_secret_key=ses_settings['aws_secret_key'], region=ses_settings['region'])
         subject, body = self._format_notif()
         log = "{log_path}/{job_id}.txt".format(log_path=LOG_PATH, job_id=self._worker_job.id)
-	log_stat = os.stat(log)
-	if log_stat.st_size > 5000000:
-		os.system('gzip '+log)
-		log = log+'gz'
+        log_stat = os.stat(log)
+        if log_stat.st_size > 5000000:
+            os.system('gzip '+log)
+            log = log+'gz'
         for mail in self.app['log_notifications']:
             notif.send_mail(From=MAIL_LOG_FROM, To=mail, subject=subject, body=body, attachments=[log])
             pass
