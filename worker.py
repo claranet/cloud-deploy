@@ -86,7 +86,7 @@ class Worker:
         log_stat = os.stat(log)
         if log_stat.st_size > 5000000:
             os.system('gzip '+log)
-            log = log+'gz'
+            log = log+'.gz'
         for mail in self.app['log_notifications']:
             notif.send_mail(From=MAIL_LOG_FROM, To=mail, subject=subject, body=body, attachments=[log])
             pass
