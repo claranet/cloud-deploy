@@ -1,8 +1,9 @@
 import time
 import json
 from commands.pypacker import Packer
-from commands.tools import log
+from commands.tools import log, create_launch_config, generate_userdata
 import re
+import boto.ec2.autoscale
 
 class Buildimage():
     _app = None
@@ -61,5 +62,27 @@ class Buildimage():
         print("Packer end")
         ami_id = pack.build_image(self._format_salt_top_from_app_features(), self._format_salt_pillar_from_app_features())
         log("Update app in MongoDB to update AMI: {0}".format(ami_id), self._log_file)
-        self._update_app_ami(ami_id)
-
+        if ami_id is not "ERROR":
+            self._update_app_ami(ami_id)
+            userdata = None
+            launch_config = None
+            userdata = generate_userdata(self._config['bucket_s3'])
+            if userdata:
+                launch_config = create_launch_config(self._app, userdata)
+                log("launch configuration created.", self._log_file)
+            else:
+                log("ERROR: Cannot generate userdata. The bootstrap.sh file can maybe not be found.", self._log_file)
+                self._worker.update_status("failed")
+            if launch_config:
+                conn = boto.ec2.autoscale.connect_to_region(self._app['region'])
+                as_group = conn.get_all_groups(names=[self._app['autoscale']['name']])[0]
+                setattr(as_group, 'launch_config_name', launch_config.name)
+                as_group.update()
+                log("Autoscaling group [{0}] updated.".format(self._app['autoscale']['name']), self._log_file)
+                self._worker.update_status("done")
+            else:
+                log("ERROR: Cannot update autoscaling group", self._log_file)
+                self._worker.update_status("failed")
+        else:
+            log("ERROR: ami_id not found. The packer process had maybe fail.")
+            self._worker.update_status("failed")

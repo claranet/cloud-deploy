@@ -1,5 +1,11 @@
 from subprocess import call
 from boto import ec2
+import boto.ec2.autoscale
+from boto.ec2.autoscale import LaunchConfiguration
+from boto.ec2.autoscale import AutoScaleConnection
+import time
+from jinja2 import Environment, FileSystemLoader
+import os
 
 class GCallException(Exception):
     def __init__(self, value):
@@ -32,3 +38,46 @@ def find_ec2_instances(ghost_app, ghost_env, ghost_role, region):
 def log(message, fd):
     fd.write("{message}\n".format(message=message))
 
+#def create_launch_config(app, userdata):
+#    d = time.strftime('%d%m%Y-%H%M',time.localtime())
+#    conn = ec2.connect_to_region(app['region'])
+#    launch_config = LaunchConfiguration(connection=conn, \
+#        name="launchconfig.{0}.{1}.{2}.{3}".format(app['env'], app['region'], app['name'], d), \
+#        image_id=app['ami'], key_name=app['environment_infos']['key_name'], \
+#        security_groups=app['environment_infos']['security_groups'], \
+#        user_data=userdata, instance_type=app['instance_type'], kernel_id=None, \
+#        ramdisk_id=None, block_device_mappings=None, \
+#        instance_monitoring=False, spot_price=None, \
+#        instance_profile_name=app['environment_infos']['instance_profile'], ebs_optimized=False, \
+#        associate_public_ip_address=True, volume_type=None, \
+#        delete_on_termination=True, iops=None, \
+#        classic_link_vpc_id=None, classic_link_vpc_security_groups=None)
+#    conn.create_launch_configuration(launch_config)
+
+def create_launch_config(app, userdata):
+    d = time.strftime('%d%m%Y-%H%M',time.localtime())
+    launch_config_name = "launchconfig.{0}.{1}.{2}.{3}".format(app['env'], app['region'], app['name'], d)
+    conn = boto.ec2.autoscale.connect_to_region(app['region'])
+    launch_config = LaunchConfiguration(name=launch_config_name, \
+        image_id=app['ami'], key_name=app['environment_infos']['key_name'], \
+        security_groups=app['environment_infos']['security_groups'], \
+        user_data=userdata, instance_type=app['instance_type'], kernel_id=None, \
+        ramdisk_id=None, block_device_mappings=None, \
+        instance_monitoring=False, spot_price=None, \
+        instance_profile_name=app['environment_infos']['instance_profile'], ebs_optimized=False, \
+        associate_public_ip_address=True, volume_type=None, \
+        delete_on_termination=True, iops=None, \
+        classic_link_vpc_id=None, classic_link_vpc_security_groups=None)
+    conn.create_launch_configuration(launch_config)
+    return launch_config
+
+
+def generate_userdata(bucket_s3):
+    root_ghost_path=os.path.dirname(os.path.dirname(os.path.realpath(os.path.realpath(__file__))))
+    jinja_templates_path='%s/scripts' % root_ghost_path
+    if(os.path.exists('%s/bootstrap.sh' % jinja_templates_path)):
+        loader=FileSystemLoader(jinja_templates_path)
+        jinja_env = Environment(loader=loader)
+        template = jinja_env.get_template('bootstrap.sh')
+        userdata = template.render(bucket_s3=bucket_s3)
+        return userdata

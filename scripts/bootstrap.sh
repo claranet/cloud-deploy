@@ -74,3 +74,7 @@ do
     MODULE_PATH=$(echo $line | awk -F':' '{print $3}')
     deploy_module $MODULE_NAME $MODULE_TAR $MODULE_PATH
 done
+#Update Zabbix agent name
+IP=$(curl -s http://169.254.169.254/latest/meta-data/local-ipv4 | tr -s '.' '-')
+sed -i "s/.*Hostname=.*/&-${IP}/g" /etc/zabbix/zabbix_agentd.conf
+service zabbix-agent restart
