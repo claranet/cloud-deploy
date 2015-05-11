@@ -54,12 +54,12 @@ def log(message, fd):
 #        classic_link_vpc_id=None, classic_link_vpc_security_groups=None)
 #    conn.create_launch_configuration(launch_config)
 
-def create_launch_config(app, userdata):
+def create_launch_config(app, userdata, ami_id):
     d = time.strftime('%d%m%Y-%H%M',time.localtime())
     launch_config_name = "launchconfig.{0}.{1}.{2}.{3}".format(app['env'], app['region'], app['name'], d)
     conn = boto.ec2.autoscale.connect_to_region(app['region'])
     launch_config = LaunchConfiguration(name=launch_config_name, \
-        image_id=app['ami'], key_name=app['environment_infos']['key_name'], \
+        image_id=ami_id, key_name=app['environment_infos']['key_name'], \
         security_groups=app['environment_infos']['security_groups'], \
         user_data=userdata, instance_type=app['instance_type'], kernel_id=None, \
         ramdisk_id=None, block_device_mappings=None, \

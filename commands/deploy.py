@@ -217,10 +217,12 @@ class Deploy():
                     f.write(postdeploy_source)
         pkg_name = self._package_module(module, ts, commit)
         self._set_as_conn()
-        self._stop_autoscale()
+        if self._app['autoscale']['name']:
+            self._stop_autoscale()
         self._update_manifest(module, pkg_name)
         self._deploy_module(module)
-        self._start_autoscale()
+        if self._app['autoscale']['name']:
+            self._start_autoscale()
         self._purge_old_modules(module)
         deployment = {'app_id': self._app['_id'], 'job_id': self._job['_id'], 'module': module['name'], 'commit': commit, 'timestamp': ts, 'package': pkg_name, 'module_path': module['path']}
         self._worker._db.deploy_histories.insert(deployment)
