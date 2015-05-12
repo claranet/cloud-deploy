@@ -1,7 +1,7 @@
 import time
 import json
 from commands.pypacker import Packer
-from commands.tools import log, create_launch_config, generate_userdata
+from commands.tools import log, create_launch_config, generate_userdata, check_autoscale_exists, purge_launch_configuration
 import re
 import boto.ec2.autoscale
 
@@ -82,6 +82,10 @@ class Buildimage():
                         setattr(as_group, 'launch_config_name', launch_config.name)
                         as_group.update()
                         log("Autoscaling group [{0}] updated.".format(self._app['autoscale']['name']), self._log_file)
+                        if (purge_launch_configuration(self._app)):
+                            log("Old launch configurations removed for this app", self._log_file)
+                        else:
+                            log("Purge launch configurations failed", self._log_file)
                         self._worker.update_status("done")
                     else:
                         log("ERROR: Cannot update autoscaling group", self._log_file)

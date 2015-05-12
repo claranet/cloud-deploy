@@ -40,7 +40,7 @@ def log(message, fd):
 
 def create_launch_config(app, userdata, ami_id):
     d = time.strftime('%d%m%Y-%H%M',time.localtime())
-    launch_config_name = "launchconfig.{0}.{1}.{2}.{3}".format(app['env'], app['region'], app['name'], d)
+    launch_config_name = "launchconfig.{0}.{1}.{2}.{3}.{4}".format(app['env'], app['region'], app['role'], app['name'], d)
     conn_as = boto.ec2.autoscale.connect_to_region(app['region'])
     launch_config = LaunchConfiguration(name=launch_config_name, \
         image_id=ami_id, key_name=app['environment_infos']['key_name'], \
@@ -69,6 +69,36 @@ def check_autoscale_exists(as_name, region):
     conn_as = boto.ec2.autoscale.connect_to_region(region)
     autoscale = conn_as.get_all_groups(names=[as_name])
     if autoscale:
+        return True
+    else:
+        return False
+
+def purge_launch_configuration(app):
+    conn_as = boto.ec2.autoscale.connect_to_region(app['region'])
+    lcs = []
+    launchconfigs = []
+    lcs = conn_as.get_all_launch_configurations()
+
+    launchconfig_format = launch_config_name = "launchconfig.{0}.{1}.{2}.{3}.".format(app['env'], app['region'], app['role'], app['name'])
+    launchconfigs = []
+
+    for lc in lcs:
+        if launchconfig_format in lc.name:
+            launchconfigs.append(lc)
+    launchconfigs.sort(key=lambda lc: lc.created_time, reverse=True)
+    launchconfigs.pop(0)
+    launchconfigs.pop(0)
+    for lc in launchconfigs:
+        conn_as.delete_launch_configuration(lc.name)
+
+    #Check if the purge works : current_version and current_version -1 are not removed.
+    lcs = []
+    launchconfigs = []
+    lcs = conn_as.get_all_launch_configurations()
+    for lc in lcs:
+        if launchconfig_format in lc.name:
+            launchconfigs.append(lc)
+    if len(launchconfigs) <= 2:
         return True
     else:
         return False

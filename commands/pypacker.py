@@ -89,7 +89,8 @@ class Packer:
         try:
             result = packer.build(self.packer_file_path)
             ami = re.findall('ami-[a-z0-9]*$', result.rstrip())[0]
+            logging.debug(result)
         except sh.ErrorReturnCode as e:
             ami = "ERROR"
-        #ami = "DEV in progress"
+            logging.debug(e)
         return ami
