@@ -67,7 +67,7 @@ class Buildimage():
             if self._app['autoscale']['name']:
                 userdata = None
                 launch_config = None
-                userdata = generate_userdata(self._config['bucket_s3'])
+                userdata = generate_userdata(self._config['bucket_s3'], self._config['ghost_root_path'])
                 if userdata:
                     launch_config = create_launch_config(self._app, userdata, ami_id)
                     log("launch configuration created.", self._log_file)

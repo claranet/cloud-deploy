@@ -72,8 +72,7 @@ def create_launch_config(app, userdata, ami_id):
     return launch_config
 
 
-def generate_userdata(bucket_s3):
-    root_ghost_path=os.path.dirname(os.path.dirname(os.path.realpath(os.path.realpath(__file__))))
+def generate_userdata(bucket_s3, root_ghost_path):
     jinja_templates_path='%s/scripts' % root_ghost_path
     if(os.path.exists('%s/bootstrap.sh' % jinja_templates_path)):
         loader=FileSystemLoader(jinja_templates_path)
