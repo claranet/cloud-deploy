@@ -4,4 +4,5 @@ ses_settings:
     - region: eu-west-1
 bucket_s3: ghost-eu-west-1-***REMOVED***
 key_path: /Users/adrien/secure/my_key.pem
-
+salt_formulas_branch: dev
+ghost_root_path: /usr/local/share/ghost
