@@ -1,4 +1,4 @@
-from commands.tools import log
+from commands.tools import log, create_block_device
 from base64 import b64encode
 from fabric.api import *
 from fabric.colors import green as _green, yellow as _yellow, red as _red
@@ -59,12 +59,16 @@ class Createinstance():
                         groups=self._app['environment_infos']['security_groups'], \
                         associate_public_ip_address=True)
                 interfaces = boto.ec2.networkinterface.NetworkInterfaceCollection(interface)
+                if 'root_block_device' in self._app['environment_infos']:
+                    bdm = create_block_device(self._app['environment_infos']['root_block_device'])
+                else:
+                    bdm = create_block_device({})
                 reservation = conn.run_instances(image_id=self._app['ami'], \
                         key_name=self._app['environment_infos']['key_name'], \
                         network_interfaces=interfaces, \
                         instance_type=self._app['instance_type'], \
                         instance_profile_name=self._app['environment_infos']['instance_profile'], \
-                        user_data=userdata)
+                        user_data=userdata, block_device_map=bdm)
 
                 #Getting instance metadata
                 instance = reservation.instances[0]

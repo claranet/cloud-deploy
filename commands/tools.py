@@ -3,6 +3,7 @@ from boto import ec2
 import boto.ec2.autoscale
 from boto.ec2.autoscale import LaunchConfiguration
 from boto.ec2.autoscale import AutoScaleConnection
+from boto.ec2.blockdevicemapping import EBSBlockDeviceType, BlockDeviceMapping
 import time
 from jinja2 import Environment, FileSystemLoader
 import os
@@ -42,11 +43,15 @@ def create_launch_config(app, userdata, ami_id):
     d = time.strftime('%d%m%Y-%H%M',time.localtime())
     launch_config_name = "launchconfig.{0}.{1}.{2}.{3}.{4}".format(app['env'], app['region'], app['role'], app['name'], d)
     conn_as = boto.ec2.autoscale.connect_to_region(app['region'])
+    if app['environment_infos']['root_block_device']['size']:
+        bdm = create_block_device(app['environment_infos']['root_block_device'])
+    else:
+        bdm = create_block_device()
     launch_config = LaunchConfiguration(name=launch_config_name, \
         image_id=ami_id, key_name=app['environment_infos']['key_name'], \
         security_groups=app['environment_infos']['security_groups'], \
         user_data=userdata, instance_type=app['instance_type'], kernel_id=None, \
-        ramdisk_id=None, block_device_mappings=None, \
+        ramdisk_id=None, block_device_mappings=[bdm], \
         instance_monitoring=False, spot_price=None, \
         instance_profile_name=app['environment_infos']['instance_profile'], ebs_optimized=False, \
         associate_public_ip_address=True, volume_type=None, \
@@ -54,7 +59,6 @@ def create_launch_config(app, userdata, ami_id):
         classic_link_vpc_id=None, classic_link_vpc_security_groups=None)
     conn_as.create_launch_configuration(launch_config)
     return launch_config
-
 
 def generate_userdata(bucket_s3, root_ghost_path):
     jinja_templates_path='%s/scripts' % root_ghost_path
@@ -102,3 +106,18 @@ def purge_launch_configuration(app):
         return True
     else:
         return False
+
+def create_block_device(rbd={}):
+    dev_sda1 = boto.ec2.blockdevicemapping.EBSBlockDeviceType()
+    if 'size' in rbd:
+        dev_sda1.size = rbd['size']
+    else:
+        rbd['size'] = 10
+        dev_sda1.size = rbd['size']
+    bdm = boto.ec2.blockdevicemapping.BlockDeviceMapping()
+    if 'name' in rbd:
+        bdm[rbd['name']] = dev_sda1
+    else:
+        rbd['name'] = "/dev/xvda"
+        bdm[rbd['name']] = dev_sda1
+    return bdm
