@@ -4,6 +4,7 @@ from commands.pypacker import Packer
 from commands.tools import log, create_launch_config, generate_userdata, check_autoscale_exists, purge_launch_configuration
 import re
 import boto.ec2.autoscale
+import boto.ec2
 
 class Buildimage():
     _app = None
@@ -17,13 +18,51 @@ class Buildimage():
         self._worker = worker
         self._config = worker._config
         self._log_file = worker.log_file
-        self._ami_name = '{0}.{1}'.format(self._app['name'], time.strftime("%Y%m%d-%H%M%S"))
+        self._ami_name = "ami.{0}.{1}.{2}.{3}.{4}".format(self._app['env'], self._app['region'], self._app['role'], self._app['name'], time.strftime("%Y%m%d-%H%M%S"))
+
+    def _purge_old_images(self):
+        conn = boto.ec2.connect_to_region(self._app['region'])
+        retention = 5
+        images = []
+        filtered_images = []
+        images = conn.get_all_images(owners="self")
+
+        ami_name_format = "ami.{0}.{1}.{2}.{3}".format(self._app['env'], self._app['region'], self._app['role'], self._app['name'])
+
+        for image in images:
+            #log(image.name, self._log_file)
+            if ami_name_format in image.name:
+                filtered_images.append(image)
+
+        filtered_images.sort(key=lambda img: img.creationDate, reverse=True)
+
+        i = 1
+        while i < retention:
+            filtered_images.pop(0)
+            i += 1
+
+        for image in filtered_images:
+            image.deregister()
+
+        #Check if the purge works : current_version and current_version -1,2,3,4 are not removed.
+        images = []
+        filtered_images = []
+        images = conn.get_all_images(owners="self")
+
+        for image in images:
+            if ami_name_format in image.name:
+                filtered_images.append(image)
+
+        if len(filtered_images) <= retention:
+            return True
+        else:
+            return False
 
     def _format_packer_from_app(self):
         datas = {
-            'region': self._app['region'],
-            'ami_name': self._ami_name,
-            'source_ami': self._app['build_infos']['source_ami'],
+                'region': self._app['region'],
+                'ami_name': self._ami_name,
+                'source_ami': self._app['build_infos']['source_ami'],
             'instance_type': 't2.micro',
             'ssh_username': self._app['build_infos']['ssh_username'],
             'vpc_id': self._app['vpc_id'],
@@ -64,6 +103,10 @@ class Buildimage():
         if ami_id is not "ERROR":
             log("Update app in MongoDB to update AMI: {0}".format(ami_id), self._log_file)
             self._update_app_ami(ami_id)
+            if (self._purge_old_images()):
+                log("Old AMIs removed for this app", self._log_file)
+            else:
+                log("Purge old AMIs failed", self._log_file)
             if self._app['autoscale']['name']:
                 if check_autoscale_exists(self._app['autoscale']['name'], self._app['region']):
                     userdata = None
