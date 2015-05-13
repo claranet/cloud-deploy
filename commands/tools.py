@@ -83,8 +83,7 @@ def purge_launch_configuration(app):
     launchconfigs = []
     lcs = conn_as.get_all_launch_configurations()
 
-    launchconfig_format = launch_config_name = "launchconfig.{0}.{1}.{2}.{3}.".format(app['env'], app['region'], app['role'], app['name'])
-    launchconfigs = []
+    launchconfig_format = "launchconfig.{0}.{1}.{2}.{3}.".format(app['env'], app['region'], app['role'], app['name'])
 
     for lc in lcs:
         if launchconfig_format in lc.name:
@@ -108,7 +107,7 @@ def purge_launch_configuration(app):
         return False
 
 def create_block_device(rbd={}):
-    dev_sda1 = boto.ec2.blockdevicemapping.EBSBlockDeviceType()
+    dev_sda1 = boto.ec2.blockdevicemapping.EBSBlockDeviceType(delete_on_termination=True)
     if 'size' in rbd:
         dev_sda1.size = rbd['size']
     else:
