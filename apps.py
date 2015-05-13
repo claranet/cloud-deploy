@@ -55,7 +55,11 @@ apps_schema = {
         'security_groups' : {'type':'list', 'schema':{'type':'string', 'regex': '^sg-[a-z0-9]*$'}},
         'subnet_ids' : {'type':'list', 'schema':{'type':'string', 'regex': '^subnet-[a-z0-9]*$'}},
         'instance_profile' : {'type': 'string'},
-        'key_name' : {'type': 'string'}
+        'key_name' : {'type': 'string'},
+        'root_block_device': {'type':'dict', 'schema': {
+            'size': {'type':'integer'},
+            'name': {'type':'string', 'regex': '^/[a-z0-9]*/[a-z0-9]*$'}
+            }}
         }
     }
 }
