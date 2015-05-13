@@ -58,7 +58,7 @@ apps_schema = {
         'key_name' : {'type': 'string'},
         'root_block_device': {'type':'dict', 'schema': {
             'size': {'type':'integer'},
-            'name': {'type':'string', 'regex': '^/[a-z0-9]*/[a-z0-9]*$'}
+            'name': {'type':'string', 'regex': '^/[a-z0-9]+/[a-z0-9]+$'}
             }}
         }
     }
