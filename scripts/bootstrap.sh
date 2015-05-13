@@ -14,16 +14,15 @@ ROLE=$(echo $TAGS | jq -r ".Tags[] | { key: .Key, value: .Value } | [.] | from_e
 ENV=$(echo $TAGS | jq -r ".Tags[] | { key: .Key, value: .Value } | [.] | from_entries" | jq -r '.["env"] | select (.!=null)')
 APP=$(echo $TAGS | jq -r ".Tags[] | { key: .Key, value: .Value } | [.] | from_entries" | jq -r '.["app"] | select (.!=null)')
 
-if [ -d /ghost ]; then
-    chown -R admin /ghost
-else
-    mkdir /ghost && chown -R admin.admin /ghost
+if [ ! -d /ghost ]; then
+    mkdir /ghost && chown -R admin:admin /ghost
 fi
 function deploy_module() {
     echo "--------------------------------" >> /tmp/$LOGFILE
     echo "Deploying module $1 in $3" >> /tmp/$LOGFILE
     /usr/local/bin/aws s3 cp s3://$S3_BUCKET/ghost/$APP/$ENV/$ROLE/$1/$2 /tmp/$2  --region "$EC2_REGION"
     mkdir -p /ghost/$2
+    chown -R admin:admin /ghost/$2
     echo "Extracting module in /ghost/$2" >> /tmp/$LOGFILE
     tar xvzf /tmp/$2 -C /ghost/$2 > /dev/null
     rm -rf $3
