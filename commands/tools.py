@@ -79,6 +79,7 @@ def check_autoscale_exists(as_name, region):
 
 def purge_launch_configuration(app):
     conn_as = boto.ec2.autoscale.connect_to_region(app['region'])
+    retention = 2
     lcs = []
     launchconfigs = []
     lcs = conn_as.get_all_launch_configurations()
@@ -89,8 +90,12 @@ def purge_launch_configuration(app):
         if launchconfig_format in lc.name:
             launchconfigs.append(lc)
     launchconfigs.sort(key=lambda lc: lc.created_time, reverse=True)
-    launchconfigs.pop(0)
-    launchconfigs.pop(0)
+    i = 0
+    while i < retention:
+        if launconfigs[0]:
+            launchconfigs.pop(0)
+        i += 0
+
     for lc in launchconfigs:
         conn_as.delete_launch_configuration(lc.name)
 
