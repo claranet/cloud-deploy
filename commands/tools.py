@@ -43,7 +43,7 @@ def create_launch_config(app, userdata, ami_id):
     d = time.strftime('%d%m%Y-%H%M',time.localtime())
     launch_config_name = "launchconfig.{0}.{1}.{2}.{3}.{4}".format(app['env'], app['region'], app['role'], app['name'], d)
     conn_as = boto.ec2.autoscale.connect_to_region(app['region'])
-    if app['environment_infos']['root_block_device']['size']:
+    if root_block_device in app['environment_infos']:
         bdm = create_block_device(app['environment_infos']['root_block_device'])
     else:
         bdm = create_block_device()
