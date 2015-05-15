@@ -141,5 +141,5 @@ class Buildimage():
                 log("No autoscaling group name was set", self._log_file)
                 self._worker.update_status("done")
         else:
-            log("ERROR: ami_id not found. The packer process had maybe fail.")
+            log("ERROR: ami_id not found. The packer process had maybe fail.", self._log_file)
             self._worker.update_status("failed")
