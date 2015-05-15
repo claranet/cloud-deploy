@@ -38,7 +38,8 @@ class Buildimage():
 
         i = 1
         while i < retention:
-            filtered_images.pop(0)
+            if filtered_images[0]:
+                filtered_images.pop(0)
             i += 1
 
         for image in filtered_images:
