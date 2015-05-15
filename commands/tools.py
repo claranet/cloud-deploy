@@ -89,15 +89,16 @@ def purge_launch_configuration(app):
     for lc in lcs:
         if launchconfig_format in lc.name:
             launchconfigs.append(lc)
-    launchconfigs.sort(key=lambda lc: lc.created_time, reverse=True)
-    i = 0
-    while i < retention:
-        if launchconfigs[0]:
-            launchconfigs.pop(0)
-        i += 0
+    if launchconfigs:
+        launchconfigs.sort(key=lambda lc: lc.created_time, reverse=True)
+        i = 0
+        while i < retention:
+            if launchconfigs[0]:
+                launchconfigs.pop(0)
+            i += 0
 
-    for lc in launchconfigs:
-        conn_as.delete_launch_configuration(lc.name)
+        for lc in launchconfigs:
+            conn_as.delete_launch_configuration(lc.name)
 
     #Check if the purge works : current_version and current_version -1 are not removed.
     lcs = []
