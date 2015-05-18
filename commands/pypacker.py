@@ -87,10 +87,13 @@ class Packer:
         if not os.path.isdir('/tmp/root'):
             os.makedirs('/tmp/root')
         try:
-            result = packer.build(self.packer_file_path)
+            new_env = os.environ.copy()
+            new_env['PACKER_LOG'] = '1'
+            new_env['PACKER_LOG_PATH'] = SALT_LOCAL_TREE + self.unique + '/packer.log'
+            result = packer.build(self.packer_file_path, _env=new_env)
             ami = re.findall('ami-[a-z0-9]*$', result.rstrip())[0]
             logging.debug(result)
         except sh.ErrorReturnCode as e:
             ami = "ERROR"
-            logging.debug(e)
+            logging.error(e)
         return ami
