@@ -95,7 +95,7 @@ def purge_launch_configuration(app):
         while i < retention:
             if launchconfigs[0]:
                 launchconfigs.pop(0)
-            i += 0
+            i += 1
 
         for lc in launchconfigs:
             conn_as.delete_launch_configuration(lc.name)
