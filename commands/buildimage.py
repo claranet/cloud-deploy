@@ -34,16 +34,16 @@ class Buildimage():
             if ami_name_format in image.name:
                 filtered_images.append(image)
 
-        filtered_images.sort(key=lambda img: img.creationDate, reverse=True)
+        if filtered_images:
+            filtered_images.sort(key=lambda img: img.creationDate, reverse=True)
+            i = 1
+            while i < retention:
+                if filtered_images[0]:
+                    filtered_images.pop(0)
+                i += 1
 
-        i = 1
-        while i < retention:
-            if filtered_images[0]:
-                filtered_images.pop(0)
-            i += 1
-
-        for image in filtered_images:
-            image.deregister()
+            for image in filtered_images:
+                image.deregister()
 
         #Check if the purge works : current_version and current_version -1,2,3,4 are not removed.
         images = []
