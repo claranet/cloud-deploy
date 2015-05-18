@@ -34,12 +34,11 @@ class Buildimage():
             if ami_name_format in image.name:
                 filtered_images.append(image)
 
-        if filtered_images:
+        if filtered_images and len(filtered_images) > retention:
             filtered_images.sort(key=lambda img: img.creationDate, reverse=True)
-            i = 1
+            i = 0
             while i < retention:
-                if filtered_images[0]:
-                    filtered_images.pop(0)
+                filtered_images.pop(0)
                 i += 1
 
             for image in filtered_images:

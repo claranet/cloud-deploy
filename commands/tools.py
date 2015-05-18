@@ -89,12 +89,12 @@ def purge_launch_configuration(app):
     for lc in lcs:
         if launchconfig_format in lc.name:
             launchconfigs.append(lc)
-    if launchconfigs:
+
+    if launchconfigs and len(launchconfigs) > retention:
         launchconfigs.sort(key=lambda lc: lc.created_time, reverse=True)
         i = 0
         while i < retention:
-            if launchconfigs[0]:
-                launchconfigs.pop(0)
+            launchconfigs.pop(0)
             i += 1
 
         for lc in launchconfigs:
