@@ -62,7 +62,7 @@ class Deploy():
         except:
             raise GCallException("Init module: {0} failed, creating directory".format(module['name']))
         os.chdir(path)
-        gcall("git clone --recursive {git_repo} {path}".format(git_repo=module['git_repo'], path=path), "Git clone", self._log_file)
+        gcall("git clone --recursive --depth=100 {git_repo} {path}".format(git_repo=module['git_repo'], path=path), "Git clone", self._log_file)
         self._worker.module_initialized(module['name'])
 
     def _set_as_conn(self):
@@ -103,7 +103,7 @@ class Deploy():
     def _package_module(self, module, ts, commit):
         os.chdir(self._get_path_from_module(module))
         pkg_name = "{0}_{1}_{2}".format(ts, module['name'], commit)
-        gcall("tar cvzf ../%s . --exclude '.git/*' --exclude '.git' > /dev/null" % pkg_name, "Creating package: %s" % pkg_name, self._log_file)
+        gcall("tar cvzf ../%s . > /dev/null" % pkg_name, "Creating package: %s" % pkg_name, self._log_file)
         gcall("aws --region {region} s3 cp ../{0} s3://{bucket_s3}{path}/".format(pkg_name, \
                 bucket_s3=self._config['bucket_s3'], region=self._app['region'], path=self._get_path_from_module(module)), "Uploading package: %s" % pkg_name, self._log_file)
         gcall("rm -f ../{0}".format(pkg_name), "Deleting local package: %s" % pkg_name, self._log_file)
@@ -188,9 +188,22 @@ class Deploy():
     def _execute_deploy(self, module):
         now = datetime.datetime.utcnow()
         ts = calendar.timegm(now.timetuple())
-        os.chdir(self._get_path_from_module(module))
-        gcall("git clean -f", "Reseting git repository", self._log_file)
+
+        clone_path = self._get_path_from_module(module)
+
+        # Update existing clone
+        os.chdir(clone_path)
         gcall("git pull", "Git pull", self._log_file)
+
+        # Shallow clone from the previous clone
+        gcall("git clone --depth=100 file://{path} {path}-clone".format(path=clone_path), "Shallow cloning from previous clone", self._log_file)
+        os.chdir("/tmp")
+        gcall("rm -rf {path}".format(path=clone_path), "Removing previous clone", self._log_file)
+        gcall("mv {path}-clone {path}".format(path=clone_path), "Renaming new shallow clone", self._log_file)
+
+        # chdir into newly created directory
+        os.chdir(clone_path)
+
         revision = self._get_module_revision(module['name'])
         gcall("git checkout %s" % revision, "Git checkout: %s" % revision, self._log_file)
         commit = git('rev-parse', '--short', 'HEAD').strip()
@@ -200,17 +213,17 @@ class Deploy():
         if 'build_pack' in module:
             print('Buildpack: Creating')
             buildpack_source = base64.b64decode(module['build_pack'])
-            buildpack, buildpack_path = tempfile.mkstemp(dir=self._get_path_from_module(module))
+            buildpack, buildpack_path = tempfile.mkstemp(dir=clone_path)
             if sys.version > '3':
                 os.write(buildpack, bytes(buildpack_source, 'UTF-8'))
             else:
                 os.write(buildpack, buildpack_source)
             os.close(buildpack)
-            gcall("cd "+self._get_path_from_module(module)+"; bash "+buildpack_path,'Buildpack: Execute' ,self._log_file)
+            gcall("cd "+clone_path+"; bash "+buildpack_path,'Buildpack: Execute' ,self._log_file)
         # Store postdeploy script in tarball
         if 'post_deploy' in module:
             postdeploy_source = base64.b64decode(module['post_deploy'])
-            with open(self._get_path_from_module(module) + '/postdeploy', 'w') as f:
+            with open(clone_path + '/postdeploy', 'w') as f:
                 if sys.version > '3':
                     f.write(bytes(postdeploy_source, 'UTF-8'))
                 else:
@@ -226,6 +239,3 @@ class Deploy():
         self._purge_old_modules(module)
         deployment = {'app_id': self._app['_id'], 'job_id': self._job['_id'], 'module': module['name'], 'commit': commit, 'timestamp': ts, 'package': pkg_name, 'module_path': module['path']}
         self._worker._db.deploy_histories.insert(deployment)
-
-    def finish():
-        pass
