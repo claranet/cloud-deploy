@@ -5,7 +5,7 @@ import calendar
 import time
 import shutil
 import tempfile
-from sh import git
+from sh import git, grep
 from pymongo import MongoClient, ASCENDING, DESCENDING
 from commands.tools import GCallException, gcall, log, find_ec2_instances
 from commands.initrepo import InitRepo
@@ -190,11 +190,17 @@ class Deploy():
         ts = calendar.timegm(now.timetuple())
 
         clone_path = self._get_path_from_module(module)
+        revision = self._get_module_revision(module['name'])
 
         # Update existing clone
         os.chdir(clone_path)
+        gcall("git fetch --tags", "Git fetch all tags", self._log_file)
         gcall("git pull", "Git pull", self._log_file)
-        remote_name, remote_url = git('remote', '--verbose').split()[:2]
+        gcall("git checkout %s" % revision, "Git checkout: %s" % revision, self._log_file)
+
+        # Extract remote origin URL and commit information
+        remote_url = grep(grep(git('remote', '--verbose'), '^origin'), '(fetch)$').split()[1]
+        commit = git('rev-parse', '--short', 'HEAD').strip()
 
         # Shallow clone from the previous clone
         gcall("git clone --depth=100 file://{path} {path}-clone".format(path=clone_path), "Shallow cloning from previous clone", self._log_file)
@@ -202,15 +208,13 @@ class Deploy():
         gcall("rm -rf {path}".format(path=clone_path), "Removing previous clone", self._log_file)
         gcall("mv {path}-clone {path}".format(path=clone_path), "Renaming new shallow clone", self._log_file)
 
-        # chdir into newly created directory
+        # chdir into newly created directory and reset remote origin URL
         os.chdir(clone_path)
-        git('remote', 'set-url', remote_name, remote_url)
+        git('remote', 'set-url', 'origin', remote_url)
 
-        revision = self._get_module_revision(module['name'])
-        gcall("git checkout %s" % revision, "Git checkout: %s" % revision, self._log_file)
-        commit = git('rev-parse', '--short', 'HEAD').strip()
         # FIXME execute predeploy
         print('pre deploy')
+
         # Execute buildpack
         if 'build_pack' in module:
             print('Buildpack: Creating')
@@ -222,6 +226,7 @@ class Deploy():
                 os.write(buildpack, buildpack_source)
             os.close(buildpack)
             gcall("cd "+clone_path+"; bash "+buildpack_path,'Buildpack: Execute' ,self._log_file)
+
         # Store postdeploy script in tarball
         if 'post_deploy' in module:
             postdeploy_source = base64.b64decode(module['post_deploy'])
@@ -230,7 +235,10 @@ class Deploy():
                     f.write(bytes(postdeploy_source, 'UTF-8'))
                 else:
                     f.write(postdeploy_source)
+
+        # Create tar archive
         pkg_name = self._package_module(module, ts, commit)
+
         self._set_as_conn()
         if self._app['autoscale']['name']:
             self._stop_autoscale()
