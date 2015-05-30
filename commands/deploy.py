@@ -57,11 +57,12 @@ class Deploy():
             shutil.rmtree(path)
         except (OSError, IOError) as e:
             print(e)
+
         try:
             os.makedirs(path)
         except:
             raise GCallException("Init module: {0} failed, creating directory".format(module['name']))
-        os.chdir(path)
+
         gcall("git clone --recursive --depth=100 {git_repo} {path}".format(git_repo=module['git_repo'], path=path), "Git clone", self._log_file)
         self._worker.module_initialized(module['name'])
 
@@ -136,7 +137,8 @@ class Deploy():
         module_list = split_comma.join(module_list)
         try:
             for module in self._apps_modules:
-                if not module['initialized']:
+                path = self._get_path_from_module(module)
+                if not module['initialized'] or not os.path.isdir(path):
                     self._initialize_module(module)
 
             for module in self._apps_modules:
@@ -194,6 +196,7 @@ class Deploy():
 
         # Update existing clone
         os.chdir(clone_path)
+        gcall("git clean -f", "Resetting git repository", self._log_file)
         gcall("git fetch --tags", "Git fetch all tags", self._log_file)
         gcall("git pull", "Git pull", self._log_file)
         gcall("git checkout %s" % revision, "Git checkout: %s" % revision, self._log_file)
