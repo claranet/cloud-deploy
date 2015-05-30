@@ -194,6 +194,7 @@ class Deploy():
         # Update existing clone
         os.chdir(clone_path)
         gcall("git pull", "Git pull", self._log_file)
+        remote_name, remote_url = git('remote', '--verbose').split()[:2]
 
         # Shallow clone from the previous clone
         gcall("git clone --depth=100 file://{path} {path}-clone".format(path=clone_path), "Shallow cloning from previous clone", self._log_file)
@@ -203,6 +204,7 @@ class Deploy():
 
         # chdir into newly created directory
         os.chdir(clone_path)
+        git('remote', 'set-url', remote_name, remote_url)
 
         revision = self._get_module_revision(module['name'])
         gcall("git checkout %s" % revision, "Git checkout: %s" % revision, self._log_file)
