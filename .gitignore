@@ -10,6 +10,7 @@ parts
 src/*.egg-info
 .ropeproject
 *.swp
+accounts.yml
 config.yml
 venv-ghost
 .project

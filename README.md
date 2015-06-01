@@ -36,10 +36,16 @@ Running unit tests:
 * python pip boto awscli
 * les dépendances sur les scripts predeploy (ex: php5 avec memcached, gd...)
 * mongodb
-* les packages contenu dans requirements.txt
+* les packages contenus dans requirements.txt
 
 # Configuration:
-db.config.insert({ "ses_settings": {"aws_access_key": "SES_AWS_ACCESS_KEY", "aws_secret_key": "SES_AWS_SECRET_KEY", "region": "eu-west-1"}})
+## accounts:
+* copy accounts.yml.dist as accounts.yml
+* add account with 'python auth.py user password'
+* restart ghost process
+
+## notifications:
+* db.config.insert({ "ses_settings": {"aws_access_key": "SES_AWS_ACCESS_KEY", "aws_secret_key": "SES_AWS_SECRET_KEY", "region": "eu-west-1"}})
 
 # Notes
 * Necessite une version de Fabric >= 1.10.1 (Bug encoding fixed)
@@ -70,13 +76,3 @@ db.config.insert({ "ses_settings": {"aws_access_key": "SES_AWS_ACCESS_KEY", "aws
         "instance_type": "t2.small"
         "autoscale": {"min": 1, "max": 2, "current": 1}
     }
-
-
-# TODO
-## Gestion des rôles par ressources OK
-* superadmin (Morea) (ALL)
-* admin (Client Dev) (Tout sauf : rebuild_image, DELETE)
-* user (Client) (RO)
-
-# Questions
-* Peut-on définir un rôle sur une subresources ex : JOB: {command : rebuild_image} ?
