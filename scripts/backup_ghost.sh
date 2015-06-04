@@ -15,6 +15,6 @@ cd ..
 
 sudo tar zcf $FILE $BACKUP
 S3=`grep bucket_s3 /home/admin/ghost/config.yml | cut -d' ' -f2`
-aws s3 cp $FILE --region eu-west-1  s3://$S3/backup/
+/usr/local/bin/aws s3 cp $FILE --region eu-west-1  s3://$S3/backup/
 sudo rm -rf $BACKUP
 sudo rm -rf $FILE
