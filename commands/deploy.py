@@ -198,7 +198,7 @@ class Deploy():
         shallow_clone_path = self._get_shallow_clone_path_from_module(module)
         revision = self._get_module_revision(module['name'])
 
-        if not os.path.exists(full_clone_path + '.git'):
+        if not os.path.exists(full_clone_path + '/.git'):
             gcall("rm -rf {full_clone_path}".format(full_clone_path=full_clone_path), "Cleaning up full clone destination", self._log_file)
             gcall("git clone --recursive {git_repo} {full_clone_path}".format(git_repo=git_repo, full_clone_path=full_clone_path), "Git full cloning from remote %s" % git_repo, self._log_file)
 
