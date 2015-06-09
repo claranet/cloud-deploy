@@ -1,5 +1,4 @@
 import env
-import code_deploy
 import instance_role
 import aws_data
 import ressources
@@ -95,7 +94,10 @@ apps_schema = {
                           }
                       }
         }
-    }
+    },
+    'user': {
+        'type': 'string', 'required': True
+    },
 }
 
 apps = {'item_title': 'app', 'schema': apps_schema}

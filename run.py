@@ -1,4 +1,4 @@
-from flask import abort
+from flask import abort, request
 from bson.objectid import ObjectId
 from flask_bootstrap import Bootstrap
 from redis import Redis
@@ -19,38 +19,39 @@ def pre_update_app(updates, original):
     if 'modules' in updates:
         for module in updates['modules']:
             module['initialized'] = False
-   
+
 
 #FIXME: Implement (or not ?) application replacement
 def pre_replace_app(item, original):
-    print(item)
-    print(original)
+    pass
+
 
 #FIXME: implement purge of application (git repo)
 def pre_delete_app(item):
-    print(item)
+    pass
+
 
 def pre_insert_app(items):
-    print('begin')
-    name = items[0].get('name')
-    role = items[0].get('role')
-    env = items[0].get('env')
+    app = items[0]
+    name = app.get('name')
+    role = app.get('role')
+    env = app.get('env')
     apps = ghost.data.driver.db['apps']
-    app = apps.find_one({'$and' : [{'name': name}, {'role': role}, {'env': env}]})
-    if app:
+    if apps.find_one({'$and' : [{'name': name}, {'role': role}, {'env': env}]}):
         abort(422)
-    for module in items[0].get('modules'):
+    for module in app.get('modules'):
         module['initialized'] = False
+    app['user'] = request.authorization.username
 
 def pre_insert_job(items):
-    app_id = items[0].get('app_id')
+    job = items[0]
+    app_id = job.get('app_id')
     apps = ghost.data.driver.db['apps']
-    jobs = ghost.data.driver.db['jobs']
     app = apps.find_one({'_id': ObjectId(app_id)})
     if not app:
         abort(404)
-    if items[0].get('command') == 'deploy':
-        for module in items[0]['modules']:
+    if job.get('command') == 'deploy':
+        for module in job['modules']:
             not_exist = True
             for mod in app['modules']:
                 print('app module name is: '+mod['name'])
@@ -58,17 +59,16 @@ def pre_insert_job(items):
                     not_exist = False
             if not_exist:
                 abort(422)
-    if items[0]['command'] == 'build_image':
+    if job['command'] == 'build_image':
         if not ('build_infos' in app.viewkeys()):
             abort(422)
-    job = jobs.find_one({'$and': [{'status': {'$ne': 'done'}},
-                                  {'status': {'$ne': 'failed'}},
-                                  {'app_id': app_id}]})
-    # FIXME: comment need to be removed
-    #if job:
-    #    abort(422)
-    items[0]['status'] = 'init'
-    items[0]['message'] = 'Initializing job'
+    # FIXME: uncomment the following check when job execution is rock solid
+    # jobs = ghost.data.driver.db['jobs']
+    # if jobs.find_one({'$and': [{'status': {'$ne': 'done'}}, {'status': {'$ne': 'failed'}}, {'app_id': app_id}]}):
+    #     abort(422)
+    job['user'] = request.authorization.username
+    job['status'] = 'init'
+    job['message'] = 'Initializing job'
 
 def post_insert_job(items):
     async_work = worker.Worker()
