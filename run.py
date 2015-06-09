@@ -34,7 +34,6 @@ def pre_insert_app(items):
     print('begin')
     name = items[0].get('name')
     role = items[0].get('role')
-    role = 'test'
     env = items[0].get('env')
     apps = ghost.data.driver.db['apps']
     app = apps.find_one({'$and' : [{'name': name}, {'role': role}, {'env': env}]})
