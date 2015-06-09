@@ -15,7 +15,7 @@ jobs_schema = {
         'type': 'string', 'readonly': True
     },
     'user': {
-        'type': 'string', 'required': True
+        'type': 'string'
     },
     'options': {
         'type': 'list', 'schema': {

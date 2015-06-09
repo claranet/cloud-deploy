@@ -96,7 +96,7 @@ apps_schema = {
         }
     },
     'user': {
-        'type': 'string', 'required': True
+        'type': 'string'
     },
 }
 
