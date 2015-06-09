@@ -5,7 +5,7 @@ import calendar
 import time
 import shutil
 import tempfile
-from sh import git
+from sh import git, grep
 from pymongo import MongoClient, ASCENDING, DESCENDING
 from commands.tools import GCallException, gcall, log, find_ec2_instances
 from commands.initrepo import InitRepo
@@ -48,21 +48,25 @@ class Deploy():
     def _get_path_from_app(self):
         return "/ghost/{name}/{env}/{role}".format(name=self._app['name'], env=self._app['env'], role=self._app['role'])
 
-    def _get_path_from_module(self, module):
+    def _get_full_clone_path_from_module(self, module):
         return "/ghost/{name}/{env}/{role}/{module}".format(name=self._app['name'], env=self._app['env'], role=self._app['role'], module=module['name'])
 
+    def _get_shallow_clone_path_from_module(self, module):
+        return self._get_full_clone_path_from_module(module) + '-shallow'
+
     def _initialize_module(self, module):
-        path = self._get_path_from_module(module)
+        full_clone_path = self._get_full_clone_path_from_module(module)
+
         try:
-            shutil.rmtree(path)
+            shutil.rmtree(full_clone_path)
         except (OSError, IOError) as e:
             print(e)
+
         try:
-            os.makedirs(path)
+            os.makedirs(full_clone_path)
         except:
             raise GCallException("Init module: {0} failed, creating directory".format(module['name']))
-        os.chdir(path)
-        gcall("git clone --recursive {git_repo} {path}".format(git_repo=module['git_repo'], path=path), "Git clone", self._log_file)
+
         self._worker.module_initialized(module['name'])
 
     def _set_as_conn(self):
@@ -101,11 +105,11 @@ class Deploy():
             log("WARNING: no instance available to sync deployment", self._log_file)
 
     def _package_module(self, module, ts, commit):
-        os.chdir(self._get_path_from_module(module))
+        os.chdir(self._get_shallow_clone_path_from_module(module))
         pkg_name = "{0}_{1}_{2}".format(ts, module['name'], commit)
-        gcall("tar cvzf ../%s . --exclude '.git/*' --exclude '.git' > /dev/null" % pkg_name, "Creating package: %s" % pkg_name, self._log_file)
+        gcall("tar cvzf ../%s . > /dev/null" % pkg_name, "Creating package: %s" % pkg_name, self._log_file)
         gcall("aws --region {region} s3 cp ../{0} s3://{bucket_s3}{path}/".format(pkg_name, \
-                bucket_s3=self._config['bucket_s3'], region=self._app['region'], path=self._get_path_from_module(module)), "Uploading package: %s" % pkg_name, self._log_file)
+                bucket_s3=self._config['bucket_s3'], region=self._app['region'], path=self._get_full_clone_path_from_module(module)), "Uploading package: %s" % pkg_name, self._log_file)
         gcall("rm -f ../{0}".format(pkg_name), "Deleting local package: %s" % pkg_name, self._log_file)
         return pkg_name
 
@@ -188,34 +192,63 @@ class Deploy():
     def _execute_deploy(self, module):
         now = datetime.datetime.utcnow()
         ts = calendar.timegm(now.timetuple())
-        os.chdir(self._get_path_from_module(module))
-        gcall("git clean -f", "Reseting git repository", self._log_file)
-        gcall("git pull", "Git pull", self._log_file)
+
+        git_repo = module['git_repo']
+        full_clone_path = self._get_full_clone_path_from_module(module)
+        shallow_clone_path = self._get_shallow_clone_path_from_module(module)
         revision = self._get_module_revision(module['name'])
+
+        if not os.path.exists(full_clone_path + '/.git'):
+            gcall("rm -rf {full_clone_path}".format(full_clone_path=full_clone_path), "Cleaning up full clone destination", self._log_file)
+            gcall("git clone --recursive {git_repo} {full_clone_path}".format(git_repo=git_repo, full_clone_path=full_clone_path), "Git full cloning from remote %s" % git_repo, self._log_file)
+
+        # Update existing clone
+        os.chdir(full_clone_path)
+        gcall("git clean -f", "Resetting git repository", self._log_file)
+        gcall("git checkout master", "Git checkout master before pull in case of detached head", self._log_file)
+        gcall("git fetch --tags", "Git fetch all tags", self._log_file)
+        gcall("git pull", "Git pull", self._log_file)
         gcall("git checkout %s" % revision, "Git checkout: %s" % revision, self._log_file)
+
+        # Extract remote origin URL and commit information
+        remote_url = grep(grep(git('remote', '--verbose'), '^origin'), '(fetch)$').split()[1]
         commit = git('rev-parse', '--short', 'HEAD').strip()
+
+        # Shallow clone from the full clone to limit the size of the generated archive
+        gcall("rm -rf {shallow_clone_path}".format(shallow_clone_path=shallow_clone_path), "Removing previous shallow clone", self._log_file)
+        gcall("git clone --depth=100 file://{full_clone_path} {shallow_clone_path}".format(full_clone_path=full_clone_path, shallow_clone_path=shallow_clone_path), "Git shallow cloning from previous clone", self._log_file)
+
+        # chdir into newly created shallow clone and reset remote origin URL
+        os.chdir(shallow_clone_path)
+        git('remote', 'set-url', 'origin', remote_url)
+
         # FIXME execute predeploy
-        print('pre deploy')
+        print('FIXME execute predeploy')
+
         # Execute buildpack
         if 'build_pack' in module:
             print('Buildpack: Creating')
             buildpack_source = base64.b64decode(module['build_pack'])
-            buildpack, buildpack_path = tempfile.mkstemp(dir=self._get_path_from_module(module))
+            buildpack, buildpack_path = tempfile.mkstemp(dir=shallow_clone_path)
             if sys.version > '3':
                 os.write(buildpack, bytes(buildpack_source, 'UTF-8'))
             else:
                 os.write(buildpack, buildpack_source)
             os.close(buildpack)
-            gcall("cd "+self._get_path_from_module(module)+"; bash "+buildpack_path,'Buildpack: Execute' ,self._log_file)
+            gcall('bash %s' % buildpack_path, 'Buildpack: Execute', self._log_file)
+
         # Store postdeploy script in tarball
         if 'post_deploy' in module:
             postdeploy_source = base64.b64decode(module['post_deploy'])
-            with open(self._get_path_from_module(module) + '/postdeploy', 'w') as f:
+            with open(shallow_clone_path + '/postdeploy', 'w') as f:
                 if sys.version > '3':
                     f.write(bytes(postdeploy_source, 'UTF-8'))
                 else:
                     f.write(postdeploy_source)
+
+        # Create tar archive
         pkg_name = self._package_module(module, ts, commit)
+
         self._set_as_conn()
         if self._app['autoscale']['name']:
             self._stop_autoscale()
@@ -226,6 +259,3 @@ class Deploy():
         self._purge_old_modules(module)
         deployment = {'app_id': self._app['_id'], 'job_id': self._job['_id'], 'module': module['name'], 'commit': commit, 'timestamp': ts, 'package': pkg_name, 'module_path': module['path']}
         self._worker._db.deploy_histories.insert(deployment)
-
-    def finish():
-        pass
