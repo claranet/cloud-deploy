@@ -1,4 +1,3 @@
-
 accounts.yml
 .aws/
 .bash_history
@@ -12,6 +11,7 @@ develop-eggs
 dist
 downloads
 eggs
+.gitconfig
 installed.cfg
 .lesshst
 .node-gyp/
