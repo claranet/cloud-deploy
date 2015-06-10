@@ -9,6 +9,7 @@ Checking for updates:
 
 Running unit tests:
     $ python -m doctest -v web_ui/*.py
+    $ python -m doctest -v worker.py
 
 # Deployment
 

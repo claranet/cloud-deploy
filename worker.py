@@ -16,6 +16,35 @@ LOG_PATH='/var/log/ghost'
 ROOT_PATH=os.path.dirname(os.path.realpath(__file__))
 MAIL_LOG_FROM='no-reply@morea.fr'
 
+def format_notif(app, job):
+    r"""
+    Returns a formatted title and message couple
+
+    >>> app = {'name': 'myapp', 'env': 'preprod'}
+    >>> job = {'command': 'deploy', 'user': 'john', '_created': '2015-06-10 17:09:38', 'status': 'done', 'message': 'Deployment OK: [mymodule]'}
+    >>> title, message = format_notif(app, job)
+    >>> title
+    '[GHOST] App myapp (preprod) - deploy: done (Deployment OK: [mymodule])'
+    >>> message
+    'Application: myapp\nEnvironment: preprod\nAction: deploy\nStarted: 2015-06-10 17:09:38\nStatus: done\nUser: john\nMessage: Deployment OK: [mymodule]'
+    """
+    title_template = "[GHOST] App {app_name} ({app_env}) - {command}: {status} ({message})"
+    title = title_template.format(app_name=app['name'],
+                                  app_env=app['env'],
+                                  command=job['command'],
+                                  user=job['user'],
+                                  status=job['status'],
+                                  message=job['message'])
+    message_template = "Application: {app_name}\nEnvironment: {app_env}\nAction: {command}\nStarted: 2015-06-10 17:09:38\nStatus: {status}\nUser: {user}\nMessage: {message}"
+    message = message_template.format(app_name=app['name'],
+                                      app_env=app['env'],
+                                      command=job['command'],
+                                      started=job['_created'],
+                                      user=job['user'],
+                                      status=job['status'],
+                                      message=job['message'])
+    return title, message
+
 class Worker:
     _config = None
     _worker_job = None
@@ -69,19 +98,10 @@ class Worker:
         self.log_file.close()
 
 
-    def _format_notif(self):
-        title = "App: {app_name} - {action} : {status}".format(app_name=self.app['name'], action=self.job['command'], status=self.job['status'])
-        message = "Application: {app_name}\nEnvironment: {env}\nAction: {action}\nStatus: {status}\nMessage: {message}".format(env=self.app['env'], \
-                app_name=self.app['name'], \
-                action=self.job['command'], \
-                status=self.job['status'], message=self.job['message'])
-        return title, message
-
-
     def _mail_log_action(self):
         ses_settings = self._config['ses_settings']
         notif = Notification(aws_access_key=ses_settings['aws_access_key'], aws_secret_key=ses_settings['aws_secret_key'], region=ses_settings['region'])
-        subject, body = self._format_notif()
+        subject, body = format_notif(app, job)
         log = "{log_path}/{job_id}.txt".format(log_path=LOG_PATH, job_id=self._worker_job.id)
         log_stat = os.stat(log)
         if log_stat.st_size > 5000000:
