@@ -71,7 +71,6 @@ apps_schema = {
                       }
         }
     },
-    # TODO solve storing password in cleartext
     'ressources': {'type': 'list', 'schema': ressources.available},
     'environment_infos': {
         'type': 'dict', 'schema': {
