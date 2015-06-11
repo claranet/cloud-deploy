@@ -25,6 +25,7 @@ function deploy_module() {
     chown -R admin:admin /ghost/$2
     echo "Extracting module in /ghost/$2" >> /tmp/$LOGFILE
     tar xvzf /tmp/$2 -C /ghost/$2 > /dev/null
+    rm -rf /tmp/$2
     rm -rf $3
     ln -s /ghost/$2 $3
     cd $3
