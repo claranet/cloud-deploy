@@ -207,8 +207,8 @@ class Deploy():
         gcall("git clean -f", "Resetting git repository", self._log_file)
         gcall("git checkout master", "Git checkout master before pull in case of detached head", self._log_file)
         gcall("git fetch --tags", "Git fetch all tags", self._log_file)
-        gcall("git checkout %s" % revision, "Git checkout: %s" % revision, self._log_file)
         gcall("git pull", "Git pull", self._log_file)
+        gcall("git checkout %s" % revision, "Git checkout: %s" % revision, self._log_file)
 
         # Extract remote origin URL and commit information
         remote_url = grep(grep(git('remote', '--verbose'), '^origin'), '(fetch)$').split()[1]
