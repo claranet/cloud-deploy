@@ -12,12 +12,12 @@ from bson.objectid import ObjectId
 from notification import Notification
 import os
 
-LOG_PATH='/var/log/ghost'
+LOG_ROOT='/var/log/ghost'
 ROOT_PATH=os.path.dirname(os.path.realpath(__file__))
 MAIL_LOG_FROM='no-reply@morea.fr'
 
 def format_notif(app, job):
-    r"""
+    """
     Returns a formatted title and message couple
 
     >>> app = {'name': 'myapp', 'env': 'preprod'}
@@ -91,7 +91,9 @@ class Worker:
 
 
     def _init_log_file(self):
-        self.log_file = open("{log_path}/{job_id}.txt".format(log_path=LOG_PATH, job_id=self._worker_job.id), 'a', 1)
+        log_path = "{log_path}/{job_id}.txt".format(log_path=LOG_ROOT, job_id=self._worker_job.id)
+        self.log_file = open(log_path, 'a', 1)
+        self._db.jobs.update({ '_id': self.job['_id']}, {'$set': {'log_id': self._worker_job.id }})
 
 
     def _close_log_file(self):
@@ -102,7 +104,7 @@ class Worker:
         ses_settings = self._config['ses_settings']
         notif = Notification(aws_access_key=ses_settings['aws_access_key'], aws_secret_key=ses_settings['aws_secret_key'], region=ses_settings['region'])
         subject, body = format_notif(self.app, self.job)
-        log = "{log_path}/{job_id}.txt".format(log_path=LOG_PATH, job_id=self._worker_job.id)
+        log = "{log_path}/{job_id}.txt".format(log_path=LOG_ROOT, job_id=self._worker_job.id)
         log_stat = os.stat(log)
         if log_stat.st_size > 5000000:
             os.system('gzip '+log)
