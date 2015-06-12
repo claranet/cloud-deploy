@@ -209,6 +209,7 @@ class Deploy():
         gcall("git fetch --tags", "Git fetch all tags", self._log_file)
         gcall("git pull", "Git pull", self._log_file)
         gcall("git checkout %s" % revision, "Git checkout: %s" % revision, self._log_file)
+        gcall("git pull || true", "Git pull after checkout but never fail: %s" % revision, self._log_file)
 
         # Extract remote origin URL and commit information
         remote_url = grep(grep(git('remote', '--verbose'), '^origin'), '(fetch)$').split()[1]
