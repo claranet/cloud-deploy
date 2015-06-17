@@ -225,7 +225,7 @@ class Deploy():
 
         # Store predeploy script in tarball
         if 'pre_deploy' in module:
-            postdeploy_source = base64.b64decode(module['pre_deploy'])
+            predeploy_source = base64.b64decode(module['pre_deploy'])
             with open(shallow_clone_path + '/predeploy', 'w') as f:
                 if sys.version > '3':
                     f.write(bytes(predeploy_source, 'UTF-8'))
