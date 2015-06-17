@@ -223,8 +223,14 @@ class Deploy():
         os.chdir(shallow_clone_path)
         git('remote', 'set-url', 'origin', remote_url)
 
-        # FIXME execute predeploy
-        print('FIXME execute predeploy')
+        # Store predeploy script in tarball
+        if 'pre_deploy' in module:
+            predeploy_source = base64.b64decode(module['pre_deploy'])
+            with open(shallow_clone_path + '/predeploy', 'w') as f:
+                if sys.version > '3':
+                    f.write(bytes(predeploy_source, 'UTF-8'))
+                else:
+                    f.write(predeploy_source)
 
         # Execute buildpack
         if 'build_pack' in module:
