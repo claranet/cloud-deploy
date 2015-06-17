@@ -34,3 +34,5 @@ times==0.7
 Werkzeug==0.10.4
 WTForms==2.0.2
 yapf==0.1.9
+flask-socketio==0.6.0
+gunicorn==18.0

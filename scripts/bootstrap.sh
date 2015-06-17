@@ -25,7 +25,15 @@ function deploy_module() {
     chown -R admin:admin /ghost/$2
     echo "Extracting module in /ghost/$2" >> /tmp/$LOGFILE
     tar xvzf /tmp/$2 -C /ghost/$2 > /dev/null
+    rm -rf /tmp/$2
     rm -rf $3
+    cd /ghost/$2
+    if [ -e predeploy ]
+    then
+        echo "Executing predeploy script..." >> /tmp/$LOGFILE
+        chmod +x predeploy
+        ./predeploy
+    fi
     ln -s /ghost/$2 $3
     cd $3
     if [ -e postdeploy ]
@@ -35,6 +43,7 @@ function deploy_module() {
         ./postdeploy
     fi
 }
+
 function find_module() {
     for line in $(cat /tmp/MANIFEST)
       do

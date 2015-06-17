@@ -209,6 +209,7 @@ class Deploy():
         gcall("git fetch --tags", "Git fetch all tags", self._log_file)
         gcall("git pull", "Git pull", self._log_file)
         gcall("git checkout %s" % revision, "Git checkout: %s" % revision, self._log_file)
+        gcall("git pull || true", "Git pull after checkout but never fail: %s" % revision, self._log_file)
 
         # Extract remote origin URL and commit information
         remote_url = grep(grep(git('remote', '--verbose'), '^origin'), '(fetch)$').split()[1]
@@ -222,8 +223,14 @@ class Deploy():
         os.chdir(shallow_clone_path)
         git('remote', 'set-url', 'origin', remote_url)
 
-        # FIXME execute predeploy
-        print('FIXME execute predeploy')
+        # Store predeploy script in tarball
+        if 'pre_deploy' in module:
+            predeploy_source = base64.b64decode(module['pre_deploy'])
+            with open(shallow_clone_path + '/predeploy', 'w') as f:
+                if sys.version > '3':
+                    f.write(bytes(predeploy_source, 'UTF-8'))
+                else:
+                    f.write(predeploy_source)
 
         # Execute buildpack
         if 'build_pack' in module:
