@@ -105,15 +105,12 @@ class Rollback():
 
     def execute(self):
         log("Rollbacking module", self._log_file)
-        if 'options' in self._job:
-            if len(self._job['options']) > 0:
-                deploy_id = self._job['options'][0]
-                try:
-                    self._execute_rollback(deploy_id)
-                    self._worker.update_status("done", message="Rollback OK: [{0}]".format(module_list))
-                except GCallException as e:
-                    self._worker.update_status("failed", message="Rollback Failed: [{0}]\n{1}".format(module_list, str(e)))
-                finally:
-                    return
-        self._worker.update_status("failed", message="Incorrect job request: missing options field with deploy_id")
-
+        if 'options' in self._job and len(self._job['options']) > 0:
+            deploy_id = self._job['options'][0]
+            try:
+                self._execute_rollback(deploy_id)
+                self._worker.update_status("done", message="Rollback OK: [{0}]".format(deploy_id))
+            except GCallException as e:
+                self._worker.update_status("failed", message="Rollback Failed: [{0}]\n{1}".format(deploy_id, str(e)))
+        else:
+            self._worker.update_status("failed", message="Incorrect job request: missing options field deploy_id")
