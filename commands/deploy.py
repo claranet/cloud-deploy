@@ -144,7 +144,8 @@ class Deploy():
                     self._initialize_module(module)
 
             for module in self._apps_modules:
-                self._execute_deploy(module)
+                deployment_id = self._execute_deploy(module)
+                self._worker._db.jobs.update({ '_id': self._job['_id'], 'modules.name': module['name']}, {'$set': {'modules.$.deployment_id': deployment_id }})
 
             self._worker.update_status("done", message="Deployment OK: [{0}]".format(module_list))
         except GCallException as e:
@@ -190,6 +191,10 @@ class Deploy():
         key.set_contents_from_filename(manifest_path)
 
     def _execute_deploy(self, module):
+        """
+        Returns the deployment id
+        """
+
         now = datetime.datetime.utcnow()
         ts = calendar.timegm(now.timetuple())
 
@@ -265,4 +270,4 @@ class Deploy():
             self._start_autoscale()
         self._purge_old_modules(module)
         deployment = {'app_id': self._app['_id'], 'job_id': self._job['_id'], 'module': module['name'], 'commit': commit, 'timestamp': ts, 'package': pkg_name, 'module_path': module['path']}
-        self._worker._db.deploy_histories.insert(deployment)
+        return self._worker._db.deploy_histories.insert(deployment).inserted_id
