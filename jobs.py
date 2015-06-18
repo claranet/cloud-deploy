@@ -33,7 +33,7 @@ jobs_schema = {
                 }, 'rev': {
                     'type': 'string', 'default': 'HEAD'
                 }, 'deploy_id': {
-                    'type': 'string', 'readonly': True
+                    'type': 'string'
                 }
             }
         }
