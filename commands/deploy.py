@@ -144,8 +144,8 @@ class Deploy():
                     self._initialize_module(module)
 
             for module in self._apps_modules:
-                deployment_id = self._execute_deploy(module)
-                self._worker._db.jobs.update({ '_id': self._job['_id'], 'modules.name': module['name']}, {'$set': {'modules.$.deployment_id': deployment_id }})
+                deploy_id = self._execute_deploy(module)
+                self._worker._db.jobs.update({ '_id': self._job['_id'], 'modules.name': module['name']}, {'$set': {'modules.$.deploy_id': deploy_id }})
 
             self._worker.update_status("done", message="Deployment OK: [{0}]".format(module_list))
         except GCallException as e:
