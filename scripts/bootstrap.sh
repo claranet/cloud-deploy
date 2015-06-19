@@ -26,16 +26,20 @@ function deploy_module() {
     echo "Extracting module in /ghost/$2" >> /tmp/$LOGFILE
     tar xvzf /tmp/$2 -C /ghost/$2 > /dev/null
     rm -rf /tmp/$2
-    rm -rf $3
     cd /ghost/$2
+
     if [ -e predeploy ]
     then
         echo "Executing predeploy script..." >> /tmp/$LOGFILE
         chmod +x predeploy
         ./predeploy
     fi
+
+    # Replace old module after pre-deploy and before post-deploy
+    rm -rf $3
     ln -s /ghost/$2 $3
     cd $3
+
     if [ -e postdeploy ]
     then
         echo "Executing postdeploy script..." >> /tmp/$LOGFILE
