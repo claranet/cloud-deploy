@@ -2,8 +2,6 @@ from subprocess import call
 from boto import ec2
 import boto.ec2.autoscale
 from boto.ec2.autoscale import LaunchConfiguration
-from boto.ec2.autoscale import AutoScaleConnection
-from boto.ec2.blockdevicemapping import EBSBlockDeviceType, BlockDeviceMapping
 import time
 from jinja2 import Environment, FileSystemLoader
 import os
@@ -23,13 +21,17 @@ def gcall(args, cmd_description, log_fd, dry_run=False):
             raise GCallException("ERROR: %s" % cmd_description)
 
 def find_ec2_instances(ghost_app, ghost_env, ghost_role, region):
+    conn_as = boto.ec2.autoscale.connect_to_region(region)
     conn = ec2.connect_to_region(region)
-    reservations = conn.get_all_instances(filters={"tag:env": ghost_env, \
-            "tag:role": ghost_role, "tag:app": ghost_app, \
-            "instance-state-name":"running"})
+    instances = conn.get_only_instances(filters={"tag:env": ghost_env,
+                                                 "tag:role": ghost_role,
+                                                 "tag:app": ghost_app,
+                                                 "instance-state-name": "running"})
     hosts = []
-    for reservation in reservations:
-        for instance in reservation.instances:
+    for instance in instances:
+        # Instances in autoscale "Terminating:*" states are still "running" but no longer in the Load Balancer
+        autoscale_instances = conn_as.get_all_autoscaling_instances(instance_ids=[instance.id])
+        if not autoscale_instances or not autoscale_instances[0].state in ['Terminating:Wait', 'Terminating:Proceed']:
             hosts.append(instance.private_ip_address)
     if (len(hosts) == 0):
         raise GCallException("No instance found with tags app:%s, role:%s, env:%s, region:%s" \
