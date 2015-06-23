@@ -1,16 +1,12 @@
-from subprocess import call
 import datetime
-import logging
 import yaml
 from settings import MONGO_DBNAME
-from boto import sns
-from boto.ec2 import autoscale
-from redis import Redis
 from rq import get_current_job, Connection
 from pymongo import MongoClient
 from bson.objectid import ObjectId
 from notification import Notification
 import os
+import sys
 
 LOG_ROOT='/var/log/ghost'
 ROOT_PATH=os.path.dirname(os.path.realpath(__file__))
@@ -124,7 +120,16 @@ class Worker:
         klass_name = self.job['command'].title()
         mod = __import__('commands.' + self.job['command'], fromlist=[klass_name])
         command = getattr(mod, klass_name)(self)
-        result = command.execute()
+
+        # Execute command and always mark the job as 'failed' in case of an unexpected exception
+        try:
+            command.execute()
+        except :
+            message = sys.exc_info()[0]
+            self.update_status("failed", message)
+            self._log(message)
+            raise
+
         self._close_log_file()
         self._mail_log_action()
         self._disconnect_db()
