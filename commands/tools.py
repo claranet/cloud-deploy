@@ -31,7 +31,7 @@ def find_ec2_instances(ghost_app, ghost_env, ghost_role, region):
     for instance in instances:
         # Instances in autoscale "Terminating:*" states are still "running" but no longer in the Load Balancer
         autoscale_instances = conn_as.get_all_autoscaling_instances(instance_ids=[instance.id])
-        if not autoscale_instances or not autoscale_instances[0].state in ['Terminating:Wait', 'Terminating:Proceed']:
+        if not autoscale_instances or not autoscale_instances[0].lifecycle_state in ['Terminating:Wait', 'Terminating:Proceed']:
             hosts.append(instance.private_ip_address)
     if (len(hosts) == 0):
         raise GCallException("No instance found with tags app:%s, role:%s, env:%s, region:%s" \
