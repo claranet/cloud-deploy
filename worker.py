@@ -129,10 +129,10 @@ class Worker:
             self.update_status("failed", message)
             self._log(message)
             raise
-
-        self._close_log_file()
-        self._mail_log_action()
-        self._disconnect_db()
+        finally:
+            self._close_log_file()
+            self._mail_log_action()
+            self._disconnect_db()
 
 
 # task_init_app()
