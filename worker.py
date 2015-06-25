@@ -1,11 +1,11 @@
 from datetime import datetime
-from eve import RFC1123_DATE_FORMAT
 import yaml
 from settings import MONGO_DBNAME
 from rq import get_current_job, Connection
 from pymongo import MongoClient
 from bson.objectid import ObjectId
 from notification import Notification
+from commands.tools import log
 import os
 import sys
 
@@ -56,10 +56,6 @@ class Worker:
         conf_file_path = rootdir + "/config.yml"
         conf_file = open(conf_file_path, 'r')
         self._config = yaml.load(conf_file)
-
-
-    def _log(self, message):
-        self.log_file.write("{timestamp}: {message}\n".format(timestamp=datetime.strptime(datetime.now(), RFC1123_DATE_FORMAT), message=message))
 
 
     def _connect_db(self):
@@ -128,7 +124,7 @@ class Worker:
         except :
             message = sys.exc_info()[0]
             self.update_status("failed", message)
-            self._log(message)
+            log(message, self.log_file)
             raise
         finally:
             self._close_log_file()

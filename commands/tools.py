@@ -1,3 +1,5 @@
+from datetime import datetime
+from eve import RFC1123_DATE_FORMAT
 from subprocess import call
 from boto import ec2
 import boto.ec2.autoscale
@@ -39,7 +41,7 @@ def find_ec2_instances(ghost_app, ghost_env, ghost_role, region):
     return hosts
 
 def log(message, fd):
-    fd.write("{message}\n".format(message=message))
+    fd.write("{timestamp}: {message}\n".format(timestamp=datetime.strptime(datetime.now(), RFC1123_DATE_FORMAT), message=message))
 
 def create_launch_config(app, userdata, ami_id):
     d = time.strftime('%d%m%Y-%H%M',time.localtime())
