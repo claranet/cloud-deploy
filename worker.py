@@ -1,4 +1,5 @@
-import datetime
+from datetime import datetime
+from eve import RFC1123_DATE_FORMAT
 import yaml
 from settings import MONGO_DBNAME
 from rq import get_current_job, Connection
@@ -58,7 +59,7 @@ class Worker:
 
 
     def _log(self, message):
-        self.log_file.write("{message}\n".format(message=message))
+        self.log_file.write("{timestamp}: {message}\n".format(timestamp=datetime.strptime(datetime.now(), RFC1123_DATE_FORMAT), message=message))
 
 
     def _connect_db(self):
@@ -80,7 +81,7 @@ class Worker:
     def update_status(self, status, message=None):
         self.job['status'] = status
         self.job['message'] = message
-        self._db.jobs.update({ '_id': self.job['_id']}, {'$set': {'status': status, 'message': message, '_updated': datetime.datetime.now()}})
+        self._db.jobs.update({ '_id': self.job['_id']}, {'$set': {'status': status, 'message': message, '_updated': datetime.now()}})
 
     def module_initialized(self, module_name):
         self._db.apps.update({ '_id': self.app['_id'], 'modules.name': module_name}, {'$set': { 'modules.$.initialized': True }})
