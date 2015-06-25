@@ -8,6 +8,7 @@ from notification import Notification
 from commands.tools import log
 import os
 import sys
+import traceback
 
 LOG_ROOT='/var/log/ghost'
 ROOT_PATH=os.path.dirname(os.path.realpath(__file__))
@@ -122,6 +123,7 @@ class Worker:
         try:
             command.execute()
         except :
+            traceback.print_exc()
             message = sys.exc_info()[0]
             self.update_status("failed", message)
             log(message, self.log_file)
