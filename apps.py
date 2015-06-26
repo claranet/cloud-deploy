@@ -1,14 +1,13 @@
 import env
 import instance_role
-import aws_data
 import ressources
 
 apps_schema = {
     'name': {
         'type': 'string', 'regex': '^[a-zA-Z0-9_.+-]*$', 'required': True
     },
-    'region': {'type': 'string', 'allowed': ['us-east-1', 'eu-west-1']},
-    'instance_type': {'type': 'string', 'allowed': aws_data.instance_type},
+    'region': {'type': 'string'},
+    'instance_type': {'type': 'string'},
     'env': {'type': 'string', 'allowed': env.env, 'required': True},
     'features': {
         'type': 'list', 'schema': {
