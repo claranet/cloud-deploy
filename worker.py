@@ -33,7 +33,7 @@ def format_notif(app, job):
                                   user=job['user'],
                                   status=job['status'],
                                   message=job['message'])
-    message_template = "Application: {app_name}\nEnvironment: {app_env}\nAction: {command}\nStarted: 2015-06-10 17:09:38\nStatus: {status}\nUser: {user}\nMessage: {message}"
+    message_template = "Application: {app_name}\nEnvironment: {app_env}\nAction: {command}\nStarted: {started}\nStatus: {status}\nUser: {user}\nMessage: {message}"
     message = message_template.format(app_name=app['name'],
                                       app_env=app['env'],
                                       command=job['command'],
