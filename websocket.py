@@ -1,6 +1,7 @@
 from flask.ext.socketio import SocketIO, emit
 import os
 import gevent
+from ansi2html import Ansi2HTMLConverter
 
 LOG_ROOT='/var/log/ghost'
 
@@ -8,6 +9,7 @@ def create_ws(app):
     socketio = SocketIO(app)
 
     def follow(filename):
+        conv = Ansi2HTMLConverter()
         last_pos = 0
         hub = gevent.get_hub()
         print(hub)
@@ -17,7 +19,8 @@ def create_ws(app):
                 while True:
                     f.seek(last_pos)
                     for line in f:
-                        emit('job', line)
+                        html = conv.convert(line)
+                        emit('job', html)
                     last_pos = f.tell()
                     hub.wait(watcher)
         except IOError:
