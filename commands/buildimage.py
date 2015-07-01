@@ -97,7 +97,7 @@ class Buildimage():
         log("Generating a new AMI", self._log_file)
         log(json_packer, self._log_file)
         print("Packer start")
-        pack = Packer(json_packer, self._config)
+        pack = Packer(json_packer, self._config, self._log_file)
         print("Packer end")
         ami_id = pack.build_image(self._format_salt_top_from_app_features(), self._format_salt_pillar_from_app_features())
         if ami_id is not "ERROR":

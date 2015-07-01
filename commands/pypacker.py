@@ -14,8 +14,9 @@ SALT_LOCAL_TREE="/tmp/salt/"
 logging.basicConfig(filename="/tmp/packer.log")
 
 class Packer:
-    def __init__(self, packer_config, config):
+    def __init__(self, packer_config, config, log_file):
         print("Packer __init__ start")
+        self._log_file = log_file
         self.packer_config = json.loads(packer_config)
         self.unique = str(uuid4())
         if not os.path.exists(PACKER_JSON_PATH):
@@ -87,10 +88,11 @@ class Packer:
         if not os.path.isdir('/tmp/root'):
             os.makedirs('/tmp/root')
         try:
-            new_env = os.environ.copy()
-            new_env['PACKER_LOG'] = '1'
-            new_env['PACKER_LOG_PATH'] = SALT_LOCAL_TREE + self.unique + '/packer.log'
-            result = packer.build(self.packer_file_path, _env=new_env)
+            #new_env = os.environ.copy()
+            #new_env['PACKER_LOG'] = '1'
+            #new_env['PACKER_LOG_PATH'] = SALT_LOCAL_TREE + self.unique + '/packer.log'
+            #result = packer.build(self.packer_file_path, _env=new_env)
+            result = packer.build(self.packer_file_path, _out=self._log_file, _err=self._log_file)
             ami = re.findall('ami-[a-z0-9]*$', result.rstrip())[0]
             logging.debug(result)
         except sh.ErrorReturnCode as e:
