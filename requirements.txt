@@ -36,3 +36,4 @@ WTForms==2.0.2
 yapf==0.1.9
 flask-socketio==0.6.0
 gunicorn==18.0
+ansi2html==1.1.0
