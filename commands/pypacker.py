@@ -92,7 +92,7 @@ class Packer:
             #new_env['PACKER_LOG'] = '1'
             #new_env['PACKER_LOG_PATH'] = SALT_LOCAL_TREE + self.unique + '/packer.log'
             #result = packer.build(self.packer_file_path, _env=new_env)
-            result = packer.build(self.packer_file_path, _out=self._log_file, _err=self._log_file)
+            result = packer.build(self.packer_file_path, _err=self._log_file)
             ami = re.findall('ami-[a-z0-9]*$', result.rstrip())[0]
             logging.debug(result)
         except sh.ErrorReturnCode as e:
