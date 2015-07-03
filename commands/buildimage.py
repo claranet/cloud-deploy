@@ -67,8 +67,18 @@ class Buildimage():
             'ssh_username': self._app['build_infos']['ssh_username'],
             'vpc_id': self._app['vpc_id'],
             'subnet_id': self._app['build_infos']['subnet_id'],
-            'associate_public_ip_address': '1'
+            'associate_public_ip_address': '1',
+            'ami_block_device_mappings']: []
         }
+
+        for opt_vol in self._app['environment_infos']['optional_volumes']:
+            block = {'device_name': opt_vol['device_name'],
+                    'volume_type': opt_vol['volume_type'],
+                    'volume_size': opt_vol['volume_size']}
+            if 'iops' in opt_vol:
+                block['iops'] = opt_vol['iops']
+            datas['ami_block_device_mappings'].append(block)
+
         return json.dumps(datas, sort_keys=True, indent=4, separators=(',', ': '))
 
     def _format_salt_top_from_app_features(self):

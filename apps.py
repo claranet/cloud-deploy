@@ -1,6 +1,7 @@
 import env
 import instance_role
 import ressources
+import volumes
 
 apps_schema = {
     'name': {
@@ -76,7 +77,8 @@ apps_schema = {
         'root_block_device': {'type': 'dict', 'schema': {
             'size': {'type': 'integer'},
             'name': {'type': 'string', 'regex': '^/[a-z0-9]+/[a-z0-9]+$'}
-        }}
+        }},
+        'optional_volumes': {'type': 'list', 'required': False, 'schema': volumes.block}
     }},
     'user': {'type': 'string'},
 }
