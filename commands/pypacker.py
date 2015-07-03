@@ -66,7 +66,8 @@ class Packer:
             'ssh_username': self.packer_config['ssh_username'],
             'vpc_id': self.packer_config['vpc_id'],
             'subnet_id': self.packer_config['subnet_id'],
-            'associate_public_ip_address': self.packer_config['associate_public_ip_address']
+            'associate_public_ip_address': self.packer_config['associate_public_ip_address'],
+            'ami_block_device_mappings': self.packer_config['ami_block_device_mappings']
             }]
         provisioners = [{
             'type': 'salt-masterless',
