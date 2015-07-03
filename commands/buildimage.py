@@ -78,6 +78,7 @@ class Buildimage():
             if 'iops' in opt_vol:
                 block['iops'] = opt_vol['iops']
             datas['ami_block_device_mappings'].append(block)
+            import pdb;pdb.set_trace
 
         return json.dumps(datas, sort_keys=True, indent=4, separators=(',', ': '))
 
