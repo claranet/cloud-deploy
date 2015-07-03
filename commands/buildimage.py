@@ -68,7 +68,7 @@ class Buildimage():
             'vpc_id': self._app['vpc_id'],
             'subnet_id': self._app['build_infos']['subnet_id'],
             'associate_public_ip_address': '1',
-            'ami_block_device_mappings']: []
+            'ami_block_device_mappings': []
         }
 
         for opt_vol in self._app['environment_infos']['optional_volumes']:
