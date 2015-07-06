@@ -83,6 +83,12 @@ class Packer:
         logging.debug("Writing Packer definition to: {0}", self.packer_file_path)
         json.dump(packer_json, stream, sort_keys=True, indent=4, separators=(',', ': '))
 
+    def _extract_last_line(log_file_path):
+        with open(log_file_path, 'rb') as fh:
+            fh.seek(-1024, os.SEEK_END)
+            last = fh.readlines()[-1].decode()
+            return last
+
     def build_image(self, salt_params, features):
         self._build_salt_top(salt_params)
         self._build_salt_pillar(features)
@@ -90,9 +96,12 @@ class Packer:
         if not os.path.isdir('/tmp/root'):
             os.makedirs('/tmp/root')
         try:
-            result = packer.build(self.packer_file_path)
+            new_env = os.environ.copy()
+            new_env['PACKER_LOG'] = '1'
+            new_env['PACKER_LOG_PATH'] = SALT_LOCAL_TREE + self.unique + '/packer.log'
+            packer.build(self.packer_file_path, _env=new_env, _out=self._log_file)
+            result = self._extract_last_line(new_env['PACKER_LOG_PATH'])
             ami = re.findall('ami-[a-z0-9]*$', result.rstrip())[0]
-            log(result, self._log_file)
         except sh.ErrorReturnCode as e:
             ami = "ERROR"
             logging.error(e)
