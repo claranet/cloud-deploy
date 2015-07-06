@@ -1,5 +1,6 @@
 from uuid import uuid4
-from sh import packer, git
+from sh import git
+from subprocess32 import Popen, PIPE
 from commands.tools import log
 import sh
 import logging
@@ -83,11 +84,30 @@ class Packer:
         logging.debug("Writing Packer definition to: {0}", self.packer_file_path)
         json.dump(packer_json, stream, sort_keys=True, indent=4, separators=(',', ': '))
 
-    def _extract_last_line(log_file_path):
-        with open(log_file_path, 'rb') as fh:
-            fh.seek(-1024, os.SEEK_END)
-            last = fh.readlines()[-1].decode()
-            return last
+    def _run_packer_cmd(self, cmd):
+        result = ""
+        process = Popen(cmd, stdout=PIPE)
+        while True:
+            output = process.stdout.readline()
+            if output == '' and process.poll() is not None:
+                break
+            if output:
+                out_tab = output.strip().split(',')
+                if len(out_tab) > 3:
+                    ts = out_tab[0]
+                    target = out_tab[1]
+                    msg_type = out_tab[2]
+                    data = out_tab[3]
+                    if (msg_type == "ui" and len(out_tab) > 4):
+                        log("{0}".format(out_tab[4]), self._log_file)
+                    elif (msg_type == "artifact"):
+                        if len(out_tab) > 4 and out_tab[4] == "id":
+                            result = out_tab[5]
+                            log("AMI: {0}".format(result), self._log_file)
+                    else:
+                        log("{0}: {1}".format(msg_type, data), self._log_file)
+        rc = process.poll()
+        return rc, result
 
     def build_image(self, salt_params, features):
         self._build_salt_top(salt_params)
@@ -95,14 +115,9 @@ class Packer:
         self._build_packer_json()
         if not os.path.isdir('/tmp/root'):
             os.makedirs('/tmp/root')
-        try:
-            new_env = os.environ.copy()
-            new_env['PACKER_LOG'] = '1'
-            new_env['PACKER_LOG_PATH'] = SALT_LOCAL_TREE + self.unique + '/packer.log'
-            packer.build(self.packer_file_path, _env=new_env, _out=self._log_file)
-            result = self._extract_last_line(new_env['PACKER_LOG_PATH'])
-            ami = re.findall('ami-[a-z0-9]*$', result.rstrip())[0]
-        except sh.ErrorReturnCode as e:
+        ret_code, result = self._run_packer_cmd(['packer', 'build', '-machine-readable', self.packer_file_path])
+        if (ret_code == 0):
+            ami = result.split(':')[1]
+        else:
             ami = "ERROR"
-            logging.error(e)
         return ami
