@@ -17,7 +17,7 @@ apps_schema = {
                     'type': 'string', 'regex': '^[a-zA-Z0-9\.\-\_]*$',
                     'required': True
                 }, 'version': {
-                    'type': 'string', 'regex': '^[a-zA-Z0-9\.\-\_]*$',
+                    'type': 'string', 'regex': '^[a-zA-Z0-9\.\-\_\/:]*$',
                     'required': False
                 }
             }
