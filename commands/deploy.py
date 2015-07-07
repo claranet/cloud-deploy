@@ -206,7 +206,7 @@ class Deploy():
 
         if not os.path.exists(full_clone_path + '/.git'):
             gcall("rm -rf {full_clone_path}".format(full_clone_path=full_clone_path), "Cleaning up full clone destination", self._log_file)
-            gcall("git clone --recursive {git_repo} {full_clone_path}".format(git_repo=git_repo, full_clone_path=full_clone_path), "Git full cloning from remote %s" % git_repo, self._log_file)
+            gcall("git clone {git_repo} {full_clone_path}".format(git_repo=git_repo, full_clone_path=full_clone_path), "Git full cloning from remote %s" % git_repo, self._log_file)
 
         # Update existing clone
         os.chdir(full_clone_path)
@@ -223,7 +223,8 @@ class Deploy():
 
         # Shallow clone from the full clone to limit the size of the generated archive
         gcall("rm -rf {shallow_clone_path}".format(shallow_clone_path=shallow_clone_path), "Removing previous shallow clone", self._log_file)
-        gcall("git clone --depth=100 file://{full_clone_path} {shallow_clone_path}".format(full_clone_path=full_clone_path, shallow_clone_path=shallow_clone_path), "Git shallow cloning from previous clone", self._log_file)
+        gcall("git clone --recursive --depth=100 file://{full_clone_path} {shallow_clone_path}".format(full_clone_path=full_clone_path, shallow_clone_path=shallow_clone_path), "Git shallow cloning from previous clone", self._log_file)
+        gcall("git submodule update --recursive", "Git update submodules", self._log_file)
 
         # chdir into newly created shallow clone and reset remote origin URL
         os.chdir(shallow_clone_path)
