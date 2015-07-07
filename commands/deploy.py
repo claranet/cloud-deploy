@@ -226,6 +226,3 @@ class Deploy():
         self._purge_old_modules(module)
         deployment = {'app_id': self._app['_id'], 'job_id': self._job['_id'], 'module': module['name'], 'commit': commit, 'timestamp': ts, 'package': pkg_name, 'module_path': module['path']}
         self._worker._db.deploy_histories.insert(deployment)
-
-    def finish():
-        pass
