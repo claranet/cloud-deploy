@@ -224,7 +224,7 @@ class Deploy():
         # Shallow clone from the full clone to limit the size of the generated archive
         gcall("rm -rf {shallow_clone_path}".format(shallow_clone_path=shallow_clone_path), "Removing previous shallow clone", self._log_file)
         gcall("git clone --recursive --depth=100 file://{full_clone_path} {shallow_clone_path}".format(full_clone_path=full_clone_path, shallow_clone_path=shallow_clone_path), "Git shallow cloning from previous clone", self._log_file)
-        gcall("git submodule update --recursive", "Git update submodules", self._log_file)
+        gcall("git submodule update --recursive --depth=100", "Git update submodules", self._log_file)
 
         # chdir into newly created shallow clone and reset remote origin URL
         os.chdir(shallow_clone_path)
