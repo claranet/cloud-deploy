@@ -49,10 +49,10 @@ class Deploy():
         return "/ghost/{name}/{env}/{role}".format(name=self._app['name'], env=self._app['env'], role=self._app['role'])
 
     def _get_full_clone_path_from_module(self, module):
-        return "/ghost/{name}/{env}/{role}/{module}".format(name=self._app['name'], env=self._app['env'], role=self._app['role'], module=module['name'])
+        return self._get_buildpack_clone_path_from_module(module) + '-full'
 
-    def _get_shallow_clone_path_from_module(self, module):
-        return self._get_full_clone_path_from_module(module) + '-shallow'
+    def _get_buildpack_clone_path_from_module(self, module):
+        return "/ghost/{name}/{env}/{role}/{module}".format(name=self._app['name'], env=self._app['env'], role=self._app['role'], module=module['name'])
 
     def _initialize_module(self, module):
         full_clone_path = self._get_full_clone_path_from_module(module)
@@ -105,7 +105,7 @@ class Deploy():
             log("WARNING: no instance available to sync deployment", self._log_file)
 
     def _package_module(self, module, ts, commit):
-        os.chdir(self._get_shallow_clone_path_from_module(module))
+        os.chdir(self._get_buildpack_clone_path_from_module(module))
         pkg_name = "{0}_{1}_{2}".format(ts, module['name'], commit)
         gcall("tar cvzf ../%s . > /dev/null" % pkg_name, "Creating package: %s" % pkg_name, self._log_file)
         gcall("aws --region {region} s3 cp ../{0} s3://{bucket_s3}{path}/".format(pkg_name, \
@@ -200,7 +200,7 @@ class Deploy():
 
         git_repo = module['git_repo']
         full_clone_path = self._get_full_clone_path_from_module(module)
-        shallow_clone_path = self._get_shallow_clone_path_from_module(module)
+        shallow_clone_path = self._get_buildpack_clone_path_from_module(module)
         revision = self._get_module_revision(module['name'])
 
         if not os.path.exists(full_clone_path + '/.git'):
