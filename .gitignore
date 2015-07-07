@@ -7,6 +7,7 @@ bin
 .composer/
 .config/
 config.yml
+.dbshell
 develop-eggs
 dist
 downloads
@@ -14,6 +15,8 @@ eggs
 .gitconfig
 installed.cfg
 .lesshst
+mbox
+.mongorc.js
 .node-gyp/
 .npm/
 .packer.d/

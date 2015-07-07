@@ -105,11 +105,12 @@ class Deploy():
             log("WARNING: no instance available to sync deployment", self._log_file)
 
     def _package_module(self, module, ts, commit):
-        os.chdir(self._get_buildpack_clone_path_from_module(module))
+        path = self._get_buildpack_clone_path_from_module(module)
+        os.chdir(path)
         pkg_name = "{0}_{1}_{2}".format(ts, module['name'], commit)
         gcall("tar cvzf ../%s . > /dev/null" % pkg_name, "Creating package: %s" % pkg_name, self._log_file)
         gcall("aws --region {region} s3 cp ../{0} s3://{bucket_s3}{path}/".format(pkg_name, \
-                bucket_s3=self._config['bucket_s3'], region=self._app['region'], path=self._get_full_clone_path_from_module(module)), "Uploading package: %s" % pkg_name, self._log_file)
+                bucket_s3=self._config['bucket_s3'], region=self._app['region'], path=path), "Uploading package: %s" % pkg_name, self._log_file)
         gcall("rm -f ../{0}".format(pkg_name), "Deleting local package: %s" % pkg_name, self._log_file)
         return pkg_name
 
