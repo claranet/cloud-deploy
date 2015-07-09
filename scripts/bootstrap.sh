@@ -36,7 +36,8 @@ function deploy_module() {
     fi
 
     # Replace old module after pre-deploy and before post-deploy
-    ln -sf /ghost/$2 $3
+    ln -s /ghost/$2 /tmp/"$APP"_"$3"
+    mv -T /tmp/"$APP"_"$3" $3
     cd $3
 
     if [ -e postdeploy ]
