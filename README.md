@@ -2,12 +2,15 @@
 
 ## Dev
 Installing requirements:
+
     $ pip install -r requirements.txt
 
 Checking for updates:
+
     $ pip-review
 
 Running unit tests:
+
     $ python -m doctest -v web_ui/*.py
 
 # Deployment
@@ -17,6 +20,7 @@ Running unit tests:
 * python pip boto awscli
 * s3cmd (prendre version GitHub sinon cela ne fonctionne pas)
 * Role IAM avec Policy :
+
     {
       "Version": "2012-10-17",
       "Statement": [
@@ -39,13 +43,15 @@ Running unit tests:
 * les packages contenu dans requirements.txt
 
 # Configuration:
-db.config.insert({ "ses_settings": {"aws_access_key": "SES_AWS_ACCESS_KEY", "aws_secret_key": "SES_AWS_SECRET_KEY", "region": "eu-west-1"}})
+
+    db.config.insert({ "ses_settings": {"aws_access_key": "SES_AWS_ACCESS_KEY", "aws_secret_key": "SES_AWS_SECRET_KEY", "region": "eu-west-1"}})
 
 # Notes
 * Necessite une version de Fabric >= 1.10.1 (Bug encoding fixed)
 
 # Example data
     JOB
+
     {
         command: "deploy",
         parameters: [options: "hard", app_id: APPLICATION_ID, modules: [name: "php5", rev: "staging"]],
@@ -70,7 +76,6 @@ db.config.insert({ "ses_settings": {"aws_access_key": "SES_AWS_ACCESS_KEY", "aws
         "instance_type": "t2.small"
         "autoscale": {"min": 1, "max": 2, "current": 1}
     }
-
 
 # TODO
 ## Gestion des rôles par ressources OK
