@@ -125,8 +125,8 @@ class Worker:
         except :
             traceback.print_exc()
             message = sys.exc_info()[0]
-            self.update_status("failed", message)
             log(message, self.log_file)
+            self.update_status("failed", str(message))
             raise
         finally:
             self._close_log_file()
