@@ -7,7 +7,7 @@ import shutil
 import tempfile
 from sh import git, grep
 from pymongo import MongoClient, ASCENDING, DESCENDING
-from commands.tools import GCallException, gcall, log, find_ec2_instances
+from commands.tools import GCallException, gcall, log, find_ec2_instances, refresh_stage2
 from commands.initrepo import InitRepo
 from boto.ec2 import autoscale
 import boto.s3
@@ -133,6 +133,7 @@ class Deploy():
 
     def execute(self):
         self._apps_modules = self._find_modules_by_name(self._job['modules'])
+        refresh_stage2(self._config['bucket_s3'], self._app['region'], self._config['ghost_root_path'])
         module_list = []
         for module in self._apps_modules:
             if 'name' in module:

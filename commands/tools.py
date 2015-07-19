@@ -4,6 +4,7 @@ from subprocess import call
 from boto import ec2
 import boto.ec2.autoscale
 from boto.ec2.autoscale import LaunchConfiguration
+import boto.s3
 import time
 from jinja2 import Environment, FileSystemLoader
 import os
@@ -66,12 +67,30 @@ def create_launch_config(app, userdata, ami_id):
 
 def generate_userdata(bucket_s3, root_ghost_path):
     jinja_templates_path='%s/scripts' % root_ghost_path
-    if(os.path.exists('%s/bootstrap.sh' % jinja_templates_path)):
+    if(os.path.exists('%s/stage1' % jinja_templates_path)):
         loader=FileSystemLoader(jinja_templates_path)
         jinja_env = Environment(loader=loader)
-        template = jinja_env.get_template('bootstrap.sh')
+        template = jinja_env.get_template('stage1')
         userdata = template.render(bucket_s3=bucket_s3)
         return userdata
+    else:
+        return ""
+
+def refresh_stage2(bucket_s3, region, root_ghost_path):
+    """
+    Will update the second phase of boostrap script on S3
+    """
+    conn = s3.connect_to_region(region)
+    bucket = s3.get_bucket(bucket_s3)
+    k = bucket.new_key("/ghost/stage2")
+    jinja_templates_path='%s/scripts' % root_ghost_path
+    if(os.path.exists('%s/stage2' % jinja_templates_path)):
+        loader=FileSystemLoader(jinja_templates_path)
+        jinja_env = Environment(loader=loader)
+        template = jinja_env.get_template('stage2')
+        stage2 = template.render(bucket_s3=bucket_s3)
+        k.set_contents_from_string(stage2)
+
 
 def check_autoscale_exists(as_name, region):
     conn_as = boto.ec2.autoscale.connect_to_region(region)
