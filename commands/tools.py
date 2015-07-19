@@ -4,7 +4,7 @@ from subprocess import call
 from boto import ec2
 import boto.ec2.autoscale
 from boto.ec2.autoscale import LaunchConfiguration
-import boto.s3
+from boto import s3
 import time
 from jinja2 import Environment, FileSystemLoader
 import os
