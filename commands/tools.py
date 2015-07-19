@@ -81,7 +81,7 @@ def refresh_stage2(bucket_s3, region, root_ghost_path):
     Will update the second phase of boostrap script on S3
     """
     conn = s3.connect_to_region(region)
-    bucket = s3.get_bucket(bucket_s3)
+    bucket = conn.get_bucket(bucket_s3)
     k = bucket.new_key("/ghost/stage2")
     jinja_templates_path='%s/scripts' % root_ghost_path
     if(os.path.exists('%s/stage2' % jinja_templates_path)):
