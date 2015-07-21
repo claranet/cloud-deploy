@@ -35,9 +35,16 @@ function deploy_module() {
         ./predeploy
     fi
 
+    # Clear folder if not a symlink (not a Ghost managed module)
+    if ! [ -h $3 ]
+    then
+        echo "Clearing unmanaged folder..." >> /tmp/$LOGFILE
+        rm -rfv $3
+    fi
+
     # Replace old module after pre-deploy and before post-deploy
-    ln -s /ghost/$2 /tmp/"$APP"_"$ROLE"
-    mv -T /tmp/"$APP"_"$ROLE" $3
+    ln -s /ghost/$2 /tmp/$2
+    mv -T /tmp/$2 $3
     cd $3
 
     if [ -e postdeploy ]
