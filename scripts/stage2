@@ -33,6 +33,11 @@ function deploy_module() {
         echo "Executing predeploy script..." >> /tmp/$LOGFILE
         chmod +x predeploy
         ./predeploy
+        local status=$?
+        if [ $status -ne 0 ]; then
+            echo "Predeploy failed...Exiting" >> /tmp/$LOGFILE
+            exit -1
+        fi
     fi
 
     # Clear folder if not a symlink (not a Ghost managed module)
@@ -43,8 +48,7 @@ function deploy_module() {
     fi
 
     # Replace old module after pre-deploy and before post-deploy
-    ln -s /ghost/$2 /tmp/$2
-    mv -T /tmp/$2 $3
+    ln -fsn /ghost/$2 $3
     cd $3
 
     if [ -e postdeploy ]
