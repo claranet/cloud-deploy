@@ -98,7 +98,7 @@ class Deploy():
         hosts = find_ec2_instances(self._app['name'], self._app['env'], self._app['role'], self._app['region'])
         task_name = "deploy:{0},{1}".format(self._config['bucket_s3'], module['name'])
         if len(hosts) > 0:
-            cmd = "/usr/local/bin/fab -i {key_path} set_hosts:ghost_app={app},ghost_env={env},ghost_role={role},region={aws_region} {0}".format(task_name, \
+            cmd = "/usr/local/bin/fab --show=debug -i {key_path} set_hosts:ghost_app={app},ghost_env={env},ghost_role={role},region={aws_region} {0}".format(task_name, \
                     key_path=self._config['key_path'], app=self._app['name'], env=self._app['env'], role=self._app['role'], aws_region=self._app['region'])
             gcall(cmd, "Updating current instances", self._log_file)
         else:
