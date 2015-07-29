@@ -138,6 +138,10 @@ def purge_launch_configuration(app):
 
 def create_block_device(rbd={}):
     dev_sda1 = boto.ec2.blockdevicemapping.EBSBlockDeviceType(delete_on_termination=True)
+    if 'type' in rbd:
+        dev_sda1.volume_type = rbd['type']
+    else:
+        dev_sda1.volume_type = "gp2"
     if 'size' in rbd:
         dev_sda1.size = rbd['size']
     else:
