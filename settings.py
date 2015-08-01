@@ -1,5 +1,5 @@
-import jobs
-import apps
+from models import jobs
+from models import apps
 
 # Let's just use the local mongod instance. Edit as needed.
 
