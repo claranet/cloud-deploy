@@ -37,7 +37,7 @@ class Packer:
         self.salt_top_path = self.salt_path + '/top.sls'
         stream = file(self.salt_top_path, 'w')
         logging.debug("Writing Salt Top state to: {0}".format(self.salt_top_path))
-        data = {'base': {'*': []}}
+        data = {'base': {'*': ['upgrade']}}
         data['base']['*'] = params
         print('state: top.sls: {0}'.format(data))
         yaml.dump(data, stream, default_flow_style=False)
