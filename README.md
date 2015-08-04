@@ -77,3 +77,8 @@ Running unit tests:
         "instance_type": "t2.small"
         "autoscale": {"min": 1, "max": 2, "current": 1}
     }
+
+# Updating AWS data
+Requires curl, nodejs and jq:
+
+    (echo 'function callback(data) { console.log(JSON.stringify(data)); }'; curl -s 'http://a0.awsstatic.com/pricing/1/ec2/linux-od.min.js') | nodejs | jq -r '.config.regions' > aws_data_instance_types.json

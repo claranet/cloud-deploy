@@ -1,37 +1,18 @@
 from boto.ec2.instancetype import InstanceType
-from boto.vpc import VPC
 
-instance_types = [
-    InstanceType(name='t2.micro', cores='N/A', memory='N/A', disk='N/A'),
-    InstanceType(name='t2.small', cores='N/A', memory='N/A', disk='N/A'),
-    InstanceType(name='t2.medium', cores='N/A', memory='N/A', disk='N/A'),
-    InstanceType(name='t2.large', cores='N/A', memory='N/A', disk='N/A'),
-    InstanceType(name='m4.large', cores='N/A', memory='N/A', disk='N/A'),
-    InstanceType(name='m4.xlarge', cores='N/A', memory='N/A', disk='N/A'),
-    InstanceType(name='m4.2xlarge', cores='N/A', memory='N/A', disk='N/A'),
-    InstanceType(name='m4.4xlarge', cores='N/A', memory='N/A', disk='N/A'),
-    InstanceType(name='m4.10xlarge', cores='N/A', memory='N/A', disk='N/A'),
-    InstanceType(name='m3.large', cores='N/A', memory='N/A', disk='N/A'),
-    InstanceType(name='m3.xlarge', cores='N/A', memory='N/A', disk='N/A'),
-    InstanceType(name='m3.2xlarge', cores='N/A', memory='N/A', disk='N/A'),
-    InstanceType(name='c4.large', cores='N/A', memory='N/A', disk='N/A'),
-    InstanceType(name='c4.xlarge', cores='N/A', memory='N/A', disk='N/A'),
-    InstanceType(name='c4.2xlarge', cores='N/A', memory='N/A', disk='N/A'),
-    InstanceType(name='c4.4xlarge', cores='N/A', memory='N/A', disk='N/A'),
-    InstanceType(name='c4.8xlarge', cores='N/A', memory='N/A', disk='N/A'),
-    InstanceType(name='c3.large', cores='N/A', memory='N/A', disk='N/A'),
-    InstanceType(name='c3.xlarge', cores='N/A', memory='N/A', disk='N/A'),
-    InstanceType(name='c3.2xlarge', cores='N/A', memory='N/A', disk='N/A'),
-    InstanceType(name='c3.4xlarge', cores='N/A', memory='N/A', disk='N/A'),
-    InstanceType(name='c3.8xlarge', cores='N/A', memory='N/A', disk='N/A'),
-    InstanceType(name='g2.xlarge', cores='N/A', memory='N/A', disk='N/A'),
-    InstanceType(name='r3.large', cores='N/A', memory='N/A', disk='N/A'),
-    InstanceType(name='r3.xlarge', cores='N/A', memory='N/A', disk='N/A'),
-    InstanceType(name='r3.4xlarge', cores='N/A', memory='N/A', disk='N/A'),
-    InstanceType(name='r3.8xlarge', cores='N/A', memory='N/A', disk='N/A'),
-    InstanceType(name='i2.xlarge', cores='N/A', memory='N/A', disk='N/A'),
-    InstanceType(name='i2.2xlarge', cores='N/A', memory='N/A', disk='N/A'),
-    InstanceType(name='i2.4xlarge', cores='N/A', memory='N/A', disk='N/A'),
-    InstanceType(name='i2.8xlarge', cores='N/A', memory='N/A', disk='N/A'),
-    InstanceType(name='hs1.8xlarge')
-]
+import json
+
+with open('aws_data_instance_types.json') as data_file:
+    data = json.load(data_file)
+
+instance_types = {}
+
+for region_data in data:
+    region = region_data['region']
+    instance_types[region] = []
+
+    instanceTypes = region_data['instanceTypes']
+    for generation in instanceTypes:
+        generation_type = generation['type']
+        for size in generation['sizes']:
+            instance_types[region].append(InstanceType(name=size['size'], cores=size['vCPU'], memory=size['memoryGiB'], disk=size['storageGB']))
