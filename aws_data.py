@@ -35,10 +35,3 @@ instance_types = [
     InstanceType(name='i2.8xlarge', cores='N/A', memory='N/A', disk='N/A'),
     InstanceType(name='hs1.8xlarge')
 ]
-
-
-dummy_vpcs = [
-    VPC()
-]
-dummy_vpcs[0].id = 'vpc-0'
-dummy_vpcs[0].tags['Name'] = 'dummy'
