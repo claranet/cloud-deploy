@@ -1,5 +1,4 @@
 from flask.ext.socketio import SocketIO, emit
-import os
 import gevent
 import re
 
