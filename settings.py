@@ -28,3 +28,5 @@ DOMAIN = {
 }
 
 DEBUG = True
+
+VERSIONING = True
