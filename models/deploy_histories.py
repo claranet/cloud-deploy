@@ -22,4 +22,4 @@ deploy_history_schema = {
     }
 }
 
-deploy_histories = {'item_title': 'deploy_history', 'schema': deploy_history_schema}
+deploy_histories = {'item_title': 'deploy_history', 'schema': deploy_history_schema, 'resource_methods': ['GET'], 'item_methods': ['GET']}
