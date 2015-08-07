@@ -219,7 +219,7 @@ class Deploy():
         # Extract remote origin URL and commit information
         remote_url = grep(grep(git('remote', '--verbose'), '^origin'), '(fetch)$').split()[1]
         commit = git('rev-parse', '--short', 'HEAD').strip()
-        commit_message = git('log', '--max-count=1', 'HEAD').strip()
+        commit_message = git('log', '--max-count=1 --format="%s"', 'HEAD').strip()
 
         # Shallow clone from the full clone to limit the size of the generated archive
         gcall("rm -rf {shallow_clone_path}".format(shallow_clone_path=shallow_clone_path), "Removing previous shallow clone", self._log_file)
