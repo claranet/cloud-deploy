@@ -8,6 +8,9 @@ deployment_schema = {
     'module': {
         'type': 'string', 'readonly': True
     },
+    'revision': {
+        'type': 'string', 'readonly': True
+    },
     'commit': {
         'type': 'string', 'readonly': True
     },
