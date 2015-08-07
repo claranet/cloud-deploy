@@ -1,4 +1,4 @@
-deploy_history_schema = {
+deployment_schema = {
     'app_id': {
         'type': 'string', 'readonly': True
     },
@@ -22,4 +22,12 @@ deploy_history_schema = {
     }
 }
 
-deploy_histories = {'item_title': 'deploy_history', 'schema': deploy_history_schema, 'resource_methods': ['GET'], 'item_methods': ['GET']}
+deployments = {
+    'datasource': {
+        'source': 'deploy_histories'
+    },
+    'item_title': 'deployment',
+    'schema': deployment_schema,
+    'resource_methods': ['GET'],
+    'item_methods': ['GET']
+}
