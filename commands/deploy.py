@@ -2,13 +2,11 @@ import os
 import sys
 import datetime
 import calendar
-import time
 import shutil
 import tempfile
 from sh import git, grep
-from pymongo import MongoClient, ASCENDING, DESCENDING
+from pymongo import DESCENDING
 from commands.tools import GCallException, gcall, log, find_ec2_instances, refresh_stage2
-from commands.initrepo import InitRepo
 from boto.ec2 import autoscale
 import boto.s3
 import base64
@@ -221,6 +219,7 @@ class Deploy():
         # Extract remote origin URL and commit information
         remote_url = grep(grep(git('remote', '--verbose'), '^origin'), '(fetch)$').split()[1]
         commit = git('rev-parse', '--short', 'HEAD').strip()
+        commit_message = git('log', '--max-count=1', 'HEAD').strip()
 
         # Shallow clone from the full clone to limit the size of the generated archive
         gcall("rm -rf {shallow_clone_path}".format(shallow_clone_path=shallow_clone_path), "Removing previous shallow clone", self._log_file)
@@ -272,5 +271,5 @@ class Deploy():
         if self._app['autoscale']['name']:
             self._start_autoscale()
         self._purge_old_modules(module)
-        deployment = {'app_id': self._app['_id'], 'job_id': self._job['_id'], 'module': module['name'], 'commit': commit, 'timestamp': ts, 'package': pkg_name, 'module_path': module['path']}
+        deployment = {'app_id': self._app['_id'], 'job_id': self._job['_id'], 'module': module['name'], 'commit': commit, 'commit_message': commit_message, 'timestamp': ts, 'package': pkg_name, 'module_path': module['path']}
         return self._worker._db.deploy_histories.insert(deployment)

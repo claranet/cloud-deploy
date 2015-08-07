@@ -11,6 +11,9 @@ deployment_schema = {
     'commit': {
         'type': 'string', 'readonly': True
     },
+    'commit_message': {
+        'type': 'string', 'readonly': True
+    },
     'timestamp': {
         'type': 'string', 'readonly': True
     },
