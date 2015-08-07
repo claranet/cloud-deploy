@@ -11,7 +11,7 @@ function download_stage2() {
 }
 
 function execute_stage2() {
-	/tmp/stage2 > /tmp/log_bootstrap_stage2.txt
+	/tmp/stage2 > /tmp/log_bootstrap_stage2.txt 2>&1
 }
 
 download_stage2
