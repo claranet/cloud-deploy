@@ -1,30 +1,49 @@
 deployment_schema = {
     'app_id': {
-        'type': 'string', 'readonly': True
+        'type': 'objectid',
+        'readonly': True,
+        'data_relation': {
+            'resource': 'apps',
+            'field': '_id',
+            'embeddable': True
+        }
     },
     'job_id': {
-        'type': 'string', 'readonly': True
+        'type': 'objectid',
+        'readonly': True,
+        'data_relation': {
+            'resource': 'jobs',
+            'field': '_id',
+            'embeddable': True
+        }
     },
     'module': {
-        'type': 'string', 'readonly': True
+        'type': 'string',
+        'readonly': True
     },
     'revision': {
-        'type': 'string', 'readonly': True
+        'type': 'string',
+        'readonly': True
     },
     'commit': {
-        'type': 'string', 'readonly': True
+        'type': 'string',
+        'readonly': True
     },
     'commit_message': {
-        'type': 'string', 'readonly': True
+        'type': 'string',
+        'readonly': True
     },
     'timestamp': {
-        'type': 'string', 'readonly': True
+        'type': 'string',
+        'readonly': True
     },
     'package': {
-        'type': 'string', 'readonly': True
+        'type': 'string',
+        'readonly': True
     },
     'module_path': {
-        'type': 'string', 'readonly': True
+        'type': 'string',
+        'readonly': True
     }
 }
 

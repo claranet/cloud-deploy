@@ -1,15 +1,19 @@
 jobs_schema = {
     'command': {
-        'type': 'string', 'allowed': ['deploy', 'buildimage', 'maintenance',
-                                      'rollback', 'createinstance',
-                                      'destroyinstance'], 'required': True
+        'type': 'string', 'required': True,
+        'allowed': ['deploy', 'buildimage', 'maintenance', 'rollback', 'createinstance', 'destroyinstance']
     },
     'app_id': {
-        'type': 'string', 'regex': '^[a-f0-9]{24}$', 'required': True
+        'type': 'objectid', 'required': True,
+        'data_relation': {
+            'resource': 'apps',
+            'field': '_id',
+            'embeddable': True
+        }
     },
+    #FIXME: dup with _id, to remove?
     'job_id': {
-        'type': 'string', 'regex':
-        '^[0-9a-f]{12}4[0-9a-f]{3}[89ab][0-9a-f]{15}$', 'readonly': True
+        'type': 'objectid', 'readonly': True
     },
     'status': {
         'type': 'string', 'readonly': True
