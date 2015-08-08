@@ -1,7 +1,8 @@
-from web_ui import create_app, create_ws 
+from web_ui import app as web_ui_app
+from web_ui import websocket 
 
-app = create_app()
-ws = create_ws(app)
+app = web_ui_app.app
+ws = websocket.create_ws(app)
 
 if __name__ == '__main__':
     app.config['DEBUG'] = True
