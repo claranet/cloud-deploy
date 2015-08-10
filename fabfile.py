@@ -5,10 +5,6 @@ from jinja2 import Environment, FileSystemLoader
 env.user = 'admin'
 
 @task
-def purge(pkg_name):
-    sudo('rm -rf /ghost/{0}'.format(pkg_name))
-
-@task
 def deploy(bucket_s3, module):
     with settings(warn_only=True):
         bootstrap, bootstrap_path = tempfile.mkstemp()
