@@ -42,7 +42,7 @@ apps_schema = {
                 'build_pack': {'type': 'string'},
                 'pre_deploy': {'type': 'string'},
                 'post_deploy': {'type': 'string'},
-                'path': {'type': 'string', 'required': True}
+                'path': {'type': 'string', 'regex': '^(/[a-zA-Z0-9\.\-\_]+)+$' ,'required': True}
             }
         }
     },
