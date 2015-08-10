@@ -72,6 +72,7 @@ function purge_oldest_succeed_deploy() {
 }
 
 function deploy_module() {
+    UUID=$(cat /proc/sys/kernel/random/uuid)
     MODULE_NAME=$1
     MODULE_FILE=$2
     TARGET=$3
@@ -79,17 +80,12 @@ function deploy_module() {
     echo "Deploying module $MODULE_NAME in $TARGET" >> /tmp/$LOGFILE
     /usr/local/bin/aws s3 cp s3://$S3_BUCKET/ghost/$APP/$ENV/$ROLE/$MODULE_NAME/$MODULE_FILE /tmp/$MODULE_FILE  --region "$EC2_REGION"
 
-    if [ -d /ghost/$MODULE_FILE ]; then
-        echo "Module already exist...Exiting" >> /tmp/$LOGFILE
-        exit -1
-    fi
-
-    mkdir -p /ghost/$MODULE_FILE
-    chown -R admin:admin /ghost/$MODULE_FILE
-    echo "Extracting module in /ghost/$MODULE_FILE" >> /tmp/$LOGFILE
-    tar xvzf /tmp/$MODULE_FILE -C /ghost/$MODULE_FILE > /dev/null
+    mkdir -p /ghost/$UUID
+    chown -R admin:admin /ghost/$UUID
+    echo "Extracting module in /ghost/$UUID" >> /tmp/$LOGFILE
+    tar xvzf /tmp/$MODULE_FILE -C /ghost/$UUID > /dev/null
     rm -rf /tmp/$MODULE_FILE
-    cd /ghost/$MODULE_FILE
+    cd /ghost/$UUID
 
     if [ -e predeploy ]
     then
@@ -98,7 +94,7 @@ function deploy_module() {
         ./predeploy >> /tmp/$LOGFILE 2>&1
         local status=$?
         if [ $status -ne 0 ]; then
-            purge_latest_failed_deploy $MODULE_NAME $MODULE_FILE
+            purge_latest_failed_deploy $MODULE_NAME $UUID
             exit -1
         fi
     fi
@@ -111,7 +107,7 @@ function deploy_module() {
     fi
 
     # Replace old module after pre-deploy and before post-deploy
-    ln -fsn /ghost/$MODULE_FILE $TARGET
+    ln -fsn /ghost/$UUID $TARGET
     cd $TARGET
 
     if [ -e postdeploy ]
@@ -121,7 +117,7 @@ function deploy_module() {
         ./postdeploy >> /tmp/$LOGFILE 2>&1
     fi
 
-    purge_oldest_succeed_deploy $MODULE_NAME $MODULE_FILE
+    purge_oldest_succeed_deploy $MODULE_NAME $UUID
 }
 
 function find_module() {
