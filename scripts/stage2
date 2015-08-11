@@ -17,65 +17,10 @@ APP=$(echo $TAGS | jq -r ".Tags[] | { key: .Key, value: .Value } | [.] | from_en
 if [ ! -d /ghost ]; then
     mkdir /ghost && chown -R admin:admin /ghost
 fi
-function deploy_module() {
-    echo "--------------------------------" >> /tmp/$LOGFILE
-    echo "Deploying module $1 in $3" >> /tmp/$LOGFILE
-    /usr/local/bin/aws s3 cp s3://$S3_BUCKET/ghost/$APP/$ENV/$ROLE/$1/$2 /tmp/$2  --region "$EC2_REGION"
-    mkdir -p /ghost/$2
-    chown -R admin:admin /ghost/$2
-    echo "Extracting module in /ghost/$2" >> /tmp/$LOGFILE
-    tar xvzf /tmp/$2 -C /ghost/$2 > /dev/null
-    rm -rf /tmp/$2
-    cd /ghost/$2
 
-    if [ -e predeploy ]
-    then
-        echo "Executing predeploy script..." >> /tmp/$LOGFILE
-        chmod +x predeploy
-        ./predeploy 2>&1 | tee -a /tmp/$LOGFILE
-        local status=$?
-        if [ $status -ne 0 ]; then
-            echo "Predeploy failed...Exiting" >> /tmp/$LOGFILE
-            exit -1
-        fi
-    fi
-
-    # Clear folder if not a symlink (not a Ghost managed module)
-    if ! [ -h $3 ]
-    then
-        echo "Clearing unmanaged folder..." >> /tmp/$LOGFILE
-        rm -rfv $3
-    fi
-
-    # Replace old module after pre-deploy and before post-deploy
-    ln -fsn /ghost/$2 $3
-    cd $3
-
-    if [ -e postdeploy ]
-    then
-        echo "Executing postdeploy script..." >> /tmp/$LOGFILE
-        chmod +x postdeploy
-        ./postdeploy 2>&1 | tee -a /tmp/$LOGFILE
-    fi
-}
-
-function find_module() {
-    for line in $(cat /tmp/MANIFEST)
-      do
-        MODULE_NAME=$(echo $line | awk -F':' '{print $1}')
-        MODULE_TAR=$(echo $line | awk -F':' '{print $2}')
-        MODULE_PATH=$(echo $line | awk -F':' '{print $3}')
-	    if [ "$1" == "$MODULE_NAME" ]; then
-            echo $MODULE_NAME $MODULE_TAR $MODULE_PATH
-        fi
-    done
-}
-
-function exit_deployment() {
-    echo "Removing Manifest file" >> /tmp/$LOGFILE
-    rm /tmp/MANIFEST
-    exit $1
-}
+if [ ! -d /var/lib/ghost ]; then
+    mkdir /var/lib/ghost
+fi
 
 function zabbix_hostname(){
     #Update Zabbix agent name
@@ -85,8 +30,113 @@ function zabbix_hostname(){
 }
 
 if [ -z "$1" ] ; then
-zabbix_hostname
+    zabbix_hostname
 fi
+
+function purge_latest_failed_deploy() {
+    MODULE_NAME=$1
+    MODULE_PATH=/ghost/$2
+    FAILED="_failed"
+    MODULE_FAILED=/var/lib/ghost/$MODULE_NAME$FAILED
+
+    if [ -e $MODULE_FAILED ]; then
+        MODULE_TO_DELETE=$(head -n 1 $MODULE_FAILED)
+        echo "Purging latest failed module: $MODULE_TO_DELETE" >> /tmp/$LOGFILE
+        rm -rf $MODULE_TO_DELETE
+        # Remove deleted module from history
+        sed -i 1d $MODULE_FAILED
+    fi
+    # Append fail to the failed module deployment history
+    echo $MODULE_PATH >> $MODULE_FAILED
+}
+
+function purge_oldest_succeed_deploy() {
+    MODULE_NAME=$1
+    MODULE_PATH=/ghost/$2
+    SUCCEED="_succeed"
+    MODULE_SUCCEED=/var/lib/ghost/$MODULE_NAME$SUCCEED
+    MAX_DEPLOY_HISTORY="3"
+
+    if [ -e $MODULE_SUCCEED ]; then
+        NUM_OF_DEPLOY=$(wc -l < $MODULE_SUCCEED)
+        if [ $NUM_OF_DEPLOY -gt $MAX_DEPLOY_HISTORY ]; then
+            MODULE_TO_DELETE=$(head -n 1 $MODULE_SUCCEED)
+            echo "Purging oldest succeed module: $MODULE_TO_DELETE" >> /tmp/$LOGFILE
+            rm -rf $MODULE_TO_DELETE
+            # Remove deleted module from history
+            sed -i 1d $MODULE_SUCCEED
+        fi
+    fi
+    # Append succeed to the succeed module deployment history
+    echo $MODULE_PATH >> $MODULE_SUCCEED
+}
+
+function deploy_module() {
+    UUID=$(cat /proc/sys/kernel/random/uuid)
+    MODULE_NAME=$1
+    MODULE_FILE=$2
+    TARGET=$3
+    echo "--------------------------------" >> /tmp/$LOGFILE
+    echo "Deploying module $MODULE_NAME in $TARGET" >> /tmp/$LOGFILE
+    /usr/local/bin/aws s3 cp s3://$S3_BUCKET/ghost/$APP/$ENV/$ROLE/$MODULE_NAME/$MODULE_FILE /tmp/$MODULE_FILE  --region "$EC2_REGION"
+
+    mkdir -p /ghost/$UUID
+    chown -R admin:admin /ghost/$UUID
+    echo "Extracting module in /ghost/$UUID" >> /tmp/$LOGFILE
+    tar xvzf /tmp/$MODULE_FILE -C /ghost/$UUID > /dev/null
+    rm -rf /tmp/$MODULE_FILE
+    cd /ghost/$UUID
+
+    if [ -e predeploy ]
+    then
+        echo "Executing predeploy script..." >> /tmp/$LOGFILE
+        chmod +x predeploy
+        ./predeploy 2>&1 | tee -a /tmp/$LOGFILE
+        local status=$?
+        if [ $status -ne 0 ]; then
+            purge_latest_failed_deploy $MODULE_NAME $UUID
+            exit -1
+        fi
+    fi
+
+    # Clear folder if not a symlink (not a Ghost managed module)
+    if ! [ -h $TARGET ]
+    then
+        echo "Clearing unmanaged folder..." >> /tmp/$LOGFILE
+        rm -rfv $TARGET
+    fi
+
+    # Replace old module after pre-deploy and before post-deploy
+    ln -fsn /ghost/$UUID $TARGET
+    cd $TARGET
+
+    if [ -e postdeploy ]
+    then
+        echo "Executing postdeploy script..." >> /tmp/$LOGFILE
+        chmod +x postdeploy
+        ./postdeploy 2>&1 | tee -a /tmp/$LOGFILE
+    fi
+
+    purge_oldest_succeed_deploy $MODULE_NAME $UUID
+}
+
+function find_module() {
+    for line in $(cat /tmp/MANIFEST)
+      do
+        MODULE_NAME=$(echo $line | awk -F':' '{print $1}')
+        MODULE_FILE=$(echo $line | awk -F':' '{print $2}')
+        TARGET=$(echo $line | awk -F':' '{print $3}')
+	    if [ "$1" == "$MODULE_NAME" ]; then
+            echo $MODULE_NAME $MODULE_FILE $TARGET
+        fi
+    done
+}
+
+function exit_deployment() {
+    echo "Removing Manifest file" >> /tmp/$LOGFILE
+    rm /tmp/MANIFEST
+    exit $1
+}
 
 echo "Downloading Manifest" >> /tmp/$LOGFILE
 /usr/local/bin/aws s3 cp s3://$S3_BUCKET/ghost/$APP/$ENV/$ROLE/MANIFEST /tmp/ --region "$EC2_REGION"
@@ -108,7 +158,7 @@ fi
 for line in $(cat /tmp/MANIFEST)
 do
     MODULE_NAME=$(echo $line | awk -F':' '{print $1}')
-    MODULE_TAR=$(echo $line | awk -F':' '{print $2}')
-    MODULE_PATH=$(echo $line | awk -F':' '{print $3}')
-    deploy_module $MODULE_NAME $MODULE_TAR $MODULE_PATH
+    MODULE_FILE=$(echo $line | awk -F':' '{print $2}')
+    TARGET=$(echo $line | awk -F':' '{print $3}')
+    deploy_module $MODULE_NAME $MODULE_FILE $TARGET
 done

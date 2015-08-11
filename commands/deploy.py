@@ -112,16 +112,6 @@ class Deploy():
         gcall("rm -f ../{0}".format(pkg_name), "Deleting local package: %s" % pkg_name, self._log_file)
         return pkg_name
 
-    def _purge_old_modules(self, module):
-        histories = list(self._worker._db.deploy_histories.find({'app_id': self._app['_id'], 'module': module['name']}).sort('timestamp', DESCENDING).limit(5))
-        if len(histories) > 4:
-            if 'package' in histories[3]:
-                to_delete = histories[3]['package']
-                task_name = "purge:{0}".format(to_delete)
-                cmd = "/usr/local/bin/fab -i {key_path} set_hosts:ghost_app={app},ghost_env={env},ghost_role={role},region={aws_region} {0}".format(task_name, \
-                        key_path=self._config['key_path'], app=self._app['name'], env=self._app['env'], role=self._app['role'], aws_region=self._app['region'])
-                gcall(cmd, "Purging module", self._log_file)
-
     def _get_module_revision(self, module_name):
         for module in self._job['modules']:
             if 'name' in module and module['name'] == module_name:
@@ -147,7 +137,7 @@ class Deploy():
                 deploy_id = self._execute_deploy(module)
                 self._worker._db.jobs.update({ '_id': self._job['_id'], 'modules.name': module['name']}, {'$set': {'modules.$.deploy_id': deploy_id }})
 
-            self._worker.update_status("done", message="Deployment OK: [{0}]".format(module_list))
+            self._worker.update_status("done", message="Deployment OK: [{0}: {1}]".format(module_list, deploy_id))
         except GCallException as e:
             self._worker.update_status("failed", message="Deployment Failed: [{0}]\n{1}".format(module_list, str(e)))
 
@@ -270,6 +260,5 @@ class Deploy():
         self._deploy_module(module)
         if self._app['autoscale']['name']:
             self._start_autoscale()
-        self._purge_old_modules(module)
         deployment = {'app_id': self._app['_id'], 'job_id': self._job['_id'], 'module': module['name'], 'revision': revision, 'commit': commit, 'commit_message': commit_message, 'timestamp': ts, 'package': pkg_name, 'module_path': module['path']}
         return self._worker._db.deploy_histories.insert(deployment)
