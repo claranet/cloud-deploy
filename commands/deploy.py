@@ -79,14 +79,13 @@ class Deploy():
                 if len(as_list) > 0:
                     self._as_group = as_list[0].name
                 else:
-                # AS name not fount, list available.
-                log("WARNING: Application autoscale name not found in EC2", self._log_file)
-                all_as = self._as_conn.get_all_groups()
-                if len(all_as) >0:
-                    for ec2_as in all_as:
-                        log("WARNING:    Autoscaling found: "+ec2_as.name+" ",self._log_file)
-                else:
-                    log("WARNING: No autoscale created so far",self._log_file)
+                    log("WARNING: Application autoscale name not found in EC2", self._log_file)
+                    all_as = self._as_conn.get_all_groups()
+                    if len(all_as) >0:
+                        for ec2_as in all_as:
+                            log("WARNING:    Autoscaling found: "+ec2_as.name+" ",self._log_file)
+                    else:
+                        log("WARNING: No autoscale created so far",self._log_file)
             else:
                 log("WARNING: set_autoscale_group is called in an application without inialised autoscale", self._log_file)
         else:
