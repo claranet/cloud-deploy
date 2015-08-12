@@ -71,7 +71,7 @@ class Buildimage():
             'ami_block_device_mappings': []
         }
 
-        for opt_vol in self._app['environment_infos']['optional_volumes']:
+        for opt_vol in self._app['environment_infos'].get('optional_volumes'):
             block = {'device_name': opt_vol['device_name'],
                     'volume_type': opt_vol['volume_type'],
                     'volume_size': opt_vol['volume_size'],
