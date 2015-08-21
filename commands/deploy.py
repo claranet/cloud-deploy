@@ -209,30 +209,30 @@ class Deploy():
 
         if not os.path.exists(full_clone_path + '/.git'):
             gcall("rm -rf {full_clone_path}".format(full_clone_path=full_clone_path), "Cleaning up full clone destination", self._log_file)
-            gcall("git clone {git_repo} {full_clone_path}".format(git_repo=git_repo, full_clone_path=full_clone_path), "Git full cloning from remote %s" % git_repo, self._log_file)
+            gcall("git --no-pager clone {git_repo} {full_clone_path}".format(git_repo=git_repo, full_clone_path=full_clone_path), "Git full cloning from remote %s" % git_repo, self._log_file)
 
         # Update existing clone
         os.chdir(full_clone_path)
-        gcall("git clean -f", "Resetting git repository", self._log_file)
-        gcall("git checkout master", "Git checkout master before pull in case of detached head", self._log_file)
-        gcall("git fetch --tags", "Git fetch all tags", self._log_file)
-        gcall("git pull", "Git pull", self._log_file)
-        gcall("git checkout %s" % revision, "Git checkout: %s" % revision, self._log_file)
-        gcall("git pull || true", "Git pull after checkout but never fail: %s" % revision, self._log_file)
+        gcall("git --no-pager clean -f", "Resetting git repository", self._log_file)
+        gcall("git --no-pager checkout master", "Git checkout master before pull in case of detached head", self._log_file)
+        gcall("git --no-pager fetch --tags", "Git fetch all tags", self._log_file)
+        gcall("git --no-pager pull", "Git pull", self._log_file)
+        gcall("git --no-pager checkout %s" % revision, "Git checkout: %s" % revision, self._log_file)
+        gcall("git --no-pager pull || true", "Git pull after checkout but never fail: %s" % revision, self._log_file)
 
         # Extract remote origin URL and commit information
-        remote_url = grep(grep(git('remote', '--verbose'), '^origin'), '(fetch)$').split()[1]
-        commit = git('rev-parse', '--short', 'HEAD').strip()
-        commit_message = git('log', '--max-count=1', '--format=%s', 'HEAD').strip()
+        remote_url = grep(grep(git('--no-pager', 'remote', '--verbose'), '^origin'), '(fetch)$').split()[1]
+        commit = git('--no-pager', 'rev-parse', '--short', 'HEAD').strip()
+        commit_message = git('--no-pager', 'log', '--max-count=1', '--format=%s', 'HEAD').strip()
 
         # Shallow clone from the full clone to limit the size of the generated archive
         gcall("rm -rf {shallow_clone_path}".format(shallow_clone_path=shallow_clone_path), "Removing previous shallow clone", self._log_file)
-        gcall("git clone --recursive --depth=100 file://{full_clone_path} {shallow_clone_path}".format(full_clone_path=full_clone_path, shallow_clone_path=shallow_clone_path), "Git shallow cloning from previous clone", self._log_file)
-        gcall("git submodule update --recursive --depth=100", "Git update submodules", self._log_file)
+        gcall("git --no-pager clone --recursive --depth=100 file://{full_clone_path} {shallow_clone_path}".format(full_clone_path=full_clone_path, shallow_clone_path=shallow_clone_path), "Git shallow cloning from previous clone", self._log_file)
+        gcall("git --no-pager submodule update --recursive --depth=100", "Git update submodules", self._log_file)
 
         # chdir into newly created shallow clone and reset remote origin URL
         os.chdir(shallow_clone_path)
-        git('remote', 'set-url', 'origin', remote_url)
+        git('--no-pager', 'remote', 'set-url', 'origin', remote_url)
 
         # Store predeploy script in tarball
         if 'pre_deploy' in module:
