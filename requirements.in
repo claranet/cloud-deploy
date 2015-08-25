@@ -14,6 +14,8 @@ Flask-SocketIO
 Flask-WTF
 gevent
 Jinja2
+pip
+pip-tools
 pymongo
 PyYAML
 redis
