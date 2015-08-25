@@ -1,0 +1,28 @@
+# This file is used by pip-compile to generate requirements.txt
+# Everything you directly use in your source code should be a top-level dependency recorded here.
+# Don't pin them—unless you want them pinned, of course.
+argparse
+bcrypt
+boto
+click
+Eve
+Fabric
+Flask
+Flask-Bootstrap
+Flask-Login
+Flask-SocketIO
+Flask-WTF
+gevent
+Jinja2
+pymongo
+PyYAML
+redis
+requests
+rq
+rq-dashboard
+sh
+six
+subprocess32
+Werkzeug
+WTForms
+yapf

@@ -5,7 +5,7 @@ Installing requirements:
     $ pip install -r requirements.txt
 
 Checking for updates:
-    $ pip-review
+    $ pip-sync
 
 Running unit tests:
     $ python -m doctest -v web_ui/*.py
