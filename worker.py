@@ -24,7 +24,7 @@ def format_notif(app, job):
     >>> title
     '[GHOST] App myapp (preprod) - deploy: done (Deployment OK: [mymodule])'
     >>> message
-    'Application: myapp\nEnvironment: preprod\nAction: deploy\nStarted: 2015-06-10 17:09:38\nStatus: done\nUser: john\nMessage: Deployment OK: [mymodule]'
+    'Application: myapp\\nEnvironment: preprod\\nAction: deploy\\nStarted: 2015-06-10 17:09:38\\nStatus: done\\nUser: john\\nMessage: Deployment OK: [mymodule]'
     """
     title_template = "[GHOST] App {app_name} ({app_env}) - {command}: {status} ({message})"
     title = title_template.format(app_name=app['name'],
