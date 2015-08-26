@@ -4,7 +4,8 @@
 Installing requirements:
     $ pip install -r requirements.txt
 
-Checking for updates:
+Updating dependencies:
+    $ pip-compile
     $ pip-sync
 
 Running unit tests:
