@@ -100,7 +100,7 @@ class Worker:
         subject, body = format_notif(self.app, self.job)
         log = "{log_path}/{job_id}.txt".format(log_path=LOG_ROOT, job_id=self._worker_job.id)
         log_stat = os.stat(log)
-        if log_stat.st_size > 5000000:
+        if log_stat.st_size > 512000:
             os.system('gzip '+log)
             log = log+'.gz'
         for mail in self.app['log_notifications']:
