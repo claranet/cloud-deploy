@@ -42,7 +42,7 @@ def find_ec2_instances(ghost_app, ghost_env, ghost_role, region):
     return hosts
 
 def log(message, fd):
-    fd.write("{timestamp}: {message}\n".format(timestamp=datetime.now().strftime("%Y/%d/%m %H:%M:%S GMT"), message=message))
+    fd.write("{timestamp}: {message}\n".format(timestamp=datetime.now().strftime("%Y/%m/%d %H:%M:%S GMT"), message=message))
 
 def create_launch_config(app, userdata, ami_id):
     d = time.strftime('%d%m%Y-%H%M',time.localtime())
