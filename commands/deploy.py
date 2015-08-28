@@ -75,11 +75,12 @@ class Deploy():
             self._set_as_conn()
         if 'autoscale' in self._app.keys():
             if 'name' in self._app['autoscale'].keys():
-                as_list = self._as_conn.get_all_groups(names=self._app['autoscale']['name'])
-                if len(as_list) > 0:
+                as_list = self._as_conn.get_all_groups(names=[self._app['autoscale']['name']])
+                if len(as_list) == 1:
                     self._as_group = as_list[0].name
+                    log("INFO: Application autoscale {0} found in EC2".format(self._app['autoscale']['name']), self._log_file)
                 else:
-                    log("WARNING: Application autoscale name not found in EC2", self._log_file)
+                    log("WARNING: Application autoscale {0} not found in EC2".format(self._app['autoscale']['name']), self._log_file)
                     all_as = self._as_conn.get_all_groups()
                     if len(all_as) >0:
                         for ec2_as in all_as:
