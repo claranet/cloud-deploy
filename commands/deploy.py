@@ -214,7 +214,8 @@ class Deploy():
 
         # Update existing clone
         os.chdir(full_clone_path)
-        gcall("git --no-pager clean -f", "Resetting git repository", self._log_file)
+        gcall("git --no-pager reset --hard", "Resetting git repository", self._log_file)
+        gcall("git --no-pager clean -f", "Cleaning git repository", self._log_file)
         gcall("git --no-pager checkout master", "Git checkout master before pull in case of detached head", self._log_file)
         gcall("git --no-pager fetch --tags", "Git fetch all tags", self._log_file)
         gcall("git --no-pager pull", "Git pull", self._log_file)
