@@ -27,6 +27,7 @@ gevent-socketio==0.3.6    # via flask-socketio
 gevent-websocket==0.9.5   # via gevent-socketio
 gevent==1.0.2
 greenlet==0.4.9           # via gevent
+gunicorn==19.3.0
 itsdangerous==0.24        # via eve, flask
 jinja2==2.8
 markupsafe==0.23          # via eve, jinja2

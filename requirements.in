@@ -13,6 +13,7 @@ Flask-Login
 Flask-SocketIO
 Flask-WTF
 gevent
+gunicorn
 Jinja2
 pip
 pip-tools
