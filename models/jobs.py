@@ -18,6 +18,9 @@ jobs_schema = {
     'status': {
         'type': 'string', 'readonly': True
     },
+    'message': {
+        'type': 'string', 'readonly': True
+    },
     'log_id': {
         'type': 'string', 'readonly': True
     },
