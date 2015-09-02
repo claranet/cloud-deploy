@@ -13,7 +13,7 @@ Flask-Login
 Flask-SocketIO
 Flask-WTF
 gevent
-gunicorn
+gunicorn                  # needed at runtime with supervisor
 Jinja2
 pip
 pip-tools
