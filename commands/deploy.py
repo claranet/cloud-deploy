@@ -5,7 +5,6 @@ import calendar
 import shutil
 import tempfile
 from sh import git, grep
-from pymongo import DESCENDING
 from commands.tools import GCallException, gcall, log, find_ec2_instances, refresh_stage2
 from boto.ec2 import autoscale
 import boto.s3
