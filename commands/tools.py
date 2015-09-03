@@ -1,5 +1,4 @@
 from datetime import datetime
-from eve import RFC1123_DATE_FORMAT
 from subprocess import call
 from boto import ec2
 import boto.ec2.autoscale
