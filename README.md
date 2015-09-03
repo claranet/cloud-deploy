@@ -14,10 +14,8 @@ Running unit tests:
 
 # Deployment
 
-## Sur instance2:
-* jq (transformation JSON en ligne de commande)
-* python pip boto awscli
-* s3cmd (prendre version GitHub sinon cela ne fonctionne pas)
+## Sur instance EC2:
+* utiliser morea-salt-formulas
 * Role IAM avec Policy :
     {
       "Version": "2012-10-17",
@@ -35,22 +33,13 @@ Running unit tests:
     }
 
 ## Sur bastion:
-* python pip boto awscli
-* les dépendances sur les scripts predeploy (ex: php5 avec memcached, gd...)
-* mongodb
-* les packages contenus dans requirements.txt
+* utiliser morea-salt-formulas
 
 # Configuration:
 ## accounts:
 * copy accounts.yml.dist as accounts.yml
 * add account with 'python auth.py user password'
 * restart ghost process
-
-## notifications:
-* db.config.insert({ "ses_settings": {"aws_access_key": "SES_AWS_ACCESS_KEY", "aws_secret_key": "SES_AWS_SECRET_KEY", "region": "eu-west-1"}})
-
-# Notes
-* Necessite une version de Fabric >= 1.10.1 (Bug encoding fixed)
 
 # Example data
     JOB
