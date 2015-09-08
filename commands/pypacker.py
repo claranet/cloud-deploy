@@ -2,13 +2,10 @@ from uuid import uuid4
 from sh import git
 from subprocess32 import Popen, PIPE
 from commands.tools import log
-import sh
 import logging
 import yaml
 import json
 import os
-import time
-import re
 
 PACKER_JSON_PATH="/tmp/packer/"
 SALT_LOCAL_TREE="/tmp/salt/"
@@ -37,7 +34,7 @@ class Packer:
         self.salt_top_path = self.salt_path + '/top.sls'
         stream = file(self.salt_top_path, 'w')
         logging.debug("Writing Salt Top state to: {0}".format(self.salt_top_path))
-        data = {'base': {'*': ['upgrade']}}
+        data = {'base': {'*': ['common']}}
         data['base']['*'] = params
         print('state: top.sls: {0}'.format(data))
         yaml.dump(data, stream, default_flow_style=False)
