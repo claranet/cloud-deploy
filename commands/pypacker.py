@@ -45,7 +45,7 @@ class Packer:
         self.salt_pillar_features_path = self.salt_pillar_path + '/features.sls'
         #Creating top.sls to call features.sls
         stream_top = file(self.salt_pillar_top_path, 'w')
-        data_top = {'base': {'*': ['features']}}
+        data_top = {'base': {'*': ['common', 'features']}}
         print('pillar: top.sls: {0}'.format(data_top))
         yaml.dump(data_top, stream_top, default_flow_style=False)
         #Creating features.sls file based on ghost app features
