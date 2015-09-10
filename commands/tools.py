@@ -14,11 +14,11 @@ class GCallException(Exception):
     def __str__(self):
         return repr(self.value)
 
-def gcall(args, cmd_description, log_fd, dry_run=False):
+def gcall(args, cmd_description, log_fd, dry_run=False, env=None):
     log(cmd_description, log_fd)
     log("CMD: {0}".format(args), log_fd)
     if not dry_run:
-        ret = call(args, stdout=log_fd, stderr=log_fd, shell=True)
+        ret = call(args, stdout=log_fd, stderr=log_fd, shell=True, env=env)
         if (ret != 0):
             raise GCallException("ERROR: %s" % cmd_description)
 

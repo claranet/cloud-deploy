@@ -254,7 +254,15 @@ class Deploy():
             else:
                 os.write(buildpack, buildpack_source)
             os.close(buildpack)
-            gcall('bash %s' % buildpack_path, 'Buildpack: Execute', self._log_file)
+
+            buildpack_env = []
+            buildpack_env['GHOST_APP'] = self._app['name']
+            buildpack_env['GHOST_ENV'] = self._app['env']
+            buildpack_env['GHOST_ROLE'] = self._app['role']
+            buildpack_env['GHOST_MODULE_NAME'] = module['name']
+            buildpack_env['GHOST_MODULE_PATH'] = module['path']
+
+            gcall('bash %s' % buildpack_path, 'Buildpack: Execute', self._log_file, env=buildpack_env)
 
         # Store postdeploy script in tarball
         if 'post_deploy' in module:

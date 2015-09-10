@@ -91,7 +91,7 @@ function deploy_module() {
     then
         echo "Executing predeploy script..." >> /tmp/$LOGFILE
         chmod +x predeploy
-        ./predeploy 2>&1 | tee -a /tmp/$LOGFILE
+        GHOST_APP=$APP GHOST_ENV=$ENV GHOST_ROLE=$ROLE GHOST_MODULE_NAME=$MODULE_NAME GHOST_MODULE_PATH=$TARGET ./predeploy 2>&1 | tee -a /tmp/$LOGFILE
         local status=$?
         if [ $status -ne 0 ]; then
             purge_latest_failed_deploy $MODULE_NAME $UUID
@@ -114,7 +114,7 @@ function deploy_module() {
     then
         echo "Executing postdeploy script..." >> /tmp/$LOGFILE
         chmod +x postdeploy
-        ./postdeploy 2>&1 | tee -a /tmp/$LOGFILE
+        GHOST_APP=$APP GHOST_ENV=$ENV GHOST_ROLE=$ROLE GHOST_MODULE_NAME=$MODULE_NAME GHOST_MODULE_PATH=$TARGET ./postdeploy 2>&1 | tee -a /tmp/$LOGFILE
     fi
 
     purge_oldest_succeed_deploy $MODULE_NAME $UUID
