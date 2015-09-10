@@ -255,7 +255,7 @@ class Deploy():
                 os.write(buildpack, buildpack_source)
             os.close(buildpack)
 
-            buildpack_env = {}
+            buildpack_env = os.environ.copy()
             buildpack_env['GHOST_APP'] = self._app['name']
             buildpack_env['GHOST_ENV'] = self._app['env']
             buildpack_env['GHOST_ROLE'] = self._app['role']
