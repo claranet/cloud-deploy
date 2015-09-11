@@ -40,6 +40,17 @@ def find_ec2_instances(ghost_app, ghost_env, ghost_role, region):
                         % (ghost_app, ghost_role, ghost_env, region))
     return hosts
 
+def execute_task_on_hosts(self, task_name, app_name, app_env, app_role, app_region, log_file):
+    hosts = find_ec2_instances(app_name, app_env, app_role, app_region)
+    if len(hosts) > 0:
+        hosts_list = ','.join(hosts)
+        cmd = "/usr/local/bin/fab --show=debug -i {key_path} --hosts={hosts_list} {task_name}".format(key_path=self._config['key_path'],
+            hosts_list=hosts_list, 
+            task_name=task_name)
+        gcall(cmd, "Updating current instances", log_file)
+    else:
+        log("WARNING: no instance available to sync deployment", log_file)
+
 def log(message, fd):
     fd.write("{timestamp}: {message}\n".format(timestamp=datetime.now().strftime("%Y/%m/%d %H:%M:%S GMT"), message=message))
 

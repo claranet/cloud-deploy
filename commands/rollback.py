@@ -1,14 +1,9 @@
-import time
-import json
 import os
 import sys
 import tempfile
 import boto.s3
-from pymongo import MongoClient, ASCENDING, DESCENDING
 from bson.objectid import ObjectId
-from commands.tools import GCallException, gcall, log, find_ec2_instances
-
-ROOT_PATH = os.path.dirname(os.path.realpath(__file__))
+from commands.tools import GCallException, log, execute_task_on_hosts
 
 class Rollback():
     _app = None
@@ -85,15 +80,8 @@ class Rollback():
         return None, None
 
     def _deploy_module(self, module):
-        os.chdir(ROOT_PATH)
-        hosts = find_ec2_instances(self._app['name'], self._app['env'], self._app['role'], self._app['region'])
         task_name = "deploy:{0},{1}".format(self._config['bucket_s3'], module['name'])
-        if len(hosts) > 0:
-            cmd = "/usr/local/bin/fab -i {key_path} set_hosts:ghost_app={app},ghost_env={env},ghost_role={role},region={aws_region} {0}".format(task_name, \
-                    key_path=self._config['key_path'], app=self._app['name'], env=self._app['env'], role=self._app['role'], aws_region=self._app['region'])
-            gcall(cmd, "Updating current instances", self._log_file)
-        else:
-            log("WARNING: no instance available to sync deployment", self._log_file)
+        execute_task_on_hosts(task_name, self._app['name'], self._app['env'], self._app['role'], self._app['region'], self._log_file)
 
     def _execute_rollback(self, deploy_id):
         module, package = self._get_deploy_infos(deploy_id)

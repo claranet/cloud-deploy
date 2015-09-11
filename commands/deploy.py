@@ -5,7 +5,7 @@ import calendar
 import shutil
 import tempfile
 from sh import git, grep
-from commands.tools import GCallException, gcall, log, find_ec2_instances, refresh_stage2
+from commands.tools import GCallException, gcall, log, refresh_stage2, execute_task_on_hosts
 from boto.ec2 import autoscale
 import boto.s3
 import base64
@@ -105,16 +105,10 @@ class Deploy():
             log("Stopping autoscaling", self._log_file)
             self._as_conn.suspend_processes(self._as_group)
 
+
     def _deploy_module(self, module):
-        os.chdir(ROOT_PATH)
-        hosts = find_ec2_instances(self._app['name'], self._app['env'], self._app['role'], self._app['region'])
         task_name = "deploy:{0},{1}".format(self._config['bucket_s3'], module['name'])
-        if len(hosts) > 0:
-            cmd = "/usr/local/bin/fab --show=debug -i {key_path} set_hosts:ghost_app={app},ghost_env={env},ghost_role={role},region={aws_region} {0}".format(task_name, \
-                    key_path=self._config['key_path'], app=self._app['name'], env=self._app['env'], role=self._app['role'], aws_region=self._app['region'])
-            gcall(cmd, "Updating current instances", self._log_file)
-        else:
-            log("WARNING: no instance available to sync deployment", self._log_file)
+        execute_task_on_hosts(task_name, self._app['name'], self._app['env'], self._app['role'], self._app['region'], self._log_file)
 
     def _package_module(self, module, ts, commit):
         path = self._get_buildpack_clone_path_from_module(module)
