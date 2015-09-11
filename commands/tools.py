@@ -40,7 +40,7 @@ def find_ec2_instances(ghost_app, ghost_env, ghost_role, region):
                         % (ghost_app, ghost_role, ghost_env, region))
     return hosts
 
-def execute_task_on_hosts(self, task_name, app_name, app_env, app_role, app_region, log_file):
+def execute_task_on_hosts(task_name, app_name, app_env, app_role, app_region, log_file):
     hosts = find_ec2_instances(app_name, app_env, app_role, app_region)
     if len(hosts) > 0:
         hosts_list = ','.join(hosts)
