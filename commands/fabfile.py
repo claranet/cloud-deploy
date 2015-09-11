@@ -7,7 +7,7 @@ env.user = 'admin'
 def deploy(bucket_s3, module):
     with settings(warn_only=True):
         bootstrap, bootstrap_path = tempfile.mkstemp()
-        jinja_env = Environment(loader=FileSystemLoader('%s/scripts' % os.path.dirname(os.path.realpath(__file__))))
+        jinja_env = Environment(loader=FileSystemLoader('%s/../scripts' % os.path.dirname(os.path.realpath(__file__))))
         template = jinja_env.get_template('stage2')
         #template.render(bucket_s3=bucket_s3).stream(name='bootstrap').dump(bootstrap_path)
         template.stream(bucket_s3=bucket_s3).dump(bootstrap_path)
