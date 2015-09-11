@@ -1,6 +1,5 @@
 import os, tempfile
-from fabric.api import run, sudo, task, env, put, settings
-from commands.tools import GCallException, find_ec2_instances
+from fabric.api import sudo, task, env, put, settings
 from jinja2 import Environment, FileSystemLoader
 env.user = 'admin'
 
@@ -17,8 +16,3 @@ def deploy(bucket_s3, module):
         os.remove(bootstrap_path)
         sudo('chmod +x /tmp/stage2')
         sudo('/tmp/stage2 %s' % module)
-
-@task
-def set_hosts(ghost_app=None, ghost_env=None, ghost_role=None, region=None):
-    env.hosts = find_ec2_instances(ghost_app, ghost_env, ghost_role, region)
-    print(env.hosts)
