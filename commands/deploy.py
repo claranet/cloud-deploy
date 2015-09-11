@@ -108,7 +108,7 @@ class Deploy():
 
     def _deploy_module(self, module):
         task_name = "deploy:{0},{1}".format(self._config['bucket_s3'], module['name'])
-        execute_task_on_hosts(task_name, self._app['name'], self._app['env'], self._app['role'], self._app['region'], self._log_file)
+        execute_task_on_hosts(task_name, self._app['name'], self._app['env'], self._app['role'], self._app['region'], self._config['key_path'], self._log_file)
 
     def _package_module(self, module, ts, commit):
         path = self._get_buildpack_clone_path_from_module(module)
