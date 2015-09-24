@@ -28,6 +28,8 @@ class Packer:
         if config.get('salt_formulas_branch'):
             os.chdir(SALT_LOCAL_TREE + self.unique)
             git.checkout(config['salt_formulas_branch'])
+            git.submodule('init')
+            git.submodule('update')
 
     def _build_salt_top(self, params):
         self.salt_path = SALT_LOCAL_TREE + self.unique + '/salt'
