@@ -87,4 +87,4 @@ ghost.register_blueprint(eve_docs, url_prefix='/docs')
 RQDashboard(ghost)
 
 if __name__ == '__main__':
-    ghost.run(host='0.0.0.0', debug=True)
+    ghost.run(host='0.0.0.0')

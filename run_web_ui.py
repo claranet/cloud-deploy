@@ -5,5 +5,4 @@ app = web_ui_app.app
 ws = websocket.create_ws(app)
 
 if __name__ == '__main__':
-    app.config['DEBUG'] = True
     ws.run(app, host='0.0.0.0', port=5001)
