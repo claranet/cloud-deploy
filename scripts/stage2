@@ -1,7 +1,7 @@
 #!/bin/bash
 set -x
 S3_BUCKET={{ bucket_s3 }}
-TS=$(date +%Y%m%H%m%S)
+TS=$(date +%Y%m%d_%H%M%S)
 LOGFILE=$(echo $TS"_deploy.txt")
 
 INSTANCE_ID=$(curl http://169.254.169.254/latest/meta-data/instance-id)
