@@ -173,7 +173,9 @@ class Deploy():
                     else:
                         mod['package'] = tmp[1]
                         mod['path'] = tmp[2]
-                    modules.append(mod)
+                    # Only keep modules that have not been removed from the app
+                    if mod['name'] in self._apps_modules:
+                        modules.append(mod)
         if not key:
             key = bucket.new_key(key_path)
         if not module_exist:
