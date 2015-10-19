@@ -156,6 +156,7 @@ class Deploy():
         key = bucket.get_key(key_path)
         modules = []
         module_exist = False
+        all_app_modules_list = [app_module['name'] for app_module in self._app['modules'] if 'name' in app_module]
         data = ""
         if key:
             manifest = key.get_contents_as_string()
@@ -173,7 +174,9 @@ class Deploy():
                     else:
                         mod['package'] = tmp[1]
                         mod['path'] = tmp[2]
-                    modules.append(mod)
+                    # Only keep modules that have not been removed from the app
+                    if mod['name'] in all_app_modules_list:
+                        modules.append(mod)
         if not key:
             key = bucket.new_key(key_path)
         if not module_exist:
