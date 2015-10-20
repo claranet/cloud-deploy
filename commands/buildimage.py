@@ -100,8 +100,7 @@ class Buildimage():
         return pillar
 
     def _update_app_ami(self, ami_id):
-            self._app['build_infos']['ami_name'] = self._ami_name
-            self._db.apps.update({'_id': self._app['_id']},{'$set': {'ami': ami_id, 'build_infos': self._app['build_infos']}})
+            self._db.apps.update({'_id': self._app['_id']},{'$set': {'ami': ami_id, 'build_infos.ami_name': self._ami_name}})
             self._worker.update_status("done")
 
     def execute(self):
