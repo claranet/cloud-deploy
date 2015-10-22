@@ -27,19 +27,29 @@ def gcall(args, cmd_description, log_fd, dry_run=False, env=None):
 def find_ec2_instances(ghost_app, ghost_env, ghost_role, region):
     conn_as = boto.ec2.autoscale.connect_to_region(region)
     conn = ec2.connect_to_region(region)
-    instances = conn.get_only_instances(filters={"tag:env": ghost_env,
-                                                 "tag:role": ghost_role,
-                                                 "tag:app": ghost_app,
-                                                 "instance-state-name": "running"})
+
+    # Retrieve pending instances before running instances (fabric deduplicates hosts if needed)
+    # FIXME: do a single API call instead of two and locally filter the lists
+    instance_filters = {"tag:env": ghost_env, "tag:role": ghost_role, "tag:app": ghost_app, "instance-state-name": "pending"}
+    pending_instances = conn.get_only_instances(filters=instance_filters)
+    instance_filters.update({"instance-state-name": "running"})
+    running_instances = conn.get_only_instances(filters=instance_filters)
+
     hosts = []
-    for instance in instances:
+    for instance in running_instances:
         # Instances in autoscale "Terminating:*" states are still "running" but no longer in the Load Balancer
         autoscale_instances = conn_as.get_all_autoscaling_instances(instance_ids=[instance.id])
         if not autoscale_instances or not autoscale_instances[0].lifecycle_state in ['Terminating:Wait', 'Terminating:Proceed']:
             hosts.append(instance.private_ip_address)
+
+    # Append pending instances to running instances so they are processed last
+    for instance in pending_instances:
+        hosts.append(instance.private_ip_address)
+
     if (len(hosts) == 0):
-        raise GCallException("No instance found with tags app:%s, role:%s, env:%s, region:%s" \
+        raise GCallException("No instance found with tags app:%s, role:%s, env:%s, region:%s"
                         % (ghost_app, ghost_role, ghost_env, region))
+
     return hosts
 
 def execute_task_on_hosts(task_name, app_name, app_env, app_role, app_region, key_path, log_file):
