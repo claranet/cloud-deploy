@@ -2,7 +2,7 @@ from datetime import datetime
 from subprocess import call
 from boto import ec2
 import boto.ec2.autoscale
-from boto.ec2.autoscale import LaunchConfiguration
+from boto.ec2 import autoscale
 from boto import s3
 import time
 from jinja2 import Environment, FileSystemLoader
@@ -24,15 +24,12 @@ def gcall(args, cmd_description, log_fd, dry_run=False, env=None):
         if (ret != 0):
             raise GCallException("ERROR: %s" % cmd_description)
 
-def find_ec2_instances(ghost_app, ghost_env, ghost_role, region):
+def find_ec2_instances(ghost_app, ghost_env, ghost_role, region, state="running"):
     conn_as = boto.ec2.autoscale.connect_to_region(region)
     conn = ec2.connect_to_region(region)
 
-    # Retrieve pending instances before running instances (fabric deduplicates hosts if needed)
-    # FIXME: do a single API call instead of two and locally filter the lists
-    instance_filters = {"tag:env": ghost_env, "tag:role": ghost_role, "tag:app": ghost_app, "instance-state-name": "pending"}
-    pending_instances = conn.get_only_instances(filters=instance_filters)
-    instance_filters.update({"instance-state-name": "running"})
+    # Retrieve running instances
+    instance_filters = {"tag:env": ghost_env, "tag:role": ghost_role, "tag:app": ghost_app, "instance-state-name": state}
     running_instances = conn.get_only_instances(filters=instance_filters)
 
     hosts = []
@@ -42,17 +39,71 @@ def find_ec2_instances(ghost_app, ghost_env, ghost_role, region):
         if not autoscale_instances or not autoscale_instances[0].lifecycle_state in ['Terminating:Wait', 'Terminating:Proceed']:
             hosts.append(instance.private_ip_address)
 
-    # Append pending instances to running instances so they are processed last
-    for instance in pending_instances:
-        hosts.append(instance.private_ip_address)
-
     if (len(hosts) == 0):
         raise GCallException("No instance found with tags app:%s, role:%s, env:%s, region:%s"
                         % (ghost_app, ghost_role, ghost_env, region))
 
     return hosts
 
-def execute_task_on_hosts(task_name, app_name, app_env, app_role, app_region, key_path, log_file):
+def get_autoscaling_group_and_processes_to_suspend(as_conn, app, log_file):
+    if 'autoscale' in app.keys() and 'name' in app['autoscale'].keys():
+        as_name = app['autoscale']['name']
+        as_list = as_conn.get_all_groups(names=[as_name])
+
+        if len(as_list) == 1:
+            as_group = as_list[0].name
+            log("INFO: Auto-scaling group {0} found".format(as_name), log_file)
+
+            # Determine if the auto-scaling Launch and/or Terminate processes should be suspended (i.e. they are already suspended and should remain as is)
+            as_processes_to_suspend = {'Launch': None, 'Terminate': None}
+            for suspended_process in as_list[0].suspended_processes:
+                if suspended_process.process_name in ['Launch', 'Terminate']:
+                    del as_processes_to_suspend[suspended_process.process_name]
+                    log("INFO: Auto-scaling group {0} {1} process is already suspended".format(as_name, suspended_process.process_name), log_file)
+
+            return as_group, as_processes_to_suspend.keys()
+        else:
+            log("WARNING: Auto-scaling group {0} not found".format(as_name), log_file)
+            all_as = as_conn.get_all_groups()
+            if len(all_as) > 0:
+                for ec2_as in all_as:
+                    log("WARNING:    Auto-scaling group found: {0}".format(ec2_as.name), log_file)
+            else:
+                log("WARNING: No auto-scaling group found", log_file)
+    return None, None
+
+def suspend_autoscaling_group_processes(as_conn, as_group, as_group_processes_to_suspend, log_file):
+    if as_group and as_group_processes_to_suspend:
+        log("Suspending auto-scaling group processes {0}".format(as_group_processes_to_suspend), log_file)
+        as_conn.suspend_processes(as_group, as_group_processes_to_suspend)
+
+def resume_autoscaling_group_processes(as_conn, as_group, as_group_processes_to_suspend, log_file):
+    if as_group and as_group_processes_to_suspend:
+        log("Resuming auto-scaling group processes {0}".format(as_group_processes_to_suspend), log_file)
+        as_conn.resume_processes(as_group, as_group_processes_to_suspend)
+
+def execute_task_on_hosts(task_name, app, key_path, log_file):
+    app_name = app['name']
+    app_env = app['env']
+    app_role = app['role']
+    app_region = app['region']
+
+    # Retrieve autoscaling infos, if any
+    as_conn = autoscale.connect_to_region(app_region)
+    as_group, as_group_processes_to_suspend = get_autoscaling_group_and_processes_to_suspend(as_conn, app, log_file)
+
+    # Suspend autoscaling
+    suspend_autoscaling_group_processes(as_conn, as_group, as_group_processes_to_suspend, log_file)
+
+    # Wait for pending instances to become ready
+    while True:
+        pending_instances = find_ec2_instances(app_name, app_env, app_role, app_region, "pending")
+        if not pending_instances:
+            break
+
+        log("INFO: waiting for {} instance(s) to become running before proceeding with deployment: ".format(len(pending_instances), pending_instances), log_file)
+        time.sleep(10)
+
     hosts = find_ec2_instances(app_name, app_env, app_role, app_region)
     if len(hosts) > 0:
         hosts_list = ','.join(hosts)
@@ -63,6 +114,9 @@ def execute_task_on_hosts(task_name, app_name, app_env, app_role, app_region, ke
         gcall(cmd, "Updating current instances", log_file)
     else:
         log("WARNING: no instance available to sync deployment", log_file)
+
+    # Resume autoscaling
+    resume_autoscaling_group_processes(as_conn, as_group, as_group_processes_to_suspend, log_file)
 
 def log(message, fd):
     fd.write("{timestamp}: {message}\n".format(timestamp=datetime.now().strftime("%Y/%m/%d %H:%M:%S GMT"), message=message))
@@ -75,15 +129,15 @@ def create_launch_config(app, userdata, ami_id):
         bdm = create_block_device(app['environment_infos']['root_block_device'])
     else:
         bdm = create_block_device()
-    launch_config = LaunchConfiguration(name=launch_config_name, \
-        image_id=ami_id, key_name=app['environment_infos']['key_name'], \
-        security_groups=app['environment_infos']['security_groups'], \
-        user_data=userdata, instance_type=app['instance_type'], kernel_id=None, \
-        ramdisk_id=None, block_device_mappings=[bdm], \
-        instance_monitoring=False, spot_price=None, \
-        instance_profile_name=app['environment_infos']['instance_profile'], ebs_optimized=False, \
-        associate_public_ip_address=True, volume_type=None, \
-        delete_on_termination=True, iops=None, \
+    launch_config = autoscale.LaunchConfiguration(name=launch_config_name,
+        image_id=ami_id, key_name=app['environment_infos']['key_name'],
+        security_groups=app['environment_infos']['security_groups'],
+        user_data=userdata, instance_type=app['instance_type'], kernel_id=None,
+        ramdisk_id=None, block_device_mappings=[bdm],
+        instance_monitoring=False, spot_price=None,
+        instance_profile_name=app['environment_infos']['instance_profile'], ebs_optimized=False,
+        associate_public_ip_address=True, volume_type=None,
+        delete_on_termination=True, iops=None,
         classic_link_vpc_id=None, classic_link_vpc_security_groups=None)
     conn_as.create_launch_configuration(launch_config)
     return launch_config
@@ -125,9 +179,8 @@ def check_autoscale_exists(as_name, region):
         return False
 
 def purge_launch_configuration(app):
-    conn_as = boto.ec2.autoscale.connect_to_region(app['region'])
+    conn_as = autoscale.connect_to_region(app['region'])
     retention = 2
-    lcs = []
     launchconfigs = []
     lcs = conn_as.get_all_launch_configurations()
 
