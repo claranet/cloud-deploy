@@ -216,7 +216,7 @@ class Deploy():
         gcall("git --no-pager fetch --tags", "Git fetch all tags", self._log_file)
         gcall("git --no-pager pull", "Git pull", self._log_file)
         gcall("git --no-pager checkout %s" % revision, "Git checkout: %s" % revision, self._log_file)
-        gcall("git --no-pager pull || true", "Git pull after checkout but never fail: %s" % revision, self._log_file)
+        gcall("grep '^ref: ' .git/HEAD && git --no-pager pull || echo HEAD is detached, no need to pull", "Git pull after checkout if not detached: %s" % revision, self._log_file)
 
         # Extract remote origin URL and commit information
         remote_url = grep(grep(git('--no-pager', 'remote', '--verbose'), '^origin'), '(fetch)$').split()[1]
