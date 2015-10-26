@@ -107,10 +107,10 @@ def execute_task_on_hosts(task_name, app, key_path, log_file):
     hosts = find_ec2_instances(app_name, app_env, app_role, app_region)
     if len(hosts) > 0:
         hosts_list = ','.join(hosts)
-        cmd = "/usr/local/bin/fab --show=debug --fabfile={root_path}/fabfile.py -i {key_path} --hosts={hosts_list} {task_name}".format(root_path=ROOT_PATH,
-                                                                                                                                       key_path=key_path,
-                                                                                                                                       hosts_list=hosts_list,
-                                                                                                                                       task_name=task_name)
+        cmd = "fab --show=debug --fabfile={root_path}/fabfile.py -i {key_path} --hosts={hosts_list} {task_name}".format(root_path=ROOT_PATH,
+                                                                                                                        key_path=key_path,
+                                                                                                                        hosts_list=hosts_list,
+                                                                                                                        task_name=task_name)
         gcall(cmd, "Updating current instances", log_file)
     else:
         raise GCallException("No instance found in region {region} with tags app:{app}, env:{env}, role:{role}".format(region=app_region,
