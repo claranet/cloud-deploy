@@ -24,24 +24,44 @@ def gcall(args, cmd_description, log_fd, dry_run=False, env=None):
         if (ret != 0):
             raise GCallException("ERROR: %s" % cmd_description)
 
-def find_ec2_instances(ghost_app, ghost_env, ghost_role, region, state="running"):
+def find_ec2_pending_instances(ghost_app, ghost_env, ghost_role, region, as_group):
+    conn_as = boto.ec2.autoscale.connect_to_region(region)
+    conn = ec2.connect_to_region(region)
+
+    # Retrieve pending instances
+    pending_instance_filters = {"tag:env": ghost_env, "tag:role": ghost_role, "tag:app": ghost_app, "instance-state-name": "pending"}
+    pending_instances = conn.get_only_instances(filters=pending_instance_filters)
+    pending_instances_ids = [instance.id for instance in pending_instances]
+
+    autoscale_instances = []
+    if as_group:
+        autoscale_instances = conn_as.get_all_groups(names=[as_group])[0].instances
+
+    for autoscale_instance in autoscale_instances:
+        # Instances in autoscale "Pending" state may not have their tags set yet
+        if not autoscale_instance.instance_id in pending_instances_ids and autoscale_instance.lifecycle_state in ['Pending', 'Pending:Wait', 'Pending:Proceed']:
+            pending_instances.append(conn.get_only_instances(instance_ids=[autoscale_instance.instance_id])[0])
+
+    hosts = []
+    for instance in pending_instances:
+        hosts.append({'id': instance.id, 'private_ip_address': instance.private_ip_address})
+
+    return hosts
+
+def find_ec2_running_instances(ghost_app, ghost_env, ghost_role, region):
     conn_as = boto.ec2.autoscale.connect_to_region(region)
     conn = ec2.connect_to_region(region)
 
     # Retrieve running instances
-    instance_filters = {"tag:env": ghost_env, "tag:role": ghost_role, "tag:app": ghost_app, "instance-state-name": state}
-    instances = conn.get_only_instances(filters=instance_filters)
+    running_instance_filters = {"tag:env": ghost_env, "tag:role": ghost_role, "tag:app": ghost_app, "instance-state-name": "running"}
+    running_instances = conn.get_only_instances(filters=running_instance_filters)
 
     hosts = []
-    for instance in instances:
-        if state == "running":
-            # Instances in autoscale "Terminating:*" states are still "running" but no longer in the Load Balancer
-            autoscale_instances = conn_as.get_all_autoscaling_instances(instance_ids=[instance.id])
-        else:
-            autoscale_instances = []
-
-        if not autoscale_instances or not autoscale_instances[0].lifecycle_state in ['Terminating:Wait', 'Terminating:Proceed']:
-            hosts.append(instance.private_ip_address)
+    for instance in running_instances:
+        # Instances in autoscale "Terminating:*" states are still "running" but no longer in the Load Balancer
+        autoscale_instances = conn_as.get_all_autoscaling_instances(instance_ids=[instance.id])
+        if not autoscale_instances or not autoscale_instances[0].lifecycle_state in ['Terminating', 'Terminating:Wait', 'Terminating:Proceed']:
+            hosts.append({'id': instance.id, 'private_ip_address': instance.private_ip_address})
 
     return hosts
 
@@ -98,22 +118,22 @@ def execute_task_on_hosts(task_name, app, key_path, log_file):
 
         # Wait for pending instances to become ready
         while True:
-            pending_instances = find_ec2_instances(app_name, app_env, app_role, app_region, "pending")
+            pending_instances = find_ec2_pending_instances(app_name, app_env, app_role, app_region, as_group)
             if not pending_instances:
                 break
 
-            log("INFO: waiting for {} instance(s) to become running before proceeding with deployment: ".format(len(pending_instances), pending_instances), log_file)
+            log("INFO: waiting 10s for {} instance(s) to become running before proceeding with deployment: {}".format(len(pending_instances), pending_instances), log_file)
             time.sleep(10)
 
-        hosts = find_ec2_instances(app_name, app_env, app_role, app_region)
+        running_instances = find_ec2_running_instances(app_name, app_env, app_role, app_region)
 
-        if len(hosts) > 0:
-            hosts_list = ','.join(hosts)
+        if len(running_instances) > 0:
+            hosts_list = ','.join([host['private_ip_address'] for host in running_instances])
             cmd = "fab --show=debug --fabfile={root_path}/fabfile.py -i {key_path} --hosts={hosts_list} {task_name}".format(root_path=ROOT_PATH,
                                                                                                                             key_path=key_path,
                                                                                                                             hosts_list=hosts_list,
                                                                                                                             task_name=task_name)
-            gcall(cmd, "Updating current instances", log_file)
+            gcall(cmd, "Updating current instances: {}".format(running_instances), log_file)
         else:
             raise GCallException("No instance found in region {region} with tags app:{app}, env:{env}, role:{role}".format(region=app_region,
                                                                                                                            app=app_name,
