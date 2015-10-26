@@ -92,34 +92,36 @@ def execute_task_on_hosts(task_name, app, key_path, log_file):
     as_conn = autoscale.connect_to_region(app_region)
     as_group, as_group_processes_to_suspend = get_autoscaling_group_and_processes_to_suspend(as_conn, app, log_file)
 
-    # Suspend autoscaling
-    suspend_autoscaling_group_processes(as_conn, as_group, as_group_processes_to_suspend, log_file)
+    try:
+        # Suspend autoscaling
+        suspend_autoscaling_group_processes(as_conn, as_group, as_group_processes_to_suspend, log_file)
 
-    # Wait for pending instances to become ready
-    while True:
-        pending_instances = find_ec2_instances(app_name, app_env, app_role, app_region, "pending")
-        if not pending_instances:
-            break
+        # Wait for pending instances to become ready
+        while True:
+            pending_instances = find_ec2_instances(app_name, app_env, app_role, app_region, "pending")
+            if not pending_instances:
+                break
 
-        log("INFO: waiting for {} instance(s) to become running before proceeding with deployment: ".format(len(pending_instances), pending_instances), log_file)
-        time.sleep(10)
+            log("INFO: waiting for {} instance(s) to become running before proceeding with deployment: ".format(len(pending_instances), pending_instances), log_file)
+            time.sleep(10)
 
-    hosts = find_ec2_instances(app_name, app_env, app_role, app_region)
-    if len(hosts) > 0:
-        hosts_list = ','.join(hosts)
-        cmd = "fab --show=debug --fabfile={root_path}/fabfile.py -i {key_path} --hosts={hosts_list} {task_name}".format(root_path=ROOT_PATH,
-                                                                                                                        key_path=key_path,
-                                                                                                                        hosts_list=hosts_list,
-                                                                                                                        task_name=task_name)
-        gcall(cmd, "Updating current instances", log_file)
-    else:
-        raise GCallException("No instance found in region {region} with tags app:{app}, env:{env}, role:{role}".format(region=app_region,
-                                                                                                                       app=app_name,
-                                                                                                                       env=app_env,
-                                                                                                                       role=app_role))
+        hosts = find_ec2_instances(app_name, app_env, app_role, app_region)
 
-    # Resume autoscaling
-    resume_autoscaling_group_processes(as_conn, as_group, as_group_processes_to_suspend, log_file)
+        if len(hosts) > 0:
+            hosts_list = ','.join(hosts)
+            cmd = "fab --show=debug --fabfile={root_path}/fabfile.py -i {key_path} --hosts={hosts_list} {task_name}".format(root_path=ROOT_PATH,
+                                                                                                                            key_path=key_path,
+                                                                                                                            hosts_list=hosts_list,
+                                                                                                                            task_name=task_name)
+            gcall(cmd, "Updating current instances", log_file)
+        else:
+            raise GCallException("No instance found in region {region} with tags app:{app}, env:{env}, role:{role}".format(region=app_region,
+                                                                                                                           app=app_name,
+                                                                                                                           env=app_env,
+                                                                                                                           role=app_role))
+    finally:
+        # Resume autoscaling
+        resume_autoscaling_group_processes(as_conn, as_group, as_group_processes_to_suspend, log_file)
 
 def log(message, fd):
     fd.write("{timestamp}: {message}\n".format(timestamp=datetime.now().strftime("%Y/%m/%d %H:%M:%S GMT"), message=message))
