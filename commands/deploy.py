@@ -5,7 +5,7 @@ import calendar
 import shutil
 import tempfile
 from sh import git, grep
-from commands.tools import GCallException, gcall, refresh_stage2, execute_task_on_hosts
+from commands.tools import GCallException, gcall, refresh_stage2, execute_task_on_hosts, log
 import boto.s3
 import base64
 
@@ -73,10 +73,19 @@ class Deploy():
         path = self._get_buildpack_clone_path_from_module(module)
         os.chdir(path)
         pkg_name = "{0}_{1}_{2}".format(ts, module['name'], commit)
-        gcall("tar cvzf ../%s . > /dev/null" % pkg_name, "Creating package: %s" % pkg_name, self._log_file)
-        gcall("aws --region {region} s3 cp ../{0} s3://{bucket_s3}{path}/".format(pkg_name, \
-                bucket_s3=self._config['bucket_s3'], region=self._app['region'], path=path), "Uploading package: %s" % pkg_name, self._log_file)
-        gcall("rm -f ../{0}".format(pkg_name), "Deleting local package: %s" % pkg_name, self._log_file)
+        pkg_path = '../{0}'.format(pkg_name)
+        gcall("tar czf {0} .".format(pkg_path), "Creating package: %s" % pkg_name, self._log_file)
+
+        log("Uploading package: %s" % pkg_name, self._log_file)
+        conn = boto.s3.connect_to_region(self._app['region'])
+        bucket = conn.get_bucket(self._config['bucket_s3'])
+        key_path = '{path}/{pkg_name}'.format(bucket_s3=self._config['bucket_s3'], path=path, pkg_name=pkg_name)
+        key = bucket.get_key(path)
+        if not key:
+            key = bucket.new_key(key_path)
+        key.set_contents_from_filename(pkg_path)
+
+        gcall("rm -f {0}".format(pkg_path), "Deleting local package: %s" % pkg_name, self._log_file)
         return pkg_name
 
     def _get_module_revision(self, module_name):
