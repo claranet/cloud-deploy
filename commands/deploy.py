@@ -232,12 +232,8 @@ class Deploy():
         # Create tar archive
         pkg_name = self._package_module(module, ts, commit)
 
-        self._set_as_conn()
-        if self._app['autoscale']['name']:
-            self._stop_autoscale()
         self._update_manifest(module, pkg_name)
         self._deploy_module(module)
-        if self._app['autoscale']['name']:
-            self._start_autoscale()
+
         deployment = {'app_id': self._app['_id'], 'job_id': self._job['_id'], 'module': module['name'], 'revision': revision, 'commit': commit, 'commit_message': commit_message, 'timestamp': ts, 'package': pkg_name, 'module_path': module['path']}
         return self._worker._db.deploy_histories.insert(deployment)

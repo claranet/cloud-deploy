@@ -30,23 +30,23 @@ def find_ec2_instances(ghost_app, ghost_env, ghost_role, region, state="running"
 
     # Retrieve running instances
     instance_filters = {"tag:env": ghost_env, "tag:role": ghost_role, "tag:app": ghost_app, "instance-state-name": state}
-    running_instances = conn.get_only_instances(filters=instance_filters)
+    instances = conn.get_only_instances(filters=instance_filters)
 
     hosts = []
-    for instance in running_instances:
-        # Instances in autoscale "Terminating:*" states are still "running" but no longer in the Load Balancer
-        autoscale_instances = conn_as.get_all_autoscaling_instances(instance_ids=[instance.id])
+    for instance in instances:
+        if state == "running":
+            # Instances in autoscale "Terminating:*" states are still "running" but no longer in the Load Balancer
+            autoscale_instances = conn_as.get_all_autoscaling_instances(instance_ids=[instance.id])
+        else:
+            autoscale_instances = []
+
         if not autoscale_instances or not autoscale_instances[0].lifecycle_state in ['Terminating:Wait', 'Terminating:Proceed']:
             hosts.append(instance.private_ip_address)
-
-    if (len(hosts) == 0):
-        raise GCallException("No instance found with tags app:%s, role:%s, env:%s, region:%s"
-                        % (ghost_app, ghost_role, ghost_env, region))
 
     return hosts
 
 def get_autoscaling_group_and_processes_to_suspend(as_conn, app, log_file):
-    if 'autoscale' in app.keys() and 'name' in app['autoscale'].keys():
+    if 'autoscale' in app.keys() and 'name' in app['autoscale'].keys() and app['autoscale']['name']:
         as_name = app['autoscale']['name']
         as_list = as_conn.get_all_groups(names=[as_name])
 
@@ -113,7 +113,10 @@ def execute_task_on_hosts(task_name, app, key_path, log_file):
                                                                                                                                        task_name=task_name)
         gcall(cmd, "Updating current instances", log_file)
     else:
-        log("WARNING: no instance available to sync deployment", log_file)
+        raise GCallException("No instance found in region {region} with tags app:{app}, env:{env}, role:{role}".format(region=app_region,
+                                                                                                                       app=app_name,
+                                                                                                                       env=app_env,
+                                                                                                                       role=app_role))
 
     # Resume autoscaling
     resume_autoscaling_group_processes(as_conn, as_group, as_group_processes_to_suspend, log_file)
