@@ -8,6 +8,7 @@ import os
 
 PACKER_JSON_PATH="/tmp/packer/"
 SALT_LOCAL_TREE="/tmp/salt/"
+salt_formulas_repo="git@bitbucket.org:morea/morea-salt-formulas.git"
 
 class Packer:
     def __init__(self, packer_config, config, log_file):
@@ -19,8 +20,12 @@ class Packer:
         if not os.path.exists(SALT_LOCAL_TREE):
             os.makedirs(SALT_LOCAL_TREE)
         os.makedirs(SALT_LOCAL_TREE + self.unique)
-        log("Getting Salt Morea Formulas", self._log_file)
-        git.clone(["git@bitbucket.org:morea/morea-salt-formulas.git", SALT_LOCAL_TREE + self.unique + '/'],'--recursive')
+        logging.debug("Getting Salt Morea Formulas")
+        #git.clone(["git@bitbucket.org:morea/morea-salt-formulas.git", SALT_LOCAL_TREE + self.unique + '/'],'--recursive')
+        #The following has been add as patch  to make git repository configurable
+        if config.get('salt_formulas_repo'):
+            salt_formulas_repo = config['salt_formulas_repo']
+        git.clone([salt_formulas_repo, SALT_LOCAL_TREE + self.unique + '/'],'--recursive')
         if config.get('salt_formulas_branch'):
             os.chdir(SALT_LOCAL_TREE + self.unique)
             git.checkout(config['salt_formulas_branch'])
