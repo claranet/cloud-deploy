@@ -26,13 +26,16 @@ class Packer:
             git.checkout(config['salt_formulas_branch'])
             git.submodule('init')
             git.submodule('update')
-
+    #Update de buil_salt_top function to make common sls file optional
     def _build_salt_top(self, params):
         self.salt_path = SALT_LOCAL_TREE + self.unique + '/salt'
         self.salt_top_path = self.salt_path + '/top.sls'
         stream = file(self.salt_top_path, 'w')
         log("Writing Salt Top state to: {0}".format(self.salt_top_path), self._log_file)
-        data = {'base': {'*': ['common'] + params }}
+        if os.path.exists(salt_path + 'common'):
+            data = {'base': {'*': ['common'] + params }}
+        else:
+            data = {'base': {'*': params }}
         log('state: top.sls: {0}'.format(data), self._log_file)
         yaml.dump(data, stream, default_flow_style=False)
 
