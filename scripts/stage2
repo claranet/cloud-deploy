@@ -170,5 +170,6 @@ do
     deploy_module $MODULE_NAME $MODULE_FILE $TARGET
 done
 
-  echo "Unlocking $LOCK..."
 ) 200>$LOCK
+
+echo "Unlocked $LOCK"
