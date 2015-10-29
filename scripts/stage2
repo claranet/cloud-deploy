@@ -102,7 +102,7 @@ function deploy_module() {
         local status=$?
         if [ $status -ne 0 ]; then
             purge_latest_failed_deploy $MODULE_NAME $UUID
-            exit -1
+            exit_deployment -1
         fi
     fi
 
@@ -141,7 +141,8 @@ function find_module() {
 
 function exit_deployment() {
     echo "Removing Manifest file" >> /tmp/$LOGFILE
-    rm /tmp/MANIFEST
+    rm -f /tmp/MANIFEST
+    echo "Unlocking $LOCK..."
     exit $1
 }
 
@@ -172,4 +173,3 @@ done
 
 ) 200>$LOCK
 
-echo "Unlocked $LOCK"
