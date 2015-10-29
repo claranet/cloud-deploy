@@ -1,5 +1,12 @@
 #!/bin/bash
 set -x
+
+LOCK=/var/lock/ghost-stage-2.exclusivelock
+(
+  # Wait for lock (fd 200, ,no timeout)
+  flock --exclusive 200
+  echo "Locked $LOCK"
+
 S3_BUCKET={{ bucket_s3 }}
 TS=$(date +%Y%m%d_%H%M%S)
 LOGFILE=$(echo $TS"_deploy.txt")
@@ -162,3 +169,6 @@ do
     TARGET=$(echo $line | awk -F':' '{print $3}')
     deploy_module $MODULE_NAME $MODULE_FILE $TARGET
 done
+
+  echo "Unlocking $LOCK..."
+) 200>$LOCK
