@@ -162,18 +162,18 @@ if [ $? -ne 0 ]; then
     exit_deployment 10
 fi
 
-# Deploy only one module
 if [ -n "$1" ]; then
+    # Deploy only one module
     MODULE=$(find_module $1)
     deploy_module $MODULE
-    exit_deployment 0
+else
+    # Deploying all modules
+    for line in $(cat /tmp/MANIFEST) ; do
+        MODULE_NAME=$(echo $line | awk -F':' '{print $1}')
+        MODULE_FILE=$(echo $line | awk -F':' '{print $2}')
+        TARGET=$(echo $line | awk -F':' '{print $3}')
+        deploy_module $MODULE_NAME $MODULE_FILE $TARGET
+    done
 fi
 
-# Deploying all modules
-for line in $(cat /tmp/MANIFEST)
-do
-    MODULE_NAME=$(echo $line | awk -F':' '{print $1}')
-    MODULE_FILE=$(echo $line | awk -F':' '{print $2}')
-    TARGET=$(echo $line | awk -F':' '{print $3}')
-    deploy_module $MODULE_NAME $MODULE_FILE $TARGET
-done
+exit_deployment 0
