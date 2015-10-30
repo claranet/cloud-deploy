@@ -2,9 +2,13 @@
 set -x
 
 LOCK=/var/lock/ghost-stage-2.exclusivelock
+
+ls -l $LOCK
+echo "Locking $LOCK..."
+
 (
-  # Wait for lock (fd 200, ,no timeout)
-  flock --exclusive 200
+  # Wait for lock (fd 200, 10m timeout)
+  flock --exclusive --timeout 600 200
   echo "Locked $LOCK"
 
 S3_BUCKET={{ bucket_s3 }}
