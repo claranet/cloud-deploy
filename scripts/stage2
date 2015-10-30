@@ -1,15 +1,16 @@
 #!/bin/bash
 set -x
 
-LOCK=/var/lock/ghost-stage-2.exclusivelock
+LOCK=/run/lock/ghost-stage-2
 
-ls -l $LOCK
-echo "Locking $LOCK..."
+while [ -d $LOCK ] ; do
+    ls -l $LOCK
+    echo "Waiting 30s for $LOCK lock to be released..."
+    sleep 30
+done
 
-(
-  # Wait for lock (fd 200, 10m timeout)
-  flock --exclusive --timeout 600 200
-  echo "Locked $LOCK"
+mkdir $LOCK
+echo "Locked $LOCK"
 
 S3_BUCKET={{ bucket_s3 }}
 TS=$(date +%Y%m%d_%H%M%S)
@@ -147,6 +148,8 @@ function exit_deployment() {
     echo "Removing Manifest file" >> /tmp/$LOGFILE
     rm -f /tmp/MANIFEST
     echo "Unlocking $LOCK..."
+    rmdir $LOCK
+    echo "Unlocked $LOCK"
     exit $1
 }
 
@@ -174,6 +177,3 @@ do
     TARGET=$(echo $line | awk -F':' '{print $3}')
     deploy_module $MODULE_NAME $MODULE_FILE $TARGET
 done
-
-) 200>$LOCK
-
