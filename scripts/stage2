@@ -1,5 +1,17 @@
 #!/bin/bash
 set -x
+
+LOCK=/run/lock/ghost-stage-2
+
+while [ -d $LOCK ] ; do
+    ls -l $LOCK
+    echo "Waiting 30s for $LOCK lock to be released..."
+    sleep 30
+done
+
+mkdir $LOCK
+echo "Locked $LOCK"
+
 S3_BUCKET={{ bucket_s3 }}
 TS=$(date +%Y%m%d_%H%M%S)
 LOGFILE=$(echo $TS"_deploy.txt")
@@ -95,7 +107,7 @@ function deploy_module() {
         local status=$?
         if [ $status -ne 0 ]; then
             purge_latest_failed_deploy $MODULE_NAME $UUID
-            exit -1
+            exit_deployment -1
         fi
     fi
 
@@ -134,7 +146,10 @@ function find_module() {
 
 function exit_deployment() {
     echo "Removing Manifest file" >> /tmp/$LOGFILE
-    rm /tmp/MANIFEST
+    rm -f /tmp/MANIFEST
+    echo "Unlocking $LOCK..."
+    rmdir $LOCK
+    echo "Unlocked $LOCK"
     exit $1
 }
 
@@ -147,18 +162,18 @@ if [ $? -ne 0 ]; then
     exit_deployment 10
 fi
 
-# Deploy only one module
 if [ -n "$1" ]; then
+    # Deploy only one module
     MODULE=$(find_module $1)
     deploy_module $MODULE
-    exit_deployment 0
+else
+    # Deploying all modules
+    for line in $(cat /tmp/MANIFEST) ; do
+        MODULE_NAME=$(echo $line | awk -F':' '{print $1}')
+        MODULE_FILE=$(echo $line | awk -F':' '{print $2}')
+        TARGET=$(echo $line | awk -F':' '{print $3}')
+        deploy_module $MODULE_NAME $MODULE_FILE $TARGET
+    done
 fi
 
-# Deploying all modules
-for line in $(cat /tmp/MANIFEST)
-do
-    MODULE_NAME=$(echo $line | awk -F':' '{print $1}')
-    MODULE_FILE=$(echo $line | awk -F':' '{print $2}')
-    TARGET=$(echo $line | awk -F':' '{print $3}')
-    deploy_module $MODULE_NAME $MODULE_FILE $TARGET
-done
+exit_deployment 0

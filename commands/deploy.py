@@ -5,8 +5,7 @@ import calendar
 import shutil
 import tempfile
 from sh import git, grep
-from commands.tools import GCallException, gcall, log, refresh_stage2, execute_task_on_hosts
-from boto.ec2 import autoscale
+from commands.tools import GCallException, gcall, refresh_stage2, execute_task_on_hosts, log
 import boto.s3
 import base64
 
@@ -66,66 +65,27 @@ class Deploy():
 
         self._worker.module_initialized(module['name'])
 
-    def _set_as_conn(self):
-        self._as_conn = autoscale.connect_to_region(self._app['region'])
-
-    def _set_autoscale_group(self):
-        if not self._as_conn:
-            self._set_as_conn()
-        if 'autoscale' in self._app.keys():
-            if 'name' in self._app['autoscale'].keys():
-                as_name = self._app['autoscale']['name']
-                as_list = self._as_conn.get_all_groups(names=[as_name])
-                if len(as_list) == 1:
-                    self._as_group = as_list[0].name
-                    log("INFO: Auto-scaling group {0} found".format(as_name), self._log_file)
-
-                    # Determine if the auto-scaling Launch and/or Terminate processes should be suspended (i.e. they are already suspended and should remain as is)
-                    processes_to_suspend = {'Launch': None, 'Terminate': None}
-                    for suspended_process in as_list[0].suspended_processes:
-                        if suspended_process.process_name in ['Launch', 'Terminate']:
-                            del processes_to_suspend[suspended_process.process_name]
-                            log("INFO: Auto-scaling group {0} {1} process is already suspended".format(as_name, suspended_process.process_name), self._log_file)
-                    self._as_group_processes_to_suspend = processes_to_suspend.keys()
-                else:
-                    log("WARNING: Auto-scaling group {0} not found".format(as_name), self._log_file)
-                    all_as = self._as_conn.get_all_groups()
-                    if len(all_as) > 0:
-                        for ec2_as in all_as:
-                            log("WARNING:    Auto-scaling group found: {0}".format(ec2_as.name), self._log_file)
-                    else:
-                        log("WARNING: No auto-scaling group found", self._log_file)
-            else:
-                log("WARNING: set_autoscale_group is called on an application without initialized autoscale field", self._log_file)
-        else:
-            log("WARNING: set_autoscale_group is called on an application without initialized autoscale field", self._log_file)
-
-    def _start_autoscale(self):
-        if not self._as_group:
-            self._set_autoscale_group()
-        if self._as_group and self._as_group_processes_to_suspend:
-            log("Resuming auto-scaling group processes {0}".format(self._as_group_processes_to_suspend), self._log_file)
-            self._as_conn.resume_processes(self._as_group, self._as_group_processes_to_suspend)
-
-    def _stop_autoscale(self):
-        if not self._as_group:
-            self._set_autoscale_group()
-        if self._as_group and self._as_group_processes_to_suspend:
-            log("Stopping auto-scaling group processes {0}".format(self._as_group_processes_to_suspend), self._log_file)
-            self._as_conn.suspend_processes(self._as_group, self._as_group_processes_to_suspend)
-
     def _deploy_module(self, module):
         task_name = "deploy:{0},{1}".format(self._config['bucket_s3'], module['name'])
-        execute_task_on_hosts(task_name, self._app['name'], self._app['env'], self._app['role'], self._app['region'], self._config['key_path'], self._log_file)
+        execute_task_on_hosts(task_name, self._app, self._config['key_path'], self._log_file)
 
     def _package_module(self, module, ts, commit):
         path = self._get_buildpack_clone_path_from_module(module)
         os.chdir(path)
         pkg_name = "{0}_{1}_{2}".format(ts, module['name'], commit)
-        gcall("tar cvzf ../%s . > /dev/null" % pkg_name, "Creating package: %s" % pkg_name, self._log_file)
-        gcall("aws --region {region} s3 cp ../{0} s3://{bucket_s3}{path}/".format(pkg_name, \
-                bucket_s3=self._config['bucket_s3'], region=self._app['region'], path=path), "Uploading package: %s" % pkg_name, self._log_file)
-        gcall("rm -f ../{0}".format(pkg_name), "Deleting local package: %s" % pkg_name, self._log_file)
+        pkg_path = '../{0}'.format(pkg_name)
+        gcall("tar czf {0} .".format(pkg_path), "Creating package: %s" % pkg_name, self._log_file)
+
+        log("Uploading package: %s" % pkg_name, self._log_file)
+        conn = boto.s3.connect_to_region(self._app['region'])
+        bucket = conn.get_bucket(self._config['bucket_s3'])
+        key_path = '{path}/{pkg_name}'.format(bucket_s3=self._config['bucket_s3'], path=path, pkg_name=pkg_name)
+        key = bucket.get_key(path)
+        if not key:
+            key = bucket.new_key(key_path)
+        key.set_contents_from_filename(pkg_path)
+
+        gcall("rm -f {0}".format(pkg_path), "Deleting local package: %s" % pkg_name, self._log_file)
         return pkg_name
 
     def _get_module_revision(self, module_name):
@@ -281,12 +241,8 @@ class Deploy():
         # Create tar archive
         pkg_name = self._package_module(module, ts, commit)
 
-        self._set_as_conn()
-        if self._app['autoscale']['name']:
-            self._stop_autoscale()
         self._update_manifest(module, pkg_name)
         self._deploy_module(module)
-        if self._app['autoscale']['name']:
-            self._start_autoscale()
+
         deployment = {'app_id': self._app['_id'], 'job_id': self._job['_id'], 'module': module['name'], 'revision': revision, 'commit': commit, 'commit_message': commit_message, 'timestamp': ts, 'package': pkg_name, 'module_path': module['path']}
         return self._worker._db.deploy_histories.insert(deployment)

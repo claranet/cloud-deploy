@@ -2,6 +2,8 @@ import os, tempfile
 from fabric.api import sudo, task, env, put, settings
 from jinja2 import Environment, FileSystemLoader
 env.user = 'admin'
+env.connection_attempts = 10
+env.timeout = 30
 
 @task
 def deploy(bucket_s3, module):
