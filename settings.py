@@ -1,5 +1,6 @@
-import jobs
-import apps
+from models import jobs
+from models import apps
+from models import deployments
 
 # Let's just use the local mongod instance. Edit as needed.
 
@@ -24,7 +25,10 @@ ITEM_METHODS = ['GET', 'PATCH', 'PUT', 'DELETE']
 
 DOMAIN = {
     'jobs': jobs.jobs,
-    'apps': apps.apps
+    'apps': apps.apps,
+    'deployments': deployments.deployments
 }
 
 DEBUG = True
+
+VERSIONING = True

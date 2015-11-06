@@ -1,28 +1,18 @@
-instance_type = [
-'t2.micro',
-'t2.small',
-'t2.medium',
-'m3.large',
-'m3.xlarge',
-'m3.2xlarge',
-'c4.large',
-'c4.xlarge',
-'c4.2xlarge',
-'c4.4xlarge',
-'c4.8xlarge',
-'c3.large',
-'c3.xlarge',
-'c3.2xlarge',
-'c3.4xlarge',
-'c3.8xlarge',
-'g2.xlarge',
-'r3.large',
-'r3.xlarge',
-'r3.4xlarge',
-'r3.8xlarge',
-'i2.xlarge',
-'i2.2xlarge',
-'i2.4xlarge',
-'i2.8xlarge',
-'hs1.8xlarge'
-]
+from boto.ec2.instancetype import InstanceType
+
+import json
+
+with open('aws_data_instance_types.json') as data_file:
+    data = json.load(data_file)
+
+instance_types = {}
+
+for region_data in data:
+    region = region_data['region']
+    instance_types[region] = []
+
+    instanceTypes = region_data['instanceTypes']
+    for generation in instanceTypes:
+        generation_type = generation['type']
+        for size in generation['sizes']:
+            instance_types[region].append(InstanceType(name=size['size'], cores=size['vCPU'], memory=size['memoryGiB'], disk=size['storageGB']))

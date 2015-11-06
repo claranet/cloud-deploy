@@ -1,14 +1,9 @@
-import time
-import json
 import os
 import sys
 import tempfile
 import boto.s3
-from pymongo import MongoClient, ASCENDING, DESCENDING
 from bson.objectid import ObjectId
-from commands.tools import GCallException, gcall, log, find_ec2_instances
-
-ROOT_PATH = os.path.dirname(os.path.realpath(__file__))
+from commands.tools import GCallException, log, execute_task_on_hosts
 
 class Rollback():
     _app = None
@@ -85,15 +80,8 @@ class Rollback():
         return None, None
 
     def _deploy_module(self, module):
-        os.chdir(ROOT_PATH)
-        hosts = find_ec2_instances(self._app['name'], self._app['env'], self._app['role'], self._app['region'])
         task_name = "deploy:{0},{1}".format(self._config['bucket_s3'], module['name'])
-        if len(hosts) > 0:
-            cmd = "/usr/local/bin/fab -i {key_path} set_hosts:ghost_app={app},ghost_env={env},ghost_role={role},region={aws_region} {0}".format(task_name, \
-                    key_path=self._config['key_path'], app=self._app['name'], env=self._app['env'], role=self._app['role'], aws_region=self._app['region'])
-            gcall(cmd, "Updating current instances", self._log_file)
-        else:
-            log("WARNING: no instance available to sync deployment", self._log_file)
+        execute_task_on_hosts(task_name, self._app, self._config['key_path'], self._log_file)
 
     def _execute_rollback(self, deploy_id):
         module, package = self._get_deploy_infos(deploy_id)
@@ -105,15 +93,12 @@ class Rollback():
 
     def execute(self):
         log("Rollbacking module", self._log_file)
-        if 'options' in self._job:
-            if len(self._job['options']) > 0:
-                deploy_id = self._job['options'][0]
-                try:
-                    self._execute_rollback(deploy_id)
-                    self._worker.update_status("done", message="Rollback OK: [{0}]".format(module_list))
-                except GCallException as e:
-                    self._worker.update_status("failed", message="Rollback Failed: [{0}]\n{1}".format(module_list, str(e)))
-                finally:
-                    return
-        self._worker.update_status("failed", message="Incorrect job request: missing options field with deploy_id")
-
+        if 'options' in self._job and len(self._job['options']) > 0:
+            deploy_id = self._job['options'][0]
+            try:
+                self._execute_rollback(deploy_id)
+                self._worker.update_status("done", message="Rollback OK: [{0}]".format(deploy_id))
+            except GCallException as e:
+                self._worker.update_status("failed", message="Rollback Failed: [{0}]\n{1}".format(deploy_id, str(e)))
+        else:
+            self._worker.update_status("failed", message="Incorrect job request: missing options field deploy_id")

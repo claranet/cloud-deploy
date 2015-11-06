@@ -1,12 +1,6 @@
 from commands.tools import log
-from base64 import b64encode
-from fabric.api import *
 from fabric.colors import green as _green, yellow as _yellow, red as _red
-import boto
 import boto.ec2
-import os
-import time
-from jinja2 import Environment, FileSystemLoader
 
 
 class Destroyinstance():

@@ -2,25 +2,21 @@
 
 ## Dev
 Installing requirements:
-
     $ pip install -r requirements.txt
 
-Checking for updates:
-
-    $ pip-review
+Updating dependencies:
+    $ pip-compile
+    $ pip-sync
 
 Running unit tests:
-
     $ python -m doctest -v web_ui/*.py
+    $ python -m doctest -v worker.py
 
 # Deployment
 
-## Sur instance2:
-* jq (transformation JSON en ligne de commande)
-* python pip boto awscli
-* s3cmd (prendre version GitHub sinon cela ne fonctionne pas)
+## Sur instance EC2:
+* utiliser morea-salt-formulas
 * Role IAM avec Policy :
-
     {
       "Version": "2012-10-17",
       "Statement": [
@@ -37,21 +33,16 @@ Running unit tests:
     }
 
 ## Sur bastion:
-* python pip boto awscli
-* les dépendances sur les scripts predeploy (ex: php5 avec memcached, gd...)
-* mongodb
-* les packages contenu dans requirements.txt
+* utiliser morea-salt-formulas
 
 # Configuration:
-
-    db.config.insert({ "ses_settings": {"aws_access_key": "SES_AWS_ACCESS_KEY", "aws_secret_key": "SES_AWS_SECRET_KEY", "region": "eu-west-1"}})
-
-# Notes
-* Necessite une version de Fabric >= 1.10.1 (Bug encoding fixed)
+## accounts:
+* copy accounts.yml.dist as accounts.yml
+* add account with 'python auth.py user password'
+* restart ghost process
 
 # Example data
     JOB
-
     {
         command: "deploy",
         parameters: [options: "hard", app_id: APPLICATION_ID, modules: [name: "php5", rev: "staging"]],
@@ -77,11 +68,7 @@ Running unit tests:
         "autoscale": {"min": 1, "max": 2, "current": 1}
     }
 
-# TODO
-## Gestion des rôles par ressources OK
-* superadmin (Morea) (ALL)
-* admin (Client Dev) (Tout sauf : rebuild_image, DELETE)
-* user (Client) (RO)
+# Updating AWS data
+Requires curl, nodejs and jq:
 
-# Questions
-* Peut-on définir un rôle sur une subresources ex : JOB: {command : rebuild_image} ?
+    (echo 'function callback(data) { console.log(JSON.stringify(data)); }'; curl -s 'http://a0.awsstatic.com/pricing/1/ec2/linux-od.min.js') | nodejs | jq -r '.config.regions' > aws_data_instance_types.json

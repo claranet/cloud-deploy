@@ -67,8 +67,19 @@ class Buildimage():
             'ssh_username': self._app['build_infos']['ssh_username'],
             'vpc_id': self._app['vpc_id'],
             'subnet_id': self._app['build_infos']['subnet_id'],
-            'associate_public_ip_address': '1'
+            'associate_public_ip_address': '1',
+            'ami_block_device_mappings': []
         }
+
+        for opt_vol in self._app['environment_infos'].get('optional_volumes'):
+            block = {'device_name': opt_vol['device_name'],
+                    'volume_type': opt_vol['volume_type'],
+                    'volume_size': opt_vol['volume_size'],
+                    'delete_on_termination': True}
+            if 'iops' in opt_vol:
+                block['iops'] = opt_vol['iops']
+            datas['ami_block_device_mappings'].append(block)
+
         return json.dumps(datas, sort_keys=True, indent=4, separators=(',', ': '))
 
     def _format_salt_top_from_app_features(self):
@@ -89,7 +100,7 @@ class Buildimage():
         return pillar
 
     def _update_app_ami(self, ami_id):
-            self._db.apps.update({'_id': self._app['_id']},{'$set': {'ami': ami_id, 'ami_name': self._ami_name}})
+            self._db.apps.update({'_id': self._app['_id']},{'$set': {'ami': ami_id, 'build_infos.ami_name': self._ami_name}})
             self._worker.update_status("done")
 
     def execute(self):
@@ -97,7 +108,7 @@ class Buildimage():
         log("Generating a new AMI", self._log_file)
         log(json_packer, self._log_file)
         print("Packer start")
-        pack = Packer(json_packer, self._config)
+        pack = Packer(json_packer, self._config, self._log_file)
         print("Packer end")
         ami_id = pack.build_image(self._format_salt_top_from_app_features(), self._format_salt_pillar_from_app_features())
         if ami_id is not "ERROR":

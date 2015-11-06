@@ -1,8 +1,5 @@
 from commands.tools import log, create_block_device
-from base64 import b64encode
-from fabric.api import *
 from fabric.colors import green as _green, yellow as _yellow, red as _red
-import boto
 import boto.ec2
 import os
 import time
@@ -36,15 +33,15 @@ class Createinstance():
         log(_green("STATE: Started"), self._log_file)
 
         log(_yellow(" INFO: Creating User-Data"), self._log_file)
-        log(_yellow(" INFO: bootstrap.sh path: %s" % jinja_templates_path), self._log_file)
-        if(os.path.exists('%s/bootstrap.sh' % jinja_templates_path)):
+        log(_yellow(" INFO: stage1 path: %s" % jinja_templates_path), self._log_file)
+        if(os.path.exists('%s/stage1' % jinja_templates_path)):
             loader=FileSystemLoader(jinja_templates_path)
             jinja_env = Environment(loader=loader)
-            template = jinja_env.get_template('bootstrap.sh')
+            template = jinja_env.get_template('stage1')
             userdata = template.render(bucket_s3=self._config['bucket_s3'])
             log(_green("STATE: User-Data Created"), self._log_file)
         else:
-            log(_red("WARNING: bootstrap.sh not found, you will not have user-data in your instance. You must use a deployment after this job"), self._log_file)
+            log(_red("WARNING: stage1 not found, you will not have user-data in your instance. You must use a deployment after this job"), self._log_file)
 
         #log(userdata, self._log_file)
         log(_yellow(" INFO: Creating EC2 instance"), self._log_file)

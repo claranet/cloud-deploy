@@ -1,20 +1,47 @@
-from subprocess import call
-import datetime
-import logging
+from datetime import datetime
 import yaml
 from settings import MONGO_DBNAME
-from boto import sns
-from boto.ec2 import autoscale
-from redis import Redis
 from rq import get_current_job, Connection
 from pymongo import MongoClient
 from bson.objectid import ObjectId
 from notification import Notification
+from commands.tools import log
 import os
+import sys
+import traceback
 
-LOG_PATH='/var/log/ghost'
+LOG_ROOT='/var/log/ghost'
 ROOT_PATH=os.path.dirname(os.path.realpath(__file__))
 MAIL_LOG_FROM='no-reply@morea.fr'
+
+def format_notif(app, job):
+    """
+    Returns a formatted title and message couple
+
+    >>> app = {'name': 'myapp', 'env': 'preprod'}
+    >>> job = {'command': 'deploy', 'user': 'john', '_created': '2015-06-10 17:09:38', 'status': 'done', 'message': 'Deployment OK: [mymodule]'}
+    >>> title, message = format_notif(app, job)
+    >>> title
+    '[GHOST] App myapp (preprod) - deploy: done (Deployment OK: [mymodule])'
+    >>> message
+    'Application: myapp\\nEnvironment: preprod\\nAction: deploy\\nStarted: 2015-06-10 17:09:38\\nStatus: done\\nUser: john\\nMessage: Deployment OK: [mymodule]'
+    """
+    title_template = "[GHOST] App {app_name} ({app_env}) - {command}: {status} ({message})"
+    title = title_template.format(app_name=app['name'],
+                                  app_env=app['env'],
+                                  command=job['command'],
+                                  user=job['user'],
+                                  status=job['status'],
+                                  message=job['message'])
+    message_template = "Application: {app_name}\nEnvironment: {app_env}\nAction: {command}\nStarted: {started}\nStatus: {status}\nUser: {user}\nMessage: {message}"
+    message = message_template.format(app_name=app['name'],
+                                      app_env=app['env'],
+                                      command=job['command'],
+                                      started=job['_created'],
+                                      user=job['user'],
+                                      status=job['status'],
+                                      message=job['message'])
+    return title, message
 
 class Worker:
     _config = None
@@ -30,10 +57,6 @@ class Worker:
         conf_file_path = rootdir + "/config.yml"
         conf_file = open(conf_file_path, 'r')
         self._config = yaml.load(conf_file)
-
-
-    def _log(self, message):
-        self.log_file.write("{message}\n".format(message=message))
 
 
     def _connect_db(self):
@@ -55,36 +78,29 @@ class Worker:
     def update_status(self, status, message=None):
         self.job['status'] = status
         self.job['message'] = message
-        self._db.jobs.update({ '_id': self.job['_id']}, {'$set': {'status': status, 'message': message, 'updated_at': datetime.datetime.now()}})
+        self._db.jobs.update({ '_id': self.job['_id']}, {'$set': {'status': status, 'message': message, '_updated': datetime.now()}})
 
     def module_initialized(self, module_name):
         self._db.apps.update({ '_id': self.app['_id'], 'modules.name': module_name}, {'$set': { 'modules.$.initialized': True }})
 
 
     def _init_log_file(self):
-        self.log_file = open("{log_path}/{job_id}.txt".format(log_path=LOG_PATH, job_id=self._worker_job.id), 'a', 1)
+        log_path = "{log_path}/{job_id}.txt".format(log_path=LOG_ROOT, job_id=self._worker_job.id)
+        self.log_file = open(log_path, 'a', 1)
+        self._db.jobs.update({ '_id': self.job['_id']}, {'$set': {'log_id': self._worker_job.id }})
 
 
     def _close_log_file(self):
         self.log_file.close()
 
 
-    def _format_notif(self):
-        title = "App: {app_name} - {action} : {status}".format(app_name=self.app['name'], action=self.job['command'], status=self.job['status'])
-        message = "Application: {app_name}\nEnvironment: {env}\nAction: {action}\nStatus: {status}\nMessage: {message}".format(env=self.app['env'], \
-                app_name=self.app['name'], \
-                action=self.job['command'], \
-                status=self.job['status'], message=self.job['message'])
-        return title, message
-
-
     def _mail_log_action(self):
         ses_settings = self._config['ses_settings']
         notif = Notification(aws_access_key=ses_settings['aws_access_key'], aws_secret_key=ses_settings['aws_secret_key'], region=ses_settings['region'])
-        subject, body = self._format_notif()
-        log = "{log_path}/{job_id}.txt".format(log_path=LOG_PATH, job_id=self._worker_job.id)
+        subject, body = format_notif(self.app, self.job)
+        log = "{log_path}/{job_id}.txt".format(log_path=LOG_ROOT, job_id=self._worker_job.id)
         log_stat = os.stat(log)
-        if log_stat.st_size > 5000000:
+        if log_stat.st_size > 512000:
             os.system('gzip '+log)
             log = log+'.gz'
         for mail in self.app['log_notifications']:
@@ -102,10 +118,20 @@ class Worker:
         klass_name = self.job['command'].title()
         mod = __import__('commands.' + self.job['command'], fromlist=[klass_name])
         command = getattr(mod, klass_name)(self)
-        result = command.execute()
-        self._close_log_file()
-        self._mail_log_action()
-        self._disconnect_db()
+
+        # Execute command and always mark the job as 'failed' in case of an unexpected exception
+        try:
+            command.execute()
+        except :
+            traceback.print_exc()
+            message = sys.exc_info()[0]
+            log(message, self.log_file)
+            self.update_status("failed", str(message))
+            raise
+        finally:
+            self._close_log_file()
+            self._mail_log_action()
+            self._disconnect_db()
 
 
 # task_init_app()
