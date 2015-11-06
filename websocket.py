@@ -60,8 +60,8 @@ def create_ws(app):
             with open(filename) as f:
                 while True:
                     f.seek(last_pos)
-                    for line in f:
-                        emit('job', ansi_to_html(line))
+                    lines = '<br>'.join(f)
+                    emit('job', ansi_to_html(lines))
                     last_pos = f.tell()
                     hub.wait(watcher)
         except IOError:
