@@ -13,7 +13,7 @@ COLOR_DICT = {
     '36': [(0, 255, 255), (0, 128, 128)],
 }
 
-COLOR_REGEX = re.compile(r'\^\[\[(?P<arg_1>\d+)(;(?P<arg_2>\d+)(;(?P<arg_3>\d+))?)?m(?P<text>.*?)(?=\^\[|$)')
+COLOR_REGEX = re.compile(r'(\^\[|\033)\[(?P<arg_1>\d+)(;(?P<arg_2>\d+)(;(?P<arg_3>\d+))?)?m(?P<text>.*?)(?=\^\[|\033|$)')
 
 BOLD_TEMPLATE = '<span style="color: rgb{}; font-weight: bolder">{}</span>'
 LIGHT_TEMPLATE = '<span style="color: rgb{}">{}</span>'
@@ -26,6 +26,15 @@ def ansi_to_html(text):
 
     >>> ansi_to_html('Some text')
     'Some text'
+
+    >>> ansi_to_html('\\033[31mSome red text')
+    '<span style="color: rgb(255, 0, 0)">Some red text</span>'
+
+    >>> ansi_to_html('\\033[31mSome red text\\033[0m')
+    '<span style="color: rgb(255, 0, 0)">Some red text</span>'
+
+    >>> ansi_to_html('^[[31mSome red text')
+    '<span style="color: rgb(255, 0, 0)">Some red text</span>'
 
     >>> ansi_to_html('^[[31mSome red text')
     '<span style="color: rgb(255, 0, 0)">Some red text</span>'
