@@ -1,11 +1,10 @@
-from flask.ext.socketio import SocketIO, emit
+from flask_socketio import SocketIO, emit
 import gevent
 import re
 
 LOG_ROOT='/var/log/ghost'
 
 COLOR_DICT = {
-    '0':  [(255, 255, 255), (255,255,255)],
     '31': [(255, 0, 0), (128, 0, 0)],
     '32': [(0, 255, 0), (0, 128, 0)],
     '33': [(255, 255, 0), (128, 128, 0)],
@@ -14,37 +13,62 @@ COLOR_DICT = {
     '36': [(0, 255, 255), (0, 128, 128)],
 }
 
-COLOR_REGEX = re.compile(r'\[(?P<arg_1>\d+)(;(?P<arg_2>\d+)(;(?P<arg_3>\d+))?)?m')
+COLOR_REGEX = re.compile(r'\^\[\[(?P<arg_1>\d+)(;(?P<arg_2>\d+)(;(?P<arg_3>\d+))?)?m(?P<text>.*?)(?=\^\[|$)')
 
-BOLD_TEMPLATE = '<span style="color: rgb{}; font-weight: bolder">'
-LIGHT_TEMPLATE = '<span style="color: rgb{}">'
+BOLD_TEMPLATE = '<span style="color: rgb{}; font-weight: bolder">{}</span>'
+LIGHT_TEMPLATE = '<span style="color: rgb{}">{}</span>'
 
 
 def ansi_to_html(text):
-    text = text.replace('[m', '</span>')
+    """
+    >>> ansi_to_html('')
+    ''
+
+    >>> ansi_to_html('Some text')
+    'Some text'
+
+    >>> ansi_to_html('^[[31mSome red text')
+    '<span style="color: rgb(255, 0, 0)">Some red text</span>'
+
+    >>> ansi_to_html('^[[32mSome green text')
+    '<span style="color: rgb(0, 255, 0)">Some green text</span>'
+
+    >>> ansi_to_html('^[[34mSome blue text')
+    '<span style="color: rgb(0, 0, 255)">Some blue text</span>'
+
+    >>> ansi_to_html('^[[31;1mSome bold red text')
+    '<span style="color: rgb(128, 0, 0); font-weight: bolder">Some bold red text</span>'
+
+    >>> ansi_to_html('^[[32;1mSome bold green text')
+    '<span style="color: rgb(0, 128, 0); font-weight: bolder">Some bold green text</span>'
+
+    >>> ansi_to_html('^[[34;1mSome bold blue text')
+    '<span style="color: rgb(0, 0, 128); font-weight: bolder">Some bold blue text</span>'
+
+    >>> ansi_to_html('^[[99mSome unknown color text')
+    'Some unknown color text'
+
+    >>> ansi_to_html('^[[34;1mSome bold blue text^[[39mSome normal text')
+    '<span style="color: rgb(0, 0, 128); font-weight: bolder">Some bold blue text</span>Some normal text'
+    """
 
     def single_sub(match):
         argsdict = match.groupdict()
-        if argsdict['arg_3'] is None:
-            if argsdict['arg_2'] is None:
-                color, bold = argsdict['arg_1'], 0
-            else:
-                bold, color = int(argsdict['arg_1']), argsdict['arg_2']
-        else:
-            color, bold = argsdict['arg_2'], int(argsdict['arg_3'])
 
-        if bold:
-            try:
-                return BOLD_TEMPLATE.format(COLOR_DICT[color][1])
-            except KeyError:
-                print("Bold color: {0}".format(color))
-            finally:
-                return BOLD_TEMPLATE.format(COLOR_DICT['32'][1])
-        try:
-            return LIGHT_TEMPLATE.format(COLOR_DICT[color][0])
-        except KeyError:
-            print("arg_1: {0}, arg_2: {1}, arg_3: {2}".format(argsdict['arg_1'], argsdict['arg_2'], argsdict['arg_3']))
-        return LIGHT_TEMPLATE.format(COLOR_DICT['31'][0])
+        bold = 0
+        color = None
+        for arg in [argsdict['arg_1'], argsdict['arg_2'], argsdict['arg_3']]:
+            if arg is not None and arg == '1':
+                bold = 1
+            if arg is not None and arg in COLOR_DICT.keys():
+                color = arg
+
+        if color:
+            rgb = COLOR_DICT[color][bold]
+            template = bold and BOLD_TEMPLATE or LIGHT_TEMPLATE
+            return template.format(rgb, argsdict['text'])
+
+        return argsdict['text']
 
     return COLOR_REGEX.sub(single_sub, text)
 
@@ -52,16 +76,17 @@ def create_ws(app):
     socketio = SocketIO(app)
 
     def follow(filename):
-        last_pos = 0
-        hub = gevent.get_hub()
-        print(hub)
-        watcher = hub.loop.stat(filename)
         try:
             with open(filename) as f:
+                hub = gevent.get_hub()
+                watcher = hub.loop.stat(filename)
+                last_pos = 0
                 while True:
                     f.seek(last_pos)
-                    lines = '<br>'.join(f)
-                    emit('job', ansi_to_html(lines))
+                    lines = []
+                    for line in f:
+                        lines.append(ansi_to_html(line).replace('\n', '<br>'))
+                    emit('job', ''.join(lines))
                     last_pos = f.tell()
                     hub.wait(watcher)
         except IOError:
@@ -73,7 +98,6 @@ def create_ws(app):
             log_id = data.get('log_id')
             filename = LOG_ROOT + '/' + log_id + '.txt'
             filename = filename.encode('ascii', 'ignore')
-            print('Streaming log: {0}'.format(filename))
             follow(filename)
 
     return socketio
