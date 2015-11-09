@@ -1,10 +1,12 @@
 from uuid import uuid4
+import sh
 from sh import git
 from subprocess32 import Popen, PIPE
 from commands.tools import log
 import yaml
 import json
 import os
+import sys
 
 PACKER_JSON_PATH="/tmp/packer/"
 SALT_LOCAL_TREE="/tmp/salt/"
@@ -20,7 +22,15 @@ class Packer:
             os.makedirs(SALT_LOCAL_TREE)
         os.makedirs(SALT_LOCAL_TREE + self.unique)
         log("Getting Salt Morea Formulas", self._log_file)
-        git.clone(["git@bitbucket.org:morea/morea-salt-formulas.git", SALT_LOCAL_TREE + self.unique + '/'],'--recursive')
+        #The following has been add as patch  to make git repository configurable
+        if config.get('salt_formulas_repo'):
+            salt_formulas_repo = config['salt_formulas_repo']
+            try:
+                output=git("ls-remote", "--exit-code", salt_formulas_repo)
+            except except sh.ErrorReturnCode, e:
+                logging.error("Invalid salt formulas repos. Please check your yaml 'config.xml' file")
+                sys.exit(e.stderr)
+        git.clone([salt_formulas_repo, SALT_LOCAL_TREE + self.unique + '/'],'--recursive')
         if config.get('salt_formulas_branch'):
             os.chdir(SALT_LOCAL_TREE + self.unique)
             git.checkout(config['salt_formulas_branch'])
