@@ -84,19 +84,22 @@ def ansi_to_html(text):
 def create_ws(app):
     socketio = SocketIO(app)
 
-    def follow(filename):
+    def follow(filename, last_pos):
         try:
             with open(filename) as f:
                 hub = gevent.get_hub()
                 watcher = hub.loop.stat(filename)
-                last_pos = 0
                 while True:
                     f.seek(last_pos)
                     lines = []
                     for line in f:
                         lines.append(ansi_to_html(line).replace('\n', '<br>'))
-                    emit('job', ''.join(lines))
                     last_pos = f.tell()
+                    data = {
+                            'html': ''.join(lines),
+                            'last_pos': last_pos,
+                            }
+                    emit('job', data)
                     hub.wait(watcher)
         except IOError:
             emit('job', 'Log file not ready yet')
@@ -105,8 +108,9 @@ def create_ws(app):
     def handle_message(data):
         if data and data.get('log_id'):
             log_id = data.get('log_id')
+            last_pos = data.get('last_pos', 0)
             filename = LOG_ROOT + '/' + log_id + '.txt'
             filename = filename.encode('ascii', 'ignore')
-            follow(filename)
+            follow(filename, last_pos)
 
     return socketio
