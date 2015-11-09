@@ -23,6 +23,7 @@ flask-pymongo==0.3.1      # via eve
 flask-socketio==1.0
 flask-wtf==0.12
 flask==0.10.1
+gevent-websocket==0.9.5
 gevent==1.0.2
 greenlet==0.4.9           # via gevent
 gunicorn==19.3.0
