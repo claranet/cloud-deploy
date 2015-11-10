@@ -86,21 +86,21 @@ def create_ws(app):
 
     def follow(filename, last_pos):
         try:
-            with open(filename) as f:
-                hub = gevent.get_hub()
-                watcher = hub.loop.stat(filename)
-                while True:
+            hub = gevent.get_hub()
+            watcher = hub.loop.stat(filename)
+            while True:
+                with open(filename) as f:
                     f.seek(last_pos)
                     lines = []
                     for line in f:
                         lines.append(ansi_to_html(line).replace('\n', '<br>'))
                     last_pos = f.tell()
-                    data = {
-                            'html': ''.join(lines),
-                            'last_pos': last_pos,
-                            }
-                    emit('job', data)
-                    hub.wait(watcher)
+                data = {
+                        'html': ''.join(lines),
+                        'last_pos': last_pos,
+                        }
+                emit('job', data)
+                hub.wait(watcher)
         except IOError:
             emit('job', 'Log file not ready yet')
 
