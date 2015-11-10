@@ -89,9 +89,9 @@ def create_ws(app):
             hub = gevent.get_hub()
             watcher = hub.loop.stat(filename)
             while True:
+                lines = []
                 with open(filename) as f:
                     f.seek(last_pos)
-                    lines = []
                     for line in f:
                         lines.append(ansi_to_html(line).replace('\n', '<br>'))
                     last_pos = f.tell()
