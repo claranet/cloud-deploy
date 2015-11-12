@@ -102,7 +102,11 @@ def create_ws(app):
                 emit('job', data)
                 hub.wait(watcher)
         except IOError:
-            emit('job', 'Log file not ready yet')
+            data = {
+                    'html': 'ERROR: failed to read log file.',
+                    'last_pos': 0,
+                    }
+            emit('job', data)
 
     @socketio.on('job_logging')
     def handle_message(data):
