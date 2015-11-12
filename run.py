@@ -43,6 +43,7 @@ def pre_insert_app(items):
         module['initialized'] = False
     app['user'] = request.authorization.username
 
+
 def pre_insert_job(items):
     job = items[0]
     app_id = job.get('app_id')
@@ -61,17 +62,19 @@ def pre_insert_job(items):
     if job['command'] == 'build_image':
         if not ('build_infos' in app.viewkeys()):
             abort(422)
-    # FIXME: uncomment the following check when job execution is rock solid
-    # jobs = ghost.data.driver.db['jobs']
-    # if jobs.find_one({'$and': [{'status': {'$ne': 'done'}}, {'status': {'$ne': 'failed'}}, {'app_id': app_id}]}):
-    #     abort(422)
     job['user'] = request.authorization.username
     job['status'] = 'init'
     job['message'] = 'Initializing job'
 
+
 def post_insert_job(items):
-    async_work = worker.Worker()
-    job_id = queue.enqueue(async_work.execute, str(items[0]['_id']))
+    job = items[0]
+    job_id = str(job.get('_id'))
+
+    # Queue job
+    rq_job = queue.enqueue(worker.Worker().execute, job_id, job_id=job_id)
+    assert rq_job.id == job_id
+
 
 ghost.on_update_apps += pre_update_app
 ghost.on_replace_apps += pre_replace_app
