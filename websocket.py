@@ -116,5 +116,11 @@ def create_ws(app):
             filename = LOG_ROOT + '/' + log_id + '.txt'
             filename = filename.encode('ascii', 'ignore')
             follow(filename, last_pos)
+        else:
+            data = {
+                'html': 'No log file yet.',
+                'last_pos': 0,
+                }
+            emit('job', data)
 
     return socketio
