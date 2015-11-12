@@ -2,21 +2,24 @@
 
 ## Dev
 Installing requirements:
+
     $ pip install -r requirements.txt
 
 Updating dependencies:
+
     $ pip-compile
     $ pip-sync
 
 Running unit tests:
-    $ python -m doctest -v web_ui/*.py
-    $ python -m doctest -v worker.py
+
+    $ tox
 
 # Deployment
 
 ## Sur instance EC2:
 * utiliser morea-salt-formulas
 * Role IAM avec Policy :
+
     {
       "Version": "2012-10-17",
       "Statement": [
