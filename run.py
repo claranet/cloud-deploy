@@ -4,7 +4,7 @@ from flask_bootstrap import Bootstrap
 from redis import Redis
 from rq import Queue
 from rq_dashboard import RQDashboard
-import worker
+import command
 from eve_docs import eve_docs
 from eve import Eve
 from auth import BCryptAuth
@@ -72,7 +72,7 @@ def post_insert_job(items):
     job_id = str(job.get('_id'))
 
     # Queue job
-    rq_job = queue.enqueue(worker.Worker().execute, job_id, job_id=job_id)
+    rq_job = queue.enqueue(command.Worker().execute, job_id, job_id=job_id)
     assert rq_job.id == job_id
 
 
