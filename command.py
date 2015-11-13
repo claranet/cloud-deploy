@@ -43,7 +43,7 @@ def format_notif(app, job):
                                       message=job['message'])
     return title, message
 
-class Worker:
+class Command:
     _config = None
     _worker_job = None
     job = None
