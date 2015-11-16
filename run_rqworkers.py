@@ -1,6 +1,7 @@
 from multiprocessing import Process, active_children
 from setproctitle import setproctitle
 from time import sleep
+import signal
 import sys
 import traceback
 
@@ -63,6 +64,14 @@ def manage_rq_workers():
     ghost_rq_queues = {}
     ghost_rq_workers = {}
 
+    # Register signal handler to terminate workers properly even when process is managed by supervisord
+    def signal_handler():
+        for rqworker in ghost_rq_workers.items():
+            rqworker[1].terminate()
+            logging.info("terminated an rqworker: {}".format(rqworker[0]))
+        sys.exit(0)
+    signal.signal(signal.SIGTERM, signal_handler)
+
     apps_db = MongoClient(host=MONGO_HOST, port=MONGO_PORT)[MONGO_DBNAME]['apps']
 
     # Manage RQ workers for existing apps, terminating RQ workers with no
@@ -76,7 +85,7 @@ def manage_rq_workers():
             # Verify that active workers match child processes
             for rqworker in active_rqworkers:
                 rqworker_name = rqworker.name
-                logging.debug("found an active worker: {}".format(rqworker_name))
+                logging.debug("found an active rqworker: {}".format(rqworker_name))
                 if not ghost_rq_workers.has_key(rqworker_name):
                     logging.error("ERROR: an active worker does not match a child process: {}".format(rqworker_name))
                     sys.exit(-1)
@@ -86,7 +95,7 @@ def manage_rq_workers():
                 rqworker_name = rqworker[0]
                 logging.debug("found a child process: {}".format(rqworker_name))
                 if not ghost_rq_workers.has_key(rqworker_name):
-                    logging.error("a child process does not match an active worker: {}".format(rqworker_name))
+                    logging.error("a child process does not match an active rqworker: {}".format(rqworker_name))
                     sys.exit(-2)
                 if not rqworker[1].is_alive():
                     logging.warn("a child process is not alive: {}".format(rqworker_name))
