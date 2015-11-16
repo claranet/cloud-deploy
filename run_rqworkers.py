@@ -65,12 +65,22 @@ def manage_rq_workers():
     ghost_rq_workers = {}
 
     # Register signal handler to terminate workers properly even when process is managed by supervisord
-    def signal_handler():
+    def signal_handler(signal, frame):
+        logging.info("received signal {}, terminating...".format(signal))
+
+        sleep(1)
         for rqworker in ghost_rq_workers.items():
-            rqworker[1].terminate()
-            logging.info("terminated an rqworker: {}".format(rqworker[0]))
+            process = rqworker[1]
+            if process.is_alive():
+                logging.info("terminating an rqworker: {}...".format(rqworker[0]))
+                rqworker[1].terminate()
+                rqworker[1].join(1000)
+                logging.info("terminated an rqworker: {}".format(rqworker[0]))
+
         sys.exit(0)
     signal.signal(signal.SIGTERM, signal_handler)
+    signal.signal(signal.SIGINT, signal_handler)
+    signal.signal(signal.SIGQUIT, signal_handler)
 
     apps_db = MongoClient(host=MONGO_HOST, port=MONGO_PORT)[MONGO_DBNAME]['apps']
 
