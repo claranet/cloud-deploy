@@ -1,7 +1,4 @@
-from multiprocessing import Process
-from setproctitle import setproctitle
-
-from flask import abort, request, appcontext_pushed
+from flask import abort, request
 from flask_bootstrap import Bootstrap
 
 from eve import Eve
@@ -10,7 +7,7 @@ from auth import BCryptAuth
 from bson.objectid import ObjectId
 
 from redis import Redis
-from rq import Queue, Worker
+from rq import Queue
 from rq_dashboard import RQDashboard
 
 from settings import __dict__ as eve_settings
@@ -22,43 +19,12 @@ def get_apps_db():
 
 def get_rq_name_from_app(app):
     """
-    Returns an RQ queue or worker name for a given ghost app
+    Returns an RQ queue name for a given ghost app
 
     >>> get_rq_name_from_app({'env': 'prod', 'name': 'App1', 'role': 'webfront'})
     'prod:App1:webfront'
     """
-    return '{env}:{app}:{role}'.format(env=app['env'], app=app['name'], role=app['role'])
-
-def create_rq_queue_and_worker(app):
-    name = get_rq_name_from_app(app)
-    ghost.ghost_rq_queues[name] = Queue(name=name, connection=ghost.ghost_redis_connection, default_timeout=3600)
-    worker = Worker(name=name, queues=[ghost.ghost_rq_queues[name]], connection=ghost.ghost_redis_connection)
-
-    def start_worker(worker, name):
-        setproctitle('rqworker-{}'.format(name))
-        worker.work()
-
-    # Fork a dedicated RQ worker process
-    ghost.ghost_rq_workers[name] = Process(target=start_worker, args=[worker, name])
-    ghost.ghost_rq_workers[name].start()
-    print 'Started worker {0}'.format(name)
-
-def delete_rq_queue_and_worker(app):
-    name = get_rq_name_from_app(app)
-    queue = ghost.ghost_rq_queues[name]
-    queue.empty()
-    # TODO: delete queue in redis
-    # ghost.ghost_redis_connection.delete(queue.key)
-    del ghost.ghost_rq_queues[name]
-
-    # Terminate the RQ worker with a TERM signal to perform a warm shutdown
-    ghost.ghost_rq_workers[name].terminate()
-    del ghost.ghost_rq_workers[name]
-    print 'Killed worker {0}'.format(name)
-
-def create_rq_queues_and_workers(apps):
-    for app in apps:
-        create_rq_queue_and_worker(app)
+    return '{env}:{name}:{role}'.format(env=app['env'], name=app['name'], role=app['role'])
 
 def pre_update_app(updates, original):
     #TODO: implement selective modules update instead of reinitializing all modules
@@ -75,8 +41,7 @@ def pre_delete_app(item):
     pass
 
 def post_delete_app(item):
-    app = item
-    delete_rq_queue_and_worker(app)
+    pass
 
 def pre_insert_app(items):
     app = items[0]
@@ -90,8 +55,7 @@ def pre_insert_app(items):
     app['user'] = request.authorization.username
 
 def post_insert_app(items):
-    app = items[0]
-    create_rq_queue_and_worker(app)
+    pass
 
 def pre_insert_job(items):
     job = items[0]
@@ -122,7 +86,7 @@ def post_insert_job(items):
     app = get_apps_db().find_one({'_id': ObjectId(app_id)})
 
     # Place job in app's queue 
-    rq_job = ghost.ghost_rq_queues[get_rq_name_from_app(app)].enqueue(Command().execute, job_id, job_id=job_id)
+    rq_job = Queue(get_rq_name_from_app(app), ghost.ghost_redis_connection).enqueue(Command().execute, job_id, job_id=job_id)
     assert rq_job.id == job_id
 
 
@@ -144,20 +108,7 @@ ghost.on_inserted_jobs += post_insert_job
 
 
 ghost.ghost_redis_connection = Redis()
-ghost.ghost_initialized = False
-ghost.ghost_rq_queues = {}
-ghost.ghost_rq_workers = {}
 
-
-def setup_ghost(sender, **kwargs):
-    if not sender.ghost_initialized:
-        sender.ghost_initialized = True
-
-        # Create RQ queues and workers for already existing apps
-        create_rq_queues_and_workers(get_apps_db().find())
-
-# Setup ghost app right after application context is created
-appcontext_pushed.connect(setup_ghost, ghost)
 
 if __name__ == '__main__':
     ghost.run(host='0.0.0.0')
