@@ -69,13 +69,13 @@ def manage_rq_workers():
         logging.info("received signal {}, terminating...".format(signal))
 
         sleep(1)
-        for rqworker in ghost_rq_workers.items():
-            process = rqworker[1]
+        for rqworker_name, rqworker in ghost_rq_workers.items():
+            process = rqworker
             if process.is_alive():
-                logging.info("terminating an rqworker: {}...".format(rqworker[0]))
-                rqworker[1].terminate()
-                rqworker[1].join(1000)
-                logging.info("terminated an rqworker: {}".format(rqworker[0]))
+                logging.info("terminating an rqworker: {}...".format(rqworker_name))
+                rqworker.terminate()
+                rqworker.join(1000)
+            logging.info("rqworker terminated: {}".format(rqworker_name))
 
         sys.exit(0)
     signal.signal(signal.SIGTERM, signal_handler)
@@ -101,13 +101,12 @@ def manage_rq_workers():
                     sys.exit(-1)
 
             # Verify that child processes match active workers
-            for rqworker in ghost_rq_workers.items():
-                rqworker_name = rqworker[0]
+            for rqworker_name, rqworker in ghost_rq_workers.items():
                 logging.debug("found a child process: {}".format(rqworker_name))
                 if not ghost_rq_workers.has_key(rqworker_name):
                     logging.error("a child process does not match an active rqworker: {}".format(rqworker_name))
                     sys.exit(-2)
-                if not rqworker[1].is_alive():
+                if not rqworker.is_alive():
                     logging.warn("a child process is not alive: {}".format(rqworker_name))
                     sys.exit(-3)
 
@@ -121,9 +120,8 @@ def manage_rq_workers():
                     create_rq_queue_and_worker(rqworker_name, ghost_rq_queues, ghost_rq_workers, ghost_redis_connection)
 
             # Check that each worker corresponds to an existing app
-            for rqworker in ghost_rq_workers.items():
+            for rqworker_name, rqworker in ghost_rq_workers.items():
                 found = False
-                rqworker_name = rqworker[0]
                 rqworker_app = get_app_from_rq_name(rqworker_name)
                 for app in apps:
                     if app['env'] == rqworker_app['env'] and app['name'] == rqworker_app['name'] and app['role'] == rqworker_app['role']:
