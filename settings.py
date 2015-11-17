@@ -21,7 +21,8 @@ RESOURCE_METHODS = ['GET', 'POST']
 # individual items  (defaults to read-only item access).
 ITEM_METHODS = ['GET', 'PATCH', 'PUT', 'DELETE']
 
-
+# Quick pagination fix
+PAGINATION_DEFAULT = 42
 
 DOMAIN = {
     'jobs': jobs.jobs,
