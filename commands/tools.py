@@ -190,7 +190,7 @@ def refresh_stage2(bucket_s3, region, root_ghost_path):
         loader=FileSystemLoader(jinja_templates_path)
         jinja_env = Environment(loader=loader)
         template = jinja_env.get_template('stage2')
-        stage2 = template.render(bucket_s3=bucket_s3)
+        stage2 = template.render(bucket_s3=bucket_s3, bucket_region=region)
         k.set_contents_from_string(stage2)
 
 

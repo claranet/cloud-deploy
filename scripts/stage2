@@ -13,6 +13,7 @@ mkdir $LOCK
 echo "Locked $LOCK"
 
 S3_BUCKET={{ bucket_s3 }}
+S3_REGION={{ bucket_region }}
 TS=$(date +%Y%m%d_%H%M%S)
 LOGFILE=$(echo $TS"_deploy.txt")
 
@@ -173,7 +174,7 @@ function exit_deployment() {
 }
 
 echo "Downloading Manifest" >> /tmp/$LOGFILE
-/usr/local/bin/aws s3 cp s3://$S3_BUCKET/ghost/$APP/$ENV/$ROLE/MANIFEST /tmp/ --region "$EC2_REGION"
+/usr/local/bin/aws s3 cp s3://$S3_BUCKET/ghost/$APP/$ENV/$ROLE/MANIFEST /tmp/ --region "$S3_REGION"
 
 if [ $? -ne 0 ]; then
     echo "Manifest download error...Exiting" >> /tmp/$LOGFILE
