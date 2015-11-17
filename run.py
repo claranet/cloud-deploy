@@ -86,7 +86,7 @@ def post_insert_job(items):
     app = get_apps_db().find_one({'_id': ObjectId(app_id)})
 
     # Place job in app's queue 
-    rq_job = Queue(get_rq_name_from_app(app), ghost.ghost_redis_connection).enqueue(Command().execute, job_id, job_id=job_id)
+    rq_job = Queue(name=get_rq_name_from_app(app), connection=ghost.ghost_redis_connection).enqueue(Command().execute, job_id, job_id=job_id)
     assert rq_job.id == job_id
 
 
