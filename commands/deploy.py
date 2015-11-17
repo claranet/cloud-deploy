@@ -77,7 +77,7 @@ class Deploy():
         gcall("tar czf {0} .".format(pkg_path), "Creating package: %s" % pkg_name, self._log_file)
 
         log("Uploading package: %s" % pkg_name, self._log_file)
-        conn = boto.s3.connect_to_region(self._app['region'])
+        conn = boto.s3.connect_to_region(self._config['bucket_region'])
         bucket = conn.get_bucket(self._config['bucket_s3'])
         key_path = '{path}/{pkg_name}'.format(bucket_s3=self._config['bucket_s3'], path=path, pkg_name=pkg_name)
         key = bucket.get_key(path)
@@ -101,7 +101,7 @@ class Deploy():
             self._worker.update_status("aborted", message="Deployment Aborted: missing modules {0}".format(self._job['modules']))
             return
 
-        refresh_stage2(self._config['bucket_s3'], self._app['region'], self._config['ghost_root_path'])
+        refresh_stage2(self._config['bucket_s3'], self._config['bucket_region'], self._config['ghost_root_path'])
         module_list = []
         for module in self._apps_modules:
             if 'name' in module:
