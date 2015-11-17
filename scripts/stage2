@@ -86,10 +86,22 @@ function purge_oldest_succeed_deploy() {
 function deploy_module() {
     UUID=$(cat /proc/sys/kernel/random/uuid)
     MODULE_NAME=$1
+    if [ -z $MODULE_NAME ]; then
+        echo "MODULE_NAME cannot be empy"
+        exit_deployment -1
+    fi
     MODULE_FILE=$2
+    if [ -z $MODULE_FILE ]; then
+        echo "MODULE_FILE cannot be empy"
+        exit_deployment -1
+    fi
     TARGET=$3
+    if [ -z $TARGET ]; then
+        echo "TARGET cannot be empy"
+        exit_deployment -1
+    fi
     if [ ${TARGET%%+(/)} == "/tmp" ]; then
-        echo "Target path cannot be /tmp"
+        echo "TARGET path cannot be /tmp"
         exit_deployment -1
     fi
 
