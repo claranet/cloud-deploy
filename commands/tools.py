@@ -167,22 +167,22 @@ def create_launch_config(app, userdata, ami_id):
     conn_as.create_launch_configuration(launch_config)
     return launch_config
 
-def generate_userdata(bucket_s3, root_ghost_path):
+def generate_userdata(bucket_s3, s3_region, root_ghost_path):
     jinja_templates_path='%s/scripts' % root_ghost_path
     if(os.path.exists('%s/stage1' % jinja_templates_path)):
         loader=FileSystemLoader(jinja_templates_path)
         jinja_env = Environment(loader=loader)
         template = jinja_env.get_template('stage1')
-        userdata = template.render(bucket_s3=bucket_s3)
+        userdata = template.render(bucket_s3=bucket_s3, bucket_region=s3_region)
         return userdata
     else:
         return ""
 
-def refresh_stage2(bucket_s3, region, root_ghost_path):
+def refresh_stage2(bucket_s3, s3_region, root_ghost_path):
     """
     Will update the second phase of boostrap script on S3
     """
-    conn = s3.connect_to_region(region)
+    conn = s3.connect_to_region(s3_region)
     bucket = conn.get_bucket(bucket_s3)
     k = bucket.new_key("/ghost/stage2")
     jinja_templates_path='%s/scripts' % root_ghost_path
@@ -190,7 +190,7 @@ def refresh_stage2(bucket_s3, region, root_ghost_path):
         loader=FileSystemLoader(jinja_templates_path)
         jinja_env = Environment(loader=loader)
         template = jinja_env.get_template('stage2')
-        stage2 = template.render(bucket_s3=bucket_s3, bucket_region=region)
+        stage2 = template.render(bucket_s3=bucket_s3, bucket_region=s3_region)
         k.set_contents_from_string(stage2)
 
 

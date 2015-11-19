@@ -66,7 +66,7 @@ class Deploy():
         self._worker.module_initialized(module['name'])
 
     def _deploy_module(self, module):
-        task_name = "deploy:{0},{1}".format(self._config['bucket_s3'], module['name'])
+        task_name = "deploy:{0},{1},{2}".format(self._config['bucket_s3'], self._config['bucket_region'], module['name'])
         execute_task_on_hosts(task_name, self._app, self._config['key_path'], self._log_file)
 
     def _package_module(self, module, ts, commit):
