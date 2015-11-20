@@ -20,7 +20,7 @@ first==2.0.1              # via pip-tools
 flask-bootstrap==3.3.5.7
 flask-login==0.3.2
 flask-pymongo==0.3.1      # via eve
-flask-socketio==1.0
+flask-socketio==1.1
 flask-wtf==0.12
 flask==0.10.1
 gevent-websocket==0.9.5
@@ -36,7 +36,7 @@ pycparser==2.14           # via cffi
 pycrypto==2.6.1           # via paramiko
 pymongo==2.9
 python-dateutil==2.4.2    # via arrow
-python-engineio==0.7.2    # via python-socketio
+python-engineio==0.7.2    # via flask-socketio, python-socketio
 python-socketio==0.6.1    # via flask-socketio
 pyyaml==3.11
 redis==2.10.5
