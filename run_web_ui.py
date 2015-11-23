@@ -23,7 +23,6 @@ class StandaloneApplication(gunicorn.app.base.BaseApplication):
         return self.application
 
 if __name__ == '__main__':
-    app.config['DEBUG'] = True
     options = {
         'bind': '0.0.0.0:5001',
         'workers': 1,
