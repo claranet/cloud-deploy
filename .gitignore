@@ -15,6 +15,7 @@ eggs
 .gitconfig
 installed.cfg
 .lesshst
+MANIFEST
 mbox
 .mongorc.js
 .node-gyp/
@@ -31,6 +32,7 @@ parts
 src/*.egg-info
 .ssh/
 *.swp
+/.tox
 venv-ghost
 .vim/
 .viminfo

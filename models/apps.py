@@ -64,7 +64,7 @@ apps_schema = {
         'type': 'dict', 'schema': {
             'ssh_username': {'type': 'string', 'regex': '^[a-z\_][a-z0-9\_]{0,30}$', 'required': True},
             'source_ami': {'type': 'string', 'regex': '^ami-[a-z0-9]*$', 'required': True},
-            'ami_name': {'type': 'string', 'required': False},
+            'ami_name': {'type': 'string', 'readonly': True},
             'subnet_id': {'type': 'string', 'regex': '^subnet-[a-z0-9]*$', 'required': True}
         }
     },

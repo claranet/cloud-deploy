@@ -81,7 +81,7 @@ class Rollback():
 
     def _deploy_module(self, module):
         task_name = "deploy:{0},{1}".format(self._config['bucket_s3'], module['name'])
-        execute_task_on_hosts(task_name, self._app['name'], self._app['env'], self._app['role'], self._app['region'], self._config['key_path'], self._log_file)
+        execute_task_on_hosts(task_name, self._app, self._config['key_path'], self._log_file)
 
     def _execute_rollback(self, deploy_id):
         module, package = self._get_deploy_infos(deploy_id)

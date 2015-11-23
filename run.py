@@ -54,7 +54,6 @@ def pre_insert_job(items):
         for module in job['modules']:
             not_exist = True
             for mod in app['modules']:
-                print('app module name is: '+mod['name'])
                 if 'name' in module and module['name'] == mod['name']:
                     not_exist = False
             if not_exist:

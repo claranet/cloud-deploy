@@ -100,16 +100,14 @@ class Buildimage():
         return pillar
 
     def _update_app_ami(self, ami_id):
-            self._db.apps.update({'_id': self._app['_id']},{'$set': {'ami': ami_id, 'ami_name': self._ami_name}})
+            self._db.apps.update({'_id': self._app['_id']},{'$set': {'ami': ami_id, 'build_infos.ami_name': self._ami_name}})
             self._worker.update_status("done")
 
     def execute(self):
         json_packer = self._format_packer_from_app()
         log("Generating a new AMI", self._log_file)
         log(json_packer, self._log_file)
-        print("Packer start")
         pack = Packer(json_packer, self._config, self._log_file)
-        print("Packer end")
         ami_id = pack.build_image(self._format_salt_top_from_app_features(), self._format_salt_pillar_from_app_features())
         if ami_id is not "ERROR":
             log("Update app in MongoDB to update AMI: {0}".format(ami_id), self._log_file)

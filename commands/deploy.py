@@ -5,8 +5,7 @@ import calendar
 import shutil
 import tempfile
 from sh import git, grep
-from commands.tools import GCallException, gcall, log, refresh_stage2, execute_task_on_hosts
-from boto.ec2 import autoscale
+from commands.tools import GCallException, gcall, refresh_stage2, execute_task_on_hosts, log
 import boto.s3
 import base64
 
@@ -66,58 +65,27 @@ class Deploy():
 
         self._worker.module_initialized(module['name'])
 
-    def _set_as_conn(self):
-        self._as_conn = autoscale.connect_to_region(self._app['region'])
-
-    def _set_autoscale_group(self):
-        if not self._as_conn:
-            self._set_as_conn()
-        if 'autoscale' in self._app.keys():
-            if 'name' in self._app['autoscale'].keys():
-                as_list = self._as_conn.get_all_groups(names=[self._app['autoscale']['name']])
-                if len(as_list) == 1:
-                    self._as_group = as_list[0].name
-                    log("INFO: Application autoscale {0} found in EC2".format(self._app['autoscale']['name']), self._log_file)
-                else:
-                    log("WARNING: Application autoscale {0} not found in EC2".format(self._app['autoscale']['name']), self._log_file)
-                    all_as = self._as_conn.get_all_groups()
-                    if len(all_as) >0:
-                        for ec2_as in all_as:
-                            log("WARNING:    Autoscaling found: "+ec2_as.name+" ",self._log_file)
-                    else:
-                        log("WARNING: No autoscale created so far",self._log_file)
-            else:
-                log("WARNING: set_autoscale_group is called in an application without inialised autoscale", self._log_file)
-        else:
-            log("WARNING: set_autoscale_group is called in an application without inialised autoscale", self._log_file)
-
-    def _start_autoscale(self):
-        if not self._as_group:
-            self._set_autoscale_group()
-        if (self._as_group):
-            log("Resuming autoscaling", self._log_file)
-            self._as_conn.resume_processes(self._as_group)
-
-    def _stop_autoscale(self):
-        if not self._as_group:
-            self._set_autoscale_group()
-        if (self._as_group):
-            log("Stopping autoscaling", self._log_file)
-            self._as_conn.suspend_processes(self._as_group)
-
-
     def _deploy_module(self, module):
         task_name = "deploy:{0},{1}".format(self._config['bucket_s3'], module['name'])
-        execute_task_on_hosts(task_name, self._app['name'], self._app['env'], self._app['role'], self._app['region'], self._config['key_path'], self._log_file)
+        execute_task_on_hosts(task_name, self._app, self._config['key_path'], self._log_file)
 
     def _package_module(self, module, ts, commit):
         path = self._get_buildpack_clone_path_from_module(module)
         os.chdir(path)
         pkg_name = "{0}_{1}_{2}".format(ts, module['name'], commit)
-        gcall("tar cvzf ../%s . > /dev/null" % pkg_name, "Creating package: %s" % pkg_name, self._log_file)
-        gcall("aws --region {region} s3 cp ../{0} s3://{bucket_s3}{path}/".format(pkg_name, \
-                bucket_s3=self._config['bucket_s3'], region=self._app['region'], path=path), "Uploading package: %s" % pkg_name, self._log_file)
-        gcall("rm -f ../{0}".format(pkg_name), "Deleting local package: %s" % pkg_name, self._log_file)
+        pkg_path = '../{0}'.format(pkg_name)
+        gcall("tar czf {0} .".format(pkg_path), "Creating package: %s" % pkg_name, self._log_file)
+
+        log("Uploading package: %s" % pkg_name, self._log_file)
+        conn = boto.s3.connect_to_region(self._app['region'])
+        bucket = conn.get_bucket(self._config['bucket_s3'])
+        key_path = '{path}/{pkg_name}'.format(bucket_s3=self._config['bucket_s3'], path=path, pkg_name=pkg_name)
+        key = bucket.get_key(path)
+        if not key:
+            key = bucket.new_key(key_path)
+        key.set_contents_from_filename(pkg_path)
+
+        gcall("rm -f {0}".format(pkg_path), "Deleting local package: %s" % pkg_name, self._log_file)
         return pkg_name
 
     def _get_module_revision(self, module_name):
@@ -156,6 +124,7 @@ class Deploy():
         key = bucket.get_key(key_path)
         modules = []
         module_exist = False
+        all_app_modules_list = [app_module['name'] for app_module in self._app['modules'] if 'name' in app_module]
         data = ""
         if key:
             manifest = key.get_contents_as_string()
@@ -173,7 +142,9 @@ class Deploy():
                     else:
                         mod['package'] = tmp[1]
                         mod['path'] = tmp[2]
-                    modules.append(mod)
+                    # Only keep modules that have not been removed from the app
+                    if mod['name'] in all_app_modules_list:
+                        modules.append(mod)
         if not key:
             key = bucket.new_key(key_path)
         if not module_exist:
@@ -213,7 +184,7 @@ class Deploy():
         gcall("git --no-pager fetch --tags", "Git fetch all tags", self._log_file)
         gcall("git --no-pager pull", "Git pull", self._log_file)
         gcall("git --no-pager checkout %s" % revision, "Git checkout: %s" % revision, self._log_file)
-        gcall("git --no-pager pull || true", "Git pull after checkout but never fail: %s" % revision, self._log_file)
+        gcall("grep '^ref: ' .git/HEAD && git --no-pager pull || echo HEAD is detached, no need to pull", "Git pull after checkout if not detached: %s" % revision, self._log_file)
 
         # Extract remote origin URL and commit information
         remote_url = grep(grep(git('--no-pager', 'remote', '--verbose'), '^origin'), '(fetch)$').split()[1]
@@ -270,12 +241,8 @@ class Deploy():
         # Create tar archive
         pkg_name = self._package_module(module, ts, commit)
 
-        self._set_as_conn()
-        if self._app['autoscale']['name']:
-            self._stop_autoscale()
         self._update_manifest(module, pkg_name)
         self._deploy_module(module)
-        if self._app['autoscale']['name']:
-            self._start_autoscale()
+
         deployment = {'app_id': self._app['_id'], 'job_id': self._job['_id'], 'module': module['name'], 'revision': revision, 'commit': commit, 'commit_message': commit_message, 'timestamp': ts, 'package': pkg_name, 'module_path': module['path']}
         return self._worker._db.deploy_histories.insert(deployment)

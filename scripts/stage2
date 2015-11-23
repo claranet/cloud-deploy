@@ -1,7 +1,19 @@
 #!/bin/bash
 set -x
+
+LOCK=/run/lock/ghost-stage-2
+
+while [ -d $LOCK ] ; do
+    ls -l $LOCK
+    echo "Waiting 30s for $LOCK lock to be released..."
+    sleep 30
+done
+
+mkdir $LOCK
+echo "Locked $LOCK"
+
 S3_BUCKET={{ bucket_s3 }}
-TS=$(date +%Y%m%H%m%S)
+TS=$(date +%Y%m%d_%H%M%S)
 LOGFILE=$(echo $TS"_deploy.txt")
 
 INSTANCE_ID=$(curl http://169.254.169.254/latest/meta-data/instance-id)
@@ -74,8 +86,25 @@ function purge_oldest_succeed_deploy() {
 function deploy_module() {
     UUID=$(cat /proc/sys/kernel/random/uuid)
     MODULE_NAME=$1
+    if [ -z $MODULE_NAME ]; then
+        echo "MODULE_NAME cannot be empy"
+        exit_deployment -1
+    fi
     MODULE_FILE=$2
+    if [ -z $MODULE_FILE ]; then
+        echo "MODULE_FILE cannot be empy"
+        exit_deployment -1
+    fi
     TARGET=$3
+    if [ -z $TARGET ]; then
+        echo "TARGET cannot be empy"
+        exit_deployment -1
+    fi
+    if [ ${TARGET%%+(/)} == "/tmp" ]; then
+        echo "TARGET path cannot be /tmp"
+        exit_deployment -1
+    fi
+
     echo "--------------------------------" >> /tmp/$LOGFILE
     echo "Deploying module $MODULE_NAME in $TARGET" >> /tmp/$LOGFILE
     /usr/local/bin/aws s3 cp s3://$S3_BUCKET/ghost/$APP/$ENV/$ROLE/$MODULE_NAME/$MODULE_FILE /tmp/$MODULE_FILE  --region "$EC2_REGION"
@@ -84,24 +113,27 @@ function deploy_module() {
     chown -R admin:admin /ghost/$UUID
     echo "Extracting module in /ghost/$UUID" >> /tmp/$LOGFILE
     tar xvzf /tmp/$MODULE_FILE -C /ghost/$UUID > /dev/null
+    if [ $? -ne 0 ] || [ ! -f /tmp/$MODULE_FILE ]; then
+        echo "Extracting module failed !"
+        exit_deployment -1
+    fi
+
     rm -rf /tmp/$MODULE_FILE
     cd /ghost/$UUID
 
-    if [ -e predeploy ]
-    then
+    if [ -e predeploy ]; then
         echo "Executing predeploy script..." >> /tmp/$LOGFILE
         chmod +x predeploy
         GHOST_APP=$APP GHOST_ENV=$ENV GHOST_ROLE=$ROLE GHOST_MODULE_NAME=$MODULE_NAME GHOST_MODULE_PATH=$TARGET ./predeploy 2>&1 | tee -a /tmp/$LOGFILE
         local status=$?
         if [ $status -ne 0 ]; then
             purge_latest_failed_deploy $MODULE_NAME $UUID
-            exit -1
+            exit_deployment -1
         fi
     fi
 
     # Clear folder if not a symlink (not a Ghost managed module)
-    if ! [ -h $TARGET ]
-    then
+    if ! [ -h $TARGET ]; then
         echo "Clearing unmanaged folder..." >> /tmp/$LOGFILE
         rm -rfv $TARGET
     fi
@@ -110,8 +142,7 @@ function deploy_module() {
     ln -fsn /ghost/$UUID $TARGET
     cd $TARGET
 
-    if [ -e postdeploy ]
-    then
+    if [ -e postdeploy ]; then
         echo "Executing postdeploy script..." >> /tmp/$LOGFILE
         chmod +x postdeploy
         GHOST_APP=$APP GHOST_ENV=$ENV GHOST_ROLE=$ROLE GHOST_MODULE_NAME=$MODULE_NAME GHOST_MODULE_PATH=$TARGET ./postdeploy 2>&1 | tee -a /tmp/$LOGFILE
@@ -126,7 +157,7 @@ function find_module() {
         MODULE_NAME=$(echo $line | awk -F':' '{print $1}')
         MODULE_FILE=$(echo $line | awk -F':' '{print $2}')
         TARGET=$(echo $line | awk -F':' '{print $3}')
-	    if [ "$1" == "$MODULE_NAME" ]; then
+        if [ "$1" == "$MODULE_NAME" ]; then
             echo $MODULE_NAME $MODULE_FILE $TARGET
         fi
     done
@@ -134,7 +165,10 @@ function find_module() {
 
 function exit_deployment() {
     echo "Removing Manifest file" >> /tmp/$LOGFILE
-    rm /tmp/MANIFEST
+    rm -f /tmp/MANIFEST
+    echo "Unlocking $LOCK..."
+    rmdir $LOCK
+    echo "Unlocked $LOCK"
     exit $1
 }
 
@@ -147,18 +181,18 @@ if [ $? -ne 0 ]; then
     exit_deployment 10
 fi
 
-# Deploy only one module
 if [ -n "$1" ]; then
+    # Deploy only one module
     MODULE=$(find_module $1)
     deploy_module $MODULE
-    exit_deployment 0
+else
+    # Deploying all modules
+    for line in $(cat /tmp/MANIFEST) ; do
+        MODULE_NAME=$(echo $line | awk -F':' '{print $1}')
+        MODULE_FILE=$(echo $line | awk -F':' '{print $2}')
+        TARGET=$(echo $line | awk -F':' '{print $3}')
+        deploy_module $MODULE_NAME $MODULE_FILE $TARGET
+    done
 fi
 
-# Deploying all modules
-for line in $(cat /tmp/MANIFEST)
-do
-    MODULE_NAME=$(echo $line | awk -F':' '{print $1}')
-    MODULE_FILE=$(echo $line | awk -F':' '{print $2}')
-    TARGET=$(echo $line | awk -F':' '{print $3}')
-    deploy_module $MODULE_NAME $MODULE_FILE $TARGET
-done
+exit_deployment 0
