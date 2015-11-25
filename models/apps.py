@@ -17,7 +17,7 @@ apps_schema = {
                     'type': 'string', 'regex': '^[a-zA-Z0-9\.\-\_]*$',
                     'required': True
                 }, 'version': {
-                    'type': 'string', 'regex': '^[a-zA-Z0-9\.\-\_\/:]*$',
+                    'type': 'string', 'regex': '^[a-zA-Z0-9\.\-\_\/:~]*$',
                     'required': False
                 }
             }
@@ -34,7 +34,7 @@ apps_schema = {
         'type': 'list', 'schema': {
             'type': 'dict', 'schema': {
                 'initialized': {'type': 'boolean', 'readonly': True},
-                'name': {'type': 'string', 'required': True},
+                'name': {'type': 'string', 'regex': '^[a-zA-Z0-9\.\-\_]*$', 'required': True},
                 'git_repo': {'type': 'string', 'required': True},
                 'scope': {
                     'type': 'string', 'required': True, 'allowed': ['system', 'code']
@@ -62,7 +62,7 @@ apps_schema = {
     },
     'build_infos': {
         'type': 'dict', 'schema': {
-            'ssh_username': {'type': 'string', 'required': True},
+            'ssh_username': {'type': 'string', 'regex': '^[a-z\_][a-z0-9\_]{0,30}$', 'required': True},
             'source_ami': {'type': 'string', 'regex': '^ami-[a-z0-9]*$', 'required': True},
             'ami_name': {'type': 'string', 'readonly': True},
             'subnet_id': {'type': 'string', 'regex': '^subnet-[a-z0-9]*$', 'required': True}
@@ -72,8 +72,8 @@ apps_schema = {
     'environment_infos': {'type': 'dict', 'schema': {
         'security_groups': {'type': 'list', 'schema': {'type': 'string', 'regex': '^sg-[a-z0-9]*$'}},
         'subnet_ids': {'type': 'list', 'schema': {'type': 'string', 'regex': '^subnet-[a-z0-9]*$'}},
-        'instance_profile': {'type': 'string'},
-        'key_name': {'type': 'string'},
+        'instance_profile': {'type': 'string', 'regex': '^[a-zA-Z0-9\+\=\,\.\@\-\_]{1,64}$'},
+        'key_name': {'type': 'string', 'regex': '^[\x00-\x7F]{1,255}$'},
         'root_block_device': {'type': 'dict', 'schema': {
             'size': {'type': 'integer'},
             'name': {'type': 'string', 'regex': '^/[a-z0-9]+/[a-z0-9]+$'}
