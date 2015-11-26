@@ -14,7 +14,7 @@ Flask-SocketIO
 Flask-WTF
 gevent
 gevent-websocket
-gunicorn                  # needed at runtime with supervisor
+gunicorn                  # needed at runtime
 Jinja2
 pip
 pip-tools
