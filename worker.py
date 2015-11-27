@@ -123,9 +123,9 @@ class Worker:
         try:
             command.execute()
         except :
-            traceback.print_exc()
             message = sys.exc_info()[0]
             log(message, self.log_file)
+            traceback.print_exc(file=self.log_file)
             self.update_status("failed", str(message))
             raise
         finally:
