@@ -78,6 +78,7 @@ class Worker:
     def update_status(self, status, message=None):
         self.job['status'] = status
         self.job['message'] = message
+        log(message, self.log_file)
         self._db.jobs.update({ '_id': self.job['_id']}, {'$set': {'status': status, 'message': message, '_updated': datetime.now()}})
 
     def module_initialized(self, module_name):
