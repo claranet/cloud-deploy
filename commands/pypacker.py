@@ -69,6 +69,10 @@ class Packer:
             'local_state_tree': self.salt_path,
             'local_pillar_roots': SALT_LOCAL_TREE + self.unique + '/pillar',
             'skip_bootstrap': True
+            },
+            {
+            'type': 'shell',
+            'inline':["sudo rm -rf /srv/salt || echo 'salt: no cleanup salt'","sudo rm -rf /srv/pillar || echo 'salt: no cleanup pillar'"]
             }]
         packer_json['builders'] = builders
         packer_json['provisioners'] = provisioners
