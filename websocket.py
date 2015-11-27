@@ -2,6 +2,7 @@ from flask import request
 from flask_socketio import SocketIO
 import gevent
 import re
+from xml.sax.saxutils import escape
 
 LOG_ROOT='/var/log/ghost'
 
@@ -80,7 +81,7 @@ def ansi_to_html(text):
 
         return argsdict['text']
 
-    return COLOR_REGEX.sub(single_sub, text)
+    return COLOR_REGEX.sub(single_sub, escape(text))
 
 def create_ws(app):
     socketio = SocketIO(app)
