@@ -78,6 +78,7 @@ class Command:
     def update_status(self, status, message=None):
         self.job['status'] = status
         self.job['message'] = message
+        log(message, self.log_file)
         self._db.jobs.update({ '_id': self.job['_id']}, {'$set': {'status': status, 'message': message, '_updated': datetime.now()}})
 
     def module_initialized(self, module_name):
@@ -124,9 +125,9 @@ class Command:
             self.update_status("started", "Job processing started")
             command.execute()
         except :
-            traceback.print_exc()
             message = sys.exc_info()[0]
             log(message, self.log_file)
+            traceback.print_exc(file=self.log_file)
             self.update_status("failed", str(message))
             raise
         finally:
