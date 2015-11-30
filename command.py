@@ -102,7 +102,7 @@ class Command:
         log = "{log_path}/{job_id}.txt".format(log_path=LOG_ROOT, job_id=self._worker_job.id)
         log_stat = os.stat(log)
         if log_stat.st_size > 512000:
-            os.system('gzip '+log)
+            os.system('gzip -k '+log)
             log = log+'.gz'
         for mail in self.app['log_notifications']:
             notif.send_mail(From=MAIL_LOG_FROM, To=mail, subject=subject, body=body, attachments=[log])
