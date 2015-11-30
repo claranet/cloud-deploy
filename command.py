@@ -43,7 +43,7 @@ def format_notif(app, job):
                                       message=job['message'])
     return title, message
 
-class Worker:
+class Command:
     _config = None
     _worker_job = None
     job = None
@@ -122,6 +122,7 @@ class Worker:
 
         # Execute command and always mark the job as 'failed' in case of an unexpected exception
         try:
+            self.update_status("started", "Job processing started")
             command.execute()
         except :
             message = sys.exc_info()[0]
@@ -133,12 +134,4 @@ class Worker:
             self._close_log_file()
             self._mail_log_action()
             self._disconnect_db()
-
-
-# task_init_app()
-if __name__ == '__main__':
-    # task_init_app()
-    # task_deploy_app(branch="staging")
-    # task_predeploy_app()
-    print("Yeah !!!")
 

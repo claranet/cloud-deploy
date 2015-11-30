@@ -3,6 +3,7 @@
 # Don't pin them—unless you want them pinned, of course.
 argparse
 bcrypt
+blinker                   # needed at runtime for flask events
 boto
 click
 Eve
@@ -24,6 +25,7 @@ redis
 requests
 rq
 rq-dashboard
+setproctitle
 sh
 six
 subprocess32

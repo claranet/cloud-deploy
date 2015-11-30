@@ -186,7 +186,6 @@ def refresh_stage2(bucket_s3, region, root_ghost_path):
     bucket = conn.get_bucket(bucket_s3)
     k = bucket.new_key("/ghost/stage2")
     jinja_templates_path='%s/scripts' % root_ghost_path
-    print("Before check path")
     if(os.path.exists('%s/stage2' % jinja_templates_path)):
         loader=FileSystemLoader(jinja_templates_path)
         jinja_env = Environment(loader=loader)

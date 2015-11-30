@@ -11,10 +11,6 @@ jobs_schema = {
             'embeddable': True
         }
     },
-    #FIXME: dup with _id, to remove?
-    'job_id': {
-        'type': 'objectid', 'readonly': True
-    },
     'status': {
         'type': 'string', 'readonly': True
     },
