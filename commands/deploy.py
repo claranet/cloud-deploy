@@ -98,7 +98,7 @@ class Deploy():
     def execute(self):
         self._apps_modules = self._find_modules_by_name(self._job['modules'])
         if not self._apps_modules:
-            self._worker.update_status("cancelled", message="Deployment Cancelled: missing modules {0}".format(self._job['modules']))
+            self._worker.update_status("aborted", message="Deployment Aborted: missing modules {0}".format(self._job['modules']))
             return
 
         refresh_stage2(self._config['bucket_s3'], self._app['region'], self._config['ghost_root_path'])

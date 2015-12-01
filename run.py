@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from flask import abort, request
 from flask_bootstrap import Bootstrap
 
@@ -99,6 +101,7 @@ def pre_delete_job_queues():
     if job and job['status'] == 'init':
         # Cancel the job from RQ
         cancel_job(job_id, connection=ghost.ghost_redis_connection)
+        get_jobs_db().update({'_id': ObjectId(job_id)}, {'$set': {'status': 'cancelled', 'message': 'Job cancelled', '_updated': datetime.now()}})
         return
 
     # Do not allow cancelling jobs not init status
