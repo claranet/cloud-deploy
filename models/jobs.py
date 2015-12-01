@@ -23,6 +23,9 @@ jobs_schema = {
     'user': {
         'type': 'string'
     },
+    'instance_type': {
+        'type': 'string', 'default':'t2.micro'
+    },
     'options': {
         'type': 'list', 'schema': {
             'type': 'string'
