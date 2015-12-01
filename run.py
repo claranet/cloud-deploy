@@ -99,7 +99,7 @@ def pre_delete_job(item):
         # Do not allow deleting jobs not in cancelled, done, failed or aborted status
         abort(422)
 
-def pre_delete_job_queues():
+def pre_delete_job_enqueueings():
     job_id = request.view_args['job_id']
     job = get_jobs_db().find_one({'_id': ObjectId(job_id)})
 
@@ -128,7 +128,7 @@ ghost.on_inserted_apps += post_insert_app
 ghost.on_insert_jobs += pre_insert_job
 ghost.on_inserted_jobs += post_insert_job
 ghost.on_delete_item_jobs += pre_delete_job
-ghost.on_delete_resource_job_queues += pre_delete_job_queues
+ghost.on_delete_resource_job_enqueueings += pre_delete_job_enqueueings
 
 
 ghost.ghost_redis_connection = Redis()

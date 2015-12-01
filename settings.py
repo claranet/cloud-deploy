@@ -1,7 +1,7 @@
 from models import jobs
 from models import apps
 from models import deployments
-from models import job_queues
+from models import job_enqueueings
 
 API_NAME = 'GHOST API'
 
@@ -28,7 +28,7 @@ ITEM_METHODS = ['GET', 'PATCH', 'PUT', 'DELETE']
 PAGINATION_DEFAULT = 42
 
 DOMAIN = {
-    'job_queues': job_queues.job_queues,
+    'job_enqueueings': job_enqueueings.job_enqueueings,
     'jobs': jobs.jobs,
     'apps': apps.apps,
     'deployments': deployments.deployments
