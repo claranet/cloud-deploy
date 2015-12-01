@@ -96,9 +96,8 @@ def post_insert_job(items):
 
 def pre_delete_job(item):
     if item['status'] not in DELETABLE_JOB_STATUSES:
-        # Do not allow deleting jobs not cancelled, done, failed or aborted status
+        # Do not allow deleting jobs not in cancelled, done, failed or aborted status
         abort(422)
-
 
 def pre_delete_job_queues():
     job_id = request.view_args['job_id']
@@ -110,7 +109,7 @@ def pre_delete_job_queues():
         get_jobs_db().update({'_id': ObjectId(job_id)}, {'$set': {'status': 'cancelled', 'message': 'Job cancelled', '_updated': datetime.now()}})
         return
 
-    # Do not allow cancelling jobs not init status
+    # Do not allow cancelling jobs not in init status
     abort(422)
 
 # Create ghost app, explicitly specifying the settings to avoid errors during doctest execution
