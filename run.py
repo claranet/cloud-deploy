@@ -14,7 +14,7 @@ from rq_dashboard import RQDashboard
 
 from settings import __dict__ as eve_settings
 from command import Command
-
+from models.jobs import CANCELLABLE_JOB_STATUSES, DELETABLE_JOB_STATUSES
 
 def get_apps_db():
     return ghost.data.driver.db['apps']
@@ -94,11 +94,17 @@ def post_insert_job(items):
     rq_job = Queue(name=get_rq_name_from_app(app), connection=ghost.ghost_redis_connection, default_timeout=3600).enqueue(Command().execute, job_id, job_id=job_id)
     assert rq_job.id == job_id
 
+def pre_delete_job(item):
+    if item['status'] not in DELETABLE_JOB_STATUSES:
+        # Do not allow deleting jobs not cancelled, done, failed or aborted status
+        abort(422)
+
+
 def pre_delete_job_queues():
     job_id = request.view_args['job_id']
     job = get_jobs_db().find_one({'_id': ObjectId(job_id)})
 
-    if job and job['status'] == 'init':
+    if job and job['status'] in CANCELLABLE_JOB_STATUSES:
         # Cancel the job from RQ
         cancel_job(job_id, connection=ghost.ghost_redis_connection)
         get_jobs_db().update({'_id': ObjectId(job_id)}, {'$set': {'status': 'cancelled', 'message': 'Job cancelled', '_updated': datetime.now()}})
@@ -122,6 +128,7 @@ ghost.on_insert_apps += pre_insert_app
 ghost.on_inserted_apps += post_insert_app
 ghost.on_insert_jobs += pre_insert_job
 ghost.on_inserted_jobs += post_insert_job
+ghost.on_delete_item_jobs += pre_delete_job
 ghost.on_delete_resource_job_queues += pre_delete_job_queues
 
 
