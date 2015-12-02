@@ -118,10 +118,11 @@ class Deploy():
             keys_to_keep = sorted(keys_list)[(len(keys_list)-3):]
             keys_list.sort()
             del keys_list[(len(keys_list)-3):]
-            log("Purge: %s" % keys_list , self._log_file)
-            log("Keep: %s" % keys_to_keep , self._log_file)
+            log("Packages to purge: %s" % keys_list , self._log_file)
+            log("Packages to keep: %s" % keys_to_keep , self._log_file)
             for obj in keys_list:
                 key_path_to_purge  = '{path}/{obj}'.format(bucket_s3=self._config['bucket_s3'], path=path, obj=obj)
+                log("Deleting old packages from S3", self._log_file)
                 bucket.get_key(key_path_to_purge).delete()
 
         return pkg_name
