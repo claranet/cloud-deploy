@@ -122,8 +122,11 @@ class Command:
 
         # Execute command and always mark the job as 'failed' in case of an unexpected exception
         try:
-            self.update_status("started", "Job processing started")
-            command.execute()
+            if self.job['status'] == 'init':
+                self.update_status("started", "Job processing started")
+                command.execute()
+            else:
+                self.update_status("aborted", "Job was already in '{}' status (not in 'init' status)".format(self.job['status']))
         except :
             message = sys.exc_info()[0]
             log(message, self.log_file)
