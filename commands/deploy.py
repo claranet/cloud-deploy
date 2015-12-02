@@ -111,6 +111,19 @@ class Deploy():
         key.set_contents_from_filename(pkg_path)
 
         gcall("rm -f {0}".format(pkg_path), "Deleting local package: %s" % pkg_name, self._log_file)
+
+        # Purge old packages from S3
+        keys_list = [i.name.split("/")[-1] for i in bucket.list(path[+1:])]
+        if keys_list >= 4:
+            keys_to_keep = sorted(keys_list)[(len(keys_list)-3):]
+            keys_list.sort()
+            del keys_list[(len(keys_list)-3):]
+            log("Purge: %s" % keys_list , self._log_file)
+            log("Keep: %s" % keys_to_keep , self._log_file)
+            for obj in keys_list:
+                key_path_to_purge  = '{path}/{obj}'.format(bucket_s3=self._config['bucket_s3'], path=path, obj=obj)
+                bucket.get_key(key_path_to_purge).delete()
+
         return pkg_name
 
     def _get_module_revision(self, module_name):
