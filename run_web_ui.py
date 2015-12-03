@@ -28,5 +28,7 @@ if __name__ == '__main__':
         'bind': '0.0.0.0:5001',
         'workers': 1,
         'worker_class': 'geventwebsocket.gunicorn.workers.GeventWebSocketWorker',
+        'debug': True,
+        'timeout': 600,
     }
     StandaloneApplication(app, options).run()
