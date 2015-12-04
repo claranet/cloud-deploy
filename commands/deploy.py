@@ -97,6 +97,10 @@ class Deploy():
 
     def execute(self):
         self._apps_modules = self._find_modules_by_name(self._job['modules'])
+        if not self._apps_modules:
+            self._worker.update_status("aborted", message="Deployment Aborted: missing modules {0}".format(self._job['modules']))
+            return
+
         refresh_stage2(self._config['bucket_s3'], self._app['region'], self._config['ghost_root_path'])
         module_list = []
         for module in self._apps_modules:
@@ -109,13 +113,15 @@ class Deploy():
                 if not module['initialized']:
                     self._initialize_module(module)
 
+            deploy_ids = {}
             for module in self._apps_modules:
                 deploy_id = self._execute_deploy(module)
+                deploy_ids[module['name']] = deploy_id
                 self._worker._db.jobs.update({ '_id': self._job['_id'], 'modules.name': module['name']}, {'$set': {'modules.$.deploy_id': deploy_id }})
 
-            self._worker.update_status("done", message="Deployment OK: [{0}: {1}]".format(module_list, deploy_id))
+            self._worker.update_status("done", message="Deployment OK: {0}".format(deploy_ids))
         except GCallException as e:
-            self._worker.update_status("failed", message="Deployment Failed: [{0}]\n{1}".format(module_list, str(e)))
+            self._worker.update_status("failed", message="Deployment Failed: [{0}] {1}".format(module_list, str(e)))
 
     def _update_manifest(self, module, package):
         key_path = self._get_path_from_app() + '/MANIFEST'

@@ -13,7 +13,7 @@ class BCryptAuth(BasicAuth):
         read_accounts(self._accounts)
 
     def check_auth(self, username, password, allowed_roles, resource, method):
-        stored_password = self._accounts[username]
+        stored_password = self._accounts.get(username, None)
 
         return stored_password and bcrypt.hashpw(password, stored_password) == stored_password
 

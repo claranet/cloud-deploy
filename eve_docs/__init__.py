@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, jsonify
+from flask import Blueprint, render_template, jsonify, request
 from .config import get_cfg
 
 
@@ -9,7 +9,7 @@ eve_docs = Blueprint('eve_docs', __name__,
 @eve_docs.route('/')
 def index():
     cfg = get_cfg()
-    return render_template('index.html', cfg=cfg)
+    return render_template('index.html', cfg=cfg, url=request.url)
 
 
 @eve_docs.route('/spec.json')

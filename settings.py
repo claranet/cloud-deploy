@@ -1,6 +1,9 @@
 from models import jobs
 from models import apps
 from models import deployments
+from models import job_enqueueings
+
+API_NAME = 'GHOST API'
 
 # Let's just use the local mongod instance. Edit as needed.
 
@@ -12,7 +15,7 @@ MONGO_PORT = 27017
 #MONGO_PASSWORD = 'user'
 MONGO_DBNAME = 'apitest'
 
-# Enable reads (GET), inserts (POST) and DELETE for resources/collections
+# Enable reads (GET) and inserts (POST) for resources/collections
 # (if you omit this line, the API will default to ['GET'] and provide
 # read-only access to the endpoint).
 RESOURCE_METHODS = ['GET', 'POST']
@@ -21,9 +24,11 @@ RESOURCE_METHODS = ['GET', 'POST']
 # individual items  (defaults to read-only item access).
 ITEM_METHODS = ['GET', 'PATCH', 'PUT', 'DELETE']
 
-
+# Quick pagination fix
+PAGINATION_DEFAULT = 42
 
 DOMAIN = {
+    'job_enqueueings': job_enqueueings.job_enqueueings,
     'jobs': jobs.jobs,
     'apps': apps.apps,
     'deployments': deployments.deployments

@@ -11,10 +11,6 @@ jobs_schema = {
             'embeddable': True
         }
     },
-    #FIXME: dup with _id, to remove?
-    'job_id': {
-        'type': 'objectid', 'readonly': True
-    },
     'status': {
         'type': 'string', 'readonly': True
     },
@@ -26,6 +22,9 @@ jobs_schema = {
     },
     'user': {
         'type': 'string'
+    },
+    'instance_type': {
+        'type': 'string', 'default':'t2.micro'
     },
     'options': {
         'type': 'list', 'schema': {
@@ -48,3 +47,6 @@ jobs_schema = {
 }
 
 jobs = {'item_title': 'job', 'schema': jobs_schema}
+
+CANCELLABLE_JOB_STATUSES = ['init']
+DELETABLE_JOB_STATUSES = ['cancelled', 'done', 'failed', 'aborted']

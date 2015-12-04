@@ -1,5 +1,8 @@
 env = [
 'prod',
 'preprod',
-'dev'
+'dev',
+'staging',
+'test',
+'demo'
 ]

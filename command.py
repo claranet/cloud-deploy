@@ -43,7 +43,7 @@ def format_notif(app, job):
                                       message=job['message'])
     return title, message
 
-class Worker:
+class Command:
     _config = None
     _worker_job = None
     job = None
@@ -78,6 +78,7 @@ class Worker:
     def update_status(self, status, message=None):
         self.job['status'] = status
         self.job['message'] = message
+        log(message, self.log_file)
         self._db.jobs.update({ '_id': self.job['_id']}, {'$set': {'status': status, 'message': message, '_updated': datetime.now()}})
 
     def module_initialized(self, module_name):
@@ -101,7 +102,7 @@ class Worker:
         log = "{log_path}/{job_id}.txt".format(log_path=LOG_ROOT, job_id=self._worker_job.id)
         log_stat = os.stat(log)
         if log_stat.st_size > 512000:
-            os.system('gzip '+log)
+            os.system('gzip -k '+log)
             log = log+'.gz'
         for mail in self.app['log_notifications']:
             notif.send_mail(From=MAIL_LOG_FROM, To=mail, subject=subject, body=body, attachments=[log])
@@ -121,23 +122,19 @@ class Worker:
 
         # Execute command and always mark the job as 'failed' in case of an unexpected exception
         try:
-            command.execute()
+            if self.job['status'] == 'init':
+                self.update_status("started", "Job processing started")
+                command.execute()
+            else:
+                self.update_status("aborted", "Job was already in '{}' status (not in 'init' status)".format(self.job['status']))
         except :
-            traceback.print_exc()
             message = sys.exc_info()[0]
             log(message, self.log_file)
+            traceback.print_exc(file=self.log_file)
             self.update_status("failed", str(message))
             raise
         finally:
             self._close_log_file()
             self._mail_log_action()
             self._disconnect_db()
-
-
-# task_init_app()
-if __name__ == '__main__':
-    # task_init_app()
-    # task_deploy_app(branch="staging")
-    # task_predeploy_app()
-    print("Yeah !!!")
 

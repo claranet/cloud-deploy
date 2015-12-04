@@ -119,6 +119,6 @@ def get_label(domain, pathtype, method):
         noun = capp.config['DOMAIN'][domain]['item_title']
         article = 'a'
     else:
-        noun = domain
+        noun = capp.config['DOMAIN'][domain]['resource_title']
         article = 'all'
     return '{0} {1} {2}'.format(verb, article, noun)

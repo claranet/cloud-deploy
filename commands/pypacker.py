@@ -2,7 +2,6 @@ from uuid import uuid4
 from sh import git
 from subprocess32 import Popen, PIPE
 from commands.tools import log
-import logging
 import yaml
 import json
 import os
@@ -10,11 +9,8 @@ import os
 PACKER_JSON_PATH="/tmp/packer/"
 SALT_LOCAL_TREE="/tmp/salt/"
 
-logging.basicConfig(filename="/tmp/packer.log")
-
 class Packer:
     def __init__(self, packer_config, config, log_file):
-        print("Packer __init__ start")
         self._log_file = log_file
         self.packer_config = json.loads(packer_config)
         self.unique = str(uuid4())
@@ -23,7 +19,7 @@ class Packer:
         if not os.path.exists(SALT_LOCAL_TREE):
             os.makedirs(SALT_LOCAL_TREE)
         os.makedirs(SALT_LOCAL_TREE + self.unique)
-        logging.debug("Getting Salt Morea Formulas")
+        log("Getting Salt Morea Formulas", self._log_file)
         git.clone(["git@bitbucket.org:morea/morea-salt-formulas.git", SALT_LOCAL_TREE + self.unique + '/'],'--recursive')
         if config.get('salt_formulas_branch'):
             os.chdir(SALT_LOCAL_TREE + self.unique)
@@ -35,9 +31,9 @@ class Packer:
         self.salt_path = SALT_LOCAL_TREE + self.unique + '/salt'
         self.salt_top_path = self.salt_path + '/top.sls'
         stream = file(self.salt_top_path, 'w')
-        logging.debug("Writing Salt Top state to: {0}".format(self.salt_top_path))
+        log("Writing Salt Top state to: {0}".format(self.salt_top_path), self._log_file)
         data = {'base': {'*': ['common'] + params }}
-        print('state: top.sls: {0}'.format(data))
+        log('state: top.sls: {0}'.format(data), self._log_file)
         yaml.dump(data, stream, default_flow_style=False)
 
     def _build_salt_pillar(self, features):
@@ -47,11 +43,11 @@ class Packer:
         #Creating top.sls to call features.sls
         stream_top = file(self.salt_pillar_top_path, 'w')
         data_top = {'base': {'*': ['features']}}
-        print('pillar: top.sls: {0}'.format(data_top))
+        log('pillar: top.sls: {0}'.format(data_top), self._log_file)
         yaml.dump(data_top, stream_top, default_flow_style=False)
         #Creating features.sls file based on ghost app features
         stream_features = file(self.salt_pillar_features_path, 'w')
-        print('pillar: features.sls: {0}'.format(features))
+        log('pillar: features.sls: {0}'.format(features), self._log_file)
         yaml.dump(features, stream_features, default_flow_style=False)
 
     def _build_packer_json(self):
@@ -73,13 +69,17 @@ class Packer:
             'local_state_tree': self.salt_path,
             'local_pillar_roots': SALT_LOCAL_TREE + self.unique + '/pillar',
             'skip_bootstrap': True
+            },
+            {
+            'type': 'shell',
+            'inline':["sudo rm -rf /srv/salt || echo 'salt: no cleanup salt'","sudo rm -rf /srv/pillar || echo 'salt: no cleanup pillar'"]
             }]
         packer_json['builders'] = builders
         packer_json['provisioners'] = provisioners
         self.packer_file_path = PACKER_JSON_PATH + self.unique + ".json"
-        print('packer file path: {0}'.format(self.packer_file_path))
+        log('packer file path: {0}'.format(self.packer_file_path), self._log_file)
         stream = file(self.packer_file_path, 'w')
-        logging.debug("Writing Packer definition to: {0}", self.packer_file_path)
+        log("Writing Packer definition to: {0}".format(self.packer_file_path), self._log_file)
         json.dump(packer_json, stream, sort_keys=True, indent=4, separators=(',', ': '))
 
     def _run_packer_cmd(self, cmd):
