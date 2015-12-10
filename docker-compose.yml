@@ -1,0 +1,68 @@
+# docker-compose.yml
+vendors:
+  image: python:2
+  working_dir: /mnt
+  volumes:
+    - .:/mnt
+  environment:
+    PYTHONUSERBASE: /mnt/vendor
+  command: pip install -r requirements.txt --user --upgrade
+
+queue:
+  image: redis      
+  ports:
+   - '6379:6379'
+
+backend_data:
+  image: busybox
+  command: tail -f /dev/null
+
+backend:
+  image: mongo
+  volumes_from:
+    - backend_data
+  ports:
+    - '27017:27017'
+
+worker:
+  image: python:2
+  working_dir: /mnt
+  volumes:
+    - .:/mnt
+  links:
+    - queue
+    - backend
+  environment:
+    PYTHONPATH: .
+    PYTHONUSERBASE: /mnt/vendor
+  command: python run_rqworkers.py
+
+api:
+  image: python:2
+  working_dir: /mnt
+  volumes:
+    - .:/mnt
+  ports:
+    - '5000:5000'
+  links:
+    - queue
+    - backend
+  environment:
+    PYTHONPATH: .
+    PYTHONUSERBASE: /mnt/vendor
+  command: python run.py
+
+web-ui:
+  image: python:2
+  working_dir: /mnt
+  volumes:
+    - .:/mnt
+  ports:
+    - '5001:5001'
+  links:
+    - api
+    - backend
+  environment:
+    PYTHONPATH: .
+    PYTHONUSERBASE: /mnt/vendor
+  command: python run_web_ui.py
