@@ -32,10 +32,19 @@ def get_rq_name_from_app(app):
     return '{env}:{name}:{role}'.format(env=app['env'], name=app['name'], role=app['role'])
 
 def pre_update_app(updates, original):
-    #TODO: implement selective modules update instead of reinitializing all modules
-    if 'modules' in updates:
-        for module in updates['modules']:
-            module['initialized'] = False
+    # FIXME: does not work, all module are reset despite the checks
+    # Selectively reset each module's 'initialized' property if any of its other properties have changed
+    if 'modules' in updates and 'modules' in original:
+        for updated_module in updates['modules']:
+            for original_module in original['modules']:
+                if updated_module['name'] ==  original_module['name']:
+                    for prop in ['git_repo', 'scope', 'build_pack', 'pre_deploy', 'post_deploy', 'path']:
+                        if not updated_module.get(prop, None) == original_module.get(prop, None):
+                            updated_module['initialized'] = False
+                            # At least on the module's prop have changed, can exit loop
+                            break
+                    # Module found, can exit loop
+                    break
 
 def pre_replace_app(item, original):
     #TODO: implement (or not?) application replacement
