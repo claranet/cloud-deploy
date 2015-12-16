@@ -27,7 +27,7 @@ class Packer:
             salt_formulas_repo = config['salt_formulas_repo']
             try:
                 output=git("ls-remote", "--exit-code", salt_formulas_repo)
-            except except sh.ErrorReturnCode, e:
+            except sh.ErrorReturnCode, e:
                 logging.error("Invalid salt formulas repos. Please check your yaml 'config.xml' file")
                 sys.exit(e.stderr)
         git.clone([salt_formulas_repo, SALT_LOCAL_TREE + self.unique + '/'],'--recursive')
