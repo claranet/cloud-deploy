@@ -42,7 +42,7 @@ class Packer:
         self.salt_top_path = self.salt_path + '/top.sls'
         stream = file(self.salt_top_path, 'w')
         log("Writing Salt Top state to: {0}".format(self.salt_top_path), self._log_file)
-        if os.path.exists(salt_path + 'common'):
+        if os.path.exists(salt_path + '/common'):
             data = {'base': {'*': ['common'] + params }}
         else:
             data = {'base': {'*': params }}
