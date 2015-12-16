@@ -125,7 +125,6 @@ class Deploy():
 
     def _update_manifest(self, module, package):
         key_path = self._get_path_from_app() + '/MANIFEST'
-        #conn = boto.s3.connect_to_region(self._app['region'])
         conn = boto.s3.connect_to_region(self._config['bucket_region'])
         bucket = conn.get_bucket(self._config['bucket_s3'])
         key = bucket.get_key(key_path)
