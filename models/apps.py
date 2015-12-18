@@ -1,6 +1,6 @@
 import env
 import instance_role
-import ressources
+import resources
 import volumes
 
 apps_schema = {
@@ -68,7 +68,7 @@ apps_schema = {
             'subnet_id': {'type': 'string', 'regex': '^subnet-[a-z0-9]*$', 'required': True}
         }
     },
-    'ressources': {'type': 'list', 'schema': ressources.available},
+    'resources': {'type': 'list', 'schema': resources.available},
     'environment_infos': {'type': 'dict', 'schema': {
         'security_groups': {'type': 'list', 'schema': {'type': 'string', 'regex': '^sg-[a-z0-9]*$'}},
         'subnet_ids': {'type': 'list', 'schema': {'type': 'string', 'regex': '^subnet-[a-z0-9]*$'}},
