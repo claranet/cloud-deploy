@@ -107,29 +107,32 @@ apps_schema = {
     },
     'resources': {'type': 'list',
                   'schema': resources.available},
-    'environment_infos':
-    {'type': 'dict',
-     'schema': {
-         'security_groups': {'type': 'list',
-                             'schema': {'type': 'string',
-                                        'regex': '^sg-[a-z0-9]*$'}},
-         'subnet_ids': {'type': 'list',
-                        'schema': {'type': 'string',
-                                   'regex': '^subnet-[a-z0-9]*$'}},
-         'instance_profile': {'type': 'string',
-                              'regex': '^[a-zA-Z0-9\+\=\,\.\@\-\_]{1,64}$'},
-         'key_name': {'type': 'string',
-                      'regex': '^[\x00-\x7F]{1,255}$'},
-         'root_block_device': {'type': 'dict',
+    'environment_infos': {'type': 'dict',
+                          'schema': {
+                              'security_groups': {'type': 'list',
+                                                  'schema':
+                                                  {'type': 'string',
+                                                   'regex': '^sg-[a-z0-9]*$'}},
+                              'subnet_ids': {'type': 'list',
+                                             'schema': {'type': 'string',
+                                                        'regex':
+                                                        '^subnet-[a-z0-9]*$'}},
+                              'instance_profile':
+                              {'type': 'string',
+                               'regex': '^[a-zA-Z0-9\+\=\,\.\@\-\_]{1,64}$'},
+                              'key_name': {'type': 'string',
+                                           'regex': '^[\x00-\x7F]{1,255}$'},
+                              'root_block_device':
+                              {'type': 'dict',
                                'schema': {
                                    'size': {'type': 'integer'},
                                    'name': {'type': 'string',
                                             'regex': '^/[a-z0-9]+/[a-z0-9]+$'}
                                }},
-         'optional_volumes': {'type': 'list',
-                              'required': False,
-                              'schema': volumes.block}
-     }},
+                              'optional_volumes': {'type': 'list',
+                                                   'required': False,
+                                                   'schema': volumes.block}
+                          }},
     'user': {'type': 'string'},
 }
 
