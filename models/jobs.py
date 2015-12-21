@@ -3,7 +3,8 @@ jobs_schema = {
         'type': 'string',
         'required': True,
         'allowed': ['deploy', 'buildimage', 'maintenance', 'rollback',
-                    'createinstance', 'destroyinstance', 'updatescripts']
+                    'createinstance', 'destroyinstance',
+                    'updatelifecyclehooks']
     },
     'app_id': {
         'type': 'objectid',
