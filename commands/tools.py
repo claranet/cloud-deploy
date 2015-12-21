@@ -180,7 +180,7 @@ def generate_userdata(bucket_s3, root_ghost_path):
 
 def refresh_stage2(bucket_s3, region, root_ghost_path):
     """
-    Will update the second phase of boostrap script on S3
+    Will update the second phase of bootstrap script on S3
     """
     conn = s3.connect_to_region(region)
     bucket = conn.get_bucket(bucket_s3)
