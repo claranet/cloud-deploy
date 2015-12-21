@@ -6,7 +6,7 @@ from boto import s3
 
 from commands.tools import refresh_stage2
 
-class Updatescripts():
+class Updatelifecyclehooks():
     _app = None
     _job = None
     _log_file = -1
