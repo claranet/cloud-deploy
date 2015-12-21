@@ -6,6 +6,21 @@
         "type": "generalCurrentGen",
         "sizes": [
           {
+            "size": "t2.nano",
+            "vCPU": "1",
+            "ECU": "variable",
+            "memoryGiB": "0.5",
+            "storageGB": "ebsonly",
+            "valueColumns": [
+              {
+                "name": "linux",
+                "prices": {
+                  "USD": "0.0065"
+                }
+              }
+            ]
+          },
+          {
             "size": "t2.micro",
             "vCPU": "1",
             "ECU": "variable",
@@ -605,6 +620,21 @@
       {
         "type": "generalCurrentGen",
         "sizes": [
+          {
+            "size": "t2.nano",
+            "vCPU": "1",
+            "ECU": "variable",
+            "memoryGiB": "0.5",
+            "storageGB": "ebsonly",
+            "valueColumns": [
+              {
+                "name": "linux",
+                "prices": {
+                  "USD": "0.0065"
+                }
+              }
+            ]
+          },
           {
             "size": "t2.micro",
             "vCPU": "1",
@@ -1206,6 +1236,21 @@
         "type": "generalCurrentGen",
         "sizes": [
           {
+            "size": "t2.nano",
+            "vCPU": "1",
+            "ECU": "variable",
+            "memoryGiB": "0.5",
+            "storageGB": "ebsonly",
+            "valueColumns": [
+              {
+                "name": "linux",
+                "prices": {
+                  "USD": "0.0085"
+                }
+              }
+            ]
+          },
+          {
             "size": "t2.micro",
             "vCPU": "1",
             "ECU": "variable",
@@ -1745,6 +1790,21 @@
       {
         "type": "generalCurrentGen",
         "sizes": [
+          {
+            "size": "t2.nano",
+            "vCPU": "1",
+            "ECU": "variable",
+            "memoryGiB": "0.5",
+            "storageGB": "ebsonly",
+            "valueColumns": [
+              {
+                "name": "linux",
+                "prices": {
+                  "USD": "0.007"
+                }
+              }
+            ]
+          },
           {
             "size": "t2.micro",
             "vCPU": "1",
@@ -2946,6 +3006,21 @@
         "type": "generalCurrentGen",
         "sizes": [
           {
+            "size": "t2.nano",
+            "vCPU": "1",
+            "ECU": "variable",
+            "memoryGiB": "0.5",
+            "storageGB": "ebsonly",
+            "valueColumns": [
+              {
+                "name": "linux",
+                "prices": {
+                  "USD": "0.01"
+                }
+              }
+            ]
+          },
+          {
             "size": "t2.micro",
             "vCPU": "1",
             "ECU": "variable",
@@ -3545,6 +3620,21 @@
       {
         "type": "generalCurrentGen",
         "sizes": [
+          {
+            "size": "t2.nano",
+            "vCPU": "1",
+            "ECU": "variable",
+            "memoryGiB": "0.5",
+            "storageGB": "ebsonly",
+            "valueColumns": [
+              {
+                "name": "linux",
+                "prices": {
+                  "USD": "0.01"
+                }
+              }
+            ]
+          },
           {
             "size": "t2.micro",
             "vCPU": "1",
@@ -4746,6 +4836,21 @@
         "type": "generalCurrentGen",
         "sizes": [
           {
+            "size": "t2.nano",
+            "vCPU": "1",
+            "ECU": "variable",
+            "memoryGiB": "0.5",
+            "storageGB": "ebsonly",
+            "valueColumns": [
+              {
+                "name": "linux",
+                "prices": {
+                  "USD": "0.0135"
+                }
+              }
+            ]
+          },
+          {
             "size": "t2.micro",
             "vCPU": "1",
             "ECU": "variable",
@@ -4990,6 +5095,21 @@
       {
         "type": "generalCurrentGen",
         "sizes": [
+          {
+            "size": "t2.nano",
+            "vCPU": "1",
+            "ECU": "variable",
+            "memoryGiB": "0.5",
+            "storageGB": "ebsonly",
+            "valueColumns": [
+              {
+                "name": "linux",
+                "prices": {
+                  "USD": "0.0075"
+                }
+              }
+            ]
+          },
           {
             "size": "t2.micro",
             "vCPU": "1",
