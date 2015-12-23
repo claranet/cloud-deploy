@@ -32,12 +32,50 @@ def get_rq_name_from_app(app):
     return '{env}:{name}:{role}'.format(env=app['env'], name=app['name'], role=app['role'])
 
 def pre_update_app(updates, original):
-    # FIXME: does not work, all module are reset despite the checks
+    """
+    eve pre-update event hook to reset modified modules' 'initialized' field.
+
+    Uninitialized modules stay so, modified or not:
+
+    >>> from copy import deepcopy
+    >>> base_original = {'modules': [{'name': 'mod1', 'git_repo': 'git@github.com/test/mod1'}, {'name': 'mod2', 'git_repo': 'git@github.com/test/mod2'}]}
+    >>> original = deepcopy(base_original)
+    >>> updates = deepcopy(base_original)
+    >>> pre_update_app(updates, original)
+    >>> updates['modules'][0]['initialized']
+    False
+    >>> updates['modules'][1]['initialized']
+    False
+
+    Initialized modules stay so if not modified:
+
+    >>> original['modules'][0]['initialized'] = True
+    >>> original['modules'][1]['initialized'] = True
+    >>> updates = deepcopy(base_original)
+    >>> pre_update_app(updates, original)
+    >>> updates['modules'][0]['initialized']
+    True
+    >>> updates['modules'][1]['initialized']
+    True
+
+    Modified modules get their 'initialized' field reset to False:
+
+    >>> updates = deepcopy(base_original)
+    >>> updates['modules'][1]['git_repo'] = 'git@github.com/test/mod2-modified'
+    >>> pre_update_app(updates, original)
+    >>> updates['modules'][0]['initialized']
+    True
+    >>> updates['modules'][1]['initialized']
+    False
+    """
+
     # Selectively reset each module's 'initialized' property if any of its other properties have changed
     if 'modules' in updates and 'modules' in original:
         for updated_module in updates['modules']:
             for original_module in original['modules']:
                 if updated_module['name'] ==  original_module['name']:
+                    # Restore previous 'initialized' value as 'updated_module' does not contain it (read-only field)
+                    updated_module['initialized'] = original_module.get('initialized', False)
                     for prop in ['git_repo', 'scope', 'build_pack', 'pre_deploy', 'post_deploy', 'path']:
                         if not updated_module.get(prop, None) == original_module.get(prop, None):
                             updated_module['initialized'] = False
