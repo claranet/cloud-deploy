@@ -21,7 +21,7 @@ class Packer:
             os.makedirs(SALT_LOCAL_TREE)
         os.makedirs(SALT_LOCAL_TREE + self.unique)
         log("Getting Salt Morea Formulas", self._log_file)
-        #The following has been add as patch  to make git repository configurable
+        #Use the configured git repository, if any
         if config.get('salt_formulas_repo'):
             salt_formulas_repo = config['salt_formulas_repo']
         git.clone([salt_formulas_repo, SALT_LOCAL_TREE + self.unique + '/'],'--recursive')
