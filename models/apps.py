@@ -14,6 +14,13 @@ apps_schema = {
     'env': {'type': 'string',
             'allowed': env.env,
             'required': True},
+    'lifecycle_hooks': {
+        'type': 'dict',
+        'schema': {
+            'pre_bootstrap': {'type': 'string'},
+            'post_bootstrap': {'type': 'string'},
+        }
+    },
     'features': {
         'type': 'list',
         'schema': {
