@@ -5,7 +5,8 @@ import calendar
 import shutil
 import tempfile
 from sh import git, grep
-from commands.tools import GCallException, gcall, refresh_stage2, execute_task_on_hosts, log
+from commands.tools import GCallException, gcall, execute_task_on_hosts, log
+from ghost_tools import refresh_stage2
 import boto.s3
 import base64
 
@@ -152,7 +153,7 @@ class Deploy():
             self._worker.update_status("aborted", message=self._get_notification_message_aborted(self._job['modules']))
             return
 
-        refresh_stage2(self._config['bucket_s3'], self._app['region'], self._config['ghost_root_path'])
+        refresh_stage2(self._app['region'], self._config)
         module_list = []
         for module in self._apps_modules:
             if 'name' in module:
