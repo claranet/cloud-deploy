@@ -14,6 +14,7 @@ MONGO_PORT = 27017
 #MONGO_USERNAME = 'user'
 #MONGO_PASSWORD = 'user'
 MONGO_DBNAME = 'apitest'
+MONGO_QUERY_BLACKLIST = ['$where']
 
 # Enable reads (GET) and inserts (POST) for resources/collections
 # (if you omit this line, the API will default to ['GET'] and provide

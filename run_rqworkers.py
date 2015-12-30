@@ -97,18 +97,15 @@ def manage_rq_workers():
                 rqworker_name = rqworker.name
                 logging.debug("found an active rqworker: {}".format(rqworker_name))
                 if not ghost_rq_workers.has_key(rqworker_name):
-                    logging.error("ERROR: an active worker does not match a child process: {}".format(rqworker_name))
-                    sys.exit(-1)
+                    raise Exception("an active worker does not match a child process: {}".format(rqworker_name))
 
             # Verify that child processes match active workers
             for rqworker_name, rqworker in ghost_rq_workers.items():
                 logging.debug("found a child process: {}".format(rqworker_name))
                 if not ghost_rq_workers.has_key(rqworker_name):
-                    logging.error("a child process does not match an active rqworker: {}".format(rqworker_name))
-                    sys.exit(-2)
+                    raise Exception("a child process does not match an active rqworker: {}".format(rqworker_name))
                 if not rqworker.is_alive():
-                    logging.warn("a child process is not alive: {}".format(rqworker_name))
-                    sys.exit(-3)
+                    raise Exception("a child process is not alive: {}".format(rqworker_name))
 
             # Get existing apps from MongoDB
             apps = [app for app in apps_db.find()]
@@ -130,7 +127,7 @@ def manage_rq_workers():
                     delete_rq_queue_and_worker(rqworker_name, ghost_rq_queues, ghost_rq_workers)
 
         except:
-            logging.error("an exception occurred {}".format(sys.exc_value))
+            logging.error("an exception occurred: {}".format(sys.exc_value))
             traceback.print_exc()
         finally:
             # Invoke active_children() in order to avoid zombie processes

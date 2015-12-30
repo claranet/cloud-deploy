@@ -95,10 +95,61 @@ class Deploy():
                     return module['rev']
                 return 'master'
 
+    def _get_notification_message_done(self, deploy_ids):
+        """
+        >>> from bson.objectid import ObjectId
+        >>> class worker:
+        ...   app = None
+        ...   job = None
+        ...   log_file = None
+        ...   _config = None
+        >>> Deploy(worker=worker())._get_notification_message_done({})
+        'Deployment OK: []'
+        >>> Deploy(worker=worker())._get_notification_message_done({'mod1': ObjectId('012345678901234567890123')})
+        'Deployment OK: [mod1: 012345678901234567890123]'
+        >>> Deploy(worker=worker())._get_notification_message_done({'mod1': ObjectId('012345678901234567890123'), 'mod2': ObjectId('987654321098765432109876')})
+        'Deployment OK: [mod1: 012345678901234567890123, mod2: 987654321098765432109876]'
+        """
+        message = ', '.join([': '.join((key, str(value))) for key, value in sorted(deploy_ids.items())])
+        return 'Deployment OK: [{0}]'.format(message)
+
+    def _get_notification_message_failed(self, module_list, e):
+        """
+        >>> class worker:
+        ...   app = None
+        ...   job = None
+        ...   log_file = None
+        ...   _config = None
+        >>> Deploy(worker=worker())._get_notification_message_failed('', 'Exception')
+        'Deployment Failed: [] Exception'
+        >>> Deploy(worker=worker())._get_notification_message_failed('mod1', 'Exception')
+        'Deployment Failed: [mod1] Exception'
+        >>> Deploy(worker=worker())._get_notification_message_failed('mod1, mod2', 'Exception')
+        'Deployment Failed: [mod1, mod2] Exception'
+        """
+        return "Deployment Failed: [{0}] {1}".format(module_list, str(e))
+
+    def _get_notification_message_aborted(self, modules):
+        """
+        >>> class worker:
+        ...   app = None
+        ...   job = None
+        ...   log_file = None
+        ...   _config = None
+        >>> Deploy(worker=worker())._get_notification_message_aborted([])
+        'Deployment Aborted: missing modules []'
+        >>> Deploy(worker=worker())._get_notification_message_aborted([{'name': 'mod1'}])
+        'Deployment Aborted: missing modules [mod1]'
+        >>> Deploy(worker=worker())._get_notification_message_aborted([{'name': 'mod1'}, {'name': 'mod2'}])
+        'Deployment Aborted: missing modules [mod1, mod2]'
+        """
+        message = ', '.join([module['name'] for module in modules])
+        return "Deployment Aborted: missing modules [{0}]".format(message)
+
     def execute(self):
         self._apps_modules = self._find_modules_by_name(self._job['modules'])
         if not self._apps_modules:
-            self._worker.update_status("aborted", message="Deployment Aborted: missing modules {0}".format(self._job['modules']))
+            self._worker.update_status("aborted", message=self._get_notification_message_aborted(self._job['modules']))
             return
 
         refresh_stage2(self._config['bucket_s3'], self._app['region'], self._config['ghost_root_path'])
@@ -119,9 +170,9 @@ class Deploy():
                 deploy_ids[module['name']] = deploy_id
                 self._worker._db.jobs.update({ '_id': self._job['_id'], 'modules.name': module['name']}, {'$set': {'modules.$.deploy_id': deploy_id }})
 
-            self._worker.update_status("done", message="Deployment OK: {0}".format(deploy_ids))
+            self._worker.update_status("done", message=self._get_notification_message_done(deploy_ids))
         except GCallException as e:
-            self._worker.update_status("failed", message="Deployment Failed: [{0}] {1}".format(module_list, str(e)))
+            self._worker.update_status("failed", message=self._get_notification_message_failed(module_list, e))
 
     def _update_manifest(self, module, package):
         key_path = self._get_path_from_app() + '/MANIFEST'
