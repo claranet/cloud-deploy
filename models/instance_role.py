@@ -1,10 +1,4 @@
 role = [
-'webfront',
-'varnish',
-'worker',
-'bastion',
-'webapi',
-'database',
-'search',
-'loadbalancer'
+    'webfront', 'varnish', 'worker', 'bastion', 'webapi', 'database', 'search',
+    'loadbalancer'
 ]
