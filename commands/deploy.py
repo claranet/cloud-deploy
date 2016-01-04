@@ -3,7 +3,7 @@ import sys
 import datetime
 import calendar
 import tempfile
-from sh import git, grep
+from sh import git
 from commands.tools import GCallException, gcall, execute_task_on_hosts, log
 from ghost_tools import refresh_stage2
 import boto.s3
@@ -54,7 +54,7 @@ class Deploy():
         """
         return "/ghost/{name}/{env}/{role}".format(name=self._app['name'], env=self._app['env'], role=self._app['role'])
 
-    def _get_full_clone_path_from_module(self, module):
+    def _get_mirror_path_from_module(self, module):
         """
         >>> class worker:
         ...     app = None
@@ -62,11 +62,24 @@ class Deploy():
         ...     log_file = None
         ...     _config = None
         >>> module = {'git_repo': 'git@bitbucket.org:morea/ghost.git'}
-        >>> Deploy(worker=worker())._get_full_clone_path_from_module(module)
+        >>> Deploy(worker=worker())._get_mirror_path_from_module(module)
         '/ghost/.mirrors/git@bitbucket.org:morea/ghost.git'
         """
-        #FIXME: use a path outside of /ghost to avoid clashes with app names
         return "/ghost/.mirrors/{remote}".format(remote=module['git_repo'])
+
+    def _get_intermediate_clone_path_from_module(self, module):
+        """
+        >>> class worker:
+        ...     app = {'name': 'AppName', 'env': 'prod', 'role': 'webfront'}
+        ...     job = None
+        ...     log_file = None
+        ...     _config = None
+        >>> module = {'name': 'mod1', 'git_repo': 'git@bitbucket.org:morea/ghost.git'}
+        >>> Deploy(worker=worker())._get_intermediate_clone_path_from_module(module)
+        '/ghost/.tmp/AppName/prod/webfront/mod1'
+        """
+        clone_path = self._get_buildpack_clone_path_from_module(module)
+        return '{}/.tmp{}'.format(clone_path[:6], clone_path[6:])
 
     def _get_buildpack_clone_path_from_module(self, module):
         """
@@ -75,9 +88,9 @@ class Deploy():
         ...     job = None
         ...     log_file = None
         ...     _config = None
-        >>> module = {'git_repo': 'git@bitbucket.org:morea/ghost.git'}
-        >>> Deploy(worker=worker())._get_full_clone_path_from_module(module)
-        '/ghost/.mirrors/git@bitbucket.org:morea/ghost.git'
+        >>> module = {'name': 'mod1', 'git_repo': 'git@bitbucket.org:morea/ghost.git'}
+        >>> Deploy(worker=worker())._get_buildpack_clone_path_from_module(module)
+        '/ghost/AppName/prod/webfront/mod1'
         """
         return "{app_path}/{module}".format(app_path=self._get_path_from_app(), module=module['name'])
 
@@ -239,44 +252,91 @@ class Deploy():
         ts = calendar.timegm(now.timetuple())
 
         git_repo = module['git_repo']
-        full_clone_path = self._get_full_clone_path_from_module(module)
-        shallow_clone_path = self._get_buildpack_clone_path_from_module(module)
+        mirror_path = self._get_mirror_path_from_module(module)
+        clone_path = self._get_buildpack_clone_path_from_module(module)
         revision = self._get_module_revision(module['name'])
 
-        if not os.path.exists(full_clone_path):
-            gcall("git --no-pager clone --bare --mirror {git_repo} {full_clone_path}".format(git_repo=git_repo, full_clone_path=full_clone_path),
-                  "Create local git mirror for remote '{git_repo}'".format(git_repo=git_repo),
+        if not os.path.exists(mirror_path):
+            gcall('git --no-pager clone --bare --mirror {r} {m}'.format(r=git_repo, m=mirror_path),
+                  'Create local git mirror for remote {r}'.format(r=git_repo),
                   self._log_file)
 
         # If an index.lock file exists in the mirror, wait until it disappears before trying to update the mirror
-        while os.path.exists('{full_clone_path}/index.lock'.format(full_clone_path=full_clone_path)):
-            log("The git mirror is locked by another process, waiting 5s...", self._log_file)
+        while os.path.exists('{m}/index.lock'.format(m=mirror_path)):
+            log('The git mirror is locked by another process, waiting 5s...', self._log_file)
             sleep(5000)
 
         # Update existing git mirror
-        os.chdir(full_clone_path)
-        gcall("git --no-pager remote update",
-              "Update local git mirror from remote '{git_repo}'".format(git_repo=git_repo),
+        os.chdir(mirror_path)
+        gcall('git --no-pager remote update',
+              'Update local git mirror from remote {r}'.format(r=git_repo),
               self._log_file)
 
-        # Extract remote origin URL and commit information
-        remote_url = grep(grep(git('--no-pager', 'remote', '--verbose'), '^origin'), '(fetch)$').split()[1]
+        # Resolve HEAD symbolic reference to identify the default branch
+        head = git('--no-pager', 'symbolic-ref', '--short', 'HEAD').strip()
+
+        # If revision is HEAD, replace it by the default branch
+        if revision == 'HEAD':
+            revision = head
+
+        # If revision is a commit hash (i.e. rev-parse does not change the output),
+        # a full intermediate clone is required before getting a shallow clone
+        if git('--no-pager', 'rev-parse', revision).strip().find(revision) == 0:
+            # Create intermediate clone from the local git mirror, chdir into it and fetch all commits
+            source_path = self._get_intermediate_clone_path_from_module(module)
+            gcall('rm -rf {p}'.format(p=source_path), 'Removing previous intermediate clone', self._log_file)
+            os.makedirs(source_path)
+            os.chdir(source_path)
+            gcall('du -hs .', 'Show size', self._log_file)
+            gcall('git --no-pager init', 'Git init intermediate clone', self._log_file)
+            gcall('du -hs .', 'Show size', self._log_file)
+            gcall('git --no-pager remote add origin file://{m}'.format(m=mirror_path), 'Git add local mirror as origin for intermediate clone', self._log_file)
+            gcall('du -hs .', 'Show size', self._log_file)
+            gcall('git --no-pager fetch origin'.format(r=revision), 'Git fetch all commits from origin', self._log_file)
+            gcall('du -hs .', 'Show size', self._log_file)
+            gcall('git --no-pager checkout {r}'.format(r=revision), 'Git checkout revision into intermediate clone: {r}'.format(r=revision), self._log_file)
+            gcall('du -hs .', 'Show size', self._log_file)
+
+            # Create shallow clone from the intermediate clone, chdir into it and retrieve submodules
+            gcall('rm -rf {p}'.format(p=clone_path), 'Removing previous clone', self._log_file)
+            os.makedirs(clone_path)
+            os.chdir(clone_path)
+            gcall('du -hs .', 'Show size', self._log_file)
+            gcall('git --no-pager clone file://{s} .'.format(s=source_path), 'Git clone from intermediate clone', self._log_file)
+            gcall('du -hs .', 'Show size', self._log_file)
+            gcall('git --no-pager submodule update --init --recursive --depth=10', 'Git update submodules with depth limited to 10', self._log_file)
+            gcall('du -hs .', 'Show size', self._log_file)
+
+            # Destroy intermediate clone
+            gcall('rm -rf {p}'.format(p=source_path), 'Removing intermediate clone', self._log_file)
+        else:
+            # Create clone from the local git mirror, chdir into it, fetch requested revision and retrieve submodules
+            gcall('rm -rf {p}'.format(p=clone_path), 'Removing previous clone', self._log_file)
+            os.makedirs(clone_path)
+            os.chdir(clone_path)
+            gcall('du -hs .', 'Show size', self._log_file)
+            gcall('git --no-pager init', 'Git init', self._log_file)
+            gcall('du -hs .', 'Show size', self._log_file)
+            gcall('git --no-pager remote add origin file://{m}'.format(m=mirror_path), 'Git add local mirror as origin', self._log_file)
+            gcall('du -hs .', 'Show size', self._log_file)
+            gcall('git --no-pager fetch --depth=10 origin {r}'.format(r=revision), 'Git fetch commits from origin with depth limited to 10: {r}'.format(r=revision), self._log_file)
+            gcall('du -hs .', 'Show size', self._log_file)
+            gcall('git --no-pager checkout {r}'.format(r=revision), 'Git checkout revision: {r}'.format(r=revision), self._log_file)
+            gcall('du -hs .', 'Show size', self._log_file)
+            gcall('git --no-pager submodule update --init --recursive --depth=10', 'Git update submodules with depth limited to 10', self._log_file)
+            gcall('du -hs .', 'Show size', self._log_file)
+
+        # Extract commit information
         commit = git('--no-pager', 'rev-parse', '--short', 'HEAD').strip()
         commit_message = git('--no-pager', 'log', '--max-count=1', '--format=%s', 'HEAD').strip()
 
-        # Shallow clone from the full clone to limit the size of the generated archive
-        gcall("rm -rf {shallow_clone_path}".format(shallow_clone_path=shallow_clone_path), "Removing previous shallow clone", self._log_file)
-        gcall("git --no-pager clone --recursive --depth=100 file://{full_clone_path} {shallow_clone_path}".format(full_clone_path=full_clone_path, shallow_clone_path=shallow_clone_path), "Git shallow cloning from previous clone", self._log_file)
-
-        # chdir into newly created shallow clone and reset remote origin URL
-        os.chdir(shallow_clone_path)
-        git('--no-pager', 'remote', 'set-url', 'origin', remote_url)
-        gcall("git --no-pager submodule update --recursive --depth=100", "Git update submodules", self._log_file)
+        # At last, reset remote origin URL
+        gcall('git --no-pager remote set-url origin {r}'.format(r=git_repo), 'Git reset remote origin to {r}'.format(r=revision), self._log_file)
 
         # Store predeploy script in tarball
         if 'pre_deploy' in module:
             predeploy_source = base64.b64decode(module['pre_deploy'])
-            with open(shallow_clone_path + '/predeploy', 'w') as f:
+            with open(clone_path + '/predeploy', 'w') as f:
                 if sys.version > '3':
                     f.write(bytes(predeploy_source, 'UTF-8'))
                 else:
@@ -285,7 +345,7 @@ class Deploy():
         # Execute buildpack
         if 'build_pack' in module:
             buildpack_source = base64.b64decode(module['build_pack'])
-            buildpack, buildpack_path = tempfile.mkstemp(dir=shallow_clone_path)
+            buildpack, buildpack_path = tempfile.mkstemp(dir=clone_path)
             if sys.version > '3':
                 os.write(buildpack, bytes(buildpack_source, 'UTF-8'))
             else:
@@ -304,7 +364,7 @@ class Deploy():
         # Store postdeploy script in tarball
         if 'post_deploy' in module:
             postdeploy_source = base64.b64decode(module['post_deploy'])
-            with open(shallow_clone_path + '/postdeploy', 'w') as f:
+            with open(clone_path + '/postdeploy', 'w') as f:
                 if sys.version > '3':
                     f.write(bytes(postdeploy_source, 'UTF-8'))
                 else:
