@@ -67,11 +67,25 @@ def pre_update_app(updates, original):
     True
     >>> updates['modules'][1]['initialized']
     False
+
+    New modules get their 'initialized' field set to False by default:
+
+    >>> updates = deepcopy(base_original)
+    >>> updates['modules'].append({'name': 'mod3', 'git_repo': 'git@github.com/test/mod3'})
+    >>> pre_update_app(updates, original)
+    >>> updates['modules'][0]['initialized']
+    True
+    >>> updates['modules'][1]['initialized']
+    True
+    >>> updates['modules'][2]['initialized']
+    False
     """
 
     # Selectively reset each module's 'initialized' property if any of its other properties have changed
     if 'modules' in updates and 'modules' in original:
         for updated_module in updates['modules']:
+            # Set 'initialized' to False by default in case of new modules
+            updated_module['initialized'] = False
             for original_module in original['modules']:
                 if updated_module['name'] ==  original_module['name']:
                     # Restore previous 'initialized' value as 'updated_module' does not contain it (read-only field)
