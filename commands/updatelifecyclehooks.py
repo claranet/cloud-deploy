@@ -4,7 +4,8 @@ import traceback
 
 from boto import s3
 
-from commands.tools import log, refresh_stage2
+from commands.tools import log
+from ghost_tools import refresh_stage2
 
 class Updatelifecyclehooks():
     _app = None
@@ -38,14 +39,13 @@ class Updatelifecyclehooks():
     def execute(self):
         try:
             app = self._app
-            bucket = self._config['bucket_s3']
-            refresh_stage2(bucket, app['region'], self._config['ghost_root_path'])
+            refresh_stage2(app['region'], self._config)
             log('INFO: refreshed /ghost/stage2', self._log_file)
 
             # Store lifecycle hooks scripts in S3
             lifecycle_hooks = app.get('lifecycle_hooks', None)
             conn = s3.connect_to_region(app['region'])
-            bucket = conn.get_bucket(bucket)
+            bucket = conn.get_bucket(self._config['bucket_s3'])
             prefix = '/ghost/{app}/{env}/{role}'.format(app=app['name'], env=app['env'], role=app['role'])
             self._refresh_lifecycle_hook_script('pre_bootstrap', lifecycle_hooks, bucket, prefix)
             self._refresh_lifecycle_hook_script('post_bootstrap', lifecycle_hooks, bucket, prefix)

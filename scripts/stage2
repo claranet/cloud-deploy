@@ -67,7 +67,7 @@ function purge_oldest_succeed_deploy() {
     MODULE_PATH=/ghost/$2
     SUCCEED="_succeed"
     MODULE_SUCCEED=/var/lib/ghost/$MODULE_NAME$SUCCEED
-    MAX_DEPLOY_HISTORY="3"
+    MAX_DEPLOY_HISTORY="{{ max_deploy_history }}"
 
     if [ -e $MODULE_SUCCEED ]; then
         NUM_OF_DEPLOY=$(wc -l < $MODULE_SUCCEED)
