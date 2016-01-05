@@ -125,7 +125,7 @@ class Deploy():
                     bucket.get_key(key_path_to_purge).delete()
                     log("Packages Purge: Deleted S3 Object: %s" % key_path_to_purge, self._log_file)
                 except:
-                    log("Packeges Purge: Delete FAILED for S3 Object: %s" % key_path_to_purge, self._log_file)
+                    log("Packages Purge: Delete FAILED for S3 Object: %s" % key_path_to_purge, self._log_file)
 
 
     def _package_module(self, module, ts, commit):
