@@ -91,42 +91,39 @@ class Deploy():
     def _deploy_module(self, module, fabric_execution_strategy, safe_deployment_strategy):
         deploy_module_on_hosts(self._cloud_connection, module, fabric_execution_strategy, self._app, self._config, self._log_file, safe_deployment_strategy)
 
-    def _purge_s3_package(self, path, bucket, pkg_name):
-        # Purge old packages from S3
-        keys_list = [i.name.split("/")[-1] for i in bucket.list(path[+1:])]
-
-        # Get manifest and extract package name
-        manifest_key_path = '{path}/MANIFEST'.format(bucket_s3=self._config['bucket_s3'], path=self._get_path_from_app())
-        manifest_key = bucket.get_key(manifest_key_path)
-        manifest_key.get_contents_to_filename('keep_pkg_manifest')
-        manifest = open('keep_pkg_manifest')
-        for pkgs in manifest:
-            manifest_pkg_name = pkgs.split(":")[1]
-            if manifest_pkg_name != pkg_name:
-                continue
-
-        keys_list.remove(manifest_pkg_name)
-
+    def _purge_s3_package(self, path, bucket, pkg_name, jobs_kept=42):
         try:
-            jobs_kept = self._config['jobs_kept']
-        except:
-            jobs_kept = 42
+            # Purge old packages from S3
+            keys_list = [i.name.split("/")[-1] for i in bucket.list(path[+1:])]
 
-        if len(keys_list) > jobs_kept:
-            log("Packages count: %s" % str(len(keys_list)), self._log_file)
-            log("Packages count to keep: %s" % str(jobs_kept), self._log_file)
-            keys_to_keep = sorted(keys_list)[(len(keys_list)-jobs_kept):]
-            keys_list.sort()
-            del keys_list[(len(keys_list)-jobs_kept):]
-            log("Packages count to purge: %s" % str(len(keys_list)), self._log_file)
-            for obj in keys_list:
-                key_path_to_purge  = '{path}/{obj}'.format(bucket_s3=self._config['bucket_s3'], path=path, obj=obj)
-                try:
-                    bucket.get_key(key_path_to_purge).delete()
-                    log("Packages Purge: Deleted S3 Object: %s" % key_path_to_purge, self._log_file)
-                except:
-                    log("Packages Purge: Delete FAILED for S3 Object: %s" % key_path_to_purge, self._log_file)
+            # Get manifest and extract package name
+            manifest_key_path = '{path}/MANIFEST'.format(bucket_s3=self._config['bucket_s3'], path=self._get_path_from_app())
+            manifest_key = bucket.get_key(manifest_key_path)
+            manifest_key.get_contents_to_filename('keep_pkg_manifest')
+            manifest = open('keep_pkg_manifest')
+            for pkgs in manifest:
+                manifest_pkg_name = pkgs.split(":")[1]
+                if manifest_pkg_name != pkg_name:
+                    continue
 
+            keys_list.remove(manifest_pkg_name)
+
+            if len(keys_list) > jobs_kept:
+                log("Packages count: %s" % str(len(keys_list)), self._log_file)
+                log("Packages count to keep: %s" % str(jobs_kept), self._log_file)
+                keys_to_keep = sorted(keys_list)[(len(keys_list)-jobs_kept):]
+                keys_list.sort()
+                del keys_list[(len(keys_list)-jobs_kept):]
+                log("Packages count to purge: %s" % str(len(keys_list)), self._log_file)
+                for obj in keys_list:
+                    key_path_to_purge  = '{path}/{obj}'.format(bucket_s3=self._config['bucket_s3'], path=path, obj=obj)
+                    try:
+                        bucket.get_key(key_path_to_purge).delete()
+                        log("Packages Purge: Deleted S3 Object: %s" % key_path_to_purge, self._log_file)
+                    except:
+                        log("Packages Purge: Delete FAILED for S3 Object: %s" % key_path_to_purge, self._log_file)
+        except Exception, e:
+            log("Packages Purge: Global exception | " + str(e), self._log_file)
 
     def _package_module(self, module, ts, commit):
         path = get_buildpack_clone_path_from_module(self._app, module)
@@ -149,7 +146,9 @@ class Deploy():
 
         gcall("rm -f {0}".format(pkg_path), "Deleting local package: %s" % pkg_name, self._log_file)
 
-        self._purge_s3_package(path, bucket, pkg_name)
+        jobs_kept = self._config.get('jobs_kept', None)
+        if jobs_kept:
+            self._purge_s3_package(path, bucket, pkg_name, jobs_kept)
 
         return pkg_name
 
