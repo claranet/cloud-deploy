@@ -135,3 +135,5 @@ slack_configs:
 #        channel: '#ghost-deployments'
 #        bot_name: 'Ghost-config-2'
 #        message_prefix: 'Ghost'
+
+jobs_kept: 42
