@@ -243,6 +243,54 @@ class Deploy():
         os.close(manifest)
         key.set_contents_from_filename(manifest_path)
 
+
+    def _is_commit_hash(self, revision):
+        """
+        Returns True is revision is a valid commit hash, False otherwise.
+
+        ***NOTE***:
+        This test invokes git rev-parse in the current working directory and will fail
+        if commit 8f6c4dba19559319a6a898d093f3f3aaa09cd6e9 is not in the history.
+
+        >>> class worker:
+        ...   app = None
+        ...   job = None
+        ...   log_file = None
+        ...   _config = None
+
+        >>> Deploy(worker=worker())._is_commit_hash('HEAD')
+        False
+
+        >>> Deploy(worker=worker())._is_commit_hash('master')
+        False
+
+        >>> Deploy(worker=worker())._is_commit_hash('dev')
+        False
+
+        >>> Deploy(worker=worker())._is_commit_hash('8f6c4dba19559319a6a898d093f3f3aaa09cd6e9')
+        True
+
+        A valid abbreviated hash must be at least 4 characters long:
+
+        >>> Deploy(worker=worker())._is_commit_hash('8f6c')
+        True
+
+        Shorter substrings won't match:
+
+        >>> Deploy(worker=worker())._is_commit_hash('8f6')
+        False
+        """
+
+        resolved_revision = ''
+        try:
+            # git rev-parse returns a complete hash from an abbreviated hash, if valid
+            resolved_revision = git('--no-pager', 'rev-parse', revision).strip()
+        except:
+            pass
+
+        # If resolved_revision begins with or equals revision, it is a commit hash
+        return resolved_revision.find(revision) == 0
+
     def _execute_deploy(self, module):
         """
         Returns the deployment id
@@ -279,9 +327,8 @@ class Deploy():
         if revision == 'HEAD':
             revision = head
 
-        # If revision is a commit hash (i.e. rev-parse does not change the output),
-        # a full intermediate clone is required before getting a shallow clone
-        if git('--no-pager', 'rev-parse', revision).strip().find(revision) == 0:
+        # If revision is a commit hash, a full intermediate clone is required before getting a shallow clone
+        if self._is_commit_hash(revision):
             # Create intermediate clone from the local git mirror, chdir into it and fetch all commits
             source_path = self._get_intermediate_clone_path_from_module(module)
             gcall('rm -rf {p}'.format(p=source_path), 'Removing previous intermediate clone', self._log_file)
@@ -292,7 +339,7 @@ class Deploy():
             gcall('du -hs .', 'Show size', self._log_file)
             gcall('git --no-pager remote add origin file://{m}'.format(m=mirror_path), 'Git add local mirror as origin for intermediate clone', self._log_file)
             gcall('du -hs .', 'Show size', self._log_file)
-            gcall('git --no-pager fetch origin'.format(r=revision), 'Git fetch all commits from origin', self._log_file)
+            gcall('git --no-pager fetch origin', 'Git fetch all commits from origin', self._log_file)
             gcall('du -hs .', 'Show size', self._log_file)
             gcall('git --no-pager checkout {r}'.format(r=revision), 'Git checkout revision into intermediate clone: {r}'.format(r=revision), self._log_file)
             gcall('du -hs .', 'Show size', self._log_file)
@@ -315,13 +362,7 @@ class Deploy():
             os.makedirs(clone_path)
             os.chdir(clone_path)
             gcall('du -hs .', 'Show size', self._log_file)
-            gcall('git --no-pager init', 'Git init', self._log_file)
-            gcall('du -hs .', 'Show size', self._log_file)
-            gcall('git --no-pager remote add origin file://{m}'.format(m=mirror_path), 'Git add local mirror as origin', self._log_file)
-            gcall('du -hs .', 'Show size', self._log_file)
-            gcall('git --no-pager fetch --depth=10 origin {r}'.format(r=revision), 'Git fetch commits from origin with depth limited to 10: {r}'.format(r=revision), self._log_file)
-            gcall('du -hs .', 'Show size', self._log_file)
-            gcall('git --no-pager checkout {r}'.format(r=revision), 'Git checkout revision: {r}'.format(r=revision), self._log_file)
+            gcall('git --no-pager clone --depth=10 file://{m} -b {r} .'.format(m=mirror_path, r=revision), 'Git clone from local mirror with depth limited to 10 from a specific revision: {r}'.format(r=revision), self._log_file)
             gcall('du -hs .', 'Show size', self._log_file)
             gcall('git --no-pager submodule update --init --recursive --depth=10', 'Git update submodules with depth limited to 10', self._log_file)
             gcall('du -hs .', 'Show size', self._log_file)
@@ -331,7 +372,7 @@ class Deploy():
         commit_message = git('--no-pager', 'log', '--max-count=1', '--format=%s', 'HEAD').strip()
 
         # At last, reset remote origin URL
-        gcall('git --no-pager remote set-url origin {r}'.format(r=git_repo), 'Git reset remote origin to {r}'.format(r=revision), self._log_file)
+        gcall('git --no-pager remote set-url origin {r}'.format(r=git_repo), 'Git reset remote origin to {r}'.format(r=git_repo), self._log_file)
 
         # Store predeploy script in tarball
         if 'pre_deploy' in module:
