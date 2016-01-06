@@ -82,6 +82,19 @@ Running unit tests directly (dependencies should be provided by the system or an
         "autoscale": {"min": 1, "max": 2, "current": 1}
     }
 
+# Ghost config.yml
+    ses_settings:
+        aws_access_key: XXXXXXXXXXXXXXXXXX
+        aws_secret_key: XXXXXXXXXXXXXXXXXX
+        region: eu-west-1
+    bucket_s3: ghost.env.example.com.1234567890
+    key_path: /home/admin/key.pem
+    salt_formulas_branch: dev
+    ghost_root_path: /usr/local/share/ghost
+    jobs_kept: 42
+
+jobs_kept define how many s3 pckages to keep
+
 # Updating AWS data
 Requires curl, nodejs and jq:
 
