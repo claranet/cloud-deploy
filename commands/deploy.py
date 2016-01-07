@@ -334,25 +334,25 @@ class Deploy():
             gcall('rm -rf {p}'.format(p=source_path), 'Removing previous intermediate clone', self._log_file)
             os.makedirs(source_path)
             os.chdir(source_path)
-            gcall('du -hs .', 'Show size', self._log_file)
+            gcall('du -hs .', 'Display current build directory disk usage', self._log_file)
             gcall('git --no-pager init', 'Git init intermediate clone', self._log_file)
-            gcall('du -hs .', 'Show size', self._log_file)
+            gcall('du -hs .', 'Display current build directory disk usage', self._log_file)
             gcall('git --no-pager remote add origin file://{m}'.format(m=mirror_path), 'Git add local mirror as origin for intermediate clone', self._log_file)
-            gcall('du -hs .', 'Show size', self._log_file)
+            gcall('du -hs .', 'Display current build directory disk usage', self._log_file)
             gcall('git --no-pager fetch origin', 'Git fetch all commits from origin', self._log_file)
-            gcall('du -hs .', 'Show size', self._log_file)
+            gcall('du -hs .', 'Display current build directory disk usage', self._log_file)
             gcall('git --no-pager checkout {r}'.format(r=revision), 'Git checkout revision into intermediate clone: {r}'.format(r=revision), self._log_file)
-            gcall('du -hs .', 'Show size', self._log_file)
+            gcall('du -hs .', 'Display current build directory disk usage', self._log_file)
 
             # Create shallow clone from the intermediate clone, chdir into it and retrieve submodules
             gcall('rm -rf {p}'.format(p=clone_path), 'Removing previous clone', self._log_file)
             os.makedirs(clone_path)
             os.chdir(clone_path)
-            gcall('du -hs .', 'Show size', self._log_file)
+            gcall('du -hs .', 'Display current build directory disk usage', self._log_file)
             gcall('git --no-pager clone file://{s} .'.format(s=source_path), 'Git clone from intermediate clone', self._log_file)
-            gcall('du -hs .', 'Show size', self._log_file)
+            gcall('du -hs .', 'Display current build directory disk usage', self._log_file)
             gcall('git --no-pager submodule update --init --recursive --depth=10', 'Git update submodules with depth limited to 10', self._log_file)
-            gcall('du -hs .', 'Show size', self._log_file)
+            gcall('du -hs .', 'Display current build directory disk usage', self._log_file)
 
             # Destroy intermediate clone
             gcall('rm -rf {p}'.format(p=source_path), 'Removing intermediate clone', self._log_file)
@@ -361,11 +361,11 @@ class Deploy():
             gcall('rm -rf {p}'.format(p=clone_path), 'Removing previous clone', self._log_file)
             os.makedirs(clone_path)
             os.chdir(clone_path)
-            gcall('du -hs .', 'Show size', self._log_file)
+            gcall('du -hs .', 'Display current build directory disk usage', self._log_file)
             gcall('git --no-pager clone --depth=10 file://{m} -b {r} .'.format(m=mirror_path, r=revision), 'Git clone from local mirror with depth limited to 10 from a specific revision: {r}'.format(r=revision), self._log_file)
-            gcall('du -hs .', 'Show size', self._log_file)
+            gcall('du -hs .', 'Display current build directory disk usage', self._log_file)
             gcall('git --no-pager submodule update --init --recursive --depth=10', 'Git update submodules with depth limited to 10', self._log_file)
-            gcall('du -hs .', 'Show size', self._log_file)
+            gcall('du -hs .', 'Display current build directory disk usage', self._log_file)
 
         # Extract commit information
         commit = git('--no-pager', 'rev-parse', '--short', 'HEAD').strip()
@@ -376,12 +376,14 @@ class Deploy():
 
         # Store predeploy script in tarball
         if 'pre_deploy' in module:
+            log("Create pre_deploy script for inclusion in target package", self._log_file)
             predeploy_source = base64.b64decode(module['pre_deploy'])
             with open(clone_path + '/predeploy', 'w') as f:
                 if sys.version > '3':
                     f.write(bytes(predeploy_source, 'UTF-8'))
                 else:
                     f.write(predeploy_source)
+            gcall('du -hs .', 'Display current build directory disk usage', self._log_file)
 
         # Execute buildpack
         if 'build_pack' in module:
@@ -401,15 +403,18 @@ class Deploy():
             buildpack_env['GHOST_MODULE_PATH'] = module['path']
 
             gcall('bash %s' % buildpack_path, 'Buildpack: Execute', self._log_file, env=buildpack_env)
+            gcall('du -hs .', 'Display current build directory disk usage', self._log_file)
 
         # Store postdeploy script in tarball
         if 'post_deploy' in module:
+            log("Create post_deploy script for inclusion in target package", self._log_file)
             postdeploy_source = base64.b64decode(module['post_deploy'])
             with open(clone_path + '/postdeploy', 'w') as f:
                 if sys.version > '3':
                     f.write(bytes(postdeploy_source, 'UTF-8'))
                 else:
                     f.write(postdeploy_source)
+            gcall('du -hs .', 'Display current build directory disk usage', self._log_file)
 
         # Create tar archive
         pkg_name = self._package_module(module, ts, commit)
