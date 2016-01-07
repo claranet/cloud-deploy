@@ -7,3 +7,4 @@ key_path: /Users/adrien/secure/my_key.pem
 salt_formulas_branch: dev
 ghost_root_path: /usr/local/share/ghost
 max_deploy_history: 1
+salt_formulas_repo: git@bitbucket.org:morea/morea-salt-formulas.git
