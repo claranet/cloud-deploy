@@ -7,8 +7,9 @@ import json
 import os
 
 PACKER_JSON_PATH="/tmp/packer/"
+PACKER_LOGDIR="/var/log/ghost/packer"
 SALT_LOCAL_TREE="/tmp/salt/"
-salt_formulas_repo="git@bitbucket.org:morea/morea-salt-formulas.git"
+SALT_FORMULAS_REPO="git@bitbucket.org:morea/morea-salt-formulas.git"
 
 class Packer:
     def __init__(self, packer_config, config, log_file):
@@ -20,10 +21,9 @@ class Packer:
         if not os.path.exists(SALT_LOCAL_TREE):
             os.makedirs(SALT_LOCAL_TREE)
         os.makedirs(SALT_LOCAL_TREE + self.unique)
-        log("Getting Salt Morea Formulas", self._log_file)
         #Use the configured git repository, if any
-        if config.get('salt_formulas_repo'):
-            salt_formulas_repo = config['salt_formulas_repo']
+        salt_formulas_repo = config.get('salt_formulas_repo', SALT_FORMULAS_REPO)
+        log("Getting Salt Formulas from {r}".format(r=salt_formulas_repo), self._log_file)
         git.clone([salt_formulas_repo, SALT_LOCAL_TREE + self.unique + '/'],'--recursive')
         if config.get('salt_formulas_branch'):
             os.chdir(SALT_LOCAL_TREE + self.unique)
@@ -88,7 +88,11 @@ class Packer:
 
     def _run_packer_cmd(self, cmd):
         result = ""
-        process = Popen(cmd, stdout=PIPE)
+        packer_env = os.environ.copy()
+        if not os.path.isdir(PACKER_LOGDIR):
+            os.makedirs(PACKER_LOGDIR)
+        packer_env['TMPDIR'] = PACKER_LOGDIR
+        process = Popen(cmd, stdout=PIPE, env=packer_env)
         while True:
             output = process.stdout.readline()
             if output == '' and process.poll() is not None:
@@ -115,8 +119,7 @@ class Packer:
         self._build_salt_top(salt_params)
         self._build_salt_pillar(features)
         self._build_packer_json()
-        if not os.path.isdir('/tmp/root'):
-            os.makedirs('/tmp/root')
+
         ret_code, result = self._run_packer_cmd(['packer', 'build', '-machine-readable', self.packer_file_path])
         if (ret_code == 0):
             ami = result.split(':')[1]

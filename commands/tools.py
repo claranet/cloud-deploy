@@ -178,23 +178,6 @@ def generate_userdata(bucket_s3, root_ghost_path):
     else:
         return ""
 
-def refresh_stage2(bucket_s3, region, root_ghost_path):
-    """
-    Will update the second phase of bootstrap script on S3
-    """
-    conn = s3.connect_to_region(region)
-    bucket = conn.get_bucket(bucket_s3)
-    k = bucket.new_key("/ghost/stage2")
-    jinja_templates_path='%s/scripts' % root_ghost_path
-    if(os.path.exists('%s/stage2' % jinja_templates_path)):
-        loader=FileSystemLoader(jinja_templates_path)
-        jinja_env = Environment(loader=loader)
-        template = jinja_env.get_template('stage2')
-        stage2 = template.render(bucket_s3=bucket_s3)
-        k.set_contents_from_string(stage2)
-        k.close()
-
-
 def check_autoscale_exists(as_name, region):
     conn_as = boto.ec2.autoscale.connect_to_region(region)
     autoscale = conn_as.get_all_groups(names=[as_name])
