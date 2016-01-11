@@ -68,7 +68,7 @@ function purge_oldest_succeed_deploy() {
     MODULE_PATH=/ghost/$2
     SUCCEED="_succeed"
     MODULE_SUCCEED=/var/lib/ghost/$MODULE_NAME$SUCCEED
-    MAX_DEPLOY_HISTORY="3"
+    MAX_DEPLOY_HISTORY="{{ max_deploy_history }}"
 
     if [ -e $MODULE_SUCCEED ]; then
         NUM_OF_DEPLOY=$(wc -l < $MODULE_SUCCEED)
@@ -126,7 +126,7 @@ function deploy_module() {
         echo "Executing predeploy script..." >> /tmp/$LOGFILE
         chmod +x predeploy
         GHOST_APP=$APP GHOST_ENV=$ENV GHOST_ROLE=$ROLE GHOST_MODULE_NAME=$MODULE_NAME GHOST_MODULE_PATH=$TARGET ./predeploy 2>&1 | tee -a /tmp/$LOGFILE
-        local status=$?
+        local status=${PIPESTATUS[0]}
         if [ $status -ne 0 ]; then
             purge_latest_failed_deploy $MODULE_NAME $UUID
             exit_deployment -1
@@ -173,6 +173,21 @@ function exit_deployment() {
     exit $1
 }
 
+function download_and_run_lifecycle_hook_script() {
+    local script_name=$1
+    echo "Downloading ${script_name} script" >> /tmp/$LOGFILE
+    /usr/local/bin/aws s3 cp s3://$S3_BUCKET/ghost/$APP/$ENV/$ROLE/${script_name} /tmp/ghost_${script_name} --region "$EC2_REGION"
+    if [ -e /tmp/ghost_${script_name} ]; then
+        echo "Executing /tmp/ghost_${script_name} script..." >> /tmp/$LOGFILE
+        chmod +x /tmp/ghost_${script_name}
+        GHOST_APP=$APP GHOST_ENV=$ENV GHOST_ROLE=$ROLE /tmp/ghost_${script_name} 2>&1 | tee -a /tmp/$LOGFILE
+        local status=${PIPESTATUS[0]}
+        if [ $status -ne 0 ]; then
+            exit_deployment -1
+        fi
+    fi
+}
+
 echo "Downloading Manifest" >> /tmp/$LOGFILE
 /usr/local/bin/aws s3 cp s3://$S3_BUCKET/ghost/$APP/$ENV/$ROLE/MANIFEST /tmp/ --region "$S3_REGION"
 
@@ -187,6 +202,8 @@ if [ -n "$1" ]; then
     MODULE=$(find_module $1)
     deploy_module $MODULE
 else
+    download_and_run_lifecycle_hook_script 'pre_bootstrap'
+
     # Deploying all modules
     for line in $(cat /tmp/MANIFEST) ; do
         MODULE_NAME=$(echo $line | awk -F':' '{print $1}')
@@ -194,6 +211,8 @@ else
         TARGET=$(echo $line | awk -F':' '{print $3}')
         deploy_module $MODULE_NAME $MODULE_FILE $TARGET
     done
+
+    download_and_run_lifecycle_hook_script 'post_bootstrap'
 fi
 
 exit_deployment 0
