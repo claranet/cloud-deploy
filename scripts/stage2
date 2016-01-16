@@ -87,17 +87,17 @@ function deploy_module() {
     UUID=$(cat /proc/sys/kernel/random/uuid)
     MODULE_NAME=$1
     if [ -z $MODULE_NAME ]; then
-        echo "MODULE_NAME cannot be empy"
+        echo "MODULE_NAME cannot be empty"
         exit_deployment -1
     fi
     MODULE_FILE=$2
     if [ -z $MODULE_FILE ]; then
-        echo "MODULE_FILE cannot be empy"
+        echo "MODULE_FILE cannot be empty"
         exit_deployment -1
     fi
     TARGET=$3
     if [ -z $TARGET ]; then
-        echo "TARGET cannot be empy"
+        echo "TARGET cannot be empty"
         exit_deployment -1
     fi
     if [ ${TARGET%%+(/)} == "/tmp" ]; then
