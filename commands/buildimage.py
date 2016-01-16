@@ -1,10 +1,11 @@
-import time
 import json
-from commands.pypacker import Packer
-from commands.tools import log, create_launch_config, generate_userdata, check_autoscale_exists, purge_launch_configuration
 import re
+import time
+
 import boto.ec2.autoscale
-import boto.ec2
+
+from pypacker import Packer
+from ghost_tools import log, create_launch_config, generate_userdata, check_autoscale_exists, purge_launch_configuration
 
 class Buildimage():
     _app = None
@@ -23,7 +24,6 @@ class Buildimage():
     def _purge_old_images(self):
         conn = boto.ec2.connect_to_region(self._app['region'])
         retention = 5
-        images = []
         filtered_images = []
         images = conn.get_all_images(owners="self")
 

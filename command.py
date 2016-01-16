@@ -1,14 +1,16 @@
 from datetime import datetime
-import yaml
-from settings import MONGO_DBNAME
-from rq import get_current_job, Connection
-from pymongo import MongoClient
-from bson.objectid import ObjectId
-from notification import Notification
-from commands.tools import log
 import os
 import sys
 import traceback
+import yaml
+
+from rq import get_current_job, Connection
+from pymongo import MongoClient
+from bson.objectid import ObjectId
+
+from ghost_tools import log
+from notification import Notification
+from settings import MONGO_DBNAME
 
 LOG_ROOT='/var/log/ghost'
 ROOT_PATH=os.path.dirname(os.path.realpath(__file__))

@@ -1,4 +1,4 @@
-from commands.tools import log, create_block_device
+from ghost_tools import log, create_block_device
 from fabric.colors import green as _green, yellow as _yellow, red as _red
 import boto.ec2
 import os

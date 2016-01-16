@@ -3,7 +3,7 @@ import sys
 import tempfile
 import boto.s3
 from bson.objectid import ObjectId
-from commands.tools import GCallException, log, deploy_module_on_hosts
+from ghost_tools import GCallException, log, deploy_module_on_hosts
 
 class Rollback():
     _app = None

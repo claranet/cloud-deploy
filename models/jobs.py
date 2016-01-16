@@ -2,7 +2,7 @@ jobs_schema = {
     'command': {
         'type': 'string',
         'required': True,
-        'allowed': ['deploy', 'buildimage', 'maintenance', 'rollback',
+        'allowed': ['deploy', 'buildimage', 'rollback',
                     'createinstance', 'destroyinstance',
                     'updatelifecyclehooks']
     },
