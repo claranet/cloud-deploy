@@ -3,10 +3,11 @@ from subprocess import call
 from boto import ec2
 import boto.ec2.autoscale
 from boto.ec2 import autoscale
-from boto import s3
 import time
 from jinja2 import Environment, FileSystemLoader
 import os
+from fabric.api import execute as fab_execute
+from fabfile import deploy
 
 ROOT_PATH = os.path.dirname(os.path.realpath(__file__))
 
@@ -102,14 +103,17 @@ def resume_autoscaling_group_processes(as_conn, as_group, as_group_processes_to_
         log("Resuming auto-scaling group processes {0}".format(as_group_processes_to_suspend), log_file)
         as_conn.resume_processes(as_group, as_group_processes_to_suspend)
 
-def execute_task_on_hosts(task_name, app, key_path, log_file):
+def deploy_module_on_hosts(module, app, config, log_file):
     app_name = app['name']
     app_env = app['env']
     app_role = app['role']
     app_region = app['region']
-    app_keypath = key_path
-    if isinstance(key_path, dict):
-        app_keypath = key_path[app_region]
+
+    bucket_region = config.get('bucket_region', app_region)
+
+    key_filename = config.get('key_path', '')
+    if isinstance(key_filename, dict):
+        key_filename = key_filename[app_region]
 
     # Retrieve autoscaling infos, if any
     as_conn = autoscale.connect_to_region(app_region)
@@ -132,11 +136,9 @@ def execute_task_on_hosts(task_name, app, key_path, log_file):
 
         if len(running_instances) > 0:
             hosts_list = ','.join([host['private_ip_address'] for host in running_instances])
-            cmd = "fab --show=debug --fabfile={root_path}/fabfile.py -i {key_path} --hosts={hosts_list} {task_name}".format(root_path=ROOT_PATH,
-                                                                                                                            key_path=app_keypath,
-                                                                                                                            hosts_list=hosts_list,
-                                                                                                                            task_name=task_name)
-            gcall(cmd, "Updating current instances: {}".format(running_instances), log_file)
+            log("Updating current instances: {}".format(running_instances), log_file)
+            app_ssh_username = app['build_infos']['ssh_username']
+            fab_execute(deploy, module, app_ssh_username, key_filename, bucket_region, log_file, hosts=hosts_list)
         else:
             raise GCallException("No instance found in region {region} with tags app:{app}, env:{env}, role:{role}".format(region=app_region,
                                                                                                                            app=app_name,

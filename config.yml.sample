@@ -11,3 +11,6 @@ salt_formulas_branch: dev
 ghost_root_path: /usr/local/share/ghost
 max_deploy_history: 1
 salt_formulas_repo: git@bitbucket.org:morea/morea-salt-formulas.git
+
+# Use ~/.ssh/config file (allows to map private IPs to public IPs for example)
+use_ssh_config: false

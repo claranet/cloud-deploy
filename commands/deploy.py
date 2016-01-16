@@ -4,8 +4,8 @@ import datetime
 import calendar
 import tempfile
 from sh import git
-from commands.tools import GCallException, gcall, execute_task_on_hosts, log
-from ghost_tools import refresh_stage2
+from commands.tools import GCallException, gcall, deploy_module_on_hosts, log
+from commands.ghost_tools import refresh_stage2
 import boto.s3
 import base64
 from time import sleep
@@ -96,8 +96,7 @@ class Deploy():
 
 
     def _deploy_module(self, module):
-        task_name = "deploy:{0},{1},{2}".format(self._config['bucket_s3'], self._config.get('bucket_region', self._app['region']), module['name'])
-        execute_task_on_hosts(task_name, self._app, self._config['key_path'], self._log_file)
+        deploy_module_on_hosts(module, self._app, self._config, self._log_file)
 
     def _package_module(self, module, ts, commit):
         path = self._get_buildpack_clone_path_from_module(module)
