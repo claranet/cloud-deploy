@@ -351,7 +351,7 @@ class Deploy():
             gcall('du -hs .', 'Display current build directory disk usage', self._log_file)
             gcall('git --no-pager clone file://{s} .'.format(s=source_path), 'Git clone from intermediate clone', self._log_file)
             gcall('du -hs .', 'Display current build directory disk usage', self._log_file)
-            gcall('git --no-pager submodule update --init --recursive', 'Git update submodules with depth limited to 10', self._log_file)
+            gcall('git --no-pager submodule update --init --recursive', 'Git update submodules', self._log_file)
             gcall('du -hs .', 'Display current build directory disk usage', self._log_file)
 
             # Destroy intermediate clone
@@ -364,7 +364,7 @@ class Deploy():
             gcall('du -hs .', 'Display current build directory disk usage', self._log_file)
             gcall('git --no-pager clone --depth=10 file://{m} -b {r} .'.format(m=mirror_path, r=revision), 'Git clone from local mirror with depth limited to 10 from a specific revision: {r}'.format(r=revision), self._log_file)
             gcall('du -hs .', 'Display current build directory disk usage', self._log_file)
-            gcall('git --no-pager submodule update --init --recursive', 'Git update submodules with depth limited to 10', self._log_file)
+            gcall('git --no-pager submodule update --init --recursive', 'Git update submodules', self._log_file)
             gcall('du -hs .', 'Display current build directory disk usage', self._log_file)
 
         # Extract commit information
