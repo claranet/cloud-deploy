@@ -9,3 +9,5 @@ key_path:
 salt_formulas_branch: dev
 ghost_root_path: /usr/local/share/ghost
 bucket_region: eu-west-1
+max_deploy_history: 1
+salt_formulas_repo: git@bitbucket.org:morea/morea-salt-formulas.git

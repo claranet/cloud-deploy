@@ -81,10 +81,6 @@ class Command:
         log(message, self.log_file)
         self._db.jobs.update({ '_id': self.job['_id']}, {'$set': {'status': status, 'message': message, '_updated': datetime.now()}})
 
-    def module_initialized(self, module_name):
-        self._db.apps.update({ '_id': self.app['_id'], 'modules.name': module_name}, {'$set': { 'modules.$.initialized': True }})
-
-
     def _init_log_file(self):
         log_path = "{log_path}/{job_id}.txt".format(log_path=LOG_ROOT, job_id=self._worker_job.id)
         self.log_file = open(log_path, 'a', 1)
