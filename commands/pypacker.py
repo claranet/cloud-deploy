@@ -6,7 +6,6 @@ from commands.tools import log
 import yaml
 import json
 import os
-import sys
 
 PACKER_JSON_PATH="/tmp/packer/"
 PACKER_LOGDIR="/var/log/ghost/packer"
