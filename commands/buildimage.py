@@ -85,7 +85,7 @@ class Buildimage():
     def _format_salt_top_from_app_features(self):
         top = []
         for i in self._app['features']:
-            if re.search('^php-(.*)|5-(.*)',i['name']):
+            if re.search('^(php|php5)-(.*)',i['name']):
                 continue
             if re.search('^zabbix-(.*)',i['name']):
                 continue

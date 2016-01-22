@@ -1,4 +1,5 @@
 from uuid import uuid4
+import sh
 from sh import git
 from subprocess32 import Popen, PIPE
 from commands.tools import log
@@ -24,19 +25,28 @@ class Packer:
         #Use the configured git repository, if any
         salt_formulas_repo = config.get('salt_formulas_repo', SALT_FORMULAS_REPO)
         log("Getting Salt Formulas from {r}".format(r=salt_formulas_repo), self._log_file)
+        try:
+            output=git("ls-remote", "--exit-code", salt_formulas_repo)
+            log("salt_formulas_repo checked successfuly with output : " + output, self._log_file)
+        except sh.ErrorReturnCode, e:
+            log("Invalid salt formulas repos. Please check your yaml 'config.yml' file", self._log_file)
+            raise
         git.clone([salt_formulas_repo, SALT_LOCAL_TREE + self.unique + '/'],'--recursive')
         if config.get('salt_formulas_branch'):
             os.chdir(SALT_LOCAL_TREE + self.unique)
             git.checkout(config['salt_formulas_branch'])
             git.submodule('init')
             git.submodule('update')
-
     def _build_salt_top(self, params):
         self.salt_path = SALT_LOCAL_TREE + self.unique + '/salt'
         self.salt_top_path = self.salt_path + '/top.sls'
         stream = file(self.salt_top_path, 'w')
         log("Writing Salt Top state to: {0}".format(self.salt_top_path), self._log_file)
-        data = {'base': {'*': ['common'] + params }}
+        #The common sls file is optional
+        if os.path.exists(salt_path + '/common'):
+            data = {'base': {'*': ['common'] + params }}
+        else:
+            data = {'base': {'*': params }}
         log('state: top.sls: {0}'.format(data), self._log_file)
         yaml.dump(data, stream, default_flow_style=False)
 
