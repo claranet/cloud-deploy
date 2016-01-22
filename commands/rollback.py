@@ -81,7 +81,12 @@ class Rollback():
 
     def _deploy_module(self, module):
         task_name = "deploy:{0},{1},{2}".format(self._config['bucket_s3'], self._config['bucket_region'] or self._app['region'], module['name'])
-        execute_task_on_hosts(task_name, self._app, self._config['key_path'].get(self._app['region'], self._config['key_path']), self._log_file)
+        if isinstance(self._config['key_path'], basestring):
+            execute_task_on_hosts(task_name, self._app, self._config['key_path'], self._log_file)
+        elif isinstance(self._config['key_path'], dict):
+            execute_task_on_hosts(task_name, self._app, self._config['key_path'][self._app['region']], self._log_file)
+        else:
+            raise KeyError('`region` is not present in configuration')
 
     def _execute_rollback(self, deploy_id):
         module, package = self._get_deploy_infos(deploy_id)
