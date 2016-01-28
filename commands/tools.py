@@ -107,7 +107,7 @@ def execute_task_on_hosts(task_name, app, key_path, log_file):
     app_env = app['env']
     app_role = app['role']
     app_region = app['region']
-    app_keypath = keypath
+    app_keypath = key_path
     if not isinstance(key_path, basestring):
         app_keypath = key_path[app_region]
 
