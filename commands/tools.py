@@ -108,7 +108,7 @@ def execute_task_on_hosts(task_name, app, key_path, log_file):
     app_role = app['role']
     app_region = app['region']
     app_keypath = key_path
-    if not isinstance(key_path, basestring):
+    if isinstance(key_path, dict):
         app_keypath = key_path[app_region]
 
     # Retrieve autoscaling infos, if any
