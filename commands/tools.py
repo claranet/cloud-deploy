@@ -107,6 +107,9 @@ def execute_task_on_hosts(task_name, app, key_path, log_file):
     app_env = app['env']
     app_role = app['role']
     app_region = app['region']
+    app_keypath = key_path
+    if isinstance(key_path, dict):
+        app_keypath = key_path[app_region]
 
     # Retrieve autoscaling infos, if any
     as_conn = autoscale.connect_to_region(app_region)
@@ -130,7 +133,7 @@ def execute_task_on_hosts(task_name, app, key_path, log_file):
         if len(running_instances) > 0:
             hosts_list = ','.join([host['private_ip_address'] for host in running_instances])
             cmd = "fab --show=debug --fabfile={root_path}/fabfile.py -i {key_path} --hosts={hosts_list} {task_name}".format(root_path=ROOT_PATH,
-                                                                                                                            key_path=key_path,
+                                                                                                                            key_path=app_keypath,
                                                                                                                             hosts_list=hosts_list,
                                                                                                                             task_name=task_name)
             gcall(cmd, "Updating current instances: {}".format(running_instances), log_file)
