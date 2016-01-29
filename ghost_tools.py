@@ -30,18 +30,22 @@ def render_stage2(config, s3_region):
     If 'max_deploy_history' is not defined in the 'config' dict, the render_stage2() function uses 3 as the default value:
 
     >>> config = {'bucket_s3': 'my-s3-bucket', 'ghost_root_path': '.'}
-    >>> stage2 = render_stage2(config, '')
+    >>> stage2 = render_stage2(config, 'eu-west-1')
     >>> stage2[stage2.find('S3_BUCKET'):stage2.find('\\n', stage2.find('S3_BUCKET')+1)]
     u'S3_BUCKET=my-s3-bucket'
+    >>> stage2[stage2.find('S3_REGION'):stage2.find('\\n', stage2.find('S3_REGION')+1)]
+    u'S3_REGION=eu-west-1'
     >>> stage2[stage2.find('MAX_DEPLOY_HISTORY'):stage2.find('\\n', stage2.find('MAX_DEPLOY_HISTORY')+1)]
     u'MAX_DEPLOY_HISTORY="3"'
 
     This can be overridden by defining the 'max_deploy_history' configuration setting:
 
     >>> config = {'bucket_s3': 'my-s3-bucket', 'ghost_root_path': '.', 'max_deploy_history': 1}
-    >>> stage2 = render_stage2(config, '')
+    >>> stage2 = render_stage2(config, 'ap-northeast-1')
     >>> stage2[stage2.find('S3_BUCKET'):stage2.find('\\n', stage2.find('S3_BUCKET')+1)]
     u'S3_BUCKET=my-s3-bucket'
+    >>> stage2[stage2.find('S3_REGION'):stage2.find('\\n', stage2.find('S3_REGION')+1)]
+    u'S3_REGION=ap-northeast-1'
     >>> stage2[stage2.find('MAX_DEPLOY_HISTORY'):stage2.find('\\n', stage2.find('MAX_DEPLOY_HISTORY')+1)]
     u'MAX_DEPLOY_HISTORY="1"'
     """
