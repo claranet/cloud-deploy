@@ -85,9 +85,14 @@ class Command:
 
     def _init_log_file(self):
         log_path = "{log_path}/{job_id}.txt".format(log_path=LOG_ROOT, job_id=self._worker_job.id)
-        self.log_file = open(log_path, 'a', 1)
-        self._db.jobs.update({ '_id': self.job['_id']}, {'$set': {'log_id': self._worker_job.id }})
 
+        # As this method is only supposed to be called in forked rqworker process,
+        # it is safe to redirect sys.stdout and sys.stderr to the job's log file.
+        # This is mainly needed to capture all fabric & paramiko outputs,
+        # but may also serve in other cases.
+        sys.stdout = sys.stderr = self.log_file = open(log_path, 'a', 1)
+
+        self._db.jobs.update({ '_id': self.job['_id']}, {'$set': {'log_id': self._worker_job.id }})
 
     def _close_log_file(self):
         self.log_file.close()
