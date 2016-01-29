@@ -96,7 +96,7 @@ class Deploy():
 
 
     def _deploy_module(self, module):
-        task_name = "deploy:{0},{1}".format(self._config['bucket_s3'], module['name'])
+        task_name = "deploy:{0},{1},{2}".format(self._config['bucket_s3'], self._config['bucket_region'] or self._app['region'], module['name'])
         execute_task_on_hosts(task_name, self._app, self._config['key_path'], self._log_file)
 
     def _package_module(self, module, ts, commit):
@@ -107,7 +107,7 @@ class Deploy():
         gcall("tar czf {0} .".format(pkg_path), "Creating package: %s" % pkg_name, self._log_file)
 
         log("Uploading package: %s" % pkg_name, self._log_file)
-        conn = boto.s3.connect_to_region(self._app['region'])
+        conn = boto.s3.connect_to_region(self._config['bucket_region'] or self._app['region'])
         bucket = conn.get_bucket(self._config['bucket_s3'])
         key_path = '{path}/{pkg_name}'.format(bucket_s3=self._config['bucket_s3'], path=path, pkg_name=pkg_name)
         key = bucket.get_key(path)
@@ -182,7 +182,7 @@ class Deploy():
             self._worker.update_status("aborted", message=self._get_notification_message_aborted(self._job['modules']))
             return
 
-        refresh_stage2(self._app['region'], self._config)
+        refresh_stage2(self._config['bucket_region'] or self._app['region'], self._config)
         module_list = []
         for module in self._apps_modules:
             if 'name' in module:
@@ -203,7 +203,7 @@ class Deploy():
 
     def _update_manifest(self, module, package):
         key_path = self._get_path_from_app() + '/MANIFEST'
-        conn = boto.s3.connect_to_region(self._app['region'])
+        conn = boto.s3.connect_to_region(self._config['bucket_region'] or self._app['region'])
         bucket = conn.get_bucket(self._config['bucket_s3'])
         key = bucket.get_key(key_path)
         modules = []

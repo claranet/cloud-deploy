@@ -107,6 +107,9 @@ def execute_task_on_hosts(task_name, app, key_path, log_file):
     app_env = app['env']
     app_role = app['role']
     app_region = app['region']
+    app_keypath = key_path
+    if isinstance(key_path, dict):
+        app_keypath = key_path[app_region]
 
     # Retrieve autoscaling infos, if any
     as_conn = autoscale.connect_to_region(app_region)
@@ -130,7 +133,7 @@ def execute_task_on_hosts(task_name, app, key_path, log_file):
         if len(running_instances) > 0:
             hosts_list = ','.join([host['private_ip_address'] for host in running_instances])
             cmd = "fab --show=debug --fabfile={root_path}/fabfile.py -i {key_path} --hosts={hosts_list} {task_name}".format(root_path=ROOT_PATH,
-                                                                                                                            key_path=key_path,
+                                                                                                                            key_path=app_keypath,
                                                                                                                             hosts_list=hosts_list,
                                                                                                                             task_name=task_name)
             gcall(cmd, "Updating current instances: {}".format(running_instances), log_file)
@@ -167,13 +170,13 @@ def create_launch_config(app, userdata, ami_id):
     conn_as.create_launch_configuration(launch_config)
     return launch_config
 
-def generate_userdata(bucket_s3, root_ghost_path):
+def generate_userdata(bucket_s3, s3_region, root_ghost_path):
     jinja_templates_path='%s/scripts' % root_ghost_path
     if(os.path.exists('%s/stage1' % jinja_templates_path)):
         loader=FileSystemLoader(jinja_templates_path)
         jinja_env = Environment(loader=loader)
         template = jinja_env.get_template('stage1')
-        userdata = template.render(bucket_s3=bucket_s3)
+        userdata = template.render(bucket_s3=bucket_s3, bucket_region=s3_region)
         return userdata
     else:
         return ""
