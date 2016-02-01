@@ -26,7 +26,7 @@ class Packer:
         salt_formulas_repo = config.get('salt_formulas_repo', SALT_FORMULAS_REPO)
         log("Getting Salt Formulas from {r}".format(r=salt_formulas_repo), self._log_file)
         try:
-            output=git("ls-remote", "--exit-code", salt_formulas_repo)
+            output=git("ls-remote", "--exit-code", salt_formulas_repo).strip()
             log("salt_formulas_repo checked successfuly with output : " + output, self._log_file)
         except sh.ErrorReturnCode, e:
             log("Invalid salt formulas repos. Please check your yaml 'config.yml' file", self._log_file)
@@ -43,7 +43,7 @@ class Packer:
         stream = file(self.salt_top_path, 'w')
         log("Writing Salt Top state to: {0}".format(self.salt_top_path), self._log_file)
         #The common sls file is optional
-        if os.path.exists(salt_path + '/common'):
+        if os.path.exists(self.salt_path + '/common'):
             data = {'base': {'*': ['common'] + params }}
         else:
             data = {'base': {'*': params }}
