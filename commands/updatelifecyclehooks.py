@@ -4,8 +4,7 @@ import traceback
 
 from boto import s3
 
-from commands.tools import log
-from ghost_tools import refresh_stage2
+from ghost_tools import log, refresh_stage2
 
 class Updatelifecyclehooks():
     _app = None

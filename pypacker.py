@@ -2,7 +2,7 @@ from uuid import uuid4
 import sh
 from sh import git
 from subprocess32 import Popen, PIPE
-from commands.tools import log
+from ghost_tools import log
 import yaml
 import json
 import os

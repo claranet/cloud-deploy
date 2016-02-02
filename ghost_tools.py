@@ -1,15 +1,81 @@
 from datetime import datetime
-from subprocess import call
-from boto import ec2
-import boto.ec2.autoscale
-from boto.ec2 import autoscale
-import time
-from jinja2 import Environment, FileSystemLoader
 import os
+from subprocess import call
+import time
+import yaml
+
 from fabric.api import execute as fab_execute
 from fabfile import deploy
 
+from jinja2 import Environment, FileSystemLoader
+
+import boto.ec2.autoscale
+import boto.ec2.blockdevicemapping
+import boto.s3
+
 ROOT_PATH = os.path.dirname(os.path.realpath(__file__))
+
+with open(os.path.dirname(os.path.realpath(__file__)) + '/config.yml', 'r') as conf_file:
+    config = yaml.load(conf_file)
+
+def render_stage2(config, s3_region):
+    """
+    Renders the stage2 script that is the second step of EC2 instance bootstrapping through userdata (stage1).
+
+    The 'config' dict should contain the following parameters:
+    * 'bucket_s3': name of the Ghost S3 bucket (required)
+    * 'ghost_root_path': path to the root of the Ghost installation (required)
+    * 'max_deploy_history': maximum number of deployments to preserve after a deployment (optional).
+
+    If 'max_deploy_history' is not defined in the 'config' dict, the render_stage2() function uses 3 as the default value:
+
+    >>> config = {'bucket_s3': 'my-s3-bucket', 'ghost_root_path': '.'}
+    >>> stage2 = render_stage2(config, 'eu-west-1')
+    >>> stage2[stage2.find('S3_BUCKET'):stage2.find('\\n', stage2.find('S3_BUCKET')+1)]
+    u'S3_BUCKET=my-s3-bucket'
+    >>> stage2[stage2.find('S3_REGION'):stage2.find('\\n', stage2.find('S3_REGION')+1)]
+    u'S3_REGION=eu-west-1'
+    >>> stage2[stage2.find('MAX_DEPLOY_HISTORY'):stage2.find('\\n', stage2.find('MAX_DEPLOY_HISTORY')+1)]
+    u'MAX_DEPLOY_HISTORY="3"'
+
+    This can be overridden by defining the 'max_deploy_history' configuration setting:
+
+    >>> config = {'bucket_s3': 'my-s3-bucket', 'ghost_root_path': '.', 'max_deploy_history': 1}
+    >>> stage2 = render_stage2(config, 'ap-northeast-1')
+    >>> stage2[stage2.find('S3_BUCKET'):stage2.find('\\n', stage2.find('S3_BUCKET')+1)]
+    u'S3_BUCKET=my-s3-bucket'
+    >>> stage2[stage2.find('S3_REGION'):stage2.find('\\n', stage2.find('S3_REGION')+1)]
+    u'S3_REGION=ap-northeast-1'
+    >>> stage2[stage2.find('MAX_DEPLOY_HISTORY'):stage2.find('\\n', stage2.find('MAX_DEPLOY_HISTORY')+1)]
+    u'MAX_DEPLOY_HISTORY="1"'
+    """
+    bucket_s3 = config['bucket_s3']
+    ghost_root_path = config['ghost_root_path']
+    max_deploy_history = config.get('max_deploy_history', 3)
+
+    jinja_templates_path='%s/scripts' % ghost_root_path
+    if(os.path.exists('%s/stage2' % jinja_templates_path)):
+        loader=FileSystemLoader(jinja_templates_path)
+        jinja_env = Environment(loader=loader)
+        template = jinja_env.get_template('stage2')
+        return template.render(bucket_s3=bucket_s3, max_deploy_history=max_deploy_history, bucket_region=s3_region)
+    return None
+
+def refresh_stage2(region, config):
+    """
+    Will update the second phase of bootstrap script on S3
+    """
+    conn = boto.s3.connect_to_region(region)
+    bucket_s3 = config['bucket_s3']
+    bucket = conn.get_bucket(bucket_s3)
+    stage2 = render_stage2(config, region)
+    if stage2 is not None:
+        key = bucket.new_key("/ghost/stage2")
+        key.set_contents_from_string(stage2)
+        key.close()
+    else:
+        bucket.delete_key("/ghost/stage2")
+
 
 class GCallException(Exception):
     def __init__(self, value):
@@ -27,7 +93,7 @@ def gcall(args, cmd_description, log_fd, dry_run=False, env=None):
 
 def find_ec2_pending_instances(ghost_app, ghost_env, ghost_role, region, as_group):
     conn_as = boto.ec2.autoscale.connect_to_region(region)
-    conn = ec2.connect_to_region(region)
+    conn = boto.ec2.connect_to_region(region)
 
     # Retrieve pending instances
     pending_instance_filters = {"tag:env": ghost_env, "tag:role": ghost_role, "tag:app": ghost_app, "instance-state-name": "pending"}
@@ -51,7 +117,7 @@ def find_ec2_pending_instances(ghost_app, ghost_env, ghost_role, region, as_grou
 
 def find_ec2_running_instances(ghost_app, ghost_env, ghost_role, region):
     conn_as = boto.ec2.autoscale.connect_to_region(region)
-    conn = ec2.connect_to_region(region)
+    conn = boto.ec2.connect_to_region(region)
 
     # Retrieve running instances
     running_instance_filters = {"tag:env": ghost_env, "tag:role": ghost_role, "tag:app": ghost_app, "instance-state-name": "running"}
@@ -116,7 +182,7 @@ def deploy_module_on_hosts(module, app, config, log_file):
         key_filename = key_filename[app_region]
 
     # Retrieve autoscaling infos, if any
-    as_conn = autoscale.connect_to_region(app_region)
+    as_conn = boto.ec2.autoscale.connect_to_region(app_region)
     as_group, as_group_processes_to_suspend = get_autoscaling_group_and_processes_to_suspend(as_conn, app, log_file)
 
     try:
@@ -138,7 +204,8 @@ def deploy_module_on_hosts(module, app, config, log_file):
             hosts_list = ','.join([host['private_ip_address'] for host in running_instances])
             log("Updating current instances: {}".format(running_instances), log_file)
             app_ssh_username = app['build_infos']['ssh_username']
-            fab_execute(deploy, module, app_ssh_username, key_filename, bucket_region, log_file, hosts=hosts_list)
+            stage2 = render_stage2(config, bucket_region)
+            fab_execute(deploy, module, app_ssh_username, key_filename, stage2, log_file, hosts=hosts_list)
         else:
             raise GCallException("No instance found in region {region} with tags app:{app}, env:{env}, role:{role}".format(region=app_region,
                                                                                                                            app=app_name,
@@ -159,7 +226,7 @@ def create_launch_config(app, userdata, ami_id):
         bdm = create_block_device(app['environment_infos']['root_block_device'])
     else:
         bdm = create_block_device()
-    launch_config = autoscale.LaunchConfiguration(name=launch_config_name,
+    launch_config = boto.ec2.autoscale.LaunchConfiguration(name=launch_config_name,
         image_id=ami_id, key_name=app['environment_infos']['key_name'],
         security_groups=app['environment_infos']['security_groups'],
         user_data=userdata, instance_type=app['instance_type'], kernel_id=None,
@@ -192,7 +259,7 @@ def check_autoscale_exists(as_name, region):
         return False
 
 def purge_launch_configuration(app):
-    conn_as = autoscale.connect_to_region(app['region'])
+    conn_as = boto.ec2.autoscale.connect_to_region(app['region'])
     retention = 2
     launchconfigs = []
     lcs = conn_as.get_all_launch_configurations()

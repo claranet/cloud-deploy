@@ -1,14 +1,15 @@
+import base64
+import calendar
+import datetime
 import os
 import sys
-import datetime
-import calendar
-import tempfile
 from sh import git
-from commands.tools import GCallException, gcall, deploy_module_on_hosts, log
-from commands.ghost_tools import refresh_stage2
-import boto.s3
-import base64
+import tempfile
 from time import sleep
+
+import boto.s3
+
+from ghost_tools import GCallException, gcall, deploy_module_on_hosts, log, refresh_stage2
 
 ROOT_PATH = os.path.dirname(os.path.realpath(__file__))
 
