@@ -3,8 +3,14 @@ ses_settings:
     aws_secret_key: XXXXXXXXXXXXXXXXXX
     region: eu-west-1
 bucket_s3: ghost-eu-west-1-***REMOVED***
-key_path: /Users/adrien/secure/my_key.pem
+bucket_region: eu-west-1
+key_path:
+  eu-west-1: /Users/adrien/secure/my_key.pem
+  us-west-2: /Users/adrien/secure/my_key2.pem
 salt_formulas_branch: dev
 ghost_root_path: /usr/local/share/ghost
 max_deploy_history: 1
 salt_formulas_repo: git@bitbucket.org:morea/morea-salt-formulas.git
+
+# Use ~/.ssh/config file (allows to map private IPs to public IPs for example)
+use_ssh_config: false

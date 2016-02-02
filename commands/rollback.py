@@ -3,7 +3,7 @@ import sys
 import tempfile
 import boto.s3
 from bson.objectid import ObjectId
-from commands.tools import GCallException, log, execute_task_on_hosts
+from ghost_tools import GCallException, log, deploy_module_on_hosts
 
 class Rollback():
     _app = None
@@ -33,7 +33,7 @@ class Rollback():
 
     def _update_manifest(self, module, package):
         key_path = self._get_path_from_app() + '/MANIFEST'
-        conn = boto.s3.connect_to_region(self._app['region'])
+        conn = boto.s3.connect_to_region(self._config.get('bucket_region', self._app['region']))
         bucket = conn.get_bucket(self._config['bucket_s3'])
         key = bucket.get_key(key_path)
         modules = []
@@ -80,8 +80,7 @@ class Rollback():
         return None, None
 
     def _deploy_module(self, module):
-        task_name = "deploy:{0},{1}".format(self._config['bucket_s3'], module['name'])
-        execute_task_on_hosts(task_name, self._app, self._config['key_path'], self._log_file)
+        deploy_module_on_hosts(module, self._app, self._config, self._log_file)
 
     def _execute_rollback(self, deploy_id):
         module, package = self._get_deploy_infos(deploy_id)

@@ -1,14 +1,15 @@
+import base64
+import calendar
+import datetime
 import os
 import sys
-import datetime
-import calendar
-import tempfile
 from sh import git
-from commands.tools import GCallException, gcall, execute_task_on_hosts, log
-from ghost_tools import refresh_stage2
-import boto.s3
-import base64
+import tempfile
 from time import sleep
+
+import boto.s3
+
+from ghost_tools import GCallException, gcall, deploy_module_on_hosts, log, refresh_stage2
 
 ROOT_PATH = os.path.dirname(os.path.realpath(__file__))
 
@@ -96,8 +97,7 @@ class Deploy():
 
 
     def _deploy_module(self, module):
-        task_name = "deploy:{0},{1}".format(self._config['bucket_s3'], module['name'])
-        execute_task_on_hosts(task_name, self._app, self._config['key_path'], self._log_file)
+        deploy_module_on_hosts(module, self._app, self._config, self._log_file)
 
     def _package_module(self, module, ts, commit):
         path = self._get_buildpack_clone_path_from_module(module)
@@ -107,7 +107,7 @@ class Deploy():
         gcall("tar czf {0} .".format(pkg_path), "Creating package: %s" % pkg_name, self._log_file)
 
         log("Uploading package: %s" % pkg_name, self._log_file)
-        conn = boto.s3.connect_to_region(self._app['region'])
+        conn = boto.s3.connect_to_region(self._config.get('bucket_region', self._app['region']))
         bucket = conn.get_bucket(self._config['bucket_s3'])
         key_path = '{path}/{pkg_name}'.format(bucket_s3=self._config['bucket_s3'], path=path, pkg_name=pkg_name)
         key = bucket.get_key(path)
@@ -182,7 +182,7 @@ class Deploy():
             self._worker.update_status("aborted", message=self._get_notification_message_aborted(self._job['modules']))
             return
 
-        refresh_stage2(self._app['region'], self._config)
+        refresh_stage2(self._config.get('bucket_region', self._app['region']), self._config)
         module_list = []
         for module in self._apps_modules:
             if 'name' in module:
@@ -203,7 +203,7 @@ class Deploy():
 
     def _update_manifest(self, module, package):
         key_path = self._get_path_from_app() + '/MANIFEST'
-        conn = boto.s3.connect_to_region(self._app['region'])
+        conn = boto.s3.connect_to_region(self._config.get('bucket_region', self._app['region']))
         bucket = conn.get_bucket(self._config['bucket_s3'])
         key = bucket.get_key(key_path)
         modules = []
@@ -351,7 +351,7 @@ class Deploy():
             gcall('du -hs .', 'Display current build directory disk usage', self._log_file)
             gcall('git --no-pager clone file://{s} .'.format(s=source_path), 'Git clone from intermediate clone', self._log_file)
             gcall('du -hs .', 'Display current build directory disk usage', self._log_file)
-            gcall('git --no-pager submodule update --init --recursive --depth=10', 'Git update submodules with depth limited to 10', self._log_file)
+            gcall('git --no-pager submodule update --init --recursive', 'Git update submodules', self._log_file)
             gcall('du -hs .', 'Display current build directory disk usage', self._log_file)
 
             # Destroy intermediate clone
@@ -364,7 +364,7 @@ class Deploy():
             gcall('du -hs .', 'Display current build directory disk usage', self._log_file)
             gcall('git --no-pager clone --depth=10 file://{m} -b {r} .'.format(m=mirror_path, r=revision), 'Git clone from local mirror with depth limited to 10 from a specific revision: {r}'.format(r=revision), self._log_file)
             gcall('du -hs .', 'Display current build directory disk usage', self._log_file)
-            gcall('git --no-pager submodule update --init --recursive --depth=10', 'Git update submodules with depth limited to 10', self._log_file)
+            gcall('git --no-pager submodule update --init --recursive', 'Git update submodules', self._log_file)
             gcall('du -hs .', 'Display current build directory disk usage', self._log_file)
 
         # Extract commit information

@@ -1,10 +1,11 @@
-import time
 import json
-from commands.pypacker import Packer
-from commands.tools import log, create_launch_config, generate_userdata, check_autoscale_exists, purge_launch_configuration
 import re
+import time
+
 import boto.ec2.autoscale
-import boto.ec2
+
+from pypacker import Packer
+from ghost_tools import log, create_launch_config, generate_userdata, check_autoscale_exists, purge_launch_configuration
 
 class Buildimage():
     _app = None
@@ -23,7 +24,6 @@ class Buildimage():
     def _purge_old_images(self):
         conn = boto.ec2.connect_to_region(self._app['region'])
         retention = 5
-        images = []
         filtered_images = []
         images = conn.get_all_images(owners="self")
 
@@ -85,7 +85,7 @@ class Buildimage():
     def _format_salt_top_from_app_features(self):
         top = []
         for i in self._app['features']:
-            if re.search('^php-(.*)|5-(.*)',i['name']):
+            if re.search('^(php|php5)-(.*)',i['name']):
                 continue
             if re.search('^zabbix-(.*)',i['name']):
                 continue
@@ -120,7 +120,7 @@ class Buildimage():
                 if check_autoscale_exists(self._app['autoscale']['name'], self._app['region']):
                     userdata = None
                     launch_config = None
-                    userdata = generate_userdata(self._config['bucket_s3'], self._config['ghost_root_path'])
+                    userdata = generate_userdata(self._config['bucket_s3'], self._config.get('bucket_region', self._app['region']), self._config['ghost_root_path'])
                     if userdata:
                         launch_config = create_launch_config(self._app, userdata, ami_id)
                         log("Launch configuration [{0}] created.".format(launch_config.name), self._log_file)

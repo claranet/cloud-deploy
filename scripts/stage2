@@ -13,6 +13,7 @@ mkdir $LOCK
 echo "Locked $LOCK"
 
 S3_BUCKET={{ bucket_s3 }}
+S3_REGION={{ bucket_region }}
 TS=$(date +%Y%m%d_%H%M%S)
 LOGFILE=$(echo $TS"_deploy.txt")
 
@@ -20,11 +21,17 @@ INSTANCE_ID=$(curl http://169.254.169.254/latest/meta-data/instance-id)
 EC2_AVAIL_ZONE=$(curl -s http://169.254.169.254/latest/meta-data/placement/availability-zone)
 EC2_REGION="`echo \"$EC2_AVAIL_ZONE\" | sed -e 's:\([0-9][0-9]*\)[a-z]*\$:\\1:'`"
 
-TAGS=$(/usr/local/bin/aws ec2 describe-tags --filters "Name=resource-id,Values=$INSTANCE_ID" --region "$EC2_REGION")
-NAME=$(echo $TAGS | jq -r ".Tags[] | { key: .Key, value: .Value } | [.] | from_entries" | jq -r '.["Name"] | select (.!=null)')
-ROLE=$(echo $TAGS | jq -r ".Tags[] | { key: .Key, value: .Value } | [.] | from_entries" | jq -r '.["role"] | select (.!=null)')
-ENV=$(echo $TAGS | jq -r ".Tags[] | { key: .Key, value: .Value } | [.] | from_entries" | jq -r '.["env"] | select (.!=null)')
-APP=$(echo $TAGS | jq -r ".Tags[] | { key: .Key, value: .Value } | [.] | from_entries" | jq -r '.["app"] | select (.!=null)')
+while [ -z "$APP" ] || [ -z "$ENV" ] || [ -z "$ROLE" ] ; do
+  echo "Waiting 1s for (app, env, role) tags to be set..."
+  sleep 1
+
+  TAGS=$(/usr/local/bin/aws ec2 describe-tags --filters "Name=resource-id,Values=$INSTANCE_ID" --region "$EC2_REGION")
+
+  NAME=$(echo $TAGS | jq -r ".Tags[] | { key: .Key, value: .Value } | [.] | from_entries" | jq -r '.["Name"] | select (.!=null)')
+  APP=$(echo $TAGS | jq -r ".Tags[] | { key: .Key, value: .Value } | [.] | from_entries" | jq -r '.["app"] | select (.!=null)')
+  ENV=$(echo $TAGS | jq -r ".Tags[] | { key: .Key, value: .Value } | [.] | from_entries" | jq -r '.["env"] | select (.!=null)')
+  ROLE=$(echo $TAGS | jq -r ".Tags[] | { key: .Key, value: .Value } | [.] | from_entries" | jq -r '.["role"] | select (.!=null)')
+done
 
 if [ ! -d /ghost ]; then
     mkdir /ghost && chown -R admin:admin /ghost
@@ -87,17 +94,17 @@ function deploy_module() {
     UUID=$(cat /proc/sys/kernel/random/uuid)
     MODULE_NAME=$1
     if [ -z $MODULE_NAME ]; then
-        echo "MODULE_NAME cannot be empy"
+        echo "MODULE_NAME cannot be empty"
         exit_deployment -1
     fi
     MODULE_FILE=$2
     if [ -z $MODULE_FILE ]; then
-        echo "MODULE_FILE cannot be empy"
+        echo "MODULE_FILE cannot be empty"
         exit_deployment -1
     fi
     TARGET=$3
     if [ -z $TARGET ]; then
-        echo "TARGET cannot be empy"
+        echo "TARGET cannot be empty"
         exit_deployment -1
     fi
     if [ ${TARGET%%+(/)} == "/tmp" ]; then
@@ -107,7 +114,7 @@ function deploy_module() {
 
     echo "--------------------------------" >> /tmp/$LOGFILE
     echo "Deploying module $MODULE_NAME in $TARGET" >> /tmp/$LOGFILE
-    /usr/local/bin/aws s3 cp s3://$S3_BUCKET/ghost/$APP/$ENV/$ROLE/$MODULE_NAME/$MODULE_FILE /tmp/$MODULE_FILE  --region "$EC2_REGION"
+    /usr/local/bin/aws s3 cp s3://$S3_BUCKET/ghost/$APP/$ENV/$ROLE/$MODULE_NAME/$MODULE_FILE /tmp/$MODULE_FILE  --region "$S3_REGION"
 
     mkdir -p /ghost/$UUID
     chown -R admin:admin /ghost/$UUID
@@ -188,7 +195,7 @@ function download_and_run_lifecycle_hook_script() {
 }
 
 echo "Downloading Manifest" >> /tmp/$LOGFILE
-/usr/local/bin/aws s3 cp s3://$S3_BUCKET/ghost/$APP/$ENV/$ROLE/MANIFEST /tmp/ --region "$EC2_REGION"
+/usr/local/bin/aws s3 cp s3://$S3_BUCKET/ghost/$APP/$ENV/$ROLE/MANIFEST /tmp/ --region "$S3_REGION"
 
 if [ $? -ne 0 ]; then
     echo "Manifest download error...Exiting" >> /tmp/$LOGFILE
