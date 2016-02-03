@@ -15,16 +15,18 @@ from rq_dashboard import RQDashboard
 
 from settings import __dict__ as eve_settings
 from command import Command
-from models.jobs import CANCELLABLE_JOB_STATUSES, DELETABLE_JOB_STATUSES
+from models.apps import apps
+from models.jobs import jobs, CANCELLABLE_JOB_STATUSES, DELETABLE_JOB_STATUSES
+from models.deployments import deployments
 
 def get_apps_db():
-    return ghost.data.driver.db['apps']
+    return ghost.data.driver.db[apps['datasource']['source']]
 
 def get_jobs_db():
-    return ghost.data.driver.db['jobs']
+    return ghost.data.driver.db[jobs['datasource']['source']]
 
 def get_deployments_db():
-    return ghost.data.driver.db['deploy_histories']
+    return ghost.data.driver.db[deployments['datasource']['source']]
 
 def get_rq_name_from_app(app):
     """
