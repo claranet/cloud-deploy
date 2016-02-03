@@ -2,6 +2,7 @@ import env
 import instance_role
 import resources
 import volumes
+import owner
 
 apps_schema = {
     'name': {
@@ -69,6 +70,8 @@ apps_schema = {
                     'required': True,
                     'allowed': ['system', 'code']
                 },
+		'uid': {'type': 'string', 'required': True, 'allowed': owner.uid},
+		'gid': {'type': 'string', 'required': True, 'allowed': owner.gid},
                 'build_pack': {'type': 'string'},
                 'pre_deploy': {'type': 'string'},
                 'post_deploy': {'type': 'string'},
