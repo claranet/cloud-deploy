@@ -404,6 +404,7 @@ class Deploy():
 
             gcall('bash %s' % buildpack_path, 'Buildpack: Execute', self._log_file, env=buildpack_env)
             gcall('du -hs .', 'Display current build directory disk usage', self._log_file)
+            gcall('rm -v %s' % buildpack_path, 'Buildpack: Done, cleaning temporary file', self._log_file)
 
         # Store postdeploy script in tarball
         if 'post_deploy' in module:
