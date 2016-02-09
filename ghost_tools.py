@@ -201,7 +201,7 @@ def deploy_module_on_hosts(module, app, config, log_file):
         running_instances = find_ec2_running_instances(app_name, app_env, app_role, app_region)
 
         if len(running_instances) > 0:
-            hosts_list = ','.join([host['private_ip_address'] for host in running_instances])
+            hosts_list = [host['private_ip_address'] for host in running_instances]
             log("Updating current instances: {}".format(running_instances), log_file)
             app_ssh_username = app['build_infos']['ssh_username']
             stage2 = render_stage2(config, bucket_region)
