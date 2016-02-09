@@ -14,3 +14,6 @@ salt_formulas_repo: git@bitbucket.org:morea/morea-salt-formulas.git
 
 # Use ~/.ssh/config file (allows to map private IPs to public IPs for example)
 use_ssh_config: false
+
+# Deploy to target instances in serial (fabric's default) or in parallel
+fabric_execution_strategy: serial

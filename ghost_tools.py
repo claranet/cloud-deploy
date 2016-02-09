@@ -3,6 +3,7 @@ import os
 from subprocess import call
 import time
 import yaml
+from copy import copy
 
 from fabric.api import execute as fab_execute
 from fabfile import deploy
@@ -169,7 +170,7 @@ def resume_autoscaling_group_processes(as_conn, as_group, as_group_processes_to_
         log("Resuming auto-scaling group processes {0}".format(as_group_processes_to_suspend), log_file)
         as_conn.resume_processes(as_group, as_group_processes_to_suspend)
 
-def deploy_module_on_hosts(module, app, config, log_file):
+def deploy_module_on_hosts(module, fabric_execution_strategy, app, config, log_file):
     app_name = app['name']
     app_env = app['env']
     app_role = app['role']
@@ -202,10 +203,22 @@ def deploy_module_on_hosts(module, app, config, log_file):
 
         if len(running_instances) > 0:
             hosts_list = [host['private_ip_address'] for host in running_instances]
-            log("Updating current instances: {}".format(running_instances), log_file)
             app_ssh_username = app['build_infos']['ssh_username']
             stage2 = render_stage2(config, bucket_region)
-            fab_execute(deploy, module, app_ssh_username, key_filename, stage2, log_file, hosts=hosts_list)
+            if fabric_execution_strategy not in ['serial', 'parallel']:
+                fabric_execution_strategy = config.get('fabric_execution_strategy', 'serial')
+
+            # Clone the deploy task function to avoid modifying the original shared instance
+            task = copy(deploy)
+            if fabric_execution_strategy == 'parallel':
+                setattr(task, 'serial', False)
+                setattr(task, 'parallel', True)
+            else:
+                setattr(task, 'serial', True)
+                setattr(task, 'parallel', False)
+
+            log("Updating current instances in {}: {}".format(fabric_execution_strategy, running_instances), log_file)
+            fab_execute(task, module, app_ssh_username, key_filename, stage2, log_file, hosts=hosts_list)
         else:
             raise GCallException("No instance found in region {region} with tags app:{app}, env:{env}, role:{role}".format(region=app_region,
                                                                                                                            app=app_name,

@@ -79,14 +79,14 @@ class Rollback():
             return module, deploy_infos['package']
         return None, None
 
-    def _deploy_module(self, module):
-        deploy_module_on_hosts(module, self._app, self._config, self._log_file)
+    def _deploy_module(self, module, fabric_execution_strategy):
+        deploy_module_on_hosts(module, fabric_execution_strategy, self._app, self._config, self._log_file)
 
-    def _execute_rollback(self, deploy_id):
+    def _execute_rollback(self, deploy_id, fabric_execution_strategy):
         module, package = self._get_deploy_infos(deploy_id)
         if module and package:
             self._update_manifest(module, package)
-            self._deploy_module(module)
+            self._deploy_module(module, fabric_execution_strategy)
         else:
             raise GCallException("Rollback on deployment ID: {0} failed".format(deploy_id))
 
@@ -94,8 +94,9 @@ class Rollback():
         log("Rollbacking module", self._log_file)
         if 'options' in self._job and len(self._job['options']) > 0:
             deploy_id = self._job['options'][0]
+            fabric_execution_strategy = self._job['options'][1] if len(self._job['options']) > 0 else None
             try:
-                self._execute_rollback(deploy_id)
+                self._execute_rollback(deploy_id, fabric_execution_strategy)
                 self._worker.update_status("done", message="Rollback OK: [{0}]".format(deploy_id))
             except GCallException as e:
                 self._worker.update_status("failed", message="Rollback Failed: [{0}]\n{1}".format(deploy_id, str(e)))
