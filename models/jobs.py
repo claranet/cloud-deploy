@@ -1,10 +1,12 @@
+import pkgutil
+
+JOB_COMMANDS=[name for _, name, _ in pkgutil.iter_modules(['commands'])]
+
 jobs_schema = {
     'command': {
         'type': 'string',
         'required': True,
-        'allowed': ['deploy', 'buildimage', 'rollback',
-                    'createinstance', 'destroyinstance',
-                    'updatelifecyclehooks']
+        'allowed': JOB_COMMANDS
     },
     'app_id': {
         'type': 'objectid',
