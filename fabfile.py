@@ -1,5 +1,5 @@
 from StringIO import StringIO
-from fabric.api import show, sudo, task, env, put, settings
+from fabric.api import show, sudo, task, env, put, settings, output
 import yaml
 import os
 
@@ -11,6 +11,8 @@ env.use_ssh_config = config.get('use_ssh_config', False)
 
 env.connection_attempts = 10
 env.timeout = 30
+
+output.debug = True
 
 @task
 def deploy(module, ssh_username, key_filename, stage2, log_file):
