@@ -152,4 +152,10 @@ apps_schema = {
     'user': {'type': 'string'},
 }
 
-apps = {'item_title': 'app', 'schema': apps_schema}
+apps = {
+    'datasource': {
+        'source': 'apps'
+    },
+    'item_title': 'app',
+    'schema': apps_schema
+}

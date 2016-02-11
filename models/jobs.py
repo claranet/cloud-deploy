@@ -64,7 +64,13 @@ jobs_schema = {
     }
 }
 
-jobs = {'item_title': 'job', 'schema': jobs_schema}
+jobs = {
+    'datasource': {
+        'source': 'jobs'
+    },
+    'item_title': 'job',
+    'schema': jobs_schema
+}
 
 CANCELLABLE_JOB_STATUSES = ['init']
 DELETABLE_JOB_STATUSES = ['cancelled', 'done', 'failed', 'aborted']
