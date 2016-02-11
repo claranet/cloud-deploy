@@ -1,6 +1,6 @@
 import pkgutil
 
-JOB_COMMANDS=[name for _, name, _ in pkgutil.iter_modules(['commands'])]
+JOB_COMMANDS = [name for _, name, _ in pkgutil.iter_modules(['commands'])]
 
 jobs_schema = {
     'command': {
