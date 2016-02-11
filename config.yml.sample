@@ -15,5 +15,11 @@ salt_formulas_repo: git@bitbucket.org:morea/morea-salt-formulas.git
 # Use ~/.ssh/config file (allows to map private IPs to public IPs for example)
 use_ssh_config: false
 
+# Select an RQ worker strategy:
+# * one_worker_per_app: each app will have its own dedicated RQ queue and worker to process jobs (all parallel)
+# * one_worker_per_env: app in the same env will share a dedicated RQ queue and worker (per env parallel)
+# * one_worker_for_all : a single RQ queue and worker will process all jobs (all serial)
+rq_worker_strategy: one_worker_for_all
+
 # Deploy to target instances in serial (fabric's default) or in parallel
 fabric_execution_strategy: serial
