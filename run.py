@@ -7,6 +7,7 @@ from eve import Eve
 from eve_docs import eve_docs
 from auth import BCryptAuth
 from bson.objectid import ObjectId
+import json
 
 from redis import Redis
 from rq import Queue, cancel_job
@@ -14,13 +15,18 @@ from rq_dashboard import RQDashboard
 
 from settings import __dict__ as eve_settings
 from command import Command
-from models.jobs import CANCELLABLE_JOB_STATUSES, DELETABLE_JOB_STATUSES
+from models.apps import apps
+from models.jobs import jobs, CANCELLABLE_JOB_STATUSES, DELETABLE_JOB_STATUSES
+from models.deployments import deployments
 
 def get_apps_db():
-    return ghost.data.driver.db['apps']
+    return ghost.data.driver.db[apps['datasource']['source']]
 
 def get_jobs_db():
-    return ghost.data.driver.db['jobs']
+    return ghost.data.driver.db[jobs['datasource']['source']]
+
+def get_deployments_db():
+    return ghost.data.driver.db[deployments['datasource']['source']]
 
 def get_rq_name_from_app(app):
     """
@@ -120,6 +126,24 @@ def pre_insert_app(items):
         module['initialized'] = False
     app['user'] = request.authorization.username
 
+def post_fetched_app(response):
+    # Do we need to embed each module's last_deployment?
+    embedded = json.loads(request.args.get('embedded', '{}'))
+    embed_last_deployment = embedded.get('modules.last_deployment', False)
+
+    # Retrieve each module's last deployment
+    for module in response['modules']:
+        query = {
+                 '$and': [
+                          {'app_id': response['_id']},
+                          {'module': module['name']}
+                          ]
+                 }
+        sort = [('timestamp', -1)]
+        deployment = get_deployments_db().find_one(query, sort=sort)
+        if deployment:
+            module['last_deployment'] = deployment if embed_last_deployment else deployment['_id']
+
 def post_insert_app(items):
     pass
 
@@ -180,6 +204,7 @@ RQDashboard(ghost)
 ghost.register_blueprint(eve_docs, url_prefix='/docs')
 
 # Register eve hooks
+ghost.on_fetched_item_apps += post_fetched_app
 ghost.on_update_apps += pre_update_app
 ghost.on_replace_apps += pre_replace_app
 ghost.on_delete_item_apps += pre_delete_app

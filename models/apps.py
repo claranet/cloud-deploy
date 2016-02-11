@@ -74,7 +74,16 @@ apps_schema = {
                 'post_deploy': {'type': 'string'},
                 'path': {'type': 'string',
                          'regex': '^(/[a-zA-Z0-9\.\-\_]+)+$',
-                         'required': True}
+                         'required': True},
+                'last_deployment': {
+                    'readonly': True,
+                    'type': 'objectid',
+                    'data_relation': {
+                        'resource': 'deployments',
+                        'field': '_id',
+                        'embeddable': True
+                    }
+                }
             }
         }
     },
