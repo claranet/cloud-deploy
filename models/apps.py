@@ -70,8 +70,8 @@ apps_schema = {
                     'required': True,
                     'allowed': ['system', 'code']
                 },
-		'uid': {'type': 'string', 'required': True, 'allowed': owner.uid},
-		'gid': {'type': 'string', 'required': True, 'allowed': owner.gid},
+		'uid': {'type': 'string', 'allowed': owner.uid},
+		'gid': {'type': 'string', 'allowed': owner.gid},
                 'build_pack': {'type': 'string'},
                 'pre_deploy': {'type': 'string'},
                 'post_deploy': {'type': 'string'},
