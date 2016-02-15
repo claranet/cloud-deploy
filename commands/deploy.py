@@ -104,7 +104,9 @@ class Deploy():
         os.chdir(path)
         pkg_name = "{0}_{1}_{2}".format(ts, module['name'], commit)
         pkg_path = '../{0}'.format(pkg_name)
-        gcall("tar czf {0} --owner={1} --group={2} .".format(pkg_path, module['uid'], module['gid']), "Creating package: %s" % pkg_name, self._log_file)
+        uid = module.get('uid', os.geteuid())
+        gid = module.get('gid', os.getegid())
+        gcall("tar czf {0} --owner={1} --group={2} .".format(pkg_path, uid, gid), "Creating package: %s" % pkg_name, self._log_file)
 
         log("Uploading package: %s" % pkg_name, self._log_file)
         conn = boto.s3.connect_to_region(self._config.get('bucket_region', self._app['region']))
