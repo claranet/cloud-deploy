@@ -323,3 +323,53 @@ def create_block_device(rbd={}):
         rbd['name'] = "/dev/xvda"
         bdm[rbd['name']] = dev_sda1
     return bdm
+
+def get_rq_name_from_app(app):
+    """
+    Returns an RQ name for a given ghost app.
+
+    The default strategy is to use one worker per app:
+
+    >>> config['rq_worker_strategy'] = None
+    >>> get_rq_name_from_app({'env': 'prod', 'name': 'App1', 'role': 'webfront'})
+    'prod:App1:webfront'
+
+    >>> config['rq_worker_strategy'] = 'one_worker_per_app'
+    >>> get_rq_name_from_app({'env': 'prod', 'name': 'App1', 'role': 'webfront'})
+    'prod:App1:webfront'
+
+    An alternative strategy is to use one worker per env:
+
+    >>> config['rq_worker_strategy'] = 'one_worker_per_env'
+    >>> get_rq_name_from_app({'env': 'prod', 'name': 'App1', 'role': 'webfront'})
+    'prod:*:*'
+
+    Another alternative strategy is to use a single worker for all:
+
+    >>> config['rq_worker_strategy'] = 'one_worker_for_all'
+    >>> get_rq_name_from_app({'env': 'prod', 'name': 'App1', 'role': 'webfront'})
+    'default:*:*'
+    """
+    rq_worker_strategy = config.get('rq_worker_strategy', 'one_worker_per_app')
+    env=app['env']
+    name=app['name']
+    role=app['role']
+
+    if rq_worker_strategy == 'one_worker_per_env':
+        name = role = '*'
+
+    if rq_worker_strategy == 'one_worker_for_all':
+        name = role = '*'
+        env = 'default'
+
+    return '{env}:{name}:{role}'.format(env=env, name=name, role=role)
+
+def get_app_from_rq_name(name):
+    """
+    Returns an app's env, name, role for a given RQ name
+
+    >>> sorted(get_app_from_rq_name('prod:App1:webfront').items())
+    [('env', 'prod'), ('name', 'App1'), ('role', 'webfront')]
+    """
+    parts = name.split(':')
+    return {'env': parts[0], 'name': parts[1], 'role': parts[2]}

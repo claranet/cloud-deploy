@@ -19,6 +19,8 @@ from models.apps import apps
 from models.jobs import jobs, CANCELLABLE_JOB_STATUSES, DELETABLE_JOB_STATUSES
 from models.deployments import deployments
 
+from ghost_tools import get_rq_name_from_app
+
 def get_apps_db():
     return ghost.data.driver.db[apps['datasource']['source']]
 
@@ -27,15 +29,6 @@ def get_jobs_db():
 
 def get_deployments_db():
     return ghost.data.driver.db[deployments['datasource']['source']]
-
-def get_rq_name_from_app(app):
-    """
-    Returns an RQ queue name for a given ghost app
-
-    >>> get_rq_name_from_app({'env': 'prod', 'name': 'App1', 'role': 'webfront'})
-    'prod:App1:webfront'
-    """
-    return '{env}:{name}:{role}'.format(env=app['env'], name=app['name'], role=app['role'])
 
 def pre_update_app(updates, original):
     """
