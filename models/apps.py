@@ -69,6 +69,8 @@ apps_schema = {
                     'required': True,
                     'allowed': ['system', 'code']
                 },
+                'uid': {'type': 'integer', 'min': 0},
+                'gid': {'type': 'integer', 'min': 0},
                 'build_pack': {'type': 'string'},
                 'pre_deploy': {'type': 'string'},
                 'post_deploy': {'type': 'string'},
