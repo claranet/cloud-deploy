@@ -67,6 +67,17 @@ def pre_update_app(updates, original):
     >>> updates['modules'][1]['initialized']
     False
 
+    Modified modules get their 'initialized' field reset to False also in case of new fields:
+
+    >>> updates = deepcopy(base_original)
+    >>> updates['modules'][1]['uid'] = '101'
+    >>> updates['modules'][1]['gid'] = '102'
+    >>> pre_update_app(updates, original)
+    >>> updates['modules'][0]['initialized']
+    True
+    >>> updates['modules'][1]['initialized']
+    False
+
     New modules get their 'initialized' field set to False by default:
 
     >>> updates = deepcopy(base_original)
@@ -89,10 +100,14 @@ def pre_update_app(updates, original):
                 if updated_module['name'] ==  original_module['name']:
                     # Restore previous 'initialized' value as 'updated_module' does not contain it (read-only field)
                     updated_module['initialized'] = original_module.get('initialized', False)
-                    for prop in ['git_repo', 'scope', 'build_pack', 'pre_deploy', 'post_deploy', 'path']:
+                    # Compare all fields except 'initialized'
+                    fields = set(original_module.keys() + updated_module.keys())
+                    if 'initialized' in fields:
+                        fields.remove('initialized')
+                    for prop in fields:
                         if not updated_module.get(prop, None) == original_module.get(prop, None):
                             updated_module['initialized'] = False
-                            # At least on the module's prop have changed, can exit loop
+                            # At least one of the module's prop have changed, can exit loop
                             break
                     # Module found, can exit loop
                     break
