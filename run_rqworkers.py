@@ -15,24 +15,7 @@ logging.basicConfig(level=logging.DEBUG, format='%(asctime)s %(levelname)s %(mes
 
 from settings import MONGO_DBNAME, MONGO_HOST, MONGO_PORT
 
-def get_rq_name_from_app(app):
-    """
-    Returns an RQ name for a given ghost app
-
-    >>> get_rq_name_from_app({'env': 'prod', 'name': 'App1', 'role': 'webfront'})
-    'prod:App1:webfront'
-    """
-    return '{env}:{name}:{role}'.format(env=app['env'], name=app['name'], role=app['role'])
-
-def get_app_from_rq_name(name):
-    """
-    Returns an app's env, name, role for a given RQ name
-
-    >>> sorted(get_app_from_rq_name('prod:App1:webfront').items())
-    [('env', 'prod'), ('name', 'App1'), ('role', 'webfront')]
-    """
-    parts = name.split(':')
-    return {'env': parts[0], 'name': parts[1], 'role': parts[2]}
+from ghost_tools import config, get_rq_name_from_app, get_app_from_rq_name
 
 def create_rq_queue_and_worker(rqworker_name, ghost_rq_queues, ghost_rq_workers, ghost_redis_connection):
     ghost_rq_queues[rqworker_name] = Queue(name=rqworker_name, connection=ghost_redis_connection, default_timeout=3600)
@@ -120,11 +103,13 @@ def manage_rq_workers():
             for rqworker_name, rqworker in ghost_rq_workers.items():
                 found = False
                 rqworker_app = get_app_from_rq_name(rqworker_name)
-                for app in apps:
-                    if app['env'] == rqworker_app['env'] and app['name'] == rqworker_app['name'] and app['role'] == rqworker_app['role']:
-                        found = True
-                if not found:
-                    delete_rq_queue_and_worker(rqworker_name, ghost_rq_queues, ghost_rq_workers)
+
+                if rqworker_app['env'] != '*' and rqworker_app['role'] != '*':
+                    for app in apps:
+                        if app['env'] == rqworker_app['env'] and app['name'] == rqworker_app['name'] and app['role'] == rqworker_app['role']:
+                            found = True
+                    if not found:
+                        delete_rq_queue_and_worker(rqworker_name, ghost_rq_queues, ghost_rq_workers)
 
         except:
             logging.error("an exception occurred: {}".format(sys.exc_value))

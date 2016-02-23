@@ -1,14 +1,15 @@
+import base64
+import calendar
+import datetime
 import os
 import sys
-import datetime
-import calendar
-import tempfile
 from sh import git
-from commands.tools import GCallException, gcall, execute_task_on_hosts, log
-from ghost_tools import refresh_stage2
-import boto.s3
-import base64
+import tempfile
 from time import sleep
+
+import boto.s3
+
+from ghost_tools import GCallException, gcall, deploy_module_on_hosts, log, refresh_stage2
 
 ROOT_PATH = os.path.dirname(os.path.realpath(__file__))
 
@@ -95,19 +96,20 @@ class Deploy():
         return "{app_path}/{module}".format(app_path=self._get_path_from_app(), module=module['name'])
 
 
-    def _deploy_module(self, module):
-        task_name = "deploy:{0},{1}".format(self._config['bucket_s3'], module['name'])
-        execute_task_on_hosts(task_name, self._app, self._config['key_path'], self._log_file)
+    def _deploy_module(self, module, fabric_execution_strategy):
+        deploy_module_on_hosts(module, fabric_execution_strategy, self._app, self._config, self._log_file)
 
     def _package_module(self, module, ts, commit):
         path = self._get_buildpack_clone_path_from_module(module)
         os.chdir(path)
         pkg_name = "{0}_{1}_{2}".format(ts, module['name'], commit)
         pkg_path = '../{0}'.format(pkg_name)
-        gcall("tar czf {0} .".format(pkg_path), "Creating package: %s" % pkg_name, self._log_file)
+        uid = module.get('uid', os.geteuid())
+        gid = module.get('gid', os.getegid())
+        gcall("tar czf {0} --owner={1} --group={2} .".format(pkg_path, uid, gid), "Creating package: %s" % pkg_name, self._log_file)
 
         log("Uploading package: %s" % pkg_name, self._log_file)
-        conn = boto.s3.connect_to_region(self._app['region'])
+        conn = boto.s3.connect_to_region(self._config.get('bucket_region', self._app['region']))
         bucket = conn.get_bucket(self._config['bucket_s3'])
         key_path = '{path}/{pkg_name}'.format(bucket_s3=self._config['bucket_s3'], path=path, pkg_name=pkg_name)
         key = bucket.get_key(path)
@@ -177,12 +179,14 @@ class Deploy():
         return "Deployment Aborted: missing modules [{0}]".format(message)
 
     def execute(self):
+        fabric_execution_strategy = self._job['options'][0] if 'options' in self._job and len(self._job['options']) > 0 else None
+
         self._apps_modules = self._find_modules_by_name(self._job['modules'])
         if not self._apps_modules:
             self._worker.update_status("aborted", message=self._get_notification_message_aborted(self._job['modules']))
             return
 
-        refresh_stage2(self._app['region'], self._config)
+        refresh_stage2(self._config.get('bucket_region', self._app['region']), self._config)
         module_list = []
         for module in self._apps_modules:
             if 'name' in module:
@@ -192,7 +196,7 @@ class Deploy():
         try:
             deploy_ids = {}
             for module in self._apps_modules:
-                deploy_id = self._execute_deploy(module)
+                deploy_id = self._execute_deploy(module, fabric_execution_strategy)
                 deploy_ids[module['name']] = deploy_id
                 self._worker._db.jobs.update({ '_id': self._job['_id'], 'modules.name': module['name']}, {'$set': {'modules.$.deploy_id': deploy_id }})
                 self._worker._db.apps.update({ '_id': self._app['_id'], 'modules.name': module['name']}, {'$set': { 'modules.$.initialized': True }})
@@ -203,7 +207,7 @@ class Deploy():
 
     def _update_manifest(self, module, package):
         key_path = self._get_path_from_app() + '/MANIFEST'
-        conn = boto.s3.connect_to_region(self._app['region'])
+        conn = boto.s3.connect_to_region(self._config.get('bucket_region', self._app['region']))
         bucket = conn.get_bucket(self._config['bucket_s3'])
         key = bucket.get_key(key_path)
         modules = []
@@ -291,7 +295,7 @@ class Deploy():
         # If resolved_revision begins with or equals revision, it is a commit hash
         return resolved_revision.find(revision) == 0
 
-    def _execute_deploy(self, module):
+    def _execute_deploy(self, module, fabric_execution_strategy):
         """
         Returns the deployment id
         """
@@ -404,6 +408,7 @@ class Deploy():
 
             gcall('bash %s' % buildpack_path, 'Buildpack: Execute', self._log_file, env=buildpack_env)
             gcall('du -hs .', 'Display current build directory disk usage', self._log_file)
+            gcall('rm -v %s' % buildpack_path, 'Buildpack: Done, cleaning temporary file', self._log_file)
 
         # Store postdeploy script in tarball
         if 'post_deploy' in module:
@@ -420,7 +425,7 @@ class Deploy():
         pkg_name = self._package_module(module, ts, commit)
 
         self._update_manifest(module, pkg_name)
-        self._deploy_module(module)
+        self._deploy_module(module, fabric_execution_strategy)
 
         deployment = {'app_id': self._app['_id'], 'job_id': self._job['_id'], 'module': module['name'], 'revision': revision, 'commit': commit, 'commit_message': commit_message, 'timestamp': ts, 'package': pkg_name, 'module_path': module['path']}
         return self._worker._db.deploy_histories.insert(deployment)

@@ -1,14 +1,16 @@
 from datetime import datetime
-import yaml
-from settings import MONGO_DBNAME
-from rq import get_current_job, Connection
-from pymongo import MongoClient
-from bson.objectid import ObjectId
-from notification import Notification
-from commands.tools import log
 import os
 import sys
 import traceback
+import yaml
+
+from rq import get_current_job, Connection
+from pymongo import MongoClient
+from bson.objectid import ObjectId
+
+from ghost_tools import log
+from notification import Notification
+from settings import MONGO_DBNAME
 
 LOG_ROOT='/var/log/ghost'
 ROOT_PATH=os.path.dirname(os.path.realpath(__file__))
@@ -83,9 +85,14 @@ class Command:
 
     def _init_log_file(self):
         log_path = "{log_path}/{job_id}.txt".format(log_path=LOG_ROOT, job_id=self._worker_job.id)
-        self.log_file = open(log_path, 'a', 1)
-        self._db.jobs.update({ '_id': self.job['_id']}, {'$set': {'log_id': self._worker_job.id }})
 
+        # As this method is only supposed to be called in forked rqworker process,
+        # it is safe to redirect sys.stdout and sys.stderr to the job's log file.
+        # This is mainly needed to capture all fabric & paramiko outputs,
+        # but may also serve in other cases.
+        sys.stdout = sys.stderr = self.log_file = open(log_path, 'a', 1)
+
+        self._db.jobs.update({ '_id': self.job['_id']}, {'$set': {'log_id': self._worker_job.id }})
 
     def _close_log_file(self):
         self.log_file.close()

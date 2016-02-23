@@ -1,4 +1,4 @@
-from commands.tools import log, create_block_device
+from ghost_tools import log, create_block_device
 from fabric.colors import green as _green, yellow as _yellow, red as _red
 import boto.ec2
 import os
@@ -38,7 +38,7 @@ class Createinstance():
             loader=FileSystemLoader(jinja_templates_path)
             jinja_env = Environment(loader=loader)
             template = jinja_env.get_template('stage1')
-            userdata = template.render(bucket_s3=self._config['bucket_s3'])
+            userdata = template.render(bucket_s3=self._config['bucket_s3'], bucket_region=self._config.get('bucket_region', self._app['region']))
             log(_green("STATE: User-Data Created"), self._log_file)
         else:
             log(_red("WARNING: stage1 not found, you will not have user-data in your instance. You must use a deployment after this job"), self._log_file)

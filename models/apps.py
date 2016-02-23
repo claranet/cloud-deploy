@@ -69,12 +69,23 @@ apps_schema = {
                     'required': True,
                     'allowed': ['system', 'code']
                 },
+                'uid': {'type': 'integer', 'min': 0},
+                'gid': {'type': 'integer', 'min': 0},
                 'build_pack': {'type': 'string'},
                 'pre_deploy': {'type': 'string'},
                 'post_deploy': {'type': 'string'},
                 'path': {'type': 'string',
                          'regex': '^(/[a-zA-Z0-9\.\-\_]+)+$',
-                         'required': True}
+                         'required': True},
+                'last_deployment': {
+                    'readonly': True,
+                    'type': 'objectid',
+                    'data_relation': {
+                        'resource': 'deployments',
+                        'field': '_id',
+                        'embeddable': True
+                    }
+                }
             }
         }
     },
@@ -143,4 +154,10 @@ apps_schema = {
     'user': {'type': 'string'},
 }
 
-apps = {'item_title': 'app', 'schema': apps_schema}
+apps = {
+    'datasource': {
+        'source': 'apps'
+    },
+    'item_title': 'app',
+    'schema': apps_schema
+}

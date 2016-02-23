@@ -1,10 +1,12 @@
+import pkgutil
+
+JOB_COMMANDS = [name for _, name, _ in pkgutil.iter_modules(['commands'])]
+
 jobs_schema = {
     'command': {
         'type': 'string',
         'required': True,
-        'allowed': ['deploy', 'buildimage', 'maintenance', 'rollback',
-                    'createinstance', 'destroyinstance',
-                    'updatelifecyclehooks']
+        'allowed': JOB_COMMANDS
     },
     'app_id': {
         'type': 'objectid',
@@ -62,7 +64,13 @@ jobs_schema = {
     }
 }
 
-jobs = {'item_title': 'job', 'schema': jobs_schema}
+jobs = {
+    'datasource': {
+        'source': 'jobs'
+    },
+    'item_title': 'job',
+    'schema': jobs_schema
+}
 
 CANCELLABLE_JOB_STATUSES = ['init']
 DELETABLE_JOB_STATUSES = ['cancelled', 'done', 'failed', 'aborted']

@@ -1,9 +1,9 @@
-from commands.tools import log
+from ghost_tools import log
 from fabric.colors import green as _green, yellow as _yellow, red as _red
 import boto.ec2
 
 
-class Destroyinstance():
+class Destroyallinstances():
     _app = None
     _job = None
     _log_file = -1

@@ -7,6 +7,7 @@ from eve import Eve
 from eve_docs import eve_docs
 from auth import BCryptAuth
 from bson.objectid import ObjectId
+import json
 
 from redis import Redis
 from rq import Queue, cancel_job
@@ -14,22 +15,20 @@ from rq_dashboard import RQDashboard
 
 from settings import __dict__ as eve_settings
 from command import Command
-from models.jobs import CANCELLABLE_JOB_STATUSES, DELETABLE_JOB_STATUSES
+from models.apps import apps
+from models.jobs import jobs, CANCELLABLE_JOB_STATUSES, DELETABLE_JOB_STATUSES
+from models.deployments import deployments
+
+from ghost_tools import get_rq_name_from_app
 
 def get_apps_db():
-    return ghost.data.driver.db['apps']
+    return ghost.data.driver.db[apps['datasource']['source']]
 
 def get_jobs_db():
-    return ghost.data.driver.db['jobs']
+    return ghost.data.driver.db[jobs['datasource']['source']]
 
-def get_rq_name_from_app(app):
-    """
-    Returns an RQ queue name for a given ghost app
-
-    >>> get_rq_name_from_app({'env': 'prod', 'name': 'App1', 'role': 'webfront'})
-    'prod:App1:webfront'
-    """
-    return '{env}:{name}:{role}'.format(env=app['env'], name=app['name'], role=app['role'])
+def get_deployments_db():
+    return ghost.data.driver.db[deployments['datasource']['source']]
 
 def pre_update_app(updates, original):
     """
@@ -68,6 +67,17 @@ def pre_update_app(updates, original):
     >>> updates['modules'][1]['initialized']
     False
 
+    Modified modules get their 'initialized' field reset to False also in case of new fields:
+
+    >>> updates = deepcopy(base_original)
+    >>> updates['modules'][1]['uid'] = '101'
+    >>> updates['modules'][1]['gid'] = '102'
+    >>> pre_update_app(updates, original)
+    >>> updates['modules'][0]['initialized']
+    True
+    >>> updates['modules'][1]['initialized']
+    False
+
     New modules get their 'initialized' field set to False by default:
 
     >>> updates = deepcopy(base_original)
@@ -90,10 +100,14 @@ def pre_update_app(updates, original):
                 if updated_module['name'] ==  original_module['name']:
                     # Restore previous 'initialized' value as 'updated_module' does not contain it (read-only field)
                     updated_module['initialized'] = original_module.get('initialized', False)
-                    for prop in ['git_repo', 'scope', 'build_pack', 'pre_deploy', 'post_deploy', 'path']:
+                    # Compare all fields except 'initialized'
+                    fields = set(original_module.keys() + updated_module.keys())
+                    if 'initialized' in fields:
+                        fields.remove('initialized')
+                    for prop in fields:
                         if not updated_module.get(prop, None) == original_module.get(prop, None):
                             updated_module['initialized'] = False
-                            # At least on the module's prop have changed, can exit loop
+                            # At least one of the module's prop have changed, can exit loop
                             break
                     # Module found, can exit loop
                     break
@@ -119,6 +133,24 @@ def pre_insert_app(items):
     for module in app.get('modules'):
         module['initialized'] = False
     app['user'] = request.authorization.username
+
+def post_fetched_app(response):
+    # Do we need to embed each module's last_deployment?
+    embedded = json.loads(request.args.get('embedded', '{}'))
+    embed_last_deployment = embedded.get('modules.last_deployment', False)
+
+    # Retrieve each module's last deployment
+    for module in response['modules']:
+        query = {
+                 '$and': [
+                          {'app_id': response['_id']},
+                          {'module': module['name']}
+                          ]
+                 }
+        sort = [('timestamp', -1)]
+        deployment = get_deployments_db().find_one(query, sort=sort)
+        if deployment:
+            module['last_deployment'] = deployment if embed_last_deployment else deployment['_id']
 
 def post_insert_app(items):
     pass
@@ -180,6 +212,7 @@ RQDashboard(ghost)
 ghost.register_blueprint(eve_docs, url_prefix='/docs')
 
 # Register eve hooks
+ghost.on_fetched_item_apps += post_fetched_app
 ghost.on_update_apps += pre_update_app
 ghost.on_replace_apps += pre_replace_app
 ghost.on_delete_item_apps += pre_delete_app
