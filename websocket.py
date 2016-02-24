@@ -110,7 +110,6 @@ def create_ws(app):
                             'last_pos': last_pos,
                             }
                     socketio.emit('job', data, room=sid)
-                    print 'SocketIO: sent data for ' + sid
 
                 # Update last_pos for next iteration
                 last_pos = new_pos
