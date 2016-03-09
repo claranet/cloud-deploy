@@ -126,7 +126,6 @@ class Buildimage():
                         log("Launch configuration [{0}] created.".format(launch_config.name), self._log_file)
                     else:
                         log("ERROR: Cannot generate userdata. The bootstrap.sh file can maybe not be found.", self._log_file)
-                        #raise GCallException("Generating userdata failed.")
                         self._worker.update_status("failed")
                     if launch_config:
                         conn = boto.ec2.autoscale.connect_to_region(self._app['region'])
