@@ -1,4 +1,3 @@
-from uuid import uuid4
 import sh
 from sh import git
 from subprocess32 import Popen, PIPE
@@ -13,10 +12,10 @@ SALT_LOCAL_TREE="/tmp/salt/"
 SALT_FORMULAS_REPO="git@bitbucket.org:morea/morea-salt-formulas.git"
 
 class Packer:
-    def __init__(self, packer_config, config, log_file):
+    def __init__(self, packer_config, config, log_file, job_id):
         self._log_file = log_file
         self.packer_config = json.loads(packer_config)
-        self.unique = str(uuid4())
+        self.unique = str(job_id)
         if not os.path.exists(PACKER_JSON_PATH):
             os.makedirs(PACKER_JSON_PATH)
         if not os.path.exists(SALT_LOCAL_TREE):
