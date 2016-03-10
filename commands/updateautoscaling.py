@@ -32,25 +32,25 @@ class Updateautoscaling():
                     if userdata:
                         launch_config = create_launch_config(self._app, userdata, ami_id)
                         log("Launch configuration [{0}] created.".format(launch_config.name), self._log_file)
+                        if launch_config:
+                            conn = boto.ec2.autoscale.connect_to_region(self._app['region'])
+                            as_group = conn.get_all_groups(names=[self._app['autoscale']['name']])[0]
+                            setattr(as_group, 'launch_config_name', launch_config.name)
+                            setattr(as_group, 'desired_capacity', self._app['autoscale']['current'])
+                            setattr(as_group, 'min_size', self._app['autoscale']['min'])
+                            setattr(as_group, 'max_size', self._app['autoscale']['max'])
+                            as_group.update()
+                            log("Autoscaling group [{0}] updated.".format(self._app['autoscale']['name']), self._log_file)
+                            if (purge_launch_configuration(self._app)):
+                                log("Old launch configurations removed for this app", self._log_file)
+                            else:
+                                log("Purge launch configurations failed", self._log_file)
+                            self._worker.update_status("done")
+                        else:
+                            log("ERROR: Cannot update autoscaling group", self._log_file)
+                            self._worker.update_status("failed")
                     else:
                         log("ERROR: Cannot generate userdata. The bootstrap.sh file can maybe not be found.", self._log_file)
-                        self._worker.update_status("failed")
-                    if launch_config:
-                        conn = boto.ec2.autoscale.connect_to_region(self._app['region'])
-                        as_group = conn.get_all_groups(names=[self._app['autoscale']['name']])[0]
-                        setattr(as_group, 'launch_config_name', launch_config.name)
-                        setattr(as_group, 'desired_capacity', self._app['autoscale']['current'])
-                        setattr(as_group, 'min_size', self._app['autoscale']['min'])
-                        setattr(as_group, 'max_size', self._app['autoscale']['max'])
-                        as_group.update()
-                        log("Autoscaling group [{0}] updated.".format(self._app['autoscale']['name']), self._log_file)
-                        if (purge_launch_configuration(self._app)):
-                            log("Old launch configurations removed for this app", self._log_file)
-                        else:
-                            log("Purge launch configurations failed", self._log_file)
-                        self._worker.update_status("done")
-                    else:
-                        log("ERROR: Cannot update autoscaling group", self._log_file)
                         self._worker.update_status("failed")
                 else:
                     log("ERROR: Autoscaling group [{0}] does not exist".format(self._app['autoscale']['name']), self._log_file)
