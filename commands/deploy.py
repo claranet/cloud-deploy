@@ -426,8 +426,6 @@ class Deploy():
         module_metadata = """
 #!/bin/bash
 
-GHOST_MODULE_NAME="{name}"
-GHOST_MODULE_PATH="{path}"
 GHOST_MODULE_REPO="{repo}"
 GHOST_MODULE_REV="{rev}"
 GHOST_MODULE_COMMIT="{commit}"
@@ -436,8 +434,6 @@ GHOST_MODULE_USER="{user}"
 
 """
         metavars = {
-            "name": module['name'], 
-            "path": module['path'],
             "repo": module['git_repo'],
             "rev": revision,
             "commit": commit,
