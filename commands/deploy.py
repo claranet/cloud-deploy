@@ -232,12 +232,18 @@ class Deploy():
                         mod['path'] = tmp[2]
                     # Only keep modules that have not been removed from the app
                     if mod['name'] in all_app_modules_list:
+                        mod['index'] = all_app_modules_list.index(mod['name'])
                         modules.append(mod)
         if not key:
             key = bucket.new_key(key_path)
         if not module_exist:
-            modules.append({ 'name': module['name'], 'package': package, 'path': module['path']})
-        for mod in modules:
+            modules.append({
+                'name': module['name'],
+                'package': package,
+                'path': module['path'],
+                'index': all_app_modules_list.index(module['name'])
+            })
+        for mod in sorted(modules, key=lambda mod: mod['index']):
             data = data + mod['name'] + ':' + mod['package'] + ':' + mod['path'] + '\n'
         manifest, manifest_path = tempfile.mkstemp()
         if sys.version > '3':
