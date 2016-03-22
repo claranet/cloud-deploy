@@ -38,6 +38,7 @@ class Redeploy():
         key = bucket.get_key(key_path)
         modules = []
         module_exist = False
+        all_app_modules_list = [app_module['name'] for app_module in self._app['modules'] if 'name' in app_module]
         data = ""
         if key:
             manifest = key.get_contents_as_string()
@@ -55,12 +56,20 @@ class Redeploy():
                     else:
                         mod['package'] = tmp[1]
                         mod['path'] = tmp[2]
-                    modules.append(mod)
+                    # Only keep modules that have not been removed from the app
+                    if mod['name'] in all_app_modules_list:
+                        mod['index'] = all_app_modules_list.index(mod['name'])
+                        modules.append(mod)
         if not key:
             key = bucket.new_key(key_path)
         if not module_exist:
-            modules.append({ 'name': module['name'], 'package': package, 'path': module['path']})
-        for mod in modules:
+            modules.append({
+                'name': module['name'],
+                'package': package,
+                'path': module['path'],
+                'index': all_app_modules_list.index(module['name'])
+            })
+        for mod in sorted(modules, key=lambda mod: mod['index']):
             data = data + mod['name'] + ':' + mod['package'] + ':' + mod['path'] + '\n'
         manifest, manifest_path = tempfile.mkstemp()
         if sys.version > '3':
