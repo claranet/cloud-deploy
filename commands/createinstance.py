@@ -1,4 +1,4 @@
-from ghost_tools import log, create_block_device
+from ghost_tools import log, create_block_device, generate_userdata
 from fabric.colors import green as _green, yellow as _yellow, red as _red
 import boto.ec2
 import os
@@ -21,31 +21,14 @@ class Createinstance():
 
 
     def _create_server(self):
-        #secgroup = "sg-fc236099"
-        #instance_profile = "ec2.kevin-instance"
-        #ami = "ami-ddd64caa"
-        #key = "kevin"
-        #instance_type = "t2.micro"
-        #subnet_id = "subnet-e613ce83"
         root_ghost_path=os.path.dirname(os.path.dirname(os.path.realpath(os.path.realpath(__file__))))
-        jinja_templates_path='%s/scripts' % root_ghost_path
 
         log(_green("STATE: Started"), self._log_file)
-
         log(_yellow(" INFO: Creating User-Data"), self._log_file)
-        log(_yellow(" INFO: stage1 path: %s" % jinja_templates_path), self._log_file)
-        if(os.path.exists('%s/stage1' % jinja_templates_path)):
-            loader=FileSystemLoader(jinja_templates_path)
-            jinja_env = Environment(loader=loader)
-            template = jinja_env.get_template('stage1')
-            userdata = template.render(bucket_s3=self._config['bucket_s3'], bucket_region=self._config.get('bucket_region', self._app['region']))
-            log(_green("STATE: User-Data Created"), self._log_file)
-        else:
-            log(_red("WARNING: stage1 not found, you will not have user-data in your instance. You must use a deployment after this job"), self._log_file)
+        userdata = generate_userdata(self._config['bucket_s3'], self._config.get('bucket_region', self._app['region']), root_ghost_path)
 
-        #log(userdata, self._log_file)
         log(_yellow(" INFO: Creating EC2 instance"), self._log_file)
-        if(self._app['ami']):
+        if self._app['ami']:
             log(" CONF: AMI: {0}".format(self._app['ami']), self._log_file)
             log(" CONF: Region: {0}".format(self._app['region']), self._log_file)
             try:
@@ -69,7 +52,7 @@ class Createinstance():
 
                 #Getting instance metadata
                 instance = reservation.instances[0]
-                if(instance.id):
+                if instance.id:
                     #Adding tags from app
                     conn.create_tags([instance.id], {"Name":"ec2.{0}.{1}.{2}".format(self._app['env'], self._app['role'], self._app['name'])})
                     conn.create_tags([instance.id], {"env":self._app['env']})
