@@ -129,10 +129,14 @@ function deploy_module() {
     rm -rf /tmp/$MODULE_FILE
     cd /ghost/$UUID
 
+    if [ -e ".ghost-metadata" ]; then
+        source ".ghost-metadata"
+    fi
+
     if [ -e predeploy ]; then
         echo "Executing predeploy script..." >> /tmp/$LOGFILE
         chmod +x predeploy
-        GHOST_APP=$APP GHOST_ENV=$ENV GHOST_ROLE=$ROLE GHOST_MODULE_NAME=$MODULE_NAME GHOST_MODULE_PATH=$TARGET ./predeploy 2>&1 | tee -a /tmp/$LOGFILE
+        GHOST_MODULE_REPO=$GHOST_MODULE_REPO GHOST_MODULE_REV=$GHOST_MODULE_REV GHOST_MODULE_COMMIT=$GHOST_MODULE_COMMIT GHOST_MODULE_COMMIT_MESSAGE=$GHOST_MODULE_COMMIT_MESSAGE GHOST_MODULE_USER=$GHOST_MODULE_USER GHOST_APP=$APP GHOST_ENV=$ENV GHOST_ROLE=$ROLE GHOST_MODULE_NAME=$MODULE_NAME GHOST_MODULE_PATH=$TARGET ./predeploy 2>&1 | tee -a /tmp/$LOGFILE
         local status=${PIPESTATUS[0]}
         if [ $status -ne 0 ]; then
             purge_latest_failed_deploy $MODULE_NAME $UUID
@@ -154,7 +158,7 @@ function deploy_module() {
     if [ -e postdeploy ]; then
         echo "Executing postdeploy script..." >> /tmp/$LOGFILE
         chmod +x postdeploy
-        GHOST_APP=$APP GHOST_ENV=$ENV GHOST_ROLE=$ROLE GHOST_MODULE_NAME=$MODULE_NAME GHOST_MODULE_PATH=$TARGET ./postdeploy 2>&1 | tee -a /tmp/$LOGFILE
+        GHOST_MODULE_REPO=$GHOST_MODULE_REPO GHOST_MODULE_REV=$GHOST_MODULE_REV GHOST_MODULE_COMMIT=$GHOST_MODULE_COMMIT GHOST_MODULE_COMMIT_MESSAGE=$GHOST_MODULE_COMMIT_MESSAGE GHOST_MODULE_USER=$GHOST_MODULE_USER GHOST_APP=$APP GHOST_ENV=$ENV GHOST_ROLE=$ROLE GHOST_MODULE_NAME=$MODULE_NAME GHOST_MODULE_PATH=$TARGET ./postdeploy 2>&1 | tee -a /tmp/$LOGFILE
         rm -v ./postdeploy
     fi
 

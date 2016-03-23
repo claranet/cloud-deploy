@@ -421,6 +421,32 @@ class Deploy():
                     f.write(postdeploy_source)
             gcall('du -hs .', 'Display current build directory disk usage', self._log_file)
 
+        # Store module metadata in tarball
+        log("Create metadata file for inclusion in target package", self._log_file)
+        module_metadata = """
+#!/bin/bash
+
+GHOST_MODULE_REPO="{repo}"
+GHOST_MODULE_REV="{rev}"
+GHOST_MODULE_COMMIT="{commit}"
+GHOST_MODULE_COMMIT_MESSAGE="{commitmsg}"
+GHOST_MODULE_USER="{user}"
+
+"""
+        metavars = {
+            "repo": module['git_repo'],
+            "rev": revision,
+            "commit": commit,
+            "commitmsg": commit_message,
+            "user": self._job['user']
+        } 
+        with open(clone_path + '/.ghost-metadata', 'w') as f:
+            if sys.version > '3':
+                f.write(bytes(module_metadata.format(**metavars), 'UTF-8'))
+            else:
+                f.write(module_metadata.format(**metavars))
+        gcall('du -hs .', 'Display current build directory disk usage', self._log_file)
+
         # Create tar archive
         pkg_name = self._package_module(module, ts, commit)
 
