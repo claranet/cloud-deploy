@@ -112,6 +112,10 @@ function deploy_module() {
         echo "TARGET path cannot be /tmp"
         exit_deployment -1
     fi
+    TARGETDIR=$(dirname $TARGET)
+    if [ ! -d $TARGETDIR ]; then
+        mkdir -p $TARGETDIR
+    fi
 
     echo "--------------------------------" >> /tmp/$LOGFILE
     echo "Deploying module $MODULE_NAME in $TARGET" >> /tmp/$LOGFILE
