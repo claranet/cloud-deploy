@@ -16,10 +16,24 @@ class AWSConnection(ACloudConnection):
         else:
             self._role_arn = None
 
-    def get_connection(self, region, service):
+    def _get_boto_service(self, boto_obj, attributes):
+        """
+        Recursive help function to build the boto connection hierarchy
+        the order of services list is important and should be like this:
+        ['ec2'], ['ec2', 'autoscale'], [s3], ['ec2', 'elb'] and not like
+        this : ['autoscale', 'ec2'], ['s3', 'ec2']. Check the GHOST API
+        documentation for more informations
+        """
+        if attributes:
+            if len(attributes) == 1:
+                return(getattr(boto_obj, attributes[0]))
+            return(self._get_boto_service(getattr(boto_obj, attributes[0]), attributes[1:]))
+
+
+    def get_connection(self, region, services):
         connection = None
         try:
-            aws_service = getattr(boto, service)
+            aws_service = self._get_boto_service(boto, services)
             if not self._role_arn:
                 connection = aws_service.connect_to_region(region)
             else:

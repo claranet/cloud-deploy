@@ -10,7 +10,7 @@ class ACloudConnection(object):
         self._log_file = log_file
         self._parameters = kwargs
 
-    def get_connection(self, region, service):
+    def get_connection(self, region, services):
         """
         method to be implemented by all class inheriting from this class
         """
