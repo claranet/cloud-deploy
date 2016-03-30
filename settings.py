@@ -2,6 +2,7 @@ from models import jobs
 from models import apps
 from models import deployments
 from models import job_enqueueings
+from aws_connection import AWSConnection
 
 from ghost_tools import config
 
@@ -35,6 +36,12 @@ DOMAIN = {
     'jobs': jobs.jobs,
     'apps': apps.apps,
     'deployments': deployments.deployments
+}
+
+cloud_connections = {
+        "aws": AWSConnection,
+        "azure": "NotYetSupported",
+        "google": "NotYetSupported"
 }
 
 DEBUG = True
