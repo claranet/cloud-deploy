@@ -107,7 +107,7 @@ class Buildimage():
         json_packer = self._format_packer_from_app()
         log("Generating a new AMI", self._log_file)
         log(json_packer, self._log_file)
-        pack = Packer(json_packer, self._config, self._log_file)
+        pack = Packer(json_packer, self._config, self._log_file, self._job['_id'])
         ami_id = pack.build_image(self._format_salt_top_from_app_features(), self._format_salt_pillar_from_app_features())
         if ami_id is not "ERROR":
             log("Update app in MongoDB to update AMI: {0}".format(ami_id), self._log_file)
@@ -124,23 +124,22 @@ class Buildimage():
                     if userdata:
                         launch_config = create_launch_config(self._app, userdata, ami_id)
                         log("Launch configuration [{0}] created.".format(launch_config.name), self._log_file)
+                        if launch_config:
+                            conn = boto.ec2.autoscale.connect_to_region(self._app['region'])
+                            as_group = conn.get_all_groups(names=[self._app['autoscale']['name']])[0]
+                            setattr(as_group, 'launch_config_name', launch_config.name)
+                            as_group.update()
+                            log("Autoscaling group [{0}] updated.".format(self._app['autoscale']['name']), self._log_file)
+                            if (purge_launch_configuration(self._app)):
+                                log("Old launch configurations removed for this app", self._log_file)
+                            else:
+                                log("Purge launch configurations failed", self._log_file)
+                            self._worker.update_status("done")
+                        else:
+                            log("ERROR: Cannot update autoscaling group", self._log_file)
+                            self._worker.update_status("failed")
                     else:
                         log("ERROR: Cannot generate userdata. The bootstrap.sh file can maybe not be found.", self._log_file)
-                        #raise GCallException("Generating userdata failed.")
-                        self._worker.update_status("failed")
-                    if launch_config:
-                        conn = boto.ec2.autoscale.connect_to_region(self._app['region'])
-                        as_group = conn.get_all_groups(names=[self._app['autoscale']['name']])[0]
-                        setattr(as_group, 'launch_config_name', launch_config.name)
-                        as_group.update()
-                        log("Autoscaling group [{0}] updated.".format(self._app['autoscale']['name']), self._log_file)
-                        if (purge_launch_configuration(self._app)):
-                            log("Old launch configurations removed for this app", self._log_file)
-                        else:
-                            log("Purge launch configurations failed", self._log_file)
-                        self._worker.update_status("done")
-                    else:
-                        log("ERROR: Cannot update autoscaling group", self._log_file)
                         self._worker.update_status("failed")
                 else:
                     log("ERROR: Autoscaling group [{0}] does not exist".format(self._app['autoscale']['name']), self._log_file)

@@ -232,12 +232,18 @@ class Deploy():
                         mod['path'] = tmp[2]
                     # Only keep modules that have not been removed from the app
                     if mod['name'] in all_app_modules_list:
+                        mod['index'] = all_app_modules_list.index(mod['name'])
                         modules.append(mod)
         if not key:
             key = bucket.new_key(key_path)
         if not module_exist:
-            modules.append({ 'name': module['name'], 'package': package, 'path': module['path']})
-        for mod in modules:
+            modules.append({
+                'name': module['name'],
+                'package': package,
+                'path': module['path'],
+                'index': all_app_modules_list.index(module['name'])
+            })
+        for mod in sorted(modules, key=lambda mod: mod['index']):
             data = data + mod['name'] + ':' + mod['package'] + ':' + mod['path'] + '\n'
         manifest, manifest_path = tempfile.mkstemp()
         if sys.version > '3':
@@ -420,6 +426,32 @@ class Deploy():
                 else:
                     f.write(postdeploy_source)
             gcall('du -hs .', 'Display current build directory disk usage', self._log_file)
+
+        # Store module metadata in tarball
+        log("Create metadata file for inclusion in target package", self._log_file)
+        module_metadata = """
+#!/bin/bash
+
+GHOST_MODULE_REPO="{repo}"
+GHOST_MODULE_REV="{rev}"
+GHOST_MODULE_COMMIT="{commit}"
+GHOST_MODULE_COMMIT_MESSAGE="{commitmsg}"
+GHOST_MODULE_USER="{user}"
+
+"""
+        metavars = {
+            "repo": module['git_repo'],
+            "rev": revision,
+            "commit": commit,
+            "commitmsg": commit_message,
+            "user": self._job['user']
+        } 
+        with open(clone_path + '/.ghost-metadata', 'w') as f:
+            if sys.version > '3':
+                f.write(bytes(module_metadata.format(**metavars), 'UTF-8'))
+            else:
+                f.write(module_metadata.format(**metavars))
+        gcall('du -hs .', 'Display current build directory disk usage', self._log_file)
 
         # Create tar archive
         pkg_name = self._package_module(module, ts, commit)
