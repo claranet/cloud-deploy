@@ -13,6 +13,8 @@ from ghost_tools import GCallException, gcall, deploy_module_on_hosts, log, refr
 
 ROOT_PATH = os.path.dirname(os.path.realpath(__file__))
 
+COMMAND_DESCRIPTION = "Deploy a module"
+
 class Deploy():
     _app = None
     _job = None

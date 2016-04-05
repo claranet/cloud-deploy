@@ -2,6 +2,7 @@ from ghost_tools import log
 from fabric.colors import green as _green, yellow as _yellow, red as _red
 import boto.ec2
 
+COMMAND_DESCRIPTION = "Destroy all instances"
 
 class Destroyallinstances():
     _app = None

@@ -5,6 +5,7 @@ import os
 import time
 from jinja2 import Environment, FileSystemLoader
 
+COMMAND_DESCRIPTION = "Create a new instance"
 
 class Createinstance():
     _app = None
