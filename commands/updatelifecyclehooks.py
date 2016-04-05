@@ -6,7 +6,7 @@ from boto import s3
 
 from ghost_tools import log, refresh_stage2
 
-COMMAND_DESCRIPTION = "Update LifeCycle Hook scripts"
+COMMAND_DESCRIPTION = "Update LifeCycle Hooks scripts"
 
 class Updatelifecyclehooks():
     _app = None
