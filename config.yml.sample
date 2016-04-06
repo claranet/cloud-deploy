@@ -26,3 +26,6 @@ fabric_execution_strategy: serial
 
 # Pagination for Eve
 eve_pagination_default: 23
+
+# Packer should install or not the Salt Minion when baking an Image
+skip_salt_bootstrap: True

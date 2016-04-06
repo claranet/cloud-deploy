@@ -76,17 +76,17 @@ class Packer:
             'subnet_id': self.packer_config['subnet_id'],
             'associate_public_ip_address': self.packer_config['associate_public_ip_address'],
             'ami_block_device_mappings': self.packer_config['ami_block_device_mappings']
-            }]
+        }]
         provisioners = [{
             'type': 'salt-masterless',
             'local_state_tree': self.salt_path,
             'local_pillar_roots': SALT_LOCAL_TREE + self.unique + '/pillar',
-            'skip_bootstrap': True
-            },
-            {
+            'skip_bootstrap': self.packer_config['skip_salt_bootstrap'],
+        },
+        {
             'type': 'shell',
             'inline':["sudo rm -rf /srv/salt || echo 'salt: no cleanup salt'","sudo rm -rf /srv/pillar || echo 'salt: no cleanup pillar'"]
-            }]
+        }]
         packer_json['builders'] = builders
         packer_json['provisioners'] = provisioners
         self.packer_file_path = PACKER_JSON_PATH + self.unique + ".json"
