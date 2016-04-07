@@ -1,11 +1,12 @@
 from fabric.colors import green as _green, yellow as _yellow, red as _red
-import boto.ec2
 import os
 import time
+from settings import cloud_connections
 from jinja2 import Environment, FileSystemLoader
 
 from ghost_log import log
 from ghost_aws import create_block_device, generate_userdata
+from ghost_tools import get_aws_connection_data
 
 COMMAND_DESCRIPTION = "Create a new instance"
 
@@ -21,6 +22,14 @@ class Createinstance():
         self._config = worker._config
         self._worker = worker
         self._log_file = worker.log_file
+        self._connection_data = get_aws_connection_data(
+                self._app.get(['assumed_account_id'], ''),
+                self._app.get(['assumed_role_name'], '')
+                )
+        self._cloud_connection = cloud_connections.get(self._app['provider'])(
+                self._log_file,
+                **self._connection_data
+                )
 
 
     def _create_server(self):
@@ -35,17 +44,22 @@ class Createinstance():
             log(" CONF: AMI: {0}".format(self._app['ami']), self._log_file)
             log(" CONF: Region: {0}".format(self._app['region']), self._log_file)
             try:
-                conn = boto.ec2.connect_to_region(self._app['region'])
+                conn = self._cloud_connection.get_connection(self._app['region'], ["ec2"])
                 image = self._app['ami']
-                interface = boto.ec2.networkinterface.NetworkInterfaceSpecification( \
-                        subnet_id=self._app['environment_infos']['subnet_ids'][0], \
-                        groups=self._app['environment_infos']['security_groups'], \
-                        associate_public_ip_address=True)
-                interfaces = boto.ec2.networkinterface.NetworkInterfaceCollection(interface)
+                interface = self._cloud_connection.launch_service(
+                        ["ec2", "networkinterface", "NetworkInterfaceSpecification"], 
+                        subnet_id=self._app['environment_infos']['subnet_ids'][0],
+                        groups=self._app['environment_infos']['security_groups'],
+                        associate_public_ip_address=True
+                        )
+                interfaces = self._cloud_connection.launch_service(
+                        ["ec2", "networkinterface", "NetworkInterfaceCollection"],
+                        interface
+                        )
                 if 'root_block_device' in self._app['environment_infos']:
-                    bdm = create_block_device(self._app['environment_infos']['root_block_device'])
+                    bdm = create_block_device(self._cloud_connection, self._app['region'], self._app['environment_infos']['root_block_device'])
                 else:
-                    bdm = create_block_device({})
+                    bdm = create_block_device(self._cloud_connection, self._app['region'], {})
                 reservation = conn.run_instances(image_id=self._app['ami'], \
                         key_name=self._app['environment_infos']['key_name'], \
                         network_interfaces=interfaces, \

@@ -1,10 +1,11 @@
 import os
 import sys
 import tempfile
-import boto.s3
 from bson.objectid import ObjectId
 
 from ghost_tools import GCallException, get_app_module_name_list, clean_local_module_workspace
+from ghost_tools import get_aws_connection_data
+from settings import cloud_connections
 from ghost_log import log
 from ghost_aws import deploy_module_on_hosts
 
@@ -23,6 +24,14 @@ class Redeploy():
         self._worker = worker
         self._config = worker._config
         self._log_file = worker.log_file
+        self._connection_data = get_aws_connection_data(
+                self._app.get(['assumed_account_id'], ''),
+                self._app.get(['assumed_role_name'], '')
+                )
+        self._cloud_connection = cloud_connections.get(self._app['provider'])(
+                self._log_file,
+                **self._connection_data
+                )
 
     def _find_modules_by_name(self, modules):
         result = []
@@ -38,7 +47,8 @@ class Redeploy():
 
     def _update_manifest(self, module, package):
         key_path = self._get_path_from_app() + '/MANIFEST'
-        conn = boto.s3.connect_to_region(self._config.get('bucket_region', self._app['region']))
+        cloud_connection = cloud_connections.get(self._app['provider'])(self._log_file)
+        conn = cloud_connection.get_connection(self._config.get('bucket_region', self._app['region']), ["s3"])
         bucket = conn.get_bucket(self._config['bucket_s3'])
         key = bucket.get_key(key_path)
         modules = []
@@ -94,7 +104,7 @@ class Redeploy():
         return None, None
 
     def _deploy_module(self, module, fabric_execution_strategy, safe_deployment_strategy):
-        deploy_module_on_hosts(module, fabric_execution_strategy, self._app, self._config, self._log_file, safe_deployment_strategy)
+        deploy_module_on_hosts(self._cloud_connection, module, fabric_execution_strategy, self._app, self._config, self._log_file, safe_deployment_strategy)
 
     def _execute_redeploy(self, deploy_id, fabric_execution_strategy, safe_deployment_strategy):
         module, package = self._get_deploy_infos(deploy_id)

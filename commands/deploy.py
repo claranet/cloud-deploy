@@ -8,11 +8,12 @@ from sh import git
 import tempfile
 from time import sleep
 
-import boto.s3
 
 from ghost_tools import GCallException, gcall, get_app_module_name_list, clean_local_module_workspace, refresh_stage2
+from ghost_tools import get_aws_connection_data
 from ghost_log import log
 from ghost_aws import deploy_module_on_hosts
+from settings import cloud_connections
 
 ROOT_PATH = os.path.dirname(os.path.realpath(__file__))
 
@@ -36,6 +37,14 @@ class Deploy():
         self._log_file = worker.log_file
         self._config = worker._config
         self._worker = worker
+        self._connection_data = get_aws_connection_data(
+                self._app.get(['assumed_account_id'], ''),
+                self._app.get(['assumed_role_name'], '')
+                )
+        self._cloud_connection = cloud_connections.get(self._app['provider'])(
+                self._log_file,
+                **self._connection_data
+                )
         # FIXME Deal with multiple job modules.
         # Deal only with first (0) job module for now
 
@@ -102,7 +111,7 @@ class Deploy():
 
 
     def _deploy_module(self, module, fabric_execution_strategy, safe_deployment_strategy):
-        deploy_module_on_hosts(module, fabric_execution_strategy, self._app, self._config, self._log_file, safe_deployment_strategy)
+        deploy_module_on_hosts(self._cloud_connection, module, fabric_execution_strategy, self._app, self._config, self._log_file, safe_deployment_strategy)
 
     def _package_module(self, module, ts, commit):
         path = self._get_buildpack_clone_path_from_module(module)
@@ -114,7 +123,8 @@ class Deploy():
         gcall("tar czf {0} --owner={1} --group={2} .".format(pkg_path, uid, gid), "Creating package: %s" % pkg_name, self._log_file)
 
         log("Uploading package: %s" % pkg_name, self._log_file)
-        conn = boto.s3.connect_to_region(self._config.get('bucket_region', self._app['region']))
+        cloud_connection = cloud_connections.get(self._app['provider'])(self._log_file)
+        conn = cloud_connection.get_connection(self._config.get('bucket_region', self._app['region']), ["s3"])
         bucket = conn.get_bucket(self._config['bucket_s3'])
         key_path = '{path}/{pkg_name}'.format(bucket_s3=self._config['bucket_s3'], path=path, pkg_name=pkg_name)
         key = bucket.get_key(path)
@@ -192,7 +202,7 @@ class Deploy():
             self._worker.update_status("aborted", message=self._get_notification_message_aborted(self._job['modules']))
             return
 
-        refresh_stage2(self._config.get('bucket_region', self._app['region']), self._config)
+        refresh_stage2(self._app['provider'], self._config.get('bucket_region', self._app['region']), self._config, self._log_file)
         module_list = []
         for module in self._apps_modules:
             if 'name' in module:
@@ -213,7 +223,8 @@ class Deploy():
 
     def _update_manifest(self, module, package):
         key_path = self._get_path_from_app() + '/MANIFEST'
-        conn = boto.s3.connect_to_region(self._config.get('bucket_region', self._app['region']))
+        cloud_connection = cloud_connections.get(self._app['provider'])(self._log_file)
+        conn = cloud_connection.get_connection(self._config.get('bucket_region', self._app['region']), ["s3"])
         bucket = conn.get_bucket(self._config['bucket_s3'])
         key = bucket.get_key(key_path)
         modules = []

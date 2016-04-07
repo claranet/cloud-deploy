@@ -1,7 +1,8 @@
 from fabric.colors import green as _green, yellow as _yellow, red as _red
-import boto.ec2
 
 from ghost_log import log
+from ghost_tools import get_aws_connection_data
+from settings import cloud_connections
 
 COMMAND_DESCRIPTION = "Destroy all instances"
 
@@ -17,7 +18,14 @@ class Destroyallinstances():
         self._config = worker._config
         self._worker = worker
         self._log_file = worker.log_file
-
+        self._connection_data = get_aws_connection_data(
+                self._app.get(['assumed_account_id'], ''),
+                self._app.get(['assumed_role_name'], '')
+                )
+        self._cloud_connection = cloud_connections.get(self._app['provider'])(
+                self._log_file,
+                **self._connection_data
+                )
 
     def _destroy_server(self):
         log(_green("STATE: Started"), self._log_file)
@@ -25,7 +33,7 @@ class Destroyallinstances():
         log(" CONF: AMI: {0}".format(self._app['ami']), self._log_file)
         log(" CONF: Region: {0}".format(self._app['region']), self._log_file)
         try:
-            conn = boto.ec2.connect_to_region(self._app['region'])
+            conn = self._cloud_connection.get_connection(self._app['region'], ["ec2"])
             reservations = conn.get_all_instances(filters={"tag:app_id" : self._app['_id']})
             #Terminating instances
             instances = []
