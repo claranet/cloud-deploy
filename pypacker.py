@@ -77,7 +77,15 @@ class Packer:
             'associate_public_ip_address': self.packer_config['associate_public_ip_address'],
             'ami_block_device_mappings': self.packer_config['ami_block_device_mappings']
         }]
-        provisioners = [{
+        provisioners = [
+        {
+            'type': 'shell',
+            'inline':[
+                "sudo DEBIAN_FRONTEND=noninteractive apt-get --assume-yes -o Dpkg::Options::='--force-confdef' -o Dpkg::Options::='--force-confold' update",
+                "sudo DEBIAN_FRONTEND=noninteractive apt-get --assume-yes -o Dpkg::Options::='--force-confdef' -o Dpkg::Options::='--force-confold' install curl ntp"
+            ]
+        },
+        {
             'type': 'salt-masterless',
             'local_state_tree': self.salt_path,
             'local_pillar_roots': SALT_LOCAL_TREE + self.unique + '/pillar',
