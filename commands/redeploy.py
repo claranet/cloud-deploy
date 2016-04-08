@@ -5,6 +5,8 @@ import boto.s3
 from bson.objectid import ObjectId
 from ghost_tools import GCallException, log, deploy_module_on_hosts
 
+COMMAND_DESCRIPTION = "Re-deploy an old module package"
+
 class Redeploy():
     _app = None
     _job = None
