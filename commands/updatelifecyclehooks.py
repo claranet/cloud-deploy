@@ -43,7 +43,9 @@ class Updatelifecyclehooks():
     def execute(self):
         try:
             app = self._app
-            refresh_stage2(self._config.get(self._app['provider'], 'bucket_region', self._app['region']), self._config, self._log_file)
+            refresh_stage2(cloud_connections.get(self._app['provider'])(self._log_file),
+                    self._config.get('bucket_region', self._app['region']), self._config
+                    )
             log('INFO: refreshed /ghost/stage2', self._log_file)
 
             # Store lifecycle hooks scripts in S3

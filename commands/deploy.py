@@ -202,7 +202,9 @@ class Deploy():
             self._worker.update_status("aborted", message=self._get_notification_message_aborted(self._job['modules']))
             return
 
-        refresh_stage2(self._app['provider'], self._config.get('bucket_region', self._app['region']), self._config, self._log_file)
+        refresh_stage2(cloud_connections.get(self._app['provider'])(self._log_file),
+                self._config.get('bucket_region', self._app['region']), self._config
+                )
         module_list = []
         for module in self._apps_modules:
             if 'name' in module:

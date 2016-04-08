@@ -1,5 +1,6 @@
 import boto
 from boto import vpc, iam
+from ghost_log import log
 from boto.sts import STSConnection 
 from cloud_connection import ACloudConnection
 

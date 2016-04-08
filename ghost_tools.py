@@ -3,7 +3,6 @@ from subprocess import call
 import yaml
 
 from jinja2 import Environment, FileSystemLoader
-from settings import cloud_connections
 
 from ghost_log import log
 
@@ -65,11 +64,10 @@ def render_stage2(config, s3_region):
         return template.render(bucket_s3=bucket_s3, max_deploy_history=max_deploy_history, bucket_region=s3_region)
     return None
 
-def refresh_stage2(provider, region, config, log_file=None, **kwargs):
+def refresh_stage2(cloud_connection, region, config):
     """
     Will update the second phase of bootstrap script on S3
     """
-    cloud_connection = cloud_connections.get(provider)(log_file, kwargs)
     conn = cloud_connection.get_connection(region, ["s3"])
     bucket_s3 = config['bucket_s3']
     bucket = conn.get_bucket(bucket_s3)
