@@ -16,6 +16,7 @@ COLOR_DICT = {
 }
 
 COLOR_REGEX = re.compile(r'(\^\[|\033)\[(?P<arg_1>\d+)(;(?P<arg_2>\d+)(;(?P<arg_3>\d+))?)?m(?P<text>.*?)(?=\^\[|\033|$)')
+LOG_LINE_REGEX = re.compile(r'\d+/\d+/\d+ \d+:\d+:\d+ .*: .*')
 
 BOLD_TEMPLATE = '<span style="color: rgb{}; font-weight: bolder">{}</span>'
 LIGHT_TEMPLATE = '<span style="color: rgb{}">{}</span>'
@@ -99,8 +100,14 @@ def create_ws(app):
                 new_pos = 0
                 with open(filename) as f:
                     f.seek(last_pos)
-                    for line in f:
-                        lines.append(ansi_to_html(line).replace('\n', '<br>'))
+                    for idx, line in enumerate(f):
+                        for sub_line in line.split("\\n"):
+                            clean_line = ansi_to_html(sub_line).replace('\n', '<br/>')
+                            if LOG_LINE_REGEX.match(sub_line) is not None:
+                                lines.append('%s<div class="panel panel-default"><em class="panel-heading">%s</em><div class="panel-body">'
+                                    % ('</div></div>' if idx > 0 else '', clean_line))
+                            else:
+                                lines.append('<samp>%s</samp>' % clean_line)
                     new_pos = f.tell()
 
                 # Send new data to WebSocket client, if any
