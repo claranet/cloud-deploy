@@ -5,7 +5,7 @@ from bson.objectid import ObjectId
 
 from ghost_tools import GCallException, get_app_module_name_list, clean_local_module_workspace
 from ghost_tools import get_aws_connection_data
-from settings import cloud_connections
+from settings import cloud_connections, DEFAULT_PROVIDER
 from ghost_log import log
 from ghost_aws import deploy_module_on_hosts
 
@@ -25,10 +25,10 @@ class Redeploy():
         self._config = worker._config
         self._log_file = worker.log_file
         self._connection_data = get_aws_connection_data(
-                self._app.get(['assumed_account_id'], ''),
-                self._app.get(['assumed_role_name'], '')
+                self._app.get('assumed_account_id', ''),
+                self._app.get('assumed_role_name', '')
                 )
-        self._cloud_connection = cloud_connections.get(self._app['provider'])(
+        self._cloud_connection = cloud_connections.get(self._app.get('provider', DEFAULT_PROVIDER))(
                 self._log_file,
                 **self._connection_data
                 )

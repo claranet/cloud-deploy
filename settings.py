@@ -43,6 +43,8 @@ cloud_connections = {
         "azure": "NotYetSupported",
         "google": "NotYetSupported"
 }
+# Default cloud provider
+DEFAULT_PROVIDER = "aws"
 
 DEBUG = True
 

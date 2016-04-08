@@ -7,6 +7,7 @@ from ghost_log import log
 from ghost_aws import create_launch_config, generate_userdata, check_autoscale_exists, purge_launch_configuration, update_auto_scale
 from settings import cloud_connections
 from ghost_tools import get_aws_connection_data
+from settings import cloud_connections, DEFAULT_PROVIDER
 
 COMMAND_DESCRIPTION = "Build Image"
 
@@ -23,10 +24,10 @@ class Buildimage():
         self._config = worker._config
         self._log_file = worker.log_file
         self._connection_data = get_aws_connection_data(
-                self._app.get(['assumed_account_id'], ''),
-                self._app.get(['assumed_role_name'], '')
+                self._app.get('assumed_account_id', ''),
+                self._app.get('assumed_role_name', '')
                 )
-        self._cloud_connection = cloud_connections.get(self._app['provider'])(
+        self._cloud_connection = cloud_connections.get(self._app.get('provider', DEFAULT_PROVIDER))(
                 self._log_file,
                 **self._connection_data
                 )

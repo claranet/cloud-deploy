@@ -19,7 +19,7 @@ def get_aws_connection_data(assumed_account_id, assumed_role_name):
     if assumed_account_id and assumed_role_name:
         aws_connection_data = dict([("assumed_account_id", assumed_account_id), ("assumed_role_name", assumed_role_name)])
     else:
-        aws_connection_data = {}
+        aws_connection_data = dict()
     return (aws_connection_data)
 
 def render_stage2(config, s3_region):

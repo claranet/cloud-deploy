@@ -13,7 +13,7 @@ from ghost_tools import GCallException, gcall, get_app_module_name_list, clean_l
 from ghost_tools import get_aws_connection_data
 from ghost_log import log
 from ghost_aws import deploy_module_on_hosts
-from settings import cloud_connections
+from settings import cloud_connections, DEFAULT_PROVIDER
 
 ROOT_PATH = os.path.dirname(os.path.realpath(__file__))
 
@@ -38,10 +38,10 @@ class Deploy():
         self._config = worker._config
         self._worker = worker
         self._connection_data = get_aws_connection_data(
-                self._app.get(['assumed_account_id'], ''),
-                self._app.get(['assumed_role_name'], '')
+                self._app.get('assumed_account_id', ''),
+                self._app.get('assumed_role_name', '')
                 )
-        self._cloud_connection = cloud_connections.get(self._app['provider'])(
+        self._cloud_connection = cloud_connections.get(self._app.get('provider', DEFAULT_PROVIDER))(
                 self._log_file,
                 **self._connection_data
                 )
@@ -72,7 +72,7 @@ class Deploy():
     def _get_mirror_path_from_module(self, module):
         """
         >>> class worker:
-        ...     app = None
+        ...     app = {}
         ...     job = None
         ...     log_file = None
         ...     _config = None
@@ -146,7 +146,7 @@ class Deploy():
         """
         >>> from bson.objectid import ObjectId
         >>> class worker:
-        ...   app = None
+        ...   app = {}
         ...   job = None
         ...   log_file = None
         ...   _config = None
@@ -163,7 +163,7 @@ class Deploy():
     def _get_notification_message_failed(self, module_list, e):
         """
         >>> class worker:
-        ...   app = None
+        ...   app = {}
         ...   job = None
         ...   log_file = None
         ...   _config = None
@@ -179,7 +179,7 @@ class Deploy():
     def _get_notification_message_aborted(self, modules):
         """
         >>> class worker:
-        ...   app = None
+        ...   app = {}
         ...   job = None
         ...   log_file = None
         ...   _config = None
@@ -280,7 +280,7 @@ class Deploy():
         if commit 8f6c4dba19559319a6a898d093f3f3aaa09cd6e9 is not in the history.
 
         >>> class worker:
-        ...   app = None
+        ...   app = {}
         ...   job = None
         ...   log_file = None
         ...   _config = None

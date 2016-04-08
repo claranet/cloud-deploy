@@ -2,12 +2,28 @@ import env
 import instance_role
 import resources
 import volumes
+import provider
 
 apps_schema = {
     'name': {
         'type': 'string',
         'regex': '^[a-zA-Z0-9_.+-]*$',
         'required': True
+    },
+    'provider': {
+        'type': 'string',
+        'allowed': provider.providers,
+        'required': True
+    },
+    'assumed_account_id': {
+        'type': 'string',
+        'regex': '^[a-zA-Z0-9_.+-]*$',
+        'required': False
+    },
+    'assumed_role_name': {
+        'type': 'string',
+        'regex': '^[a-zA-Z0-9_.+-]*$',
+        'required': False
     },
     'region': {'type': 'string'},
     'instance_type': {'type': 'string'},
