@@ -7,7 +7,7 @@ from boto import s3
 from ghost_tools import refresh_stage2
 from ghost_log import log
 from ghost_aws import create_launch_config, generate_userdata, check_autoscale_exists, purge_launch_configuration, update_auto_scale
-from settings import cloud_connections
+from settings import cloud_connections, DEFAULT_PROVIDER
 from ghost_tools import get_aws_connection_data
 
 COMMAND_DESCRIPTION = "Update LifeCycle Hooks scripts"
@@ -43,14 +43,14 @@ class Updatelifecyclehooks():
     def execute(self):
         try:
             app = self._app
-            refresh_stage2(cloud_connections.get(self._app['provider'])(self._log_file),
+            refresh_stage2(cloud_connections.get(self._app.get('provider', DEFAULT_PROVIDER))(self._log_file),
                     self._config.get('bucket_region', self._app['region']), self._config
                     )
             log('INFO: refreshed /ghost/stage2', self._log_file)
 
             # Store lifecycle hooks scripts in S3
             lifecycle_hooks = app.get('lifecycle_hooks', None)
-            cloud_connection = cloud_connections.get(self._app['provider'])(self._log_file)
+            cloud_connection = cloud_connections.get(self._app.get('provider', DEFAULT_PROVIDER))(self._log_file)
             conn = cloud_connection.get_connection(self._config.get('bucket_region', self._app['region']), ["s3"])
             bucket = conn.get_bucket(self._config['bucket_s3'])
             prefix = '/ghost/{app}/{env}/{role}'.format(app=app['name'], env=app['env'], role=app['role'])
