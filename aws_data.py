@@ -7,7 +7,7 @@ with open('aws_data_instance_types.json') as data_file:
 
 instance_types = {}
 
-# Instance type from China (cn-north-1) region are not available like in others
+# Instance types from China (cn-north-1) region are not available like in others
 
 instance_types['cn-north-1'] = {
     InstanceType(name='t2.micro',   cores='1',  memory='1',    disk='EBS only'),
