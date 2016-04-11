@@ -1,6 +1,7 @@
 import base64
 import calendar
 import datetime
+import io
 import os
 import sys
 from sh import git
@@ -431,7 +432,7 @@ class Deploy():
 
         # Store module metadata in tarball
         log("Create metadata file for inclusion in target package", self._log_file)
-        module_metadata = """
+        module_metadata = u"""
 #!/bin/bash
 
 GHOST_MODULE_REPO="{repo}"
@@ -447,12 +448,10 @@ GHOST_MODULE_USER="{user}"
             "commit": commit,
             "commitmsg": commit_message,
             "user": self._job['user']
-        } 
-        with open(clone_path + '/.ghost-metadata', 'w') as f:
-            if sys.version > '3':
-                f.write(bytes(module_metadata.format(**metavars), 'UTF-8'))
-            else:
-                f.write(module_metadata.format(**metavars))
+        }
+        module_metadata = module_metadata.format(**metavars)
+        with io.open(clone_path + '/.ghost-metadata', mode='w', encoding='utf-8') as f:
+            f.write(module_metadata)
         gcall('du -hs .', 'Display current build directory disk usage', self._log_file)
 
         # Create tar archive
