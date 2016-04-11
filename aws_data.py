@@ -38,7 +38,7 @@ instance_types['cn-north-1'] = {
     InstanceType(name='i2.2xlarge', cores='8',  memory='61',   disk='2 x 800 SSD'),
     InstanceType(name='i2.4xlarge', cores='16', memory='122',  disk='4 x 800 SSD'),
     InstanceType(name='i2.8xlarge', cores='32', memory='244',  disk='8 x 800 SSD'),
-}
+} # yapf: disable
 
 for region_data in data:
     region = region_data['region']
@@ -48,4 +48,8 @@ for region_data in data:
     for generation in instanceTypes:
         generation_type = generation['type']
         for size in generation['sizes']:
-            instance_types[region].append(InstanceType(name=size['size'], cores=size['vCPU'], memory=size['memoryGiB'], disk=size['storageGB']))
+            instance_types[region].append(InstanceType(name=size['size'],
+                                                       cores=size['vCPU'],
+                                                       memory=size[
+                                                           'memoryGiB'],
+                                                       disk=size['storageGB']))
