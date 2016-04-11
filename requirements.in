@@ -1,6 +1,6 @@
 # This file is used by pip-compile to generate requirements.txt
 # Everything you directly use in your source code should be a top-level dependency recorded here.
-# Don't pin them—unless you want them pinned, of course.
+# Don't pin them unless you want them pinned, of course.
 argparse
 bcrypt
 blinker                   # needed at runtime for flask events
