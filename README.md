@@ -7,7 +7,7 @@ Installing requirements:
 
 Updating dependencies:
 
-    $ pip-compile
+    $ pip-compile -U
     $ pip-sync
 
 Running unit tests:

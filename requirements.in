@@ -17,7 +17,6 @@ gevent
 gevent-websocket
 gunicorn                  # needed at runtime
 Jinja2
-pip
 pip-tools
 pymongo
 PyYAML
