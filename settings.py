@@ -39,12 +39,12 @@ DOMAIN = {
 }
 
 cloud_connections = {
-        "aws": AWSConnection,
-        "azure": "NotYetSupported",
-        "google": "NotYetSupported"
+    'aws': AWSConnection,
+    'azure': 'NotYetSupported',
+    'google': 'NotYetSupported'
 }
 # Default cloud provider
-DEFAULT_PROVIDER = "aws"
+DEFAULT_PROVIDER = 'aws'
 
 DEBUG = True
 
