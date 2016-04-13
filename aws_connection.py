@@ -47,7 +47,8 @@ class AWSConnection(ACloudConnection):
                 self._parameters[session_token] = assumed_role_object.credentials.session_token
                 result = True
             except:
-                log("An error occured when creating connection, check the exception error message for more details", self._log_file)
+                if self._log_file:
+                    log("An error occured when creating connection, check the exception error message for more details", self._log_file)
                 result = False
                 raise
         return (result)
@@ -66,7 +67,8 @@ class AWSConnection(ACloudConnection):
                         security_token=self._parameters[session_token]
                 )
         except:
-            log("An error occured when creating connection, check the exception error message for more details", self._log_file)
+            if self._log_file:
+                log("An error occured when creating connection, check the exception error message for more details", self._log_file)
             raise
         return (connection)
 
@@ -84,7 +86,8 @@ class AWSConnection(ACloudConnection):
                         security_token=self._parameters[session_token]
                 )
         except:
-            log("An error occured when creating connection, check the exception error message for more details", self._log_file)
+            if self._log_file:
+                log("An error occured when creating connection, check the exception error message for more details", self._log_file)
             raise
         return (regions)
 
@@ -94,6 +97,7 @@ class AWSConnection(ACloudConnection):
             aws_service = self._get_boto_service(boto, services)
             service = aws_service(*args, **kwargs)
         except:
-            log("An error occured when creating connection, check the exception error message for more details", self._log_file)
+            if self._log_file:
+                log("An error occured when creating connection, check the exception error message for more details", self._log_file)
             raise
         return (service)
