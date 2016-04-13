@@ -193,7 +193,7 @@ function exit_deployment() {
 function download_and_run_lifecycle_hook_script() {
     local script_name=$1
     echo "Downloading ${script_name} script" >> /tmp/$LOGFILE
-    /usr/local/bin/aws s3 cp s3://$S3_BUCKET/ghost/$APP/$ENV/$ROLE/${script_name} /tmp/ghost_${script_name} --region "$EC2_REGION"
+    /usr/local/bin/aws s3 cp s3://$S3_BUCKET/ghost/$APP/$ENV/$ROLE/${script_name} /tmp/ghost_${script_name} --region "$S3_REGION"
     if [ -e /tmp/ghost_${script_name} ]; then
         echo "Executing /tmp/ghost_${script_name} script..." >> /tmp/$LOGFILE
         chmod +x /tmp/ghost_${script_name}
