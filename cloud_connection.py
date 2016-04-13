@@ -10,6 +10,13 @@ class ACloudConnection(object):
         self._log_file = log_file
         self._parameters = kwargs
 
+    def check_credentials(self):
+        """
+        method to be implemented by all class inheriting from this class
+        """
+        print self._log_file
+        print self._parameters
+
     def get_connection(self, region, services):
         """
         method to be implemented by all class inheriting from this class

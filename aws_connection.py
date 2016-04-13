@@ -1,8 +1,10 @@
 import boto
 from boto import vpc, iam
-from ghost_log import log
+from boto.ec2 import autoscale
 from boto.sts import STSConnection 
 from cloud_connection import ACloudConnection
+
+from ghost_log import log
 
 class AWSConnection(ACloudConnection):
    
@@ -11,7 +13,7 @@ class AWSConnection(ACloudConnection):
         assumed_account_id = self._parameters.get('assumed_account_id', None)
         if (assumed_account_id):
             self._role_arn = "arn:aws:iam::" + assumed_account_id + ":role/"
-            self._role_arn += self._parameters.get('assumed_role_name', None)
+            self._role_arn += self._parameters.get('assumed_role_name', '')
             self._role_session = "ghost_aws_cross_account"
         else:
             self._role_arn = None
@@ -29,6 +31,26 @@ class AWSConnection(ACloudConnection):
                 return(getattr(boto_obj, attributes[0]))
             return(self._get_boto_service(getattr(boto_obj, attributes[0]), attributes[1:]))
 
+    def check_credentials(self):
+        result = False
+        if not self._role_arn:
+            result = True
+        else:
+            try:
+                sts_connection = STSConnection()
+                assumed_role_object = sts_connection.assume_role(
+                        role_arn=self._role_arn,
+                        role_session_name=self._role_session
+                )
+                self._parameters[access_key] = assumed_role_object.credentials.access_key
+                self._parameters[secret_key] = assumed_role_object.credentials.secret_key
+                self._parameters[session_token] = assumed_role_object.credentials.session_token
+                result = True
+            except:
+                log("An error occured when creating connection, check the exception error message for more details", self._log_file)
+                result = False
+                raise
+        return (result)
 
     def get_connection(self, region, services):
         connection = None
@@ -36,20 +58,12 @@ class AWSConnection(ACloudConnection):
             aws_service = self._get_boto_service(boto, services)
             if not self._role_arn:
                 connection = aws_service.connect_to_region(region)
-            else:
-                sts_connection = STSConnection()
-                assumed_role_object = sts_connection.assume_role(
-                        role_arn=self._role_arn,
-                        role_session_name=self._role_session
-                )
-                access_key = assumed_role_object.credentials.access_key
-                secret_key = assumed_role_object.credentials.secret_key
-                session_token = assumed_role_object.credentials.session_token
+            elif self.check_credentials():
                 connection = aws_service.connect_to_region(
                         region,
-                        aws_access_key_id=access_key,
-                        aws_secret_access_key=secret_key,
-                        security_token=session_token
+                        aws_access_key_id=self._parameters[access_key],
+                        aws_secret_access_key=self._parameters[secret_key],
+                        security_token=self._parameters[session_token]
                 )
         except:
             log("An error occured when creating connection, check the exception error message for more details", self._log_file)
@@ -59,25 +73,18 @@ class AWSConnection(ACloudConnection):
     def get_regions(self, services):
         regions = None
         try:
-            aws_service = self._get_boto_service(boto, services)
+            aws_service = self.get_boto_service(boto, services)
             if not self._role_arn:
                 regions = aws_service.regions()
-            else:
-                sts_connection = STSConnection()
-                assumed_role_object = sts_connection.assume_role(
-                        role_arn=self._role_arn,
-                        role_session_name=self._role_session
-                )
-                access_key = assumed_role_object.credentials.access_key
-                secret_key = assumed_role_object.credentials.secret_key
-                session_token = assumed_role_object.credentials.session_token
+            elif self._check_credentials():
                 regions = aws_service.regions(
-                        aws_access_key_id=access_key,
-                        aws_secret_access_key=secret_key,
-                        security_token=session_token
+                        region,
+                        aws_access_key_id=self._parameters[access_key],
+                        aws_secret_access_key=self._parameters[secret_key],
+                        security_token=self._parameters[session_token]
                 )
         except:
-            #log("An error occured when creating connection, check the exception error message for more details", self._log_file)
+            log("An error occured when creating connection, check the exception error message for more details", self._log_file)
             raise
         return (regions)
 
@@ -87,6 +94,6 @@ class AWSConnection(ACloudConnection):
             aws_service = self._get_boto_service(boto, services)
             service = aws_service(*args, **kwargs)
         except:
-            #log("An error occured when creating connection, check the exception error message for more details", self._log_file)
+            log("An error occured when creating connection, check the exception error message for more details", self._log_file)
             raise
         return (service)
