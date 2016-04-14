@@ -7,6 +7,8 @@ import boto.ec2.autoscale
 from pypacker import Packer
 from ghost_tools import log, create_launch_config, generate_userdata, check_autoscale_exists, purge_launch_configuration
 
+COMMAND_DESCRIPTION = "Update the autoscaling group and its LaunchConfiguration"
+
 class Updateautoscaling():
     _app = None
     _job = None

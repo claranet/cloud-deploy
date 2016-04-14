@@ -20,6 +20,7 @@ from models.jobs import jobs, CANCELLABLE_JOB_STATUSES, DELETABLE_JOB_STATUSES
 from models.deployments import deployments
 
 from ghost_tools import get_rq_name_from_app
+from ghost_blueprints import commands_blueprint
 
 def get_apps_db():
     return ghost.data.driver.db[apps['datasource']['source']]
@@ -227,6 +228,8 @@ ghost.on_delete_resource_job_enqueueings += pre_delete_job_enqueueings
 
 ghost.ghost_redis_connection = Redis()
 
+# Register non-mongodb resources as plain Flask blueprints (they won't appear in /docs)
+ghost.register_blueprint(commands_blueprint)
 
 if __name__ == '__main__':
     ghost.run(host='0.0.0.0')
