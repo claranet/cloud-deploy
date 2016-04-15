@@ -34,7 +34,7 @@ cd $BACKUP
 mongodump
 
 # Copy configuration
-cp /home/admin/ghost/*.yml .
+cp $SCRIPTPATH/../*.yml .
 
 # Copy jobs' logs
 mkdir logs
@@ -49,4 +49,4 @@ tar -czf $FILE $BACKUP
 
 # Cleanup
 rm -rf $BACKUP
-rm -rf $FILE
+rm -f $FILE
