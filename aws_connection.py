@@ -78,7 +78,7 @@ class AWSConnection(ACloudConnection):
             aws_service = self._get_boto_service(boto, services)
             if not self._role_arn:
                 regions = aws_service.regions()
-            elif self._check_credentials():
+            elif self.check_credentials():
                 regions = aws_service.regions(
                         region,
                         aws_access_key_id=self._parameters['access_key'],
