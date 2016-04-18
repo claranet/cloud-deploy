@@ -80,7 +80,6 @@ class AWSConnection(ACloudConnection):
                 regions = aws_service.regions()
             elif self.check_credentials():
                 regions = aws_service.regions(
-                        region,
                         aws_access_key_id=self._parameters['access_key'],
                         aws_secret_access_key=self._parameters['secret_key'],
                         security_token=self._parameters['session_token']
