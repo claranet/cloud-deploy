@@ -42,9 +42,9 @@ class AWSConnection(ACloudConnection):
                         role_arn=self._role_arn,
                         role_session_name=self._role_session
                 )
-                self._parameters[access_key] = assumed_role_object.credentials.access_key
-                self._parameters[secret_key] = assumed_role_object.credentials.secret_key
-                self._parameters[session_token] = assumed_role_object.credentials.session_token
+                self._parameters['access_key'] = assumed_role_object.credentials.access_key
+                self._parameters['secret_key'] = assumed_role_object.credentials.secret_key
+                self._parameters['session_token'] = assumed_role_object.credentials.session_token
                 result = True
             except:
                 if self._log_file:
@@ -62,9 +62,9 @@ class AWSConnection(ACloudConnection):
             elif self.check_credentials():
                 connection = aws_service.connect_to_region(
                         region,
-                        aws_access_key_id=self._parameters[access_key],
-                        aws_secret_access_key=self._parameters[secret_key],
-                        security_token=self._parameters[session_token]
+                        aws_access_key_id=self._parameters['access_key'],
+                        aws_secret_access_key=self._parameters['secret_key'],
+                        security_token=self._parameters['session_token']
                 )
         except:
             if self._log_file:
@@ -81,9 +81,9 @@ class AWSConnection(ACloudConnection):
             elif self._check_credentials():
                 regions = aws_service.regions(
                         region,
-                        aws_access_key_id=self._parameters[access_key],
-                        aws_secret_access_key=self._parameters[secret_key],
-                        security_token=self._parameters[session_token]
+                        aws_access_key_id=self._parameters['access_key'],
+                        aws_secret_access_key=self._parameters['secret_key'],
+                        security_token=self._parameters['session_token']
                 )
         except:
             if self._log_file:
