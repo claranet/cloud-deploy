@@ -138,6 +138,8 @@ class Buildimage():
     def execute(self):
         skip_salt_bootstrap_option = self._job['options'][0] if 'options' in self._job and len(self._job['options']) > 0 else True
         json_packer = self._format_packer_from_app(skip_salt_bootstrap_option)
+        json_packer_for_log = json.loads(json_packer_for_log)
+        del json_packer_for_log['credentials']
         log("Generating a new AMI", self._log_file)
         log("Packer options : %s" % json_packer, self._log_file)
         pack = Packer(json_packer, self._config, self._log_file, self._job['_id'])
