@@ -121,7 +121,6 @@ def get_rq_name_from_app(app):
     'default:*:*'
     """
     rq_worker_strategy = config.get('rq_worker_strategy', 'one_worker_per_app')
-    print app
     env=app['env']
     name=app['name']
     role=app['role']

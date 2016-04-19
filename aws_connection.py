@@ -55,8 +55,8 @@ class AWSConnection(ACloudConnection):
 
     def get_credentials(self):
         credentials = {
-                'access_key': None
-                'secret_key': None
+                'access_key': None,
+                'secret_key': None,
                 'session_token': None
         }
         if self._role_arn:
