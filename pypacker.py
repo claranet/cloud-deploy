@@ -16,6 +16,11 @@ class Packer:
     def __init__(self, packer_config, config, log_file, job_id):
         self._log_file = log_file
         self.packer_config = json.loads(packer_config)
+        if self.packer_config['credentials']['access_key']:
+            self._assumed_role = True
+        else:
+            self._assumed_role = False
+
         self.unique = str(job_id)
         if not os.path.exists(PACKER_JSON_PATH):
             os.makedirs(PACKER_JSON_PATH)
@@ -115,14 +120,6 @@ class Packer:
     def _run_packer_cmd(self, cmd):
         result = ""
         packer_env = os.environ.copy()
-        if self.packer_config['credentials']['access_key']:
-            packer_env.update(
-                    {
-                        'aws_access_key': self.packer_config['credentials']['access_key'],
-                        'aws_secret_key': self.packer_config['credentials']['secret_key'],
-                        'token': self.packer_config['credentials']['session_token']
-                    }
-            )
         if not os.path.isdir(PACKER_LOGDIR):
             os.makedirs(PACKER_LOGDIR)
         packer_env['TMPDIR'] = PACKER_LOGDIR
@@ -154,7 +151,30 @@ class Packer:
         self._build_salt_pillar(features)
         self._build_packer_json()
 
-        ret_code, result = self._run_packer_cmd(['packer', 'build', '-machine-readable', self.packer_file_path])
+        if self._assumed_role:
+            aws_access_key = "-var " + "'" + "aws_access_key=" + self.packer_config['credentials']['access_key'] + "'"
+            aws_secret_key = "-var " + "'" + "aws_secret_key=" + self.packer_config['credentials']['secret_key'] + "'"
+            token = "-var " + "'" + "token=" + self.packer_config['credentials']['session_token'] + "'"
+            ret_code, result = self._run_packer_cmd(
+                                            [
+                                                'packer',
+                                                'build',
+                                                '-machine-readable',
+                                                aws_access_key,
+                                                aws_secret_key,
+                                                token,
+                                                self.packer_file_path
+                                            ]
+                                        )
+        else:
+            ret_code, result = self._run_packer_cmd(
+                                            [
+                                                'packer',
+                                                'build',
+                                                '-machine-readable',
+                                                self.packer_file_path
+                                            ]
+                                        )
         if (ret_code == 0):
             ami = result.split(':')[1]
         else:
