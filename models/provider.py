@@ -1,1 +1,0 @@
-providers = ['aws', 'azure', 'google']

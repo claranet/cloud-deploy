@@ -2,7 +2,6 @@ import env
 import instance_role
 import resources
 import volumes
-import provider
 
 apps_schema = {
     'name': {
@@ -12,7 +11,7 @@ apps_schema = {
     },
     'provider': {
         'type': 'string',
-        'allowed': provider.providers,
+        'allowed': ['aws'],
         'required': True
     },
     'assumed_account_id': {
