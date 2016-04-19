@@ -4,8 +4,8 @@ import traceback
 
 from boto import s3
 
-from ghost_tools import log, refresh_stage2
-from ghost_tools import create_launch_config, generate_userdata, check_autoscale_exists, purge_launch_configuration, update_auto_scale
+from ghost_tools import create_launch_config, generate_userdata, check_autoscale_exists, purge_launch_configuration, update_auto_scale, refresh_stage2
+from ghost_log import log
 
 COMMAND_DESCRIPTION = "Update LifeCycle Hooks scripts"
 

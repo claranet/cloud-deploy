@@ -10,7 +10,8 @@ from time import sleep
 
 import boto.s3
 
-from ghost_tools import GCallException, gcall, deploy_module_on_hosts, log, refresh_stage2, get_app_module_name_list, clean_local_module_workspace
+from ghost_tools import GCallException, gcall, deploy_module_on_hosts, refresh_stage2, get_app_module_name_list, clean_local_module_workspace
+from ghost_log import log
 
 ROOT_PATH = os.path.dirname(os.path.realpath(__file__))
 

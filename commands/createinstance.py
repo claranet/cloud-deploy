@@ -1,9 +1,11 @@
-from ghost_tools import log, create_block_device, generate_userdata
 from fabric.colors import green as _green, yellow as _yellow, red as _red
 import boto.ec2
 import os
 import time
 from jinja2 import Environment, FileSystemLoader
+
+from ghost_log import log
+from ghost_tools import create_block_device, generate_userdata
 
 COMMAND_DESCRIPTION = "Create a new instance"
 

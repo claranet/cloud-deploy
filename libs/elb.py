@@ -13,7 +13,9 @@
 #!/usr/bin/env python
 import debug
 import boto.ec2.elb
-from ghost_tools import log, get_elb_from_autoscale
+
+from ghost_log import log
+from ghost_tools import get_elb_from_autoscale
 
 def get_elb_instance_status_autoscaling_group(elb_conn, as_group, region, conn_as):
     """ Return a dict of instance ids as key and their status as value per elb.

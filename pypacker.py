@@ -1,10 +1,11 @@
 import sh
 from sh import git
 from subprocess32 import Popen, PIPE
-from ghost_tools import log
 import yaml
 import json
 import os
+
+from ghost_log import log
 
 PACKER_JSON_PATH="/tmp/packer/"
 PACKER_LOGDIR="/var/log/ghost/packer"

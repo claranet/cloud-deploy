@@ -3,7 +3,9 @@ import sys
 import tempfile
 import boto.s3
 from bson.objectid import ObjectId
-from ghost_tools import GCallException, log, deploy_module_on_hosts, get_app_module_name_list, clean_local_module_workspace
+
+from ghost_tools import GCallException, deploy_module_on_hosts, get_app_module_name_list, clean_local_module_workspace
+from ghost_log import log
 
 COMMAND_DESCRIPTION = "Re-deploy an old module package"
 

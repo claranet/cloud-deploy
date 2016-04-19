@@ -8,7 +8,8 @@ from rq import get_current_job, Connection
 from pymongo import MongoClient
 from bson.objectid import ObjectId
 
-from ghost_tools import log
+from ghost_log import log
+
 from notification import Notification
 from settings import MONGO_DBNAME
 
