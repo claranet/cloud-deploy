@@ -19,7 +19,7 @@
 """
 from elb import get_elb_instance_status_autoscaling_group, get_connection_draining_value, register_instance_from_elb
 from ghost_tools import GCallException
-from ghost_tools import check_autoscale_exists, get_autoscaling_group_and_processes_to_suspend, suspend_autoscaling_group_processes, launch_deploy, find_ec2_running_instances
+from ghost_aws import check_autoscale_exists, get_autoscaling_group_and_processes_to_suspend, suspend_autoscaling_group_processes, launch_deploy, find_ec2_running_instances
 import time
 import haproxy
 import boto.ec2.autoscale

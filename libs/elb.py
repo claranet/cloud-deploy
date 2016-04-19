@@ -15,7 +15,16 @@ import debug
 import boto.ec2.elb
 
 from ghost_log import log
-from ghost_tools import get_elb_from_autoscale
+
+def get_elb_from_autoscale(as_name, as_conn):
+    """ Return a list of ELB names defined in
+        the Autoscaling Group in parameter.
+
+        :param  as_name  string: The Autoscaling Group name.
+        :param  region   string: The boto Autoscaling Group connection.
+        :return  a list of ELB names.
+    """
+    return as_conn.get_all_groups(names=[as_name])[0].load_balancers
 
 def get_elb_instance_status_autoscaling_group(elb_conn, as_group, region, conn_as):
     """ Return a dict of instance ids as key and their status as value per elb.

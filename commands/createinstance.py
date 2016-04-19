@@ -5,7 +5,7 @@ import time
 from jinja2 import Environment, FileSystemLoader
 
 from ghost_log import log
-from ghost_tools import create_block_device, generate_userdata
+from ghost_aws import create_block_device, generate_userdata
 
 COMMAND_DESCRIPTION = "Create a new instance"
 
