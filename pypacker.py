@@ -17,7 +17,7 @@ class Packer:
     def __init__(self, packer_config, config, log_file, job_id):
         self._log_file = log_file
         self.packer_config = json.loads(packer_config)
-        if self.packer_config['credentials']['access_key']:
+        if self.packer_config['credentials']['aws_access_key']:
             self._assumed_role = True
         else:
             self._assumed_role = False
