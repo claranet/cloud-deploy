@@ -118,7 +118,7 @@ class Packer:
 
         packer_json['builders'] = builders
         packer_json['provisioners'] = provisioners
-        packer_json['variables'] = provisioners
+        packer_json['variables'] = variables
         self.packer_file_path = PACKER_JSON_PATH + self.unique + ".json"
         log('packer file path: {0}'.format(self.packer_file_path), self._log_file)
         stream = file(self.packer_file_path, 'w')
