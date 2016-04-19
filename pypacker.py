@@ -153,7 +153,7 @@ class Packer:
         self._build_packer_json()
 
         if self._assumed_role:
-            packer_var = PackerVar
+            packer_var = PackerVar()
             packer_var.create_vars(self.packer_config['credentials'])
             var_file = "-var-file=" + packer_var.get_var_file()
             ret_code, result = self._run_packer_cmd(
