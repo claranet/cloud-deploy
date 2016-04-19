@@ -115,6 +115,14 @@ class Packer:
     def _run_packer_cmd(self, cmd):
         result = ""
         packer_env = os.environ.copy()
+        if self.packer_config['credentials']['access_key']:
+            packer_env.update(
+                    {
+                        'aws_access_key': self.packer_config['credentials']['access_key'],
+                        'aws_secret_key': self.packer_config['credentials']['secret_key'],
+                        'token': self.packer_config['credentials']['session_token']
+                    }
+            )
         if not os.path.isdir(PACKER_LOGDIR):
             os.makedirs(PACKER_LOGDIR)
         packer_env['TMPDIR'] = PACKER_LOGDIR

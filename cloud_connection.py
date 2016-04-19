@@ -31,6 +31,13 @@ class ACloudConnection(object):
         print self._log_file
         print self._parameters
 
+    def get_credentials(self):
+        """
+        method to be implemented by all class inheriting from this class
+        """
+        print self._log_file
+        print self._parameters
+
     def launch_service(self, services, *args, **kwargs):
         """
         method to be implemented by all class inheriting from this class

@@ -53,6 +53,27 @@ class AWSConnection(ACloudConnection):
                 raise
         return (result)
 
+    def get_credentials(self):
+        credentials = {
+                'access_key': None
+                'secret_key': None
+                'session_token': None
+        }
+        if self._role_arn:
+            try:
+                self.check_credentials()
+                credentials['access_key'] = self._parameters['access_key']
+                credentials['secret_key'] = self._parameters['secret_key']
+                credentials['session_token'] = self._parameters['session_token']
+            except:
+                if self._log_file:
+                    log("An error occured when creating connection, check the exception error message for more details", self._log_file)
+                raise
+        return(credentials)
+
+
+        print self._parameters
+
     def get_connection(self, region, services):
         connection = None
         try:
