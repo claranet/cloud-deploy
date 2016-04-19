@@ -17,14 +17,16 @@
     https://bitbucket.org/mattboret/hapi
 
 """
-from elb import get_elb_instance_status_autoscaling_group, get_connection_draining_value, register_instance_from_elb
-from ghost_tools import GCallException
-from ghost_aws import check_autoscale_exists, get_autoscaling_group_and_processes_to_suspend, suspend_autoscaling_group_processes, launch_deploy, find_ec2_running_instances
+
 import time
 import haproxy
 import boto.ec2.autoscale
 import boto.ec2.elb
 
+from ghost_tools import GCallException
+from ghost_aws import launch_deploy, find_ec2_running_instances
+
+from elb import get_elb_instance_status_autoscaling_group, get_connection_draining_value, register_instance_from_elb
 
 class SafeDeployment():
     """ Class which will manage the safe deployment process """
