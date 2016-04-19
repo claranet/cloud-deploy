@@ -1,6 +1,7 @@
 import sh
 from sh import git
 from subprocess32 import Popen, PIPE
+from packer_variables import PackerVar
 import yaml
 import json
 import os
@@ -152,17 +153,15 @@ class Packer:
         self._build_packer_json()
 
         if self._assumed_role:
-            aws_access_key = "-var " + "'" + "aws_access_key=" + self.packer_config['credentials']['access_key'] + "'"
-            aws_secret_key = "-var " + "'" + "aws_secret_key=" + self.packer_config['credentials']['secret_key'] + "'"
-            token = "-var " + "'" + "token=" + self.packer_config['credentials']['session_token'] + "'"
+            packer_var = PackerVar
+            packer_var.create_vars(self.packer_config['credentials'])
+            var_file = "-var-file=" + packer_var.get_var_file()
             ret_code, result = self._run_packer_cmd(
                                             [
                                                 'packer',
                                                 'build',
                                                 '-machine-readable',
-                                                aws_access_key,
-                                                aws_secret_key,
-                                                token,
+                                                var_file,
                                                 self.packer_file_path
                                             ]
                                         )
