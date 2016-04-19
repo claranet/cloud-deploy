@@ -110,8 +110,15 @@ class Packer:
             'type': 'shell',
             'inline':["sudo rm -rf /srv/salt || echo 'salt: no cleanup salt'","sudo rm -rf /srv/pillar || echo 'salt: no cleanup pillar'"]
         }]
+        variables = {
+            "aws_access_key": "{{env `AWS_ACCESS_KEY_ID`}}",
+            "aws_secret_key": "{{env `AWS_SECRET_ACCESS_KEY`}}",
+            "token": "{{env `AWS_SESSION_TOKEN`}}"
+        }
+
         packer_json['builders'] = builders
         packer_json['provisioners'] = provisioners
+        packer_json['variables'] = provisioners
         self.packer_file_path = PACKER_JSON_PATH + self.unique + ".json"
         log('packer file path: {0}'.format(self.packer_file_path), self._log_file)
         stream = file(self.packer_file_path, 'w')
@@ -124,6 +131,10 @@ class Packer:
         if not os.path.isdir(PACKER_LOGDIR):
             os.makedirs(PACKER_LOGDIR)
         packer_env['TMPDIR'] = PACKER_LOGDIR
+        if self._assumed_role:
+            packer_env['AWS_ACCESS_KEY_ID'] = self.packer_config['credentials']['aws_access_key']
+            packer_env['AWS_SECRET_ACCESS_KEY'] = self.packer_config['credentials']['aws_secret_key']
+            packer_env['AWS_SESSION_TOKEN'] = self.packer_config['credentials']['token']
         process = Popen(cmd, stdout=PIPE, env=packer_env)
         while True:
             output = process.stdout.readline()
@@ -151,29 +162,14 @@ class Packer:
         self._build_salt_top(salt_params)
         self._build_salt_pillar(features)
         self._build_packer_json()
-
-        if self._assumed_role:
-            packer_var = PackerVar()
-            packer_var.create_vars(self.packer_config['credentials'])
-            var_file = "-var-file=" + packer_var.get_var_file()
-            ret_code, result = self._run_packer_cmd(
-                                            [
-                                                'packer',
-                                                'build',
-                                                '-machine-readable',
-                                                var_file,
-                                                self.packer_file_path
-                                            ]
-                                        )
-        else:
-            ret_code, result = self._run_packer_cmd(
-                                            [
-                                                'packer',
-                                                'build',
-                                                '-machine-readable',
-                                                self.packer_file_path
-                                            ]
-                                        )
+        ret_code, result = self._run_packer_cmd(
+                                        [
+                                            'packer',
+                                            'build',
+                                            '-machine-readable',
+                                            self.packer_file_path
+                                        ]
+                                    )
         if (ret_code == 0):
             ami = result.split(':')[1]
         else:
