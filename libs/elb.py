@@ -90,21 +90,3 @@ def get_connection_draining_value(elb_conn, elb_names):
         :return  int  The value in seconds of the connection draining.
     """
     connect_draining = [elb_conn.get_all_lb_attributes(elb).connection_draining.timeout for elb in elb_names]
-    return max(connect_draining)
-
-if __name__ == '__main__':
-    conn_elb = boto.ec2.elb.connect_to_region('sa-east-1', profile_name='s4m')
-    conn_as = boto.ec2.autoscale.connect_to_region('sa-east-1', profile_name='s4m')
-    elb_instances = get_elb_instance_status_autoscaling_group(conn_elb, 'as-haproxy-prod', 'sa-east-1',conn_as)
-    if len(set([len(i) for i in elb_instances.values()])) and not len([i for i in elb_instances.values() if 'outofservice' in i.values()]):
-        deregister_instance_from_elb(conn_elb, elb_instances.keys(), elb_instances[elb_instances.keys()[0]].keys())
-        print('Waiting {0} for connection draining' .format(get_connection_draining_value(conn_elb, elb_instances.keys())))
-        import time
-        time.sleep(20)
-        register_instance_from_elb(conn_elb, elb_instances.keys(), elb_instances[elb_instances.keys()[0]].keys())
-        while len([i for i in get_elb_instance_status_autoscaling_group(conn_elb, 'as-haproxy-prod', 'sa-east-1',conn_as).values() if 'outofservice' in i.values()]):
-            print('Waiting 5s because the instance is not in service in the ELB')
-            time.sleep(5)
-        print('All instances registered')
-    else:
-        print('Cant continue because there is instance in out of service or if the AS has multiple ELB it seems there havent the same instances in their pool')
