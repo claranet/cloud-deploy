@@ -70,10 +70,7 @@ def deploy_module_on_hosts(module, fabric_execution_strategy, app, config, log_f
         :param  config                     dict: The worker configuration.
         :param  log_file:                  object for logging.
         :param   **kwargs: optional arguments in dict format.
-                Example: {'safe-deployment': {'load_balancer_type': 'elb', 'type': '1by1/25%/50%',
-                        'wait_before_deploy': 30, 'wait_after_deploy': 60}}
-                         {'safe-deployment': {'load_balancer_type': 'ha', 'type': '1by1/25%/50%',
-                        'app_id_ha': 'xxxx', 'ha_backend':xxx, 'wait_before_deploy': 30, 'wait_after_deploy': 60}}
+                For safe deployment: {'safe_deployment': True/False, 'safe_deployment_type': 1by1/25%/50%}
     """
     app_name = app['name']
     app_env = app['env']
@@ -95,9 +92,9 @@ def deploy_module_on_hosts(module, fabric_execution_strategy, app, config, log_f
         running_instances = find_ec2_running_instances(app_name, app_env, app_role, app_region)
         if running_instances:
             hosts_list = [host['private_ip_address'] for host in running_instances]
-            if 'safe-deployment' in kwargs:
-                safedeploy = SafeDeployment(app, module, hosts_list, log_file, kwargs['safe-deployment'], fabric_execution_strategy, as_group, app_region)
-                safedeploy.safe_manager()
+            if 'safe_deployment' in kwargs and kwargs['safe_deployment_type']:
+                safedeploy = SafeDeployment(app, module, hosts_list, log_file, app['safe-deployment'], fabric_execution_strategy, as_group, app_region)
+                safedeploy.safe_manager(kwarg['safe_deployment_type'])
             else:
                 launch_deploy(app, module, hosts_list, fabric_execution_strategy, log_file)
         else:

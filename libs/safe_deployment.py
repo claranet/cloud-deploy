@@ -143,12 +143,13 @@ class SafeDeployment():
                                  app_region: {2}' .format(self.safe_infos['app_id_ha'], app_env, 'loadbalancer', app_region))
 
 
-    def safe_manager(self):
+    def safe_manager(self, safe_strategy):
         """  Global manager for the safe deployment process.
 
+            :param  safe_strategy string: The type of safe deployment strategy(1by1/25%/50%)
             :return True if operation succeed otherwise an Exception will be raised.
         """
-        for host_group in self.split_hosts_list(self.hosts_list, self.safe_infos['type']):
+        for host_group in self.split_hosts_list(self.hosts_list, safe_strategy):
             if self.safe_infos['load_balancer_type'] == 'elb':
                 self.elb_safe_deployment(host_group)
             else:
