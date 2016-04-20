@@ -23,3 +23,6 @@ rq_worker_strategy: one_worker_for_all
 
 # Deploy to target instances in serial (fabric's default) or in parallel
 fabric_execution_strategy: serial
+
+# Pagination for Eve
+eve_pagination_default: 23

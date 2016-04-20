@@ -3,6 +3,8 @@ from models import apps
 from models import deployments
 from models import job_enqueueings
 
+from ghost_tools import config
+
 API_NAME = 'GHOST API'
 
 # Let's just use the local mongod instance. Edit as needed.
@@ -25,8 +27,8 @@ RESOURCE_METHODS = ['GET', 'POST']
 # individual items  (defaults to read-only item access).
 ITEM_METHODS = ['GET', 'PATCH', 'PUT', 'DELETE']
 
-# Quick pagination fix
-PAGINATION_DEFAULT = 42
+# EVE Pagination
+PAGINATION_DEFAULT = config.get('eve_pagination_default', 23)
 
 DOMAIN = {
     'job_enqueueings': job_enqueueings.job_enqueueings,
