@@ -271,9 +271,8 @@ def check_autoscale_exists(as_name, region):
     else:
         return False
 
-def purge_launch_configuration(app):
+def purge_launch_configuration(app, retention):
     conn_as = boto.ec2.autoscale.connect_to_region(app['region'])
-    retention = 2
     launchconfigs = []
     lcs = conn_as.get_all_launch_configurations()
 
