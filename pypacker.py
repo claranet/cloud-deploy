@@ -1,7 +1,6 @@
 import sh
 from sh import git
 from subprocess32 import Popen, PIPE
-from packer_variables import PackerVar
 import yaml
 import json
 import os
