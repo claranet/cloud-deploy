@@ -10,7 +10,7 @@ from time import sleep
 
 import boto.s3
 
-from ghost_tools import GCallException, gcall, deploy_module_on_hosts, log, refresh_stage2
+from ghost_tools import GCallException, gcall, deploy_module_on_hosts, log, refresh_stage2, clean_local_module_workspace
 
 ROOT_PATH = os.path.dirname(os.path.realpath(__file__))
 
@@ -255,6 +255,7 @@ class Deploy():
             os.write(manifest, data)
         os.close(manifest)
         key.set_contents_from_filename(manifest_path)
+        clean_local_module_workspace(self._get_path_from_app(), all_app_modules_list, self._log_file)
 
 
     def _is_commit_hash(self, revision):

@@ -3,7 +3,7 @@ import sys
 import tempfile
 import boto.s3
 from bson.objectid import ObjectId
-from ghost_tools import GCallException, log, deploy_module_on_hosts
+from ghost_tools import GCallException, log, deploy_module_on_hosts, clean_local_module_workspace
 
 COMMAND_DESCRIPTION = "Re-deploy an old module package"
 
@@ -80,6 +80,7 @@ class Redeploy():
             os.write(manifest, data)
         os.close(manifest)
         key.set_contents_from_filename(manifest_path)
+        clean_local_module_workspace(self._get_path_from_app(), all_app_modules_list, self._log_file)
 
     def _get_deploy_infos(self, deploy_id):
         deploy_infos = self._db.deploy_histories.find_one({'_id': ObjectId(deploy_id)})

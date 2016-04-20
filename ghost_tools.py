@@ -373,3 +373,13 @@ def get_app_from_rq_name(name):
     """
     parts = name.split(':')
     return {'env': parts[0], 'name': parts[1], 'role': parts[2]}
+
+def clean_local_module_workspace(app_path, all_app_modules_list, log_file):
+    """
+    Walk through app_path directory and check if module workspace should be cleaned.
+    """
+
+    log('Cleaning old module workspaces', log_file)
+    for mod_dir in os.listdir(app_path):
+        if not mod_dir in all_app_modules_list:
+            gcall('rm -rf {p}'.format(p=os.path.join(app_path, mod_dir)), 'Removing deleted module : %s' % mod_dir, log_file)
