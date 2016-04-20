@@ -60,24 +60,27 @@ class Buildimage():
         else:
             return False
 
-    def _format_packer_from_app(self):
+    def _format_packer_from_app(self, salt_skip_bootstrap_option):
         datas = {
-                'region': self._app['region'],
-                'ami_name': self._ami_name,
-                'source_ami': self._app['build_infos']['source_ami'],
+            'region': self._app['region'],
+            'ami_name': self._ami_name,
+            'source_ami': self._app['build_infos']['source_ami'],
             'instance_type': self._job['instance_type'],
             'ssh_username': self._app['build_infos']['ssh_username'],
             'vpc_id': self._app['vpc_id'],
             'subnet_id': self._app['build_infos']['subnet_id'],
             'associate_public_ip_address': '1',
+            'skip_salt_bootstrap': salt_skip_bootstrap_option,
             'ami_block_device_mappings': []
         }
 
         for opt_vol in self._app['environment_infos'].get('optional_volumes'):
-            block = {'device_name': opt_vol['device_name'],
-                    'volume_type': opt_vol['volume_type'],
-                    'volume_size': opt_vol['volume_size'],
-                    'delete_on_termination': True}
+            block = {
+                'device_name': opt_vol['device_name'],
+                'volume_type': opt_vol['volume_type'],
+                'volume_size': opt_vol['volume_size'],
+                'delete_on_termination': True
+            }
             if 'iops' in opt_vol:
                 block['iops'] = opt_vol['iops']
             datas['ami_block_device_mappings'].append(block)
@@ -106,7 +109,8 @@ class Buildimage():
             self._worker.update_status("done")
 
     def execute(self):
-        json_packer = self._format_packer_from_app()
+        skip_salt_bootstrap_option = self._job['options'][0] if 'options' in self._job and len(self._job['options']) > 0 else True
+        json_packer = self._format_packer_from_app(skip_salt_bootstrap_option)
         log("Generating a new AMI", self._log_file)
         log(json_packer, self._log_file)
         pack = Packer(json_packer, self._config, self._log_file, self._job['_id'])
