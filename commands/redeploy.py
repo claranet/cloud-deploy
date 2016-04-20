@@ -3,7 +3,7 @@ import sys
 import tempfile
 import boto.s3
 from bson.objectid import ObjectId
-from ghost_tools import GCallException, log, deploy_module_on_hosts, clean_local_module_workspace
+from ghost_tools import GCallException, log, deploy_module_on_hosts, get_app_module_name_list, clean_local_module_workspace
 
 COMMAND_DESCRIPTION = "Re-deploy an old module package"
 
@@ -40,7 +40,7 @@ class Redeploy():
         key = bucket.get_key(key_path)
         modules = []
         module_exist = False
-        all_app_modules_list = [app_module['name'] for app_module in self._app['modules'] if 'name' in app_module]
+        all_app_modules_list = get_app_module_name_list(self._app['modules'])
         data = ""
         if key:
             manifest = key.get_contents_as_string()
@@ -80,7 +80,6 @@ class Redeploy():
             os.write(manifest, data)
         os.close(manifest)
         key.set_contents_from_filename(manifest_path)
-        clean_local_module_workspace(self._get_path_from_app(), all_app_modules_list, self._log_file)
 
     def _get_deploy_infos(self, deploy_id):
         deploy_infos = self._db.deploy_histories.find_one({'_id': ObjectId(deploy_id)})
@@ -98,6 +97,8 @@ class Redeploy():
         module, package = self._get_deploy_infos(deploy_id)
         if module and package:
             self._update_manifest(module, package)
+            all_app_modules_list = get_app_module_name_list(self._app['modules'])
+            clean_local_module_workspace(self._get_path_from_app(), all_app_modules_list, self._log_file)
             self._deploy_module(module, fabric_execution_strategy)
         else:
             raise GCallException("Redeploy on deployment ID: {0} failed".format(deploy_id))
