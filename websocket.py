@@ -104,7 +104,7 @@ def create_ws(app):
                         for sub_line in line.split("\\n"):
                             clean_line = ansi_to_html(sub_line).replace('\n', '<br/>')
                             if LOG_LINE_REGEX.match(sub_line) is not None:
-                                lines.append('%s<div class="panel panel-default"><em class="panel-heading">%s</em><div class="panel-body">'
+                                lines.append('%s<div class="panel panel-default"><em class="panel-heading"><span class="timeinterval"><i class="glyphicon glyphicon-time"></i></span><span class="command-title">%s</span></em><div class="panel-body">'
                                     % ('</div></div>' if idx > 0 else '', clean_line))
                             else:
                                 lines.append('<samp>%s</samp>' % clean_line)
@@ -113,9 +113,9 @@ def create_ws(app):
                 # Send new data to WebSocket client, if any
                 if new_pos != last_pos:
                     data = {
-                            'html': ''.join(lines),
-                            'last_pos': last_pos,
-                            }
+                        'html': ''.join(lines),
+                        'last_pos': last_pos,
+                    }
                     socketio.emit('job', data, room=sid)
 
                 # Update last_pos for next iteration
@@ -129,9 +129,9 @@ def create_ws(app):
                     continue
         except IOError:
             data = {
-                    'html': 'ERROR: failed to read log file.',
-                    'last_pos': 0,
-                    }
+                'html': 'ERROR: failed to read log file.',
+                'last_pos': 0,
+            }
             socketio.emit('job', data, room=sid)
         print 'SocketIO: ending loop for ' + sid
 
@@ -157,7 +157,7 @@ def create_ws(app):
             data = {
                 'html': 'No log file yet.',
                 'last_pos': 0,
-                }
+            }
             socketio.emit('job', data, room=request.sid)
 
     return socketio
