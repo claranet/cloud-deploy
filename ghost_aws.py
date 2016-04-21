@@ -1,12 +1,7 @@
-from datetime import datetime
 import os
-from subprocess import call
 import time
 import yaml
-from copy import copy
 
-from fabric.api import execute as fab_execute
-from fabfile import deploy
 from jinja2 import Environment, FileSystemLoader
 
 import boto.ec2.autoscale
