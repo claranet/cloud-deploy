@@ -63,7 +63,7 @@ def deploy_module_on_hosts(module, fabric_execution_strategy, app, config, log_f
         :param  module                     dict: Ghost object wich describe the module parameters.
         :param  app                        dict: Ghost object which describe the application parameters.
         :param  fabric_execution_strategy  string: Deployment strategy(serial or parrallel).
-        :param  safe_deployment_strategy   string: Safe Deployment strategy(1by1/25%/50%).
+        :param  safe_deployment_strategy   string: Safe Deployment strategy(1by1-1/3-25%-50%).
         :param  config                     dict: The worker configuration.
         :param  log_file:                  object for logging.
     """

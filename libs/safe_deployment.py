@@ -3,7 +3,7 @@
     Safe Deployment library aims to create a sweet way to deploy on EC2 instances.
     The process is:
         * Check that every instances in the Load Balancer are in service and are enought to perform the safe deployment.
-        * Split the instances list according the deployment type choose(1by1/25%/50%).
+        * Split the instances list according the deployment type choose(1by1-1/3-25%-50%).
         * Before begin to deploy on a part of the instances list, remove them from their Load Balancer(Haproxy or ELB)
         * Wait a moment(depends on the connection draining value for the ELB and/or the custom value defines in Ghost)
         * Launch the standard deployment process
@@ -17,17 +17,17 @@
     https://bitbucket.org/mattboret/hapi
 
 """
-
+import debug
 import time
 import haproxy
 import boto.ec2.autoscale
 import boto.ec2.elb
 
-from ghost_tools import GCallException
+#from ghost_tools import GCallException
 
-from .deploy import launch_deploy
-from .ec2 import find_ec2_running_instances
-from .elb import get_elb_instance_status_autoscaling_group, get_connection_draining_value, register_instance_from_elb
+#from .deploy import launch_deploy
+#from .ec2 import find_ec2_running_instances
+#from .elb import get_elb_instance_status_autoscaling_group, get_connection_draining_value, register_instance_from_elb
 
 class SafeDeployment():
     """ Class which will manage the safe deployment process """
@@ -58,21 +58,22 @@ class SafeDeployment():
     def split_hosts_list(self, split_type):
         """ Return a list of multiple hosts list for the safe deployment.
 
-            :param hosts_list:     list:    Instances private IPs.
-            :param split_type:     string:  The way to split the hosts list(1by1/25%/50%).
+            :param split_type:     string:  The way to split the hosts list(1by1-1/3-25%-50%).
             :return                list:    Multiple hosts list or raise an Exception is the safe
                                             deployment process cannot be perform.
         """
-        slice_per = {'1by1': 1,'25%': int(len(self.hosts_list)/4), '50%': int(len(self.hosts_list)/2)}
-        if split_type not in slice_per.keys():
-            self.logger("Split type {1} not currently supported. Only 1by1,25% or 25% are supported" .format(split_type))
-            raise GCallException("Cannot continue, invalid split type for the safe deployment process")
-        elif (len(self.hosts_list < 4) and split_type == '25%') or (len(self.hosts_list < 2) and split_type == '50%'):
-            self.logger("Not enough instances to perform safe deployment. Number of instances: {0} for safe deployment type: {1}" .format(len(self.hosts_list), split_type))
-            raise GCallException("Cannot continue, not enought instances to perform the safe deployment")
+        if split_type == '1by1' and len(self.hosts_list) > 1:
+            return [self.hosts_list[i:i + 1] for i in range(0, len(self.hosts_list), 1)]
+        elif split_type == '1/3' and len(self.hosts_list) > 2:
+            chunk = 3
+        elif split_type == '25%' and len(self.hosts_list) > 3:
+            chunk = 4
+        elif split_type == '50%' and len(self.hosts_list) == 2 or len(self.hosts_list) > 3:
+            chunk = 2
         else:
-            n = max(1,slice_per[split_type])
-            return [self.hosts_list[i:i + n] for i in range(0, len(self.hosts_list), n)]
+            self.logger("Not enough instances to perform safe deployment. Number of instances: {0} for safe deployment type: {1}" .format(str(len(self.hosts_list)), str(split_type)))
+            raise GCallException("Cannot continue, not enought instances to perform the safe deployment")
+        return [self.hosts_list[i::chunk] for i in range(chunk)]
 
     def elb_safe_deployment(self, instances_list):
         """ Manage the safe deployment process for the ELB.
@@ -146,10 +147,10 @@ class SafeDeployment():
     def safe_manager(self, safe_strategy):
         """  Global manager for the safe deployment process.
 
-            :param  safe_strategy string: The type of safe deployment strategy(1by1/25%/50%)
+            :param  safe_strategy string: The type of safe deployment strategy(1by1-1/3-25%-50%)
             :return True if operation succeed otherwise an Exception will be raised.
         """
-        for host_group in self.split_hosts_list(self.hosts_list, safe_strategy):
+        for host_group in self.split_hosts_list(safe_strategy):
             if self.safe_infos['load_balancer_type'] == 'elb':
                 self.elb_safe_deployment(host_group)
             else:
