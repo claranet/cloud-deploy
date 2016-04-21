@@ -4,6 +4,7 @@ from fabric.api import execute as fab_execute
 from fabfile import deploy
 
 from ghost_tools import config
+from ghost_tools import render_stage2
 from ghost_log import log
 
 def launch_deploy(app, module, hosts_list, fabric_execution_strategy, log_file):

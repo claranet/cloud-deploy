@@ -107,6 +107,16 @@ apps_schema = {
             'name': {'type': 'string'}
         }
     },
+    'safe-deployment': {
+        'type': 'dict',
+        'schema': {
+            'load_balancer_type' : {'type': 'string'},
+            'wait_after_deploy' : {'type': 'integer', 'min': 0},
+            'wait_before_deploy' : {'type': 'integer', 'min': 0},
+            'app_id_ha': {'type': 'string', 'required': False},
+            'ha_backend': {'type': 'string', 'required': False}
+        }
+    },
     'build_infos': {
         'type': 'dict',
         'schema': {

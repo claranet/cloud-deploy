@@ -17,6 +17,7 @@ from libs.safe_deployment import SafeDeployment
 from libs.deploy import launch_deploy
 from libs.ec2 import find_ec2_pending_instances, find_ec2_running_instances
 
+from ghost_tools import GCallException
 from ghost_log import log
 
 ROOT_PATH = os.path.dirname(os.path.realpath(__file__))
@@ -61,16 +62,15 @@ def resume_autoscaling_group_processes(as_conn, as_group, as_group_processes_to_
         log("Resuming auto-scaling group processes {0}".format(as_group_processes_to_suspend), log_file)
         as_conn.resume_processes(as_group, as_group_processes_to_suspend)
 
-def deploy_module_on_hosts(module, fabric_execution_strategy, app, config, log_file, **kwargs):
+def deploy_module_on_hosts(module, fabric_execution_strategy, app, config, log_file, safe_deployment_strategy):
     """ Prepare the deployment process on instances.
 
         :param  module                     dict: Ghost object wich describe the module parameters.
         :param  app                        dict: Ghost object which describe the application parameters.
         :param  fabric_execution_strategy  string: Deployment strategy(serial or parrallel).
+        :param  safe_deployment_strategy   string: Safe Deployment strategy(1by1/25%/50%).
         :param  config                     dict: The worker configuration.
         :param  log_file:                  object for logging.
-        :param   **kwargs: optional arguments in dict format.
-                For safe deployment: {'safe_deployment': True/False, 'safe_deployment_type': 1by1/25%/50%}
     """
     app_name = app['name']
     app_env = app['env']
@@ -92,9 +92,9 @@ def deploy_module_on_hosts(module, fabric_execution_strategy, app, config, log_f
         running_instances = find_ec2_running_instances(app_name, app_env, app_role, app_region)
         if running_instances:
             hosts_list = [host['private_ip_address'] for host in running_instances]
-            if 'safe_deployment' in kwargs and kwargs['safe_deployment_type']:
+            if safe_deployment_strategy:
                 safedeploy = SafeDeployment(app, module, hosts_list, log_file, app['safe-deployment'], fabric_execution_strategy, as_group, app_region)
-                safedeploy.safe_manager(kwarg['safe_deployment_type'])
+                safedeploy.safe_manager(safe_deployment_strategy)
             else:
                 launch_deploy(app, module, hosts_list, fabric_execution_strategy, log_file)
         else:
