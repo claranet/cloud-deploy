@@ -88,7 +88,7 @@ def deploy_module_on_hosts(module, fabric_execution_strategy, app, config, log_f
         if running_instances:
             hosts_list = [host['private_ip_address'] for host in running_instances]
             if safe_deployment_strategy:
-                safedeploy = SafeDeployment(app, module, hosts_list, log_file, app['safe-deployment'], fabric_execution_strategy, as_group, app_region)
+                safedeploy = SafeDeployment(app, module, running_instances, log_file, app['safe-deployment'], fabric_execution_strategy, as_group, app_region)
                 safedeploy.safe_manager(safe_deployment_strategy)
             else:
                 launch_deploy(app, module, hosts_list, fabric_execution_strategy, log_file)

@@ -71,32 +71,33 @@ class SafeDeployment():
         elif split_type == '50%' and len(self.hosts_list) == 2 or len(self.hosts_list) > 3:
             chunk = 2
         else:
-            self.log_file("Not enough instances to perform safe deployment. Number of instances: {0} for safe deployment type: {1}" .format(str(len(self.hosts_list)), str(split_type)))
+            log("Not enough instances to perform safe deployment. Number of instances: {0} for safe deployment type: {1}" .format(str(len(self.hosts_list)), str(split_type)), self.log_file)
             raise GCallException("Cannot continue, not enought instances to perform the safe deployment")
         return [self.hosts_list[i::chunk] for i in range(chunk)]
 
     def elb_safe_deployment(self, instances_list):
         """ Manage the safe deployment process for the ELB.
 
-            :param instances_list  list:  list of instances on which to deploy.
+            :param  instances_list  list: Instances on which to deploy(list of dict. ex: [{'id':XXX, 'private_ip_address':XXXX}...]).
             :return                True if operation successed or raise an Exception.
         """
         elb_instances = get_elb_instance_status_autoscaling_group(self.elb_conn, self.as_name, self.region, self.as_conn)
-        if len(set([len(i) for i in elb_instances.values()])) and not len([i for i in elb_instances.values() if 'outofservice' in i.values()]):
-            deregister_instance_from_elb(self.elb_conn, elb_instances.keys(), elb_instances[elb_instances.keys()[0]].keys(), self.log_file)
-            wait_before_deploy = int(get_connection_draining_value(self.elb_conn, instances_list)) + int(self.safe_infos['wait_before_deploy'])
+        #TO modify!!!
+        if len(set([len(i) for i in elb_instances.values()])) and not len([i for i in elb_instances.values() if 'outofservice' in i.values()]) and len(elb_instances.values()) >= len(instances_list):
+            deregister_instance_from_elb(self.elb_conn, elb_instances.keys(), [host['id'] for host in instances_list], self.log_file)
+            wait_before_deploy = int(get_connection_draining_value(self.elb_conn, elb_instances.keys())) + int(self.safe_infos['wait_before_deploy'])
             log('Waiting {0}s: The connection draining time more the custom value set for wait_before_deploy' .format(wait_before_deploy), self.log_file)
             time.sleep(wait_before_deploy)
-            launch_deploy(self.app, self.module, instances_list, self.fab_exec_strategy, self.log_file)
+            launch_deploy(self.app, self.module, [host['private_ip_address'] for host in instances_list], self.fab_exec_strategy, self.log_file)
             time.sleep(int(self.safe_infos['wait_after_deploy']))
-            register_instance_from_elb(self.elb_conn, elb_instances.keys(), instances_list, self.log_file)
+            register_instance_from_elb(self.elb_conn, elb_instances.keys(), [host['private_ip_address'] for host in instances_list], self.log_file)
             while len([i for i in get_elb_instance_status_autoscaling_group(self.elb_conn, self.as_name, self.region, self.as_conn).values() if 'outofservice' in i.values()]):
                 log('Waiting 10s because the instance is not in service in the ELB', self.log_file)
                 time.sleep(10)
-            log('Instances: {0} have been deployed and are registered in their ELB' .format(str(instances_list)), self.log_file)
+            log('Instances: {0} have been deployed and are registered in their ELB' .format(str([host['private_ip_address'] for host in instances_list])), self.log_file)
             return True
         else:
-            raise GCallException('Cannot continue because there is an instance in out of service state or if the \
+            raise GCallException('Cannot continue because one or more instances are in the out of service state OR if the \
                                  AutoScaling Group has multiple ELBs it seems they haven\'t the same instances in their pool')
 
     def haproxy_configuration_validation(self, hapi, ha_urls):
@@ -115,7 +116,7 @@ class SafeDeployment():
     def haproxy_safe_deployment(self, instances_list):
         """ Manage the safe deployment process for the Haproxy.
 
-            :param  instances_list  list: Instances on which to deploy.
+            :param  instances_list  list: Instances on which to deploy(list of dict. ex: [{'id':XXX, 'private_ip_address':XXXX}...]).
             :return                 True if operation successed or raise an Exception.
         """
         lb_infos = find_ec2_running_instances(self.safe_infos['app_id_ha'], self.safe_infos['app_env'], 'loadbalancer', self.safe_infos['app_region'])
