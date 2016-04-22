@@ -23,16 +23,17 @@ import haproxy
 import boto.ec2.autoscale
 import boto.ec2.elb
 
-#from ghost_tools import GCallException
+from ghost_tools import GCallException
+from ghost_tools import log
 
-#from .deploy import launch_deploy
-#from .ec2 import find_ec2_running_instances
-#from .elb import get_elb_instance_status_autoscaling_group, get_connection_draining_value, register_instance_from_elb
+from .deploy import launch_deploy
+from .ec2 import find_ec2_running_instances
+from .elb import get_elb_instance_status_autoscaling_group, get_connection_draining_value, register_instance_from_elb, deregister_instance_from_elb
 
 class SafeDeployment():
     """ Class which will manage the safe deployment process """
 
-    def __init__(self, app, module, hosts_list, log_file, safe_infos, fabric_exec_strategy,  as_name, region):
+    def __init__(self, app, module, hosts_list, log_file, safe_infos, fabric_exec_strategy, as_name, region):
         """
             :param  module        dict: Ghost object wich describe the module parameters.
             :param  app           dict: Ghost object which describe the application parameters.
@@ -47,7 +48,7 @@ class SafeDeployment():
         self.app = app
         self.module = module
         self.hosts_list = hosts_list
-        self.logger = log_file
+        self.log_file = log_file
         self.fab_exec_strategy = fabric_exec_strategy
         self.safe_infos = safe_infos
         self.as_name = as_name
@@ -71,7 +72,7 @@ class SafeDeployment():
         elif split_type == '50%' and len(self.hosts_list) == 2 or len(self.hosts_list) > 3:
             chunk = 2
         else:
-            self.logger("Not enough instances to perform safe deployment. Number of instances: {0} for safe deployment type: {1}" .format(str(len(self.hosts_list)), str(split_type)))
+            self.log_file("Not enough instances to perform safe deployment. Number of instances: {0} for safe deployment type: {1}" .format(str(len(self.hosts_list)), str(split_type)))
             raise GCallException("Cannot continue, not enought instances to perform the safe deployment")
         return [self.hosts_list[i::chunk] for i in range(chunk)]
 
@@ -83,17 +84,17 @@ class SafeDeployment():
         """
         elb_instances = get_elb_instance_status_autoscaling_group(self.elb_conn, self.as_name, self.region, self.as_conn)
         if len(set([len(i) for i in elb_instances.values()])) and not len([i for i in elb_instances.values() if 'outofservice' in i.values()]):
-            deregister_instance_from_elb(self.elb_conn, elb_instances.keys(), elb_instances[elb_instances.keys()[0]].keys())
+            deregister_instance_from_elb(self.elb_conn, elb_instances.keys(), elb_instances[elb_instances.keys()[0]].keys(), self.log_file)
             wait_before_deploy = int(get_connection_draining_value(self.elb_conn, elb_instances.keys())) + int(self.safe_infos['wait_before_deploy'])
-            self.logger('Waiting {0}s: The connection draining time more the custom value set for wait_before_deploy' .format(wait_before_deploy))
+            log('Waiting {0}s: The connection draining time more the custom value set for wait_before_deploy' .format(wait_before_deploy), self.log_file)
             time.sleep(wait_before_deploy)
-            launch_deploy(self.app, self.module, ','.join([host['private_ip_address'] for host in instances_list]), self.fab_exec_strategy, self.logger)
+            launch_deploy(self.app, self.module, ','.join([host['private_ip_address'] for host in instances_list]), self.fab_exec_strategy, self.log_file)
             time.sleep(int(self.safe_infos['wait_after_deploy']))
-            register_instance_from_elb(self.elb_conn, elb_instances.keys(), elb_instances[elb_instances.keys()[0]].keys())
+            register_instance_from_elb(self.elb_conn, elb_instances.keys(), elb_instances[elb_instances.keys()[0]].keys(), self.log_file)
             while len([i for i in get_elb_instance_status_autoscaling_group(self.elb_conn, self.as_name, self.region, self.as_conn).values() if 'outofservice' in i.values()]):
-                self.logger('Waiting 10s because the instance is not in service in the ELB')
+                log('Waiting 10s because the instance is not in service in the ELB', self.log_file)
                 time.sleep(10)
-            self.logger('Instances: {0} have been deployed and are registered in their ELB' .format(str(instances_list)))
+            log('Instances: {0} have been deployed and are registered in their ELB' .format(str(instances_list)), self.log_file)
             return True
         else:
             raise GCallException('Cannot continue because there is an instance in out of service state or if the \
@@ -128,7 +129,7 @@ class SafeDeployment():
             if not hapi.change_instance_state('disabledserver', self.safe_infos['ha_backend'], instances_list):
                 raise GCallException('Cannot disabled some instances: {0} in {1}. Deployment aborded' .format(instances_list, lb_infos))
             time.sleep(int(self.safe_infos['wait_before_deploy']))
-            launch_deploy(self.app, self.module, ','.join([host['private_ip_address'] for host in instances_list]), self.fab_exec_strategy, self.logger)
+            launch_deploy(self.app, self.module, ','.join([host['private_ip_address'] for host in instances_list]), self.fab_exec_strategy, self.log_file)
             time.sleep(int(self.safe_infos['wait_after_deploy']))
             if not hapi.change_instance_state('enabledserver', self.safe_infos['ha_backend'], instances_list):
                 raise GCallException('Cannot enabled some instances: {0} in {1}. Deployment aborded' .format(instances_list, lb_infos))
@@ -137,7 +138,7 @@ class SafeDeployment():
                                     configuration files between the instances: {0}. Instances: {1} have been deployed but not well enable' .format(lb_infos, instances_list))
             if not hapi.check_all_instances_enable(self.safe_infos['ha_backend'], hapi.get_haproxy_conf(ha_urls[0])):
                 raise GCallException('Error in the post safe deployment process because some instances are disable or down in the Haproxy: {0}.' .format(lb_infos, instances_list))
-            self.logger('Instances: {0} have been deployed and are registered in their Haproxy' .format(str(instances_list)))
+            log('Instances: {0} have been deployed and are registered in their Haproxy' .format(str(instances_list)), self.log_file)
             return True
         else:
             raise GCallException('Cannot continue because no Haproxy found with the parameters: app_id_ha: {0}, app_env: {1},\
