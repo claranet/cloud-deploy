@@ -89,4 +89,4 @@ def get_connection_draining_value(elb_conn, elb_names):
         :param  elb_names: list The name of the Elastic Load Balancers.
         :return  int  The value in seconds of the connection draining.
     """
-    return [elb_conn.get_all_lb_attributes(elb).connection_draining.timeout for elb in elb_names]
+    return max([elb_conn.get_all_lb_attributes(elb).connection_draining.timeout for elb in elb_names])

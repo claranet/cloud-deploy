@@ -17,7 +17,6 @@
     https://bitbucket.org/mattboret/hapi
 
 """
-import debug
 import time
 import haproxy
 import boto.ec2.autoscale
@@ -85,12 +84,12 @@ class SafeDeployment():
         elb_instances = get_elb_instance_status_autoscaling_group(self.elb_conn, self.as_name, self.region, self.as_conn)
         if len(set([len(i) for i in elb_instances.values()])) and not len([i for i in elb_instances.values() if 'outofservice' in i.values()]):
             deregister_instance_from_elb(self.elb_conn, elb_instances.keys(), elb_instances[elb_instances.keys()[0]].keys(), self.log_file)
-            wait_before_deploy = int(get_connection_draining_value(self.elb_conn, elb_instances.keys())) + int(self.safe_infos['wait_before_deploy'])
+            wait_before_deploy = int(get_connection_draining_value(self.elb_conn, instances_list)) + int(self.safe_infos['wait_before_deploy'])
             log('Waiting {0}s: The connection draining time more the custom value set for wait_before_deploy' .format(wait_before_deploy), self.log_file)
             time.sleep(wait_before_deploy)
-            launch_deploy(self.app, self.module, ','.join([host['private_ip_address'] for host in instances_list]), self.fab_exec_strategy, self.log_file)
+            launch_deploy(self.app, self.module, instances_list, self.fab_exec_strategy, self.log_file)
             time.sleep(int(self.safe_infos['wait_after_deploy']))
-            register_instance_from_elb(self.elb_conn, elb_instances.keys(), elb_instances[elb_instances.keys()[0]].keys(), self.log_file)
+            register_instance_from_elb(self.elb_conn, elb_instances.keys(), instances_list, self.log_file)
             while len([i for i in get_elb_instance_status_autoscaling_group(self.elb_conn, self.as_name, self.region, self.as_conn).values() if 'outofservice' in i.values()]):
                 log('Waiting 10s because the instance is not in service in the ELB', self.log_file)
                 time.sleep(10)
@@ -119,7 +118,7 @@ class SafeDeployment():
             :param  instances_list  list: Instances on which to deploy.
             :return                 True if operation successed or raise an Exception.
         """
-        lb_infos = find_ec2_running_instances(self.safe_infos['app_id_ha'], app_env, 'loadbalancer', app_region)
+        lb_infos = find_ec2_running_instances(self.safe_infos['app_id_ha'], self.safe_infos['app_env'], 'loadbalancer', self.safe_infos['app_region'])
         if lb_infos:
             hapi = haproxy.get_Haproxyapi(lb_infos)
             ha_urls = hapi.get_haproxy_urls()
@@ -142,7 +141,7 @@ class SafeDeployment():
             return True
         else:
             raise GCallException('Cannot continue because no Haproxy found with the parameters: app_id_ha: {0}, app_env: {1},\
-                                 app_region: {2}' .format(self.safe_infos['app_id_ha'], app_env, 'loadbalancer', app_region))
+                                 app_region: {2}' .format(self.safe_infos['app_id_ha'], self.safe_infos['app_env'], 'loadbalancer', self.safe_infos['app_region']))
 
 
     def safe_manager(self, safe_strategy):
