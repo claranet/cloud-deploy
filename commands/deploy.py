@@ -185,7 +185,7 @@ class Deploy():
 
     def execute(self):
         fabric_execution_strategy = self._job['options'][0] if 'options' in self._job and len(self._job['options']) > 0 else None
-        safe_deployment_strategy = self._job['options'][1] if 'options' in self._job and len(self._job['options']) > 0 else None
+        safe_deployment_strategy = self._job['options'][1] if 'options' in self._job and len(self._job['options']) > 1 else None
 
         self._apps_modules = self._find_modules_by_name(self._job['modules'])
         if not self._apps_modules:

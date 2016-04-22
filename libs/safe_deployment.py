@@ -82,23 +82,22 @@ class SafeDeployment():
             :return                True if operation successed or raise an Exception.
         """
         elb_instances = get_elb_instance_status_autoscaling_group(self.elb_conn, self.as_name, self.region, self.as_conn)
-        #TO modify!!!
-        if len(set([len(i) for i in elb_instances.values()])) and not len([i for i in elb_instances.values() if 'outofservice' in i.values()]) and len(elb_instances.values()) >= len(instances_list):
+        if not len([i for i in elb_instances.values() if 'outofservice' in i.values()]):
             deregister_instance_from_elb(self.elb_conn, elb_instances.keys(), [host['id'] for host in instances_list], self.log_file)
             wait_before_deploy = int(get_connection_draining_value(self.elb_conn, elb_instances.keys())) + int(self.safe_infos['wait_before_deploy'])
             log('Waiting {0}s: The connection draining time more the custom value set for wait_before_deploy' .format(wait_before_deploy), self.log_file)
             time.sleep(wait_before_deploy)
             launch_deploy(self.app, self.module, [host['private_ip_address'] for host in instances_list], self.fab_exec_strategy, self.log_file)
+            log('Waiting {0}s: The value set for wait_after_deploy' .format(self.safe_infos['wait_after_deploy']))
             time.sleep(int(self.safe_infos['wait_after_deploy']))
-            register_instance_from_elb(self.elb_conn, elb_instances.keys(), [host['private_ip_address'] for host in instances_list], self.log_file)
+            register_instance_from_elb(self.elb_conn, elb_instances.keys(), [host['id'] for host in instances_list], self.log_file)
             while len([i for i in get_elb_instance_status_autoscaling_group(self.elb_conn, self.as_name, self.region, self.as_conn).values() if 'outofservice' in i.values()]):
                 log('Waiting 10s because the instance is not in service in the ELB', self.log_file)
                 time.sleep(10)
             log('Instances: {0} have been deployed and are registered in their ELB' .format(str([host['private_ip_address'] for host in instances_list])), self.log_file)
             return True
         else:
-            raise GCallException('Cannot continue because one or more instances are in the out of service state OR if the \
-                                 AutoScaling Group has multiple ELBs it seems they haven\'t the same instances in their pool')
+            raise GCallException('Cannot continue because one or more instances are in the out of service state')
 
     def haproxy_configuration_validation(self, hapi, ha_urls):
         """ Check that every Haproxy have the same configuration.
@@ -119,7 +118,7 @@ class SafeDeployment():
             :param  instances_list  list: Instances on which to deploy(list of dict. ex: [{'id':XXX, 'private_ip_address':XXXX}...]).
             :return                 True if operation successed or raise an Exception.
         """
-        lb_infos = find_ec2_running_instances(self.safe_infos['app_id_ha'], self.safe_infos['app_env'], 'loadbalancer', self.safe_infos['app_region'])
+        lb_infos = find_ec2_running_instances(self.safe_infos['app_tag_value'], self.app['env'], 'loadbalancer', self.app['region'])
         if lb_infos:
             hapi = haproxy.get_Haproxyapi(lb_infos)
             ha_urls = hapi.get_haproxy_urls()
@@ -128,8 +127,10 @@ class SafeDeployment():
                                     configuration files between the instances: {0}' .format(lb_infos))
             if not hapi.change_instance_state('disabledserver', self.safe_infos['ha_backend'], instances_list):
                 raise GCallException('Cannot disabled some instances: {0} in {1}. Deployment aborded' .format(instances_list, lb_infos))
+            log('Waiting {0}s: The value set for wait_before_deploy' .format(self.safe_infos['wait_before_deploy']))
             time.sleep(int(self.safe_infos['wait_before_deploy']))
-            launch_deploy(self.app, self.module, ','.join([host['private_ip_address'] for host in instances_list]), self.fab_exec_strategy, self.log_file)
+            launch_deploy(self.app, self.module, [host['private_ip_address'] for host in instances_list]), self.fab_exec_strategy, self.log_file)
+            log('Waiting {0}s: The value set for wait_after_deploy' .format(self.safe_infos['wait_after_deploy']))
             time.sleep(int(self.safe_infos['wait_after_deploy']))
             if not hapi.change_instance_state('enabledserver', self.safe_infos['ha_backend'], instances_list):
                 raise GCallException('Cannot enabled some instances: {0} in {1}. Deployment aborded' .format(instances_list, lb_infos))
@@ -142,7 +143,7 @@ class SafeDeployment():
             return True
         else:
             raise GCallException('Cannot continue because no Haproxy found with the parameters: app_id_ha: {0}, app_env: {1},\
-                                 app_region: {2}' .format(self.safe_infos['app_id_ha'], self.safe_infos['app_env'], 'loadbalancer', self.safe_infos['app_region']))
+                                 app_region: {2}' .format(self.safe_infos['app_tag_value'], self.app['env'], 'loadbalancer', self.app['region']))
 
 
     def safe_manager(self, safe_strategy):

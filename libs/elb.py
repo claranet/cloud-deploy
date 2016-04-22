@@ -34,7 +34,7 @@ def get_elb_instance_status_autoscaling_group(elb_conn, as_group, region, conn_a
     """
     as_instance_status = {}
     for elb in get_elb_from_autoscale(as_group, conn_as):
-        as_instance_status = {elb: {}}
+        as_instance_status[elb] = {}
         for instance in elb_conn.describe_instance_health(elb):
             as_instance_status[elb][instance.instance_id] = "inservice" if instance.state.lower() == "inservice" else "outofservice"
     return as_instance_status
