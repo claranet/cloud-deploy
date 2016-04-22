@@ -24,6 +24,11 @@ apps_schema = {
         'regex': '^[a-zA-Z0-9_.+-]*$',
         'required': False
     },
+    'assumed_region_name': {
+        'type': 'string',
+        'regex': '^[a-zA-Z0-9_.+-]*$',
+        'required': False
+    },
     'region': {'type': 'string'},
     'instance_type': {'type': 'string'},
     'env': {'type': 'string',

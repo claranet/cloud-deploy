@@ -24,8 +24,9 @@ class Buildimage():
         self._config = worker._config
         self._log_file = worker.log_file
         self._connection_data = get_aws_connection_data(
+                self._app.get('assumed_role_name', ''),
                 self._app.get('assumed_account_id', ''),
-                self._app.get('assumed_role_name', '')
+                self._app.get('assumed_region_name', '')
                 )
         self._cloud_connection = cloud_connections.get(self._app.get('provider', DEFAULT_PROVIDER))(
                 self._log_file,

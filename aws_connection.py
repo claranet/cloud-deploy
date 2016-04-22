@@ -12,7 +12,10 @@ class AWSConnection(ACloudConnection):
         super(AWSConnection, self).__init__(log_file, **kwargs)
         assumed_account_id = self._parameters.get('assumed_account_id', None)
         if (assumed_account_id):
-            self._role_arn = "arn:aws:iam::" + assumed_account_id + ":role/"
+            if self._parameters.get('assumed_region_name', None):
+                self._role_arn = "arn:aws-%s:iam::" + assumed_account_id + ":role/" %self._parameters['assumed_region_name'].split("-")[0]
+            else:
+                self._role_arn = "arn:aws:iam::" + assumed_account_id + ":role/"
             self._role_arn += self._parameters.get('assumed_role_name', '')
             self._role_session = "ghost_aws_cross_account"
         else:
@@ -37,7 +40,10 @@ class AWSConnection(ACloudConnection):
             result = True
         else:
             try:
-                sts_connection = STSConnection()
+                if self._parameters.get('region', None):
+                    sts_connection = boto.sts.connect_to_region(self._parameters['assumed_region_name'])
+                else:
+                    sts_connection = STSConnection()
                 assumed_role_object = sts_connection.assume_role(
                         role_arn=self._role_arn,
                         role_session_name=self._role_session
