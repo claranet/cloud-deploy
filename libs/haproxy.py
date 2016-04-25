@@ -16,23 +16,26 @@
 """
 # -*- coding: utf-8 -*-
 #!/usr/bin/env python
-import debug
 import requests
 import json
 import itertools
 
+from ghost_log import log
+
 class Haproxyapi:
     """A lightweight class for interraction with Hapi, an API for HAproxy"""
 
-    def __init__(self, haproxy_ips = [], hapi_port = '5001', timeout = 3, retry = 3):
+    def __init__(self, haproxy_ips, log_file, hapi_port = '5001', timeout = 3, retry = 3):
         """ Initialize the variable to communicate with Hapi an Haproxy API.
 
             :param  haproxy_ips: list of Haproxy IPs.
             :param  hapi_port: string or int of the Hapi port.
             :param  timeout: int the default timeout for each request on the API.
             :param  retry: int maximum retry for each request on the API.
+            :param  log_file  string  The log file.
         """
         self.headers = {'content-type': 'application/json'}
+        self.log_file = log_file
         self._urls = ['http://{0}:{1}/haproxy' .format(ip, str(hapi_port)) for ip in haproxy_ips]
         self._timeout = int(timeout)
         requests.adapters.DEFAULT_RETRIES = int(retry)
@@ -82,12 +85,21 @@ class Haproxyapi:
                                     expand is set to True(ex: {'backend_name':[{'ip':xxx,'name':'xxx','status':'up'},...]})
         """
         haproxy_conf = {}
-        for backend in requests.get(haproxy_url + '?show').json().values()[0]:
-            if expand:
-                haproxy_conf[backend] = requests.get(haproxy_url + '?show={0}' .format(backend)).json().values()[0]
-            else:
-                haproxy_conf[backend] = [ip['ip'].split(':')[0] for ip in requests.get(haproxy_url + '?show={0}' .format(backend)).json().values()[0]]
-        return haproxy_conf
+        try:
+            for backend in requests.get(haproxy_url + '?show').json().values()[0]:
+                if expand:
+                    haproxy_conf[backend] = requests.get(haproxy_url + '?show={0}' .format(backend)).json().values()[0]
+                else:
+                    haproxy_conf[backend] = [ip['ip'].split(':')[0] for ip in requests.get(haproxy_url + '?show={0}' .format(backend)).json().values()[0]]
+            return haproxy_conf
+        except requests.exceptions.ConnectionError:
+            log("Connection Error on the Haproxy: {0}" .format(backend), self.log_file)
+        except requests.exceptions.Timeout:
+            log("Connection Timeout on the Haproxy: {0}" .format(backend), self.log_file)
+        except Exception as e:
+            log("Error during get_haproxy_conf operation: {0}" .format(str(e)), self.log_file)
+        finally:
+            return {}
 
     def hapi_post_request(self, datas):
         """ Perform Post requests on Haproxy APIs.
@@ -101,9 +113,13 @@ class Haproxyapi:
                             headers=self.headers, timeout=self._timeout)
                 if int(r.status_code) != 200:
                     return False
+            except requests.exceptions.ConnectionError:
+                log("Connection Error on the Haproxy: {0}" .format(haproxy_url), self.log_file)
             except requests.exceptions.Timeout:
-                return False
-            except Exception:
+                log("Connection Timeout on the Haproxy: {0}" .format(haproxy_url), self.log_file)
+            except Exception as e:
+                log("Error during post_request operation: {0}" .format(str(e)), self.log_file)
+            finally:
                 return False
         return True
 
@@ -175,5 +191,5 @@ class Haproxyapi:
 if __name__ == '__main__':
     hapi = Haproxyapi(['52.67.8.92', '52.67.57.36'])
     instances_list = [u'10.10.10.250']
-    print(hapi.change_instance_state('enableserver', 'webtracking', instances_list))
+    print(hapi.change_instance_state('disableserver', 'webtracking', instances_list))
 

@@ -123,7 +123,7 @@ class SafeDeployment():
         """
         lb_infos = [host['private_ip_address'] for host in find_ec2_running_instances(self.safe_infos['app_tag_value'], self.app['env'], 'loadbalancer', self.app['region'])]
         if lb_infos:
-            hapi = haproxy.Haproxyapi(lb_infos)
+            hapi = haproxy.Haproxyapi(lb_infos, self.log_file)
             ha_urls = hapi.get_haproxy_urls()
             if not self.haproxy_configuration_validation(hapi, ha_urls):
                 raise GCallException('Cannot initialize the safe deployment process because there is differences in the Haproxy \
