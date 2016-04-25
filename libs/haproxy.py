@@ -13,7 +13,6 @@
         * Add the instance(s) from an Haproxy backend.
 
 
-@author: Matthieu BORET
 """
 # -*- coding: utf-8 -*-
 #!/usr/bin/env python
@@ -111,7 +110,7 @@ class Haproxyapi:
         """
         data = {'backend': haproxy_backend, 'action':
                 new_state, 'data': [{'name': i} for i in instances]}
-        return self.hapipostrequest(data)
+        return self.hapi_post_request(data)
 
 
     def set_deploy_mode(self, haproxy_backend, action=True):
@@ -165,4 +164,3 @@ class Haproxyapi:
                 'addserver', 'data': [{'name': haproxy_backend + '-' + i.replace('.','-'),
                 'ip': i, 'port': port, 'options': options} for i in instances]}
         return self.hapipostrequest(data)
-

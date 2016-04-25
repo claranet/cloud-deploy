@@ -1,8 +1,12 @@
-from copy import copy
+"""
 
+"""
+# -*- coding: utf-8 -*-
+#!/usr/bin/env python
+
+from copy import copy
 from fabric.api import execute as fab_execute
 from fabfile import deploy
-
 from ghost_tools import config
 from ghost_tools import render_stage2
 from ghost_log import log

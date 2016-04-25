@@ -7,7 +7,6 @@
         * Check the instance status in the ELB pool.
         * Retrieve the connection draining value for an ELB.
 
-@author: Matthieu BORET
 """
 # -*- coding: utf-8 -*-
 #!/usr/bin/env python
