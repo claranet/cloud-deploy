@@ -12,7 +12,7 @@ apps_schema = {
     'provider': {
         'type': 'string',
         'allowed': ['aws'],
-        'required': True
+        'required': False
     },
     'assumed_account_id': {
         'type': 'string',
