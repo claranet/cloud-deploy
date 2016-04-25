@@ -2406,6 +2406,21 @@
         "type": "generalCurrentGen",
         "sizes": [
           {
+            "size": "t2.nano",
+            "vCPU": "1",
+            "ECU": "variable",
+            "memoryGiB": "0.5",
+            "storageGB": "ebsonly",
+            "valueColumns": [
+              {
+                "name": "linux",
+                "prices": {
+                  "USD": "0.0075"
+                }
+              }
+            ]
+          },
+          {
             "size": "t2.micro",
             "vCPU": "1",
             "ECU": "variable",
@@ -4236,6 +4251,21 @@
         "type": "generalCurrentGen",
         "sizes": [
           {
+            "size": "t2.nano",
+            "vCPU": "1",
+            "ECU": "variable",
+            "memoryGiB": "0.5",
+            "storageGB": "ebsonly",
+            "valueColumns": [
+              {
+                "name": "linux",
+                "prices": {
+                  "USD": "0.01"
+                }
+              }
+            ]
+          },
+          {
             "size": "t2.micro",
             "vCPU": "1",
             "ECU": "variable",
@@ -4845,7 +4875,7 @@
               {
                 "name": "linux",
                 "prices": {
-                  "USD": "0.010"
+                  "USD": "0.01"
                 }
               }
             ]
@@ -4860,7 +4890,7 @@
               {
                 "name": "linux",
                 "prices": {
-                  "USD": "0.020"
+                  "USD": "0.02"
                 }
               }
             ]
@@ -4875,7 +4905,7 @@
               {
                 "name": "linux",
                 "prices": {
-                  "USD": "0.040"
+                  "USD": "0.04"
                 }
               }
             ]
@@ -4890,7 +4920,7 @@
               {
                 "name": "linux",
                 "prices": {
-                  "USD": "0.080"
+                  "USD": "0.08"
                 }
               }
             ]
@@ -4905,7 +4935,7 @@
               {
                 "name": "linux",
                 "prices": {
-                  "USD": "0.160"
+                  "USD": "0.16"
                 }
               }
             ]
@@ -4950,7 +4980,7 @@
               {
                 "name": "linux",
                 "prices": {
-                  "USD": "0.660"
+                  "USD": "0.66"
                 }
               }
             ]
@@ -5000,7 +5030,7 @@
               {
                 "name": "linux",
                 "prices": {
-                  "USD": "0.120"
+                  "USD": "0.12"
                 }
               }
             ]
@@ -5060,7 +5090,7 @@
               {
                 "name": "linux",
                 "prices": {
-                  "USD": "1.910"
+                  "USD": "1.91"
                 }
               }
             ]
@@ -5080,7 +5110,7 @@
               {
                 "name": "linux",
                 "prices": {
-                  "USD": "0.200"
+                  "USD": "0.2"
                 }
               }
             ]
