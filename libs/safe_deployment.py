@@ -111,7 +111,7 @@ class SafeDeployment():
         """
         ha_confs = []
         for ha_url in ha_urls:
-            ha_confs.append(hapi.get_haproxy_conf(ha_url))
+            ha_confs.append(hapi.get_haproxy_conf(ha_url, True))
         return hapi.check_haproxy_conf(ha_confs)
 
 

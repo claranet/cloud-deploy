@@ -85,43 +85,51 @@ class Haproxyapi:
                                     expand is set to True(ex: {'backend_name':[{'ip':xxx,'name':'xxx','status':'up'},...]})
         """
         haproxy_conf = {}
-        try:
-            for backend in requests.get(haproxy_url + '?show').json().values()[0]:
-                if expand:
-                    haproxy_conf[backend] = requests.get(haproxy_url + '?show={0}' .format(backend)).json().values()[0]
-                else:
-                    haproxy_conf[backend] = [ip['ip'].split(':')[0] for ip in requests.get(haproxy_url + '?show={0}' .format(backend)).json().values()[0]]
-            return haproxy_conf
-        except requests.exceptions.ConnectionError:
-            log("Connection Error on the Haproxy: {0}" .format(backend), self.log_file)
-        except requests.exceptions.Timeout:
-            log("Connection Timeout on the Haproxy: {0}" .format(backend), self.log_file)
-        except Exception as e:
-            log("Error during get_haproxy_conf operation: {0}" .format(str(e)), self.log_file)
-        finally:
-            return {}
+        for backend in self.hapi_get_request('show', haproxy_url):
+            if expand:
+                haproxy_conf[backend] = self.hapi_get_request('show={0}' .format(backend), haproxy_url)
+            else:
+                haproxy_conf[backend] = [ip['ip'].split(':')[0] for ip in self.hapi_get_request('show={0}' .format(backend), haproxy_url)]
+        return haproxy_conf
 
-    def hapi_post_request(self, datas):
-        """ Perform Post requests on Haproxy APIs.
+    def hapi_get_request(self, datas, haproxy_url):
+        """ Perform a Get request on Haproxy APIs.
+
+            :param   datas: String: The get parameters.
+            :param   haproxy_urls:  string: The Haproxy URL on which to perform the request.
+            :return  a list: The values of the get request answer.
+        """
+        try:
+            rez = requests.get(haproxy_url + '?' + datas)
+            if int(rez.status_code) == 200:
+                return rez.json().values()[0]
+        except requests.exceptions.ConnectionError:
+            log"Connection Error on the Haproxy: {0}" .format(haproxy_url), self.log_file)
+        except requests.exceptions.Timeout:
+            log"Connection Timeout on the Haproxy: {0}" .format(haproxy_url), self.log_file)
+        except Exception as e:
+            log"Error during post_request operation: {0}" .format(str(e)), self.log_file)
+        return []
+
+    def hapi_post_request(self, datas, haproxy_url):
+        """ Perform a Post request on Haproxy APIs.
 
             :param   datas: a dictionnary of the datas to send.
+            :param   haproxy_urls:  string: The Haproxy URL on which to perform the request.
             :return  boolean (True if all requests succeed otherwise False).
         """
-        for haproxy_url in self._urls:
-            try:
-                r = requests.post(haproxy_url, data=json.dumps(datas),
+        try:
+            r = requests.post(haproxy_url, data=json.dumps(datas),
                             headers=self.headers, timeout=self._timeout)
-                if int(r.status_code) != 200:
-                    return False
-            except requests.exceptions.ConnectionError:
-                log("Connection Error on the Haproxy: {0}" .format(haproxy_url), self.log_file)
-            except requests.exceptions.Timeout:
-                log("Connection Timeout on the Haproxy: {0}" .format(haproxy_url), self.log_file)
-            except Exception as e:
-                log("Error during post_request operation: {0}" .format(str(e)), self.log_file)
-            finally:
-                return False
-        return True
+            if int(r.status_code) == 200:
+                return True
+        except requests.exceptions.ConnectionError:
+            log"Connection Error on the Haproxy: {0}" .format(haproxy_url), self.log_file)
+        except requests.exceptions.Timeout:
+            log"Connection Timeout on the Haproxy: {0}" .format(haproxy_url), self.log_file)
+        except Exception as e:
+            log"Error during post_request operation: {0}" .format(str(e)), self.log_file)
+        return False
 
     def change_instance_state(self, new_state, haproxy_backend, instances = []):
         """ Change the state(enable or disable) of an instance in Haproxy conf.
@@ -133,7 +141,10 @@ class Haproxyapi:
         """
         data = {'backend': haproxy_backend, 'action':
                 new_state, 'data': [{'name': i} for i in instances]}
-        return self.hapi_post_request(data)
+        for ha_url in self._urls:
+            if not self.hapi_post_request(data, ha_url):
+                return False
+        return True
 
 
     def set_deploy_mode(self, haproxy_backend, action=True):
@@ -187,9 +198,3 @@ class Haproxyapi:
                 'addserver', 'data': [{'name': haproxy_backend + '-' + i.replace('.','-'),
                 'ip': i, 'port': port, 'options': options} for i in instances]}
         return self.hapipostrequest(data)
-
-if __name__ == '__main__':
-    hapi = Haproxyapi(['52.67.8.92', '52.67.57.36'])
-    instances_list = [u'10.10.10.250']
-    print(hapi.change_instance_state('disableserver', 'webtracking', instances_list))
-
