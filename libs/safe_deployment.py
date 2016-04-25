@@ -93,7 +93,7 @@ class SafeDeployment():
             log('Waiting {0}s: The connection draining time more the custom value set for wait_before_deploy' .format(wait_before_deploy), self.log_file)
             time.sleep(wait_before_deploy)
             launch_deploy(self.app, self.module, [host['private_ip_address'] for host in instances_list], self.fab_exec_strategy, self.log_file)
-            log('Waiting {0}s: The value set for wait_after_deploy' .format(self.safe_infos['wait_after_deploy']))
+            log('Waiting {0}s: The value set for wait_after_deploy' .format(self.safe_infos['wait_after_deploy']), self.log_file)
             time.sleep(int(self.safe_infos['wait_after_deploy']))
             register_instance_from_elb(self.elb_conn, elb_instances.keys(), [host['id'] for host in instances_list], self.log_file)
             while len([i for i in get_elb_instance_status_autoscaling_group(self.elb_conn, self.as_name, self.region, self.as_conn).values() if 'outofservice' in i.values()]):

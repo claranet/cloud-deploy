@@ -104,11 +104,11 @@ class Haproxyapi:
             if int(rez.status_code) == 200:
                 return rez.json().values()[0]
         except requests.exceptions.ConnectionError:
-            log"Connection Error on the Haproxy: {0}" .format(haproxy_url), self.log_file)
+            log("Connection Error on the Haproxy: {0}" .format(haproxy_url), self.log_file)
         except requests.exceptions.Timeout:
-            log"Connection Timeout on the Haproxy: {0}" .format(haproxy_url), self.log_file)
+            log("Connection Timeout on the Haproxy: {0}" .format(haproxy_url), self.log_file)
         except Exception as e:
-            log"Error during post_request operation: {0}" .format(str(e)), self.log_file)
+            log("Error during post_request operation: {0}" .format(str(e)), self.log_file)
         return []
 
     def hapi_post_request(self, datas, haproxy_url):
@@ -124,11 +124,11 @@ class Haproxyapi:
             if int(r.status_code) == 200:
                 return True
         except requests.exceptions.ConnectionError:
-            log"Connection Error on the Haproxy: {0}" .format(haproxy_url), self.log_file)
+            log("Connection Error on the Haproxy: {0}" .format(haproxy_url), self.log_file)
         except requests.exceptions.Timeout:
-            log"Connection Timeout on the Haproxy: {0}" .format(haproxy_url), self.log_file)
+            log("Connection Timeout on the Haproxy: {0}" .format(haproxy_url), self.log_file)
         except Exception as e:
-            log"Error during post_request operation: {0}" .format(str(e)), self.log_file)
+            log("Error during post_request operation: {0}" .format(str(e)), self.log_file)
         return False
 
     def change_instance_state(self, new_state, haproxy_backend, instances = []):

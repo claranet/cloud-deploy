@@ -111,7 +111,7 @@ class Redeploy():
         if 'options' in self._job and len(self._job['options']) > 0:
             deploy_id = self._job['options'][0]
             fabric_execution_strategy = self._job['options'][1] if len(self._job['options']) > 0 else None
-            safe_deployment_strategy = self._job['options'][2] if len(self._job['options']) > 0 else None
+            safe_deployment_strategy = self._job['options'][2] if len(self._job['options']) > 2 else None
             try:
                 self._execute_redeploy(deploy_id, fabric_execution_strategy, safe_deployment_strategy)
                 self._worker.update_status("done", message="Redeploy OK: [{0}]".format(deploy_id))
