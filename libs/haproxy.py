@@ -16,7 +16,7 @@
 """
 # -*- coding: utf-8 -*-
 #!/usr/bin/env python
-
+import debug
 import requests
 import json
 import itertools
@@ -71,15 +71,22 @@ class Haproxyapi:
         return True
 
 
-    def get_haproxy_conf(self, haproxy_url):
-        """ Retrieve the configuration(IPs list for each backend) of the Haproxy.
+    def get_haproxy_conf(self, haproxy_url, expand = False):
+        """ Retrieve the configuration(IPs list per backend) of the Haproxy or
+            the full instance informations if the parameter expand is set to True.
 
-            :param   haproxy_url: a string of the Haproxy url(only one url)
-            :return  a dictionary of all backends as key and his instances as value(list).
+            :param   haproxy_url: string of the Haproxy url(only one url)
+            :param   expand: bool  if set to True return a full description of the instance.
+            :return  a dictionary * of all backends as key and his instances as value(list) if expand is set to False
+                                  * of all backends as key and the full description of the instance as value(dict) if
+                                    expand is set to True(ex: {'backend_name':[{'ip':xxx,'name':'xxx','status':'up'},...]})
         """
         haproxy_conf = {}
         for backend in requests.get(haproxy_url + '?show').json().values()[0]:
-            haproxy_conf[backend] = [ip.split(':')[0] for ip in requests.get(haproxy_url + '?show={0}' .format(backend)).json().values()[0]]
+            if expand:
+                haproxy_conf[backend] = requests.get(haproxy_url + '?show={0}' .format(backend)).json().values()[0]
+            else:
+                haproxy_conf[backend] = [ip['ip'].split(':')[0] for ip in requests.get(haproxy_url + '?show={0}' .format(backend)).json().values()[0]]
         return haproxy_conf
 
     def hapi_post_request(self, datas):
@@ -164,3 +171,9 @@ class Haproxyapi:
                 'addserver', 'data': [{'name': haproxy_backend + '-' + i.replace('.','-'),
                 'ip': i, 'port': port, 'options': options} for i in instances]}
         return self.hapipostrequest(data)
+
+if __name__ == '__main__':
+    hapi = Haproxyapi(['52.67.8.92', '52.67.57.36'])
+    instances_list = [u'10.10.10.250']
+    print(hapi.change_instance_state('enableserver', 'webtracking', instances_list))
+

@@ -128,19 +128,19 @@ class SafeDeployment():
             if not self.haproxy_configuration_validation(hapi, ha_urls):
                 raise GCallException('Cannot initialize the safe deployment process because there is differences in the Haproxy \
                                     configuration files between the instances: {0}' .format(lb_infos))
-            if not hapi.change_instance_state('disabledserver', self.safe_infos['ha_backend'], instances_list):
+            if not hapi.change_instance_state('disableserver', self.safe_infos['ha_backend'], [host['private_ip_address'] for host in instances_list]):
                 raise GCallException('Cannot disabled some instances: {0} in {1}. Deployment aborded' .format(instances_list, lb_infos))
             log('Waiting {0}s: The value set for wait_before_deploy' .format(self.safe_infos['wait_before_deploy']), self.log_file)
             time.sleep(int(self.safe_infos['wait_before_deploy']))
             launch_deploy(self.app, self.module, [host['private_ip_address'] for host in instances_list], self.fab_exec_strategy, self.log_file)
             log('Waiting {0}s: The value set for wait_after_deploy' .format(self.safe_infos['wait_after_deploy']), self.log_file)
             time.sleep(int(self.safe_infos['wait_after_deploy']))
-            if not hapi.change_instance_state('enabledserver', self.safe_infos['ha_backend'], instances_list):
+            if not hapi.change_instance_state('enableserver', self.safe_infos['ha_backend'], [host['private_ip_address'] for host in instances_list]):
                 raise GCallException('Cannot enabled some instances: {0} in {1}. Deployment aborded' .format(instances_list, lb_infos))
             if not self.haproxy_configuration_validation(hapi, ha_urls):
                 raise GCallException('Error in the post safe deployment process because there is differences in the Haproxy \
                                     configuration files between the instances: {0}. Instances: {1} have been deployed but not well enabled' .format(lb_infos, instances_list))
-            if not hapi.check_all_instances_up(self.safe_infos['ha_backend'], hapi.get_haproxy_conf(ha_urls[0])):
+            if not hapi.check_all_instances_up(self.safe_infos['ha_backend'], hapi.get_haproxy_conf(ha_urls[0], True)):
                 raise GCallException('Error in the post safe deployment process because some instances are disable or down in the Haproxy: {0}.' .format(lb_infos, instances_list))
             log('Instances: {0} have been deployed and are registered in their Haproxy' .format(str(instances_list)), self.log_file)
             return True
