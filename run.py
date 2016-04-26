@@ -11,7 +11,7 @@ import json
 
 from redis import Redis
 from rq import Queue, cancel_job
-from rq_dashboard import RQDashboard
+import rq_dashboard
 
 from settings import __dict__ as eve_settings
 from command import Command
@@ -209,7 +209,8 @@ def pre_delete_job_enqueueings():
 # Create ghost app, explicitly specifying the settings to avoid errors during doctest execution
 ghost = Eve(auth=BCryptAuth, settings=eve_settings)
 Bootstrap(ghost)
-RQDashboard(ghost)
+ghost.config.from_object(rq_dashboard.default_settings)
+ghost.register_blueprint(rq_dashboard.blueprint, url_prefix='/rq')
 ghost.register_blueprint(eve_docs, url_prefix='/docs')
 
 # Register eve hooks

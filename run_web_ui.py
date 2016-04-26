@@ -1,3 +1,5 @@
+import argparse
+
 import gunicorn.app.base
 from gunicorn.six import iteritems
 
@@ -22,7 +24,7 @@ class StandaloneApplication(gunicorn.app.base.BaseApplication):
     def load(self):
         return self.application
 
-if __name__ == '__main__':
+def run_standalone():
     app.config['DEBUG'] = True
     options = {
         'bind': '0.0.0.0:5001',
@@ -32,3 +34,20 @@ if __name__ == '__main__':
         'timeout': 600,
     }
     StandaloneApplication(app, options).run()
+
+def run_eclipse():
+    ws.run(app, host='0.0.0.0', port=5001, log_output=True)
+
+def parse_args():
+    parser = argparse.ArgumentParser(
+        description='Run the Ghost web ui from the command line.'
+    )
+    parser.add_argument('--eclipse', action='store_true')
+    return parser.parse_args()
+
+if __name__ == '__main__':
+    args = parse_args()
+    if args.eclipse:
+        run_eclipse()
+    else:
+        run_standalone()
