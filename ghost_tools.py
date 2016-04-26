@@ -387,4 +387,4 @@ def get_app_module_name_list(app):
     """
     Returns the list of module name from a Ghost App
     """
-    return [app_module['name'] for app_module in app['modules'] if 'name' in app_module]
+    return [app_module['name'] for app_module in modules if 'name' in app_module]
