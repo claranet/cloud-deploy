@@ -47,12 +47,27 @@ class Haproxyapi:
         """
         return self._urls
 
+    def conf_cleaner(self, datas):
+        """ Return a conf dict without any space \t \n.
+
+            :param datas  dict of an Haproxy configuration
+            :return dict.
+        """
+        clean_conf = {}
+        for k, v in datas.items():
+            new_infos = []
+            for infos in v:
+                new_infos.append({''.join(str(k).split()):''.join(str(v).split()) for k,v in infos.items()})
+            clean_conf[k] = new_infos
+        return clean_conf
+
     def check_haproxy_conf(self, haproxy_conf = []):
         """ Do the difference between Haproxy's configuration.
 
             :param   haproxy_conf: list of Haproxy configurations(backend with instances IPs).
             :return  boolean (True if conf are equal otherwise False)
         """
+        haproxy_conf = [self.conf_cleaner(i) for i in haproxy_conf]
         _diff = 0
         for a, b in itertools.combinations(haproxy_conf, 2):
             _diff += cmp(a, b)
