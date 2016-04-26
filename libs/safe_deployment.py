@@ -1,16 +1,16 @@
 """
 
-    Safe Deployment library aims to create a sweet way to deploy on EC2 instances.
+    The Safe Deployment library aims to create a sweet way to deploy on EC2 instances.
     The process is:
-        * Check that every instances in the Load Balancer are in service and are enought to perform the safe deployment.
-        * Split the instances list according the deployment type choose(1by1-1/3-25%-50%).
-        * Before begin to deploy on a part of the instances list, remove them from their Load Balancer(Haproxy or ELB)
+        * Check that every instances in the Load Balancer(Haproxy or ELB) are in service and are enough to perform the safe deployment.
+        * Split the instances list according the deployment type choosen(1by1-1/3-25%-50%).
+        * Before begin to deploy on the instances group, remove them from their Load Balancer(Haproxy or ELB)
         * Wait a moment(depends on the connection draining value for the ELB and/or the custom value defines in Ghost)
         * Launch the standard deployment process
         * Wait a moment(depends on the custom value defines in Ghost)
         * Add the updated instances in their Load Balancer.
-        * Wait until instance become healthly.
-        * Do the same process for the next parts of the instances list.
+        * Wait until instances become healthly.
+        * Do the same process for the next instance groups.
     This library works with one or more Load Balancers per Autoscaling Group.
 
     For AutoScaling Group with one or more Haproxy as Load Balancer, the safe deployment process works with Hapi only:
