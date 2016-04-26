@@ -114,7 +114,8 @@ apps_schema = {
             'wait_after_deploy' : {'type': 'integer', 'min': 0},
             'wait_before_deploy' : {'type': 'integer', 'min': 0},
             'app_tag_value': {'type': 'string', 'required': False},
-            'ha_backend': {'type': 'string', 'required': False}
+            'ha_backend': {'type': 'string', 'required': False},
+            'api_port': {'type': 'integer', 'required': False}
         }
     },
     'build_infos': {
