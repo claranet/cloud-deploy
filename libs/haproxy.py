@@ -62,12 +62,13 @@ class Haproxyapi:
         return clean_conf
 
     def check_haproxy_conf(self, haproxy_conf = []):
-        """ Do the difference between Haproxy's configuration.
+        """ Do the difference between Haproxy's configuration. Compare only if each
+            Haproxy conf have the same running instances.
 
             :param   haproxy_conf: list of Haproxy configurations(backend with instances IPs).
             :return  boolean (True if conf are equal otherwise False)
         """
-        haproxy_conf = [self.conf_cleaner(i) for i in haproxy_conf]
+        haproxy_conf = [sorted([i['ip'] for i in self.conf_cleaner(i).values()[0] if i['status'] == 'up']) for i in haproxy_conf]
         _diff = 0
         for a, b in itertools.combinations(haproxy_conf, 2):
             _diff += cmp(a, b)
