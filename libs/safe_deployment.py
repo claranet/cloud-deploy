@@ -137,6 +137,8 @@ class SafeDeployment():
             time.sleep(int(self.safe_infos['wait_after_deploy']))
             if not hapi.change_instance_state('enableserver', self.safe_infos['ha_backend'], [host['private_ip_address'] for host in instances_list]):
                 raise GCallException('Cannot enabled some instances: {0} in {1}. Deployment aborded' .format(instances_list, lb_infos))
+            # Add a sleep to let the time to pass the health check process
+            time.sleep(5)
             if not self.haproxy_configuration_validation(hapi, ha_urls):
                 raise GCallException('Error in the post safe deployment process because there is differences in the Haproxy \
                                     configuration files between the instances: {0}. Instances: {1} have been deployed but not well enabled' .format(lb_infos, instances_list))
