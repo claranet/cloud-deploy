@@ -61,20 +61,30 @@ class Haproxyapi:
             clean_conf[k] = new_infos
         return clean_conf
 
-    def check_haproxy_conf(self, haproxy_conf = []):
-        """ Do the difference between Haproxy's configuration. Compare only if each
-            Haproxy conf have the same running instances.
+    def check_haproxy_conf(self, haproxy_conf = [], backend_name = ""):
+        """ Do the difference between Haproxy configuration files. Only compares
+            the IPs with the status UP in the Haproxy.
 
             :param   haproxy_conf: list of Haproxy configurations(backend with instances IPs).
+            :param   backend_name: string  if set, only compare the configuration for this backend.
             :return  boolean (True if conf are equal otherwise False)
         """
-        haproxy_conf = [sorted([i['ip'] for i in self.conf_cleaner(i).values()[0] if i['status'] == 'up']) for i in haproxy_conf]
-        _diff = 0
-        for a, b in itertools.combinations(haproxy_conf, 2):
-            _diff += cmp(a, b)
-        if not _diff:
-            return True
-        return False
+        haproxy_conf = [self.conf_cleaner(i) for i in haproxy_conf]
+        new_haproxy_conf = {x:[] for x in set([i + i for i in [v.keys() for v in haproxy_conf]][0])}
+        for conf in haproxy_conf:
+            for k,v in conf.items():
+                new_haproxy_conf[k].append(sorted([i['ip'] for i in v if i['status'] == 'up']))
+        if backend_name:
+            for k,v in new_haproxy_conf.items():
+                if k != backend_name:
+                    del new_haproxy_conf[k]
+        for k,v in new_haproxy_conf.items():
+            _diff = 0
+            for a, b in itertools.combinations(v, 2):
+                _diff += cmp(a, b)
+            if _diff:
+                return False
+        return True
 
     def check_all_instances_up(self, backend_name, haproxy_conf):
         """ Return False if at least one instance is in maintenance mode or down in the backend in parameter,
