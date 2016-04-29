@@ -52,6 +52,15 @@ if [ -z "$1" ] ; then
     zabbix_hostname
 fi
 
+function instance_hostname(){
+    EC2_TAG_NAME=$(aws --region $EC2_REGION ec2 describe-tags --filters "Name=resource-id,Values=$(curl -s http://169.254.169.254/latest/meta-data/instance-id)" "Name=key,Values=Name" --output text|awk '{print $5}'| tr -s '.' '-')
+    salt-call --local network.mod_hostname "$EC2_TAG_NAME"
+}
+
+if [ -z "$1" ] ; then
+    instance_hostname
+fi
+
 function purge_latest_failed_deploy() {
     MODULE_NAME=$1
     MODULE_PATH=/ghost/$2
