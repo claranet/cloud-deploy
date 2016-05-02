@@ -10,7 +10,7 @@ from time import sleep
 
 import boto.s3
 
-from ghost_tools import GCallException, gcall, deploy_module_on_hosts, log, refresh_stage2
+from ghost_tools import GCallException, gcall, deploy_module_on_hosts, log, refresh_stage2, get_app_module_name_list, clean_local_module_workspace
 
 ROOT_PATH = os.path.dirname(os.path.realpath(__file__))
 
@@ -215,7 +215,7 @@ class Deploy():
         key = bucket.get_key(key_path)
         modules = []
         module_exist = False
-        all_app_modules_list = [app_module['name'] for app_module in self._app['modules'] if 'name' in app_module]
+        all_app_modules_list = get_app_module_name_list(self._app['modules'])
         data = ""
         if key:
             manifest = key.get_contents_as_string()
@@ -255,7 +255,6 @@ class Deploy():
             os.write(manifest, data)
         os.close(manifest)
         key.set_contents_from_filename(manifest_path)
-
 
     def _is_commit_hash(self, revision):
         """
@@ -458,6 +457,8 @@ GHOST_MODULE_USER="{user}"
         pkg_name = self._package_module(module, ts, commit)
 
         self._update_manifest(module, pkg_name)
+        all_app_modules_list = get_app_module_name_list(self._app['modules'])
+        clean_local_module_workspace(self._get_path_from_app(), all_app_modules_list, self._log_file)
         self._deploy_module(module, fabric_execution_strategy)
 
         deployment = {'app_id': self._app['_id'], 'job_id': self._job['_id'], 'module': module['name'], 'revision': revision, 'commit': commit, 'commit_message': commit_message, 'timestamp': ts, 'package': pkg_name, 'module_path': module['path']}

@@ -43,7 +43,7 @@ class Updateautoscaling():
                             setattr(as_group, 'max_size', self._app['autoscale']['max'])
                             as_group.update()
                             log("Autoscaling group [{0}] updated.".format(self._app['autoscale']['name']), self._log_file)
-                            if (purge_launch_configuration(self._app)):
+                            if (purge_launch_configuration(self._app, self._config.get('launch_configuration_retention', 5))):
                                 log("Old launch configurations removed for this app", self._log_file)
                             else:
                                 log("Purge launch configurations failed", self._log_file)

@@ -271,9 +271,8 @@ def check_autoscale_exists(as_name, region):
     else:
         return False
 
-def purge_launch_configuration(app):
+def purge_launch_configuration(app, retention):
     conn_as = boto.ec2.autoscale.connect_to_region(app['region'])
-    retention = 2
     launchconfigs = []
     lcs = conn_as.get_all_launch_configurations()
 
@@ -373,3 +372,19 @@ def get_app_from_rq_name(name):
     """
     parts = name.split(':')
     return {'env': parts[0], 'name': parts[1], 'role': parts[2]}
+
+def clean_local_module_workspace(app_path, all_app_modules_list, log_file):
+    """
+    Walk through app_path directory and check if module workspace should be cleaned.
+    """
+
+    log('Cleaning old module workspaces', log_file)
+    for mod_dir in os.listdir(app_path):
+        if not mod_dir in all_app_modules_list:
+            gcall('rm -rf {p}'.format(p=os.path.join(app_path, mod_dir)), 'Removing deleted module : %s' % mod_dir, log_file)
+
+def get_app_module_name_list(modules):
+    """
+    Returns the list of module name from a Ghost App
+    """
+    return [app_module['name'] for app_module in modules if 'name' in app_module]

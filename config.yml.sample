@@ -23,3 +23,12 @@ rq_worker_strategy: one_worker_for_all
 
 # Deploy to target instances in serial (fabric's default) or in parallel
 fabric_execution_strategy: serial
+
+# Pagination for Eve
+eve_pagination_default: 23
+
+# Packer should install or not the Salt Minion when baking an Image
+skip_salt_bootstrap: True
+
+# LaunchConfiguration retention history per AutoScaling Group
+launch_configuration_retention: 5
