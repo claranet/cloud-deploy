@@ -48,8 +48,14 @@ function zabbix_hostname(){
     service zabbix-agent restart
 }
 
+function instance_hostname() {
+    EC2_HOSTNAME=$(echo $NAME| tr -s '.' '-')
+    salt-call --local network.mod_hostname "$EC2_HOSTNAME"
+}
+
 if [ -z "$1" ] ; then
     zabbix_hostname
+    instance_hostname
 fi
 
 function purge_latest_failed_deploy() {
