@@ -26,16 +26,16 @@ class Packer:
         log("Getting Salt Formulas from {r}".format(r=salt_formulas_repo), self._log_file)
         try:
             output=git("ls-remote", "--exit-code", salt_formulas_repo).strip()
-            log("salt_formulas_repo checked successfuly with output : " + output, self._log_file)
+            log("salt_formulas_repo checked successfuly with output: " + output, self._log_file)
         except sh.ErrorReturnCode, e:
             log("Invalid salt formulas repos. Please check your yaml 'config.yml' file", self._log_file)
             raise
-        git.clone([salt_formulas_repo, SALT_LOCAL_TREE + self.unique + '/'],'--recursive')
+        git.clone([salt_formulas_repo, '-b', config.get('salt_formulas_branch', 'master'), '--single-branch', SALT_LOCAL_TREE + self.unique + '/'])
         if config.get('salt_formulas_branch'):
             os.chdir(SALT_LOCAL_TREE + self.unique)
-            git.checkout(config['salt_formulas_branch'])
             git.submodule('init')
             git.submodule('update')
+
     def _build_salt_top(self, params):
         self.salt_path = SALT_LOCAL_TREE + self.unique + '/salt'
         self.salt_top_path = self.salt_path + '/top.sls'
