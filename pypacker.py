@@ -25,7 +25,7 @@ class Packer:
         salt_formulas_repo = config.get('salt_formulas_repo', SALT_FORMULAS_REPO)
         log("Getting Salt Formulas from {r}".format(r=salt_formulas_repo), self._log_file)
         try:
-            output=git("ls-remote", "--exit-code", salt_formulas_repo).strip()
+            output=git("ls-remote", "--exit-code", salt_formulas_repo, config.get('salt_formulas_branch', 'master')).strip()
             log("salt_formulas_repo checked successfuly with output: " + output, self._log_file)
         except sh.ErrorReturnCode, e:
             log("Invalid salt formulas repos. Please check your yaml 'config.yml' file", self._log_file)
