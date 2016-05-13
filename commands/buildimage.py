@@ -135,7 +135,7 @@ class Buildimage():
                             if (purge_launch_configuration(self._app, self._config.get('launch_configuration_retention', 5))):
                                 log("Old launch configurations removed for this app", self._log_file)
                             else:
-                                log("Purge launch configurations failed", self._log_file)
+                                log("ERROR: Purge launch configurations failed", self._log_file)
                             self._worker.update_status("done")
                         else:
                             log("ERROR: Cannot update autoscaling group", self._log_file)
