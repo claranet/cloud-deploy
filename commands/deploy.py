@@ -255,6 +255,7 @@ class Deploy():
             os.write(manifest, data)
         os.close(manifest)
         key.set_contents_from_filename(manifest_path)
+        os.remove(manifest_path)
 
     def _is_commit_hash(self, revision):
         """
