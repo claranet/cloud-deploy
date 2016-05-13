@@ -5,7 +5,7 @@ import time
 import boto.ec2.autoscale
 
 from pypacker import Packer
-from ghost_tools import log, create_launch_config, generate_userdata, check_autoscale_exists, purge_launch_configuration
+from ghost_tools import log, create_launch_config, generate_userdata, check_autoscale_exists, purge_launch_configuration, update_auto_scale
 
 COMMAND_DESCRIPTION = "Build Image"
 
@@ -131,11 +131,7 @@ class Buildimage():
                         launch_config = create_launch_config(self._app, userdata, ami_id)
                         log("Launch configuration [{0}] created.".format(launch_config.name), self._log_file)
                         if launch_config:
-                            conn = boto.ec2.autoscale.connect_to_region(self._app['region'])
-                            as_group = conn.get_all_groups(names=[self._app['autoscale']['name']])[0]
-                            setattr(as_group, 'launch_config_name', launch_config.name)
-                            as_group.update()
-                            log("Autoscaling group [{0}] updated.".format(self._app['autoscale']['name']), self._log_file)
+                            update_auto_scale(self._app, launch_config, self._log_file)
                             if (purge_launch_configuration(self._app, self._config.get('launch_configuration_retention', 5))):
                                 log("Old launch configurations removed for this app", self._log_file)
                             else:

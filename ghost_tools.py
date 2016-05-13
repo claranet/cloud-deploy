@@ -304,6 +304,17 @@ def purge_launch_configuration(app, retention):
     else:
         return False
 
+def update_auto_scale(app, launch_config, log_file, update_as_params=False):
+    conn = boto.ec2.autoscale.connect_to_region(app['region'])
+    as_group = conn.get_all_groups(names=[app['autoscale']['name']])[0]
+    setattr(as_group, 'launch_config_name', launch_config.name)
+    if update_as_params:
+        setattr(as_group, 'desired_capacity', app['autoscale']['current'])
+        setattr(as_group, 'min_size', app['autoscale']['min'])
+        setattr(as_group, 'max_size', app['autoscale']['max'])
+    as_group.update()
+    log("Autoscaling group [{0}] updated.".format(app['autoscale']['name']), log_file)
+
 def create_block_device(rbd={}):
     dev_sda1 = boto.ec2.blockdevicemapping.EBSBlockDeviceType(delete_on_termination=True)
     if 'type' in rbd:
