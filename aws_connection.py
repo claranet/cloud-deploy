@@ -41,7 +41,7 @@ class AWSConnection(ACloudConnection):
             result = True
         else:
             try:
-                if self._parameters.get('region', None):
+                if self._parameters.get('assumed_region_name', None):
                     sts_connection = boto.sts.connect_to_region(self._parameters['assumed_region_name'])
                 else:
                     sts_connection = STSConnection()
