@@ -299,7 +299,7 @@ def purge_launch_configuration(app, retention):
     for lc in lcs:
         if launchconfig_format in lc.name:
             launchconfigs.append(lc)
-    if len(launchconfigs) <= 2:
+    if len(launchconfigs) <= retention:
         return True
     else:
         return False
