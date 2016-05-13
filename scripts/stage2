@@ -152,7 +152,7 @@ function deploy_module() {
             purge_latest_failed_deploy $MODULE_NAME $UUID
             exit_deployment -1
         fi
-        rm -v ./predeploy
+        rm -vf ./predeploy
     fi
 
     # Clear folder if not a symlink (not a Ghost managed module)
@@ -169,7 +169,7 @@ function deploy_module() {
         echo "Executing postdeploy script..." >> /tmp/$LOGFILE
         chmod +x postdeploy
         GHOST_MODULE_REPO=$GHOST_MODULE_REPO GHOST_MODULE_REV=$GHOST_MODULE_REV GHOST_MODULE_COMMIT=$GHOST_MODULE_COMMIT GHOST_MODULE_COMMIT_MESSAGE=$GHOST_MODULE_COMMIT_MESSAGE GHOST_MODULE_USER=$GHOST_MODULE_USER GHOST_APP=$APP GHOST_ENV=$ENV GHOST_ROLE=$ROLE GHOST_MODULE_NAME=$MODULE_NAME GHOST_MODULE_PATH=$TARGET ./postdeploy 2>&1 | tee -a /tmp/$LOGFILE
-        rm -v ./postdeploy
+        rm -vf ./postdeploy
     fi
 
     purge_oldest_succeed_deploy $MODULE_NAME $UUID
