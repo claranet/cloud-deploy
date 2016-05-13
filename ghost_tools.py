@@ -16,7 +16,7 @@ def get_aws_connection_data(assumed_account_id, assumed_role_name, assumed_regio
     Build a key-value dictionnatiory args for aws cross  connections
     """
     if assumed_account_id and assumed_role_name:
-        aws_connection_data = dict([("assumed_account_id", assumed_account_id), ("assumed_role_name", assumed_role_name), ("assumed_role_name", assumed_region_name)])
+        aws_connection_data = dict([("assumed_account_id", assumed_account_id), ("assumed_role_name", assumed_role_name), ("assumed_region_name", assumed_region_name)])
     else:
         aws_connection_data = dict()
     return (aws_connection_data)
