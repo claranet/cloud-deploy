@@ -13,7 +13,7 @@ class AWSConnection(ACloudConnection):
         assumed_account_id = self._parameters.get('assumed_account_id', None)
         if (assumed_account_id):
             if self._parameters.get('assumed_region_name', None):
-                self._role_arn = "arn:aws-%s:iam::%:role/" \
+                self._role_arn = "arn:aws-%s:iam::%s:role/" \
                         %(self._parameters['assumed_region_name'].split("-")[0], assumed_account_id)
             else:
                 self._role_arn = "arn:aws:iam::" + assumed_account_id + ":role/"
