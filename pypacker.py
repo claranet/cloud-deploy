@@ -78,7 +78,7 @@ class Packer:
             'ami_block_device_mappings': self.packer_config['ami_block_device_mappings']
         }]
 
-        if self.packer_config['skip_salt_bootstrap'] == true:
+        if self.packer_config['skip_salt_bootstrap'] == 1:
             pre_salt_script = []
         else:
             pre_salt_script = [
@@ -87,10 +87,9 @@ class Packer:
                     ]
 
         provisioners = [
-
         {
             'type': 'shell',
-            'inline':pre_salt_script
+            'inline': pre_salt_script
         },
         {
             'type': 'salt-masterless',
