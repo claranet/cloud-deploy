@@ -66,7 +66,7 @@ class Command:
 
 
     def _disconnect_db(self):
-        MongoClient().disconnect()
+        MongoClient().close()
 
 
     #FIXME: not used anymore
