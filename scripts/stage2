@@ -2,6 +2,10 @@
 set -x
 
 LOCK=/run/lock/ghost-stage-2
+AWS_BIN=$(which aws)
+if [ $? -ne 0 ]; then
+    AWS_BIN='/usr/local/bin/aws'
+fi
 
 while [ -d $LOCK ] ; do
     ls -l $LOCK
@@ -25,7 +29,7 @@ while [ -z "$APP" ] || [ -z "$ENV" ] || [ -z "$ROLE" ] ; do
   echo "Waiting 1s for (app, env, role) tags to be set..."
   sleep 1
 
-  TAGS=$(/usr/local/bin/aws ec2 describe-tags --filters "Name=resource-id,Values=$INSTANCE_ID" --region "$EC2_REGION")
+  TAGS=$($AWS_BIN ec2 describe-tags --filters "Name=resource-id,Values=$INSTANCE_ID" --region "$EC2_REGION")
 
   NAME=$(echo $TAGS | jq -r ".Tags[] | { key: .Key, value: .Value } | [.] | from_entries" | jq -r '.["Name"] | select (.!=null)')
   APP=$(echo $TAGS | jq -r ".Tags[] | { key: .Key, value: .Value } | [.] | from_entries" | jq -r '.["app"] | select (.!=null)')
@@ -125,7 +129,7 @@ function deploy_module() {
 
     echo "--------------------------------" >> /tmp/$LOGFILE
     echo "Deploying module $MODULE_NAME in $TARGET" >> /tmp/$LOGFILE
-    /usr/local/bin/aws s3 cp s3://$S3_BUCKET/ghost/$APP/$ENV/$ROLE/$MODULE_NAME/$MODULE_FILE /tmp/$MODULE_FILE  --region "$S3_REGION"
+    $AWS_BIN s3 cp s3://$S3_BUCKET/ghost/$APP/$ENV/$ROLE/$MODULE_NAME/$MODULE_FILE /tmp/$MODULE_FILE  --region "$S3_REGION"
 
     mkdir -p /ghost/$UUID
     chown -R admin:admin /ghost/$UUID
@@ -199,7 +203,7 @@ function exit_deployment() {
 function download_and_run_lifecycle_hook_script() {
     local script_name=$1
     echo "Downloading ${script_name} script" >> /tmp/$LOGFILE
-    /usr/local/bin/aws s3 cp s3://$S3_BUCKET/ghost/$APP/$ENV/$ROLE/${script_name} /tmp/ghost_${script_name} --region "$S3_REGION"
+    $AWS_BIN s3 cp s3://$S3_BUCKET/ghost/$APP/$ENV/$ROLE/${script_name} /tmp/ghost_${script_name} --region "$S3_REGION"
     if [ -e /tmp/ghost_${script_name} ]; then
         echo "Executing /tmp/ghost_${script_name} script..." >> /tmp/$LOGFILE
         chmod +x /tmp/ghost_${script_name}
@@ -212,7 +216,7 @@ function download_and_run_lifecycle_hook_script() {
 }
 
 echo "Downloading Manifest" >> /tmp/$LOGFILE
-/usr/local/bin/aws s3 cp s3://$S3_BUCKET/ghost/$APP/$ENV/$ROLE/MANIFEST /tmp/ --region "$S3_REGION"
+$AWS_BIN s3 cp s3://$S3_BUCKET/ghost/$APP/$ENV/$ROLE/MANIFEST /tmp/ --region "$S3_REGION"
 
 if [ $? -ne 0 ]; then
     echo "Manifest download error...Exiting" >> /tmp/$LOGFILE
