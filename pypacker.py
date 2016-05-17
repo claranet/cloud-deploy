@@ -77,13 +77,20 @@ class Packer:
             'associate_public_ip_address': self.packer_config['associate_public_ip_address'],
             'ami_block_device_mappings': self.packer_config['ami_block_device_mappings']
         }]
+
+        if self.packer_config['skip_salt_bootstrap'] == true:
+            pre_salt_script = []
+        else:
+            pre_salt_script = [
+                "sudo DEBIAN_FRONTEND=noninteractive apt-get --assume-yes -o Dpkg::Options::='--force-confdef' -o Dpkg::Options::='--     force-confold' update",
+                "sudo DEBIAN_FRONTEND=noninteractive apt-get --assume-yes -o Dpkg::Options::='--force-confdef' -o Dpkg::Options::='--     force-confold' install curl"
+                    ]
+
         provisioners = [
+
         {
             'type': 'shell',
-            'inline':[
-                "sudo DEBIAN_FRONTEND=noninteractive apt-get --assume-yes -o Dpkg::Options::='--force-confdef' -o Dpkg::Options::='--force-confold' update",
-                "sudo DEBIAN_FRONTEND=noninteractive apt-get --assume-yes -o Dpkg::Options::='--force-confdef' -o Dpkg::Options::='--force-confold' install curl"
-            ]
+            'inline':pre_salt_script
         },
         {
             'type': 'salt-masterless',
