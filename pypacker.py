@@ -79,7 +79,7 @@ class Packer:
         }]
 
         if self.packer_config['skip_salt_bootstrap'] == 1:
-            pre_salt_script = [ echo ]
+            pre_salt_script = [ "echo 'salt bootstrap skipped'" ]
         else:
             pre_salt_script = [
                 "sudo DEBIAN_FRONTEND=noninteractive apt-get --assume-yes -o Dpkg::Options::='--force-confdef' -o Dpkg::Options::='--     force-confold' update",
