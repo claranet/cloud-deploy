@@ -84,7 +84,7 @@ class Packer:
             pre_salt_script = [
                 "sudo DEBIAN_FRONTEND=noninteractive apt-get --assume-yes -o Dpkg::Options::='--force-confdef' -o Dpkg::Options::='--     force-confold' update",
                 "sudo DEBIAN_FRONTEND=noninteractive apt-get --assume-yes -o Dpkg::Options::='--force-confdef' -o Dpkg::Options::='--     force-confold' install curl"
-                    ]
+            ]
 
         provisioners = [
         {
