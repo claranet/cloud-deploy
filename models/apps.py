@@ -111,7 +111,7 @@ apps_schema = {
         'type': 'dict',
         'schema': {
             'ssh_username': {'type': 'string',
-                             'regex': '^[a-z\_][a-z0-9\_]{0,30}$',
+                             'regex': '^[a-z\_][a-z0-9\_\-]{0,30}$',
                              'required': True},
             'source_ami': {'type': 'string',
                            'regex': '^ami-[a-z0-9]*$',
