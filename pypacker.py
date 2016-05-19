@@ -78,7 +78,7 @@ class Packer:
             'ami_block_device_mappings': self.packer_config['ami_block_device_mappings']
         }]
 
-        if self.packer_config['skip_salt_bootstrap'] == 1:
+        if self.packer_config['skip_salt_bootstrap'] == 'True':
             pre_salt_script = [ "echo 'salt bootstrap skipped'" ]
         else:
             pre_salt_script = [
