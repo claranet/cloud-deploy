@@ -108,11 +108,26 @@ class Buildimage():
             self._db.apps.update({'_id': self._app['_id']},{'$set': {'ami': ami_id, 'build_infos.ami_name': self._ami_name}})
             self._worker.update_status("done")
 
+    def _get_notification_message_done(self, ami_id):
+        """
+        >>> from bson.objectid import ObjectId
+        >>> class worker:
+        ...   app = None
+        ...   job = None
+        ...   log_file = None
+        ...   _config = None
+        >>> Deploy(worker=worker())._get_notification_message_done('')
+        'Build image OK: []'
+        >>> Deploy(worker=worker())._get_notification_message_done('012345678901234567890123')
+        'Build image OK: [012345678901234567890123]'
+        """
+        return 'Build image OK: [{0}]'.format(ami_id)
+
     def execute(self):
         skip_salt_bootstrap_option = self._job['options'][0] if 'options' in self._job and len(self._job['options']) > 0 else True
         json_packer = self._format_packer_from_app(skip_salt_bootstrap_option)
         log("Generating a new AMI", self._log_file)
-        log(json_packer, self._log_file)
+        log("Packer options : %s" % json_packer, self._log_file)
         pack = Packer(json_packer, self._config, self._log_file, self._job['_id'])
         ami_id = pack.build_image(self._format_salt_top_from_app_features(), self._format_salt_pillar_from_app_features())
         if ami_id is not "ERROR":
@@ -136,7 +151,7 @@ class Buildimage():
                                 log("Old launch configurations removed for this app", self._log_file)
                             else:
                                 log("ERROR: Purge launch configurations failed", self._log_file)
-                            self._worker.update_status("done")
+                            self._worker.update_status("done", message=self._get_notification_message_done(ami_id))
                         else:
                             log("ERROR: Cannot update autoscaling group", self._log_file)
                             self._worker.update_status("failed")
