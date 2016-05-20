@@ -5,9 +5,8 @@ import time
 import boto.ec2.autoscale
 
 from pypacker import Packer
-from ghost_tools import update_auto_scale
 from ghost_log import log
-from ghost_aws import create_launch_config, generate_userdata, check_autoscale_exists, purge_launch_configuration
+from ghost_aws import create_launch_config, generate_userdata, check_autoscale_exists, purge_launch_configuration, update_auto_scale
 
 COMMAND_DESCRIPTION = "Update the autoscaling group and its LaunchConfiguration"
 
