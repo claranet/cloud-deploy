@@ -38,7 +38,7 @@ while [ -z "$APP" ] || [ -z "$ENV" ] || [ -z "$ROLE" ] ; do
 done
 
 if [ ! -d /ghost ]; then
-    mkdir /ghost && chown -R admin:admin /ghost
+    mkdir /ghost
 fi
 
 if [ ! -d /var/lib/ghost ]; then
@@ -132,7 +132,6 @@ function deploy_module() {
     $AWS_BIN s3 cp s3://$S3_BUCKET/ghost/$APP/$ENV/$ROLE/$MODULE_NAME/$MODULE_FILE /tmp/$MODULE_FILE  --region "$S3_REGION"
 
     mkdir -p /ghost/$UUID
-    chown -R admin:admin /ghost/$UUID
     echo "Extracting module in /ghost/$UUID" >> /tmp/$LOGFILE
     tar xvzf /tmp/$MODULE_FILE -C /ghost/$UUID > /dev/null
     if [ $? -ne 0 ] || [ ! -f /tmp/$MODULE_FILE ]; then
