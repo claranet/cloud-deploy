@@ -9,6 +9,16 @@ apps_schema = {
         'regex': '^[a-zA-Z0-9_.+-]*$',
         'required': True
     },
+    'env': {
+        'type': 'string',
+        'allowed': env.env,
+        'required': True
+    },
+    'role': {
+        'type': 'string',
+        'allowed': instance_role.role,
+        'required': True
+    },
     'assumed_account_id': {
         'type': 'string',
         'regex': '^[a-zA-Z0-9_.+-]*$',
@@ -26,9 +36,6 @@ apps_schema = {
     },
     'region': {'type': 'string'},
     'instance_type': {'type': 'string'},
-    'env': {'type': 'string',
-            'allowed': env.env,
-            'required': True},
     'lifecycle_hooks': {
         'type': 'dict',
         'schema': {
@@ -36,6 +43,22 @@ apps_schema = {
             'post_buildimage': {'type': 'string'},
             'pre_bootstrap': {'type': 'string'},
             'post_bootstrap': {'type': 'string'},
+        }
+    },
+    'blue_green': {
+        'type': 'dict',
+        'schema': {
+            'color': {'type': 'string', 'allowed': ['blue', 'green'], 'required': False},
+            'is_online': {'type': 'boolean', 'required': False},
+            'alter_ego_id': {
+                'readonly': True,
+                'type': 'objectid',
+                'data_relation': {
+                    'resource': 'apps',
+                    'field': '_id',
+                    'embeddable': False
+                }
+            }
         }
     },
     'features': {
@@ -55,11 +78,6 @@ apps_schema = {
                 }
             }
         }
-    },
-    'role': {
-        'type': 'string',
-        'allowed': instance_role.role,
-        'required': True
     },
     'ami': {'type': 'string',
             'regex': '^ami-[a-z0-9]*$',
