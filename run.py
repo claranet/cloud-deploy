@@ -113,6 +113,9 @@ def pre_update_app(updates, original):
                     # Module found, can exit loop
                     break
 
+def post_update_app(updates, original):
+    pass
+
 def pre_replace_app(item, original):
     #TODO: implement (or not?) application replacement
     pass
@@ -135,6 +138,13 @@ def pre_insert_app(items):
         module['initialized'] = False
     app['user'] = request.authorization.username
 
+def post_insert_app(items):
+    app = items[0]
+    blue_green = app.get('blue_green', None)
+    if blue_green and blue_green.get('enable_blue_green', None) in ['true', '1', 'y', 'yes', 'True']:
+        color = blue_green.get('color', '')
+    
+
 def post_fetched_app(response):
     # Do we need to embed each module's last_deployment?
     embedded = json.loads(request.args.get('embedded', '{}'))
@@ -152,9 +162,6 @@ def post_fetched_app(response):
         deployment = get_deployments_db().find_one(query, sort=sort)
         if deployment:
             module['last_deployment'] = deployment if embed_last_deployment else deployment['_id']
-
-def post_insert_app(items):
-    pass
 
 def pre_insert_job(items):
     job = items[0]
@@ -216,6 +223,7 @@ ghost.register_blueprint(eve_docs, url_prefix='/docs/api')
 # Register eve hooks
 ghost.on_fetched_item_apps += post_fetched_app
 ghost.on_update_apps += pre_update_app
+ghost.on_updated_apps += post_update_app
 ghost.on_replace_apps += pre_replace_app
 ghost.on_delete_item_apps += pre_delete_app
 ghost.on_deleted_item_apps += post_delete_app
