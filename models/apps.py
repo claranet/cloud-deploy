@@ -9,11 +9,6 @@ apps_schema = {
         'regex': '^[a-zA-Z0-9_.+-]*$',
         'required': True
     },
-    'provider': {
-        'type': 'string',
-        'allowed': ['aws'],
-        'required': False
-    },
     'assumed_account_id': {
         'type': 'string',
         'regex': '^[a-zA-Z0-9_.+-]*$',
