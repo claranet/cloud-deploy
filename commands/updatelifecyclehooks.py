@@ -25,6 +25,15 @@ class Updatelifecyclehooks():
         self._log_file = worker.log_file
         self._config = worker._config
         self._worker = worker
+        self._connection_data = get_aws_connection_data(
+                self._app.get('assumed_account_id', ''),
+                self._app.get('assumed_role_name', ''),
+                self._app.get('assumed_region_name', '')
+                )
+        self._cloud_connection = cloud_connections.get(self._app.get('provider', DEFAULT_PROVIDER))(
+                self._log_file,
+                **self._connection_data
+                )
 
     def _refresh_lifecycle_hook_script(self, lifecycle_hook, lifecycle_hooks, bucket, prefix):
         key_name = '{prefix}/{lifecycle_hook}'.format(prefix=prefix, lifecycle_hook=lifecycle_hook)
@@ -69,7 +78,7 @@ class Updatelifecyclehooks():
                             launch_config = create_launch_config(self._app, userdata, ami_id)
                             log("Launch configuration [{0}] created.".format(launch_config.name), self._log_file)
                             if launch_config:
-                                update_auto_scale(self._app, launch_config, self._log_file)
+                                update_auto_scale(self._cloud_connection, self._app, launch_config, self._log_file)
                                 if (purge_launch_configuration(self._app, self._config.get('launch_configuration_retention', 5))):
                                     log("Old launch configurations removed for this app", self._log_file)
                                 else:
