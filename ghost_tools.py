@@ -392,7 +392,7 @@ def clean_local_module_workspace(app_path, all_app_modules_list, log_file):
     log('Cleaning old module workspaces', log_file)
     for mod_dir in os.listdir(app_path):
         if not mod_dir in all_app_modules_list:
-            gcall('rm -rf {p}'.format(p=os.path.join(app_path, mod_dir)), 'Removing deleted module : %s' % mod_dir, log_file)
+            gcall('rm -rf "{p}"'.format(p=os.path.join(app_path, mod_dir)), 'Removing deleted module : %s' % mod_dir, log_file)
 
 def get_app_module_name_list(modules):
     """
