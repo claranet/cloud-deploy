@@ -6,7 +6,6 @@ from jinja2 import Environment, FileSystemLoader
 
 import boto.ec2.autoscale
 import boto.ec2.blockdevicemapping
-import boto.s3
 
 from libs.safe_deployment import SafeDeployment
 from libs.deploy import launch_deploy
