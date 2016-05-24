@@ -297,7 +297,7 @@ class Deploy():
         resolved_revision = ''
         try:
             # git rev-parse returns a complete hash from an abbreviated hash, if valid
-            resolved_revision = git('--no-pager', 'rev-parse', revision).strip()
+            resolved_revision = git('--no-pager', 'rev-parse', revision, _tty_out=False).strip()
         except:
             pass
 
@@ -334,7 +334,7 @@ class Deploy():
               self._log_file)
 
         # Resolve HEAD symbolic reference to identify the default branch
-        head = git('--no-pager', 'symbolic-ref', '--short', 'HEAD').strip()
+        head = git('--no-pager', 'symbolic-ref', '--short', 'HEAD', _tty_out=False).strip()
 
         # If revision is HEAD, replace it by the default branch
         if revision == 'HEAD':
@@ -381,8 +381,8 @@ class Deploy():
             gcall('du -hs .', 'Display current build directory disk usage', self._log_file)
 
         # Extract commit information
-        commit = git('--no-pager', 'rev-parse', '--short', 'HEAD').strip()
-        commit_message = git('--no-pager', 'log', '--max-count=1', '--format=%s', 'HEAD').strip()
+        commit = git('--no-pager', 'rev-parse', '--short', 'HEAD', _tty_out=False).strip()
+        commit_message = git('--no-pager', 'log', '--max-count=1', '--format=%s', 'HEAD', _tty_out=False).strip()
 
         # At last, reset remote origin URL
         gcall('git --no-pager remote set-url origin {r}'.format(r=git_repo), 'Git reset remote origin to {r}'.format(r=git_repo), self._log_file)
