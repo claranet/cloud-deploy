@@ -76,7 +76,6 @@ def register_instance_from_elb(elb_conn, elb_names, hosts_id_list, log_file):
                 raise
             else:
                 log("Instances {0} well registered in the ELB {1}" .format(str(hosts_id_list), elb_name), log_file)
-        return True
     except Exception as e:
         log("Exception during register operation: {0}" .format(str(e)), log_file)
         raise
