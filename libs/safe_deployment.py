@@ -52,8 +52,8 @@ class SafeDeployment():
         self.safe_infos = safe_infos
         self.as_name = as_name
         self.region = region
-        self.as_conn = boto.ec2.autoscale.connect_to_region(region)
-        self.elb_conn = boto.ec2.elb.connect_to_region(region)
+        self.as_conn = None
+        self.elb_conn = None
 
     def split_hosts_list(self, split_type):
         """ Return a list of multiple hosts list for the safe deployment.
@@ -82,6 +82,8 @@ class SafeDeployment():
             :param  instances_list  list: Instances on which to deploy(list of dict. ex: [{'id':XXX, 'private_ip_address':XXXX}...]).
             :return                True if operation successed or raise an Exception.
         """
+        self.as_conn = boto.ec2.autoscale.connect_to_region(self.region)
+        self.elb_conn = boto.ec2.elb.connect_to_region(self.region)
         elb_instances = get_elb_instance_status_autoscaling_group(self.elb_conn, self.as_name, self.region, self.as_conn)
         if not len(elb_instances):
             raise GCallException('Cannot continue because there is no ELB configured in the AutoScaling Group')
