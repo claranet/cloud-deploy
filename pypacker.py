@@ -78,12 +78,12 @@ class Packer:
             'ami_block_device_mappings': self.packer_config['ami_block_device_mappings']
         }]
 
-        if self.packer_config['skip_salt_bootstrap'] == 'True':
+        if self.packer_config['skip_salt_bootstrap'] in ['true', '1', 'y', 'yes', 'True']:
             pre_salt_script = [ "echo 'salt bootstrap skipped'" ]
         else:
             pre_salt_script = [
-                "sudo DEBIAN_FRONTEND=noninteractive apt-get --assume-yes -o Dpkg::Options::='--force-confdef' -o Dpkg::Options::='--     force-confold' update",
-                "sudo DEBIAN_FRONTEND=noninteractive apt-get --assume-yes -o Dpkg::Options::='--force-confdef' -o Dpkg::Options::='--     force-confold' install curl"
+                "sudo DEBIAN_FRONTEND=noninteractive apt-get --assume-yes -o Dpkg::Options::='--force-confdef' -o Dpkg::Options::='--force-confold' update",
+                "sudo DEBIAN_FRONTEND=noninteractive apt-get --assume-yes -o Dpkg::Options::='--force-confdef' -o Dpkg::Options::='--force-confold' install curl"
             ]
 
         provisioners = [
