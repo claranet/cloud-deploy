@@ -56,11 +56,49 @@ class SafeDeployment():
         self.elb_conn = None
 
     def split_hosts_list(self, split_type):
-        """ Return a list of multiple hosts list for the safe deployment.
+        """
+        Return a list of multiple hosts list for the safe deployment.
 
             :param split_type:     string:  The way to split the hosts list(1by1-1/3-25%-50%).
             :return                list:    Multiple hosts list or raise an Exception is the safe
                                             deployment process cannot be perform.
+
+        >>> from io import StringIO
+        >>> sd = SafeDeployment(None, None, None, StringIO(), None, None, None, None)
+
+        >>> sd.hosts_list = ['host1', 'host2']
+        >>> sd.split_hosts_list('50%')
+        [['host1'], ['host2']]
+        >>> sd.split_hosts_list('1by1')
+        [['host1'], ['host2']]
+
+        >>> sd.hosts_list = ['host1', 'host2', 'host3']
+        >>> sd.split_hosts_list('50%')
+        [['host1', 'host3'], ['host2']]
+        >>> sd.split_hosts_list('1/3')
+        [['host1'], ['host2'], ['host3']]
+        >>> sd.split_hosts_list('1by1')
+        [['host1'], ['host2'], ['host3']]
+
+        >>> sd.hosts_list = ['host1', 'host2', 'host3', 'host4']
+        >>> sd.split_hosts_list('50%')
+        [['host1', 'host3'], ['host2', 'host4']]
+        >>> sd.split_hosts_list('1/3')
+        [['host1', 'host4'], ['host2'], ['host3']]
+        >>> sd.split_hosts_list('25%')
+        [['host1'], ['host2'], ['host3'], ['host4']]
+        >>> sd.split_hosts_list('1by1')
+        [['host1'], ['host2'], ['host3'], ['host4']]
+
+        >>> sd.hosts_list = ['host1', 'host2', 'host3', 'host4', 'host5']
+        >>> sd.split_hosts_list('50%')
+        [['host1', 'host3', 'host5'], ['host2', 'host4']]
+        >>> sd.split_hosts_list('1/3')
+        [['host1', 'host4'], ['host2', 'host5'], ['host3']]
+        >>> sd.split_hosts_list('25%')
+        [['host1', 'host5'], ['host2'], ['host3'], ['host4']]
+        >>> sd.split_hosts_list('1by1')
+        [['host1'], ['host2'], ['host3'], ['host4'], ['host5']]
         """
         if split_type == '1by1' and len(self.hosts_list) > 1:
             return [self.hosts_list[i:i + 1] for i in range(0, len(self.hosts_list), 1)]
@@ -90,15 +128,15 @@ class SafeDeployment():
         elif len([i for i in elb_instances.values() if 'outofservice' in i.values()]):
             raise GCallException('Cannot continue because one or more instances are in the out of service state')
         else:
-            deregister_instance_from_elb(self.elb_conn, elb_instances.keys(), [host['id'] for host in instances_list], self.log_file)
-            wait_before_deploy = int(get_connection_draining_value(self.elb_conn, elb_instances.keys())) + int(self.safe_infos['wait_before_deploy'])
+            deregister_instance_from_elb(elb_conn, elb_instances.keys(), [host['id'] for host in instances_list], self.log_file)
+            wait_before_deploy = int(get_connection_draining_value(elb_conn, elb_instances.keys())) + int(self.safe_infos['wait_before_deploy'])
             log('Waiting {0}s: The connection draining time more the custom value set for wait_before_deploy' .format(wait_before_deploy), self.log_file)
             time.sleep(wait_before_deploy)
             launch_deploy(self.app, self.module, [host['private_ip_address'] for host in instances_list], self.fab_exec_strategy, self.log_file)
             log('Waiting {0}s: The value set for wait_after_deploy' .format(self.safe_infos['wait_after_deploy']), self.log_file)
             time.sleep(int(self.safe_infos['wait_after_deploy']))
-            register_instance_from_elb(self.elb_conn, elb_instances.keys(), [host['id'] for host in instances_list], self.log_file)
-            while len([i for i in get_elb_instance_status_autoscaling_group(self.elb_conn, self.as_name, self.region, self.as_conn).values() if 'outofservice' in i.values()]):
+            register_instance_from_elb(elb_conn, elb_instances.keys(), [host['id'] for host in instances_list], self.log_file)
+            while len([i for i in get_elb_instance_status_autoscaling_group(elb_conn, self.as_name, self.region, as_conn).values() if 'outofservice' in i.values()]):
                 log('Waiting 10s because the instance is not in service in the ELB', self.log_file)
                 time.sleep(10)
             log('Instances: {0} have been deployed and are registered in their ELB' .format(str([host['private_ip_address'] for host in instances_list])), self.log_file)
