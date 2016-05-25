@@ -142,7 +142,7 @@ class Buildimage():
         json_packer_for_log = json.loads(json_packer)
         del json_packer_for_log['credentials']
         log("Generating a new AMI", self._log_file)
-        log("Packer options : %s" % json_packer, self._log_file)
+        log("Packer options : %s" % json_packer_for_log, sort_keys=True, indent=4, separators=(',', ': ')), self._log_file)
         pack = Packer(json_packer, self._config, self._log_file, self._job['_id'])
         ami_id = pack.build_image(self._format_salt_top_from_app_features(), self._format_salt_pillar_from_app_features())
         if ami_id is not "ERROR":
