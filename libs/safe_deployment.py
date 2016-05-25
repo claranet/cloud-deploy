@@ -104,7 +104,7 @@ class SafeDeployment():
             chunk = 3
         elif split_type == '25%' and len(self.hosts_list) > 3:
             chunk = 4
-        elif split_type == '50%' and len(self.hosts_list) == 2 or len(self.hosts_list) > 3:
+        elif split_type == '50%' and len(self.hosts_list) >= 2:
             chunk = 2
         else:
             log("Not enough instances to perform safe deployment. Number of instances: \
