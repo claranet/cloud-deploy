@@ -120,7 +120,7 @@ def post_update_app(updates, original):
         if ghost_api_bluegreen_is_enabled(blue_green):
             if not ghost_api_enable_green_app(get_apps_db(), original, request.authorization.username):
                 abort(422)
-    except e:
+    except Exception as e:
         print e
         abort(500)
 
@@ -140,8 +140,13 @@ def pre_insert_app(items):
     name = app.get('name')
     role = app.get('role')
     env = app.get('env')
-    if get_apps_db().find_one({'$and' : [{'name': name}, {'role': role}, {'env': env}]}):
-        abort(422)
+    blue_green = app.get('blue_green', None)
+    if blue_green and blue_green.get('color', None):
+        if get_apps_db().find_one({'$and' : [{'name': name}, {'role': role}, {'env': env}, {'blue_green.color': blue_green['color']}]}):
+            abort(422)
+    else:
+        if get_apps_db().find_one({'$and' : [{'name': name}, {'role': role}, {'env': env}]}):
+            abort(422)
     for module in app.get('modules'):
         module['initialized'] = False
     app['user'] = request.authorization.username
@@ -249,4 +254,4 @@ ghost.ghost_redis_connection = Redis()
 ghost.register_blueprint(commands_blueprint)
 
 if __name__ == '__main__':
-    ghost.run(host='0.0.0.0')
+    ghost.run(host='0.0.0.0', debug=True)
