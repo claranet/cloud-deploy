@@ -120,7 +120,7 @@ class SafeDeployment():
         """
         as_conn = boto.ec2.autoscale.connect_to_region(self.region)
         elb_conn = boto.ec2.elb.connect_to_region(self.region)
-        elb_instances = get_elb_instance_status_autoscaling_group(self.elb_conn, self.as_name, self.region, self.as_conn)
+        elb_instances = get_elb_instance_status_autoscaling_group(elb_conn, self.as_name, self.region, as_conn)
         if not len(elb_instances):
             raise GCallException('Cannot continue because there is no ELB configured in the AutoScaling Group')
         elif len([i for i in elb_instances.values() if 'outofservice' in i.values()]):
