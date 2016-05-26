@@ -4,6 +4,7 @@ from base64 import b64decode, b64encode
 import os
 from subprocess import call
 import yaml
+import copy
 
 from jinja2 import Environment, FileSystemLoader
 
@@ -204,3 +205,27 @@ def b64encode_utf8(string):
     """
     if string is not None:
         return b64encode(string.encode('utf-8'))
+
+def ghost_app_object_copy(app, user):
+    """
+    Returns a clean copy of a Ghost application
+    by removing Eve fields and ReadOnly fields
+    """
+    copy_app = copy.copy(app)
+    if user:
+        copy_app['user'] = user
+    if 'modules' in copy_app:
+        for copy_module in copy_app['modules']:
+            # Remove 'initialized' RO fields
+            del copy_module['initialized']
+    if 'blue_green' in copy_app:
+        # Remove RO fields
+        del copy_app['blue_green']['alter_ego_id']
+    # Cleaning Eve Fields
+    del copy_app['_id']
+    del copy_app['_etag']
+    del copy_app['_version']
+    del copy_app['_created']
+    del copy_app['_updated']
+
+    return copy_app

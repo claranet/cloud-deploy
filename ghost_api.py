@@ -1,5 +1,4 @@
-import copy
-
+from ghost_tools import ghost_app_object_copy
 from eve.methods.post import post_internal
 
 OPPOSITE_COLOR = {
@@ -7,10 +6,18 @@ OPPOSITE_COLOR = {
     'green': 'blue'
 }
 
-def ghost_api_bluegreen_is_enabled(blue_green):
+def ghost_api_bluegreen_is_enabled(app):
+    """
+    Return if the Ghost app has Blue/green option enabled
+    """
+    blue_green = app.get('blue_green', None)
     return blue_green and blue_green.get('enable_blue_green', None)
 
 def ghost_api_check_green_app_exists(apps_db, app):
+    """
+    Check if the Alter Ego application exists
+    ie: the blue one or the green one (depending of the current app color) 
+    """
     name = app.get('name')
     role = app.get('role')
     env = app.get('env')
@@ -25,22 +32,16 @@ def ghost_api_check_green_app_exists(apps_db, app):
     return green_app
 
 def ghost_api_create_green_app(apps_db, app, user):
+    """
+    Create the Alter Ego application based on a copy of the current application
+    with the opposite color and with _id relation updated
+    """
     # Generate the BlueScreen object for the green app
     blue_green_source = app.get('blue_green')
     color = blue_green_source.get('color', 'blue') if blue_green_source else 'blue'
 
     # Create the green app and return its ID
-    green_app = copy.copy(app)
-    green_app['user'] = user
-    if 'modules' in green_app:
-        for copy_module in green_app['modules']:
-            # Remove 'initialized'
-            del copy_module['initialized']
-    del green_app['_id']
-    del green_app['_etag']
-    del green_app['_version']
-    del green_app['_created']
-    del green_app['_updated']
+    green_app = ghost_app_object_copy(app, user)
     green_app['blue_green'] = {}
     green_app['blue_green']['color'] = OPPOSITE_COLOR[color]
 
@@ -62,6 +63,9 @@ def ghost_api_create_green_app(apps_db, app, user):
         return None
 
 def ghost_api_update_bluegreen_app(apps_db, blue_app, green_app_id):
+    """
+    Update the current app blue_green object
+    """
     # Generate the BlueScreen object for the green app
     blue_green = blue_app.get('blue_green')
     color = blue_green.get('color') if blue_green else 'blue'
@@ -75,6 +79,10 @@ def ghost_api_update_bluegreen_app(apps_db, blue_app, green_app_id):
     return update_res.matched_count == 1
 
 def ghost_api_enable_green_app(apps_db, app, user):
+    """
+    Main function that checks if Blue/Green is already enable
+    If not, create the Green associated app
+    """
     green_app = ghost_api_check_green_app_exists(apps_db, app)
     if not green_app:
         green_app_id = ghost_api_create_green_app(apps_db, app, user)

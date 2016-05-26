@@ -116,8 +116,8 @@ def pre_update_app(updates, original):
 
 def post_update_app(updates, original):
     try:
-        blue_green = updates.get('blue_green', None)
-        if ghost_api_bluegreen_is_enabled(blue_green):
+        if ghost_api_bluegreen_is_enabled(updates):
+            # Maybe we need to have the "merged" app after update here instead of "original" one ?
             if not ghost_api_enable_green_app(get_apps_db(), original, request.authorization.username):
                 abort(422)
     except Exception as e:
@@ -141,6 +141,7 @@ def pre_insert_app(items):
     role = app.get('role')
     env = app.get('env')
     blue_green = app.get('blue_green', None)
+    # We can now insert a new app with a different color
     if blue_green and blue_green.get('color', None):
         if get_apps_db().find_one({'$and' : [{'name': name}, {'role': role}, {'env': env}, {'blue_green.color': blue_green['color']}]}):
             abort(422)
@@ -153,8 +154,7 @@ def pre_insert_app(items):
 
 def post_insert_app(items):
     app = items[0]
-    blue_green = app.get('blue_green', None)
-    if ghost_api_bluegreen_is_enabled(blue_green):
+    if ghost_api_bluegreen_is_enabled(app):
         if not ghost_api_enable_green_app(get_apps_db(), app, request.authorization.username):
             abort(422)
 
