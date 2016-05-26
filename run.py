@@ -115,10 +115,14 @@ def pre_update_app(updates, original):
                     break
 
 def post_update_app(updates, original):
-    blue_green = updates.get('blue_green', None)
-    if ghost_api_bluegreen_is_enabled(blue_green):
-        if not ghost_api_enable_green_app(get_apps_db(), updates):
-            abort(422)
+    try:
+        blue_green = updates.get('blue_green', None)
+        if ghost_api_bluegreen_is_enabled(blue_green):
+            if not ghost_api_enable_green_app(get_apps_db(), original, request.authorization.username):
+                abort(422)
+    except e:
+        print e
+        abort(500)
 
 def pre_replace_app(item, original):
     #TODO: implement (or not?) application replacement
@@ -146,7 +150,7 @@ def post_insert_app(items):
     app = items[0]
     blue_green = app.get('blue_green', None)
     if ghost_api_bluegreen_is_enabled(blue_green):
-        if not ghost_api_enable_green_app(get_apps_db(), app):
+        if not ghost_api_enable_green_app(get_apps_db(), app, request.authorization.username):
             abort(422)
 
 def post_fetched_app(response):

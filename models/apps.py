@@ -48,6 +48,7 @@ apps_schema = {
     'blue_green': {
         'type': 'dict',
         'schema': {
+            'enable_blue_green': {'type': 'boolean', 'required': False},
             'color': {'type': 'string', 'allowed': ['blue', 'green'], 'required': False},
             'is_online': {'type': 'boolean', 'required': False},
             'alter_ego_id': {
