@@ -68,7 +68,7 @@ def ghost_api_update_bluegreen_app(apps_db, blue_app, green_app_id):
     """
     # Generate the BlueScreen object for the green app
     blue_green = blue_app.get('blue_green')
-    color = blue_green.get('color') if blue_green else 'blue'
+    color = blue_green.get('color', 'blue') if blue_green else 'blue'
     blue_green = {
         'enable_blue_green': True,
         'color': color,
