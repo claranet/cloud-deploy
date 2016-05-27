@@ -47,6 +47,9 @@ def ghost_api_create_green_app(apps_db, app, user):
 
     green_app_db = post_internal('apps', green_app)
 
+    if green_app_db[0]['_status'] == 'ERR': # _status == OK when insert done by Eve
+        return None
+
     # Set blue-green params to the Green app
     blue_green = {
         'enable_blue_green': True,

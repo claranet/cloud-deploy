@@ -217,7 +217,8 @@ def ghost_app_object_copy(app, user):
     if 'modules' in copy_app:
         for copy_module in copy_app['modules']:
             # Remove 'initialized' RO fields
-            del copy_module['initialized']
+            if 'initialized' in copy_module:
+                del copy_module['initialized']
     if 'blue_green' in copy_app and 'alter_ego_id' in copy_app['blue_green']:
         # Remove RO fields
         del copy_app['blue_green']['alter_ego_id']
@@ -227,5 +228,12 @@ def ghost_app_object_copy(app, user):
     del copy_app['_version']
     del copy_app['_created']
     del copy_app['_updated']
+    # Cleaning Eve response meta from internal_post
+    if '_latest_version' in copy_app:
+        del copy_app['_latest_version']
+    if '_status' in copy_app:
+        del copy_app['_status']
+    if '_links' in copy_app:
+        del copy_app['_links']
 
     return copy_app
