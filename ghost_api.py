@@ -92,3 +92,17 @@ def ghost_api_enable_green_app(apps_db, app, user):
             return ghost_api_update_bluegreen_app(apps_db, app, green_app_id)
     else:
         return ghost_api_update_bluegreen_app(apps_db, app, green_app['_id'])
+
+def ghost_api_delete_alter_ego_app(apps_db, app):
+    """
+    Delete the other app (blue or green) when blue green is enabled on the current targeted app
+    """
+    blue_green = app.get('blue_green', None)
+    if blue_green and blue_green.get('alter_ego_id'):
+        alter_app = apps_db.find_one({'$and' : [
+            {'_id': blue_green.get('alter_ego_id')}
+        ]})
+        if alter_app:
+            # delete_internal('apps', ) -- doesn't exists in Eve for now :(
+            return apps_db.delete_one({'_id': blue_green.get('alter_ego_id')}).deleted_count == 1
+    return True

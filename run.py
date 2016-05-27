@@ -21,7 +21,7 @@ from models.deployments import deployments
 
 from ghost_tools import get_rq_name_from_app
 from ghost_blueprints import commands_blueprint
-from ghost_api import ghost_api_bluegreen_is_enabled, ghost_api_enable_green_app
+from ghost_api import ghost_api_bluegreen_is_enabled, ghost_api_enable_green_app, ghost_api_delete_alter_ego_app
 
 def get_apps_db():
     return ghost.data.driver.db[apps['datasource']['source']]
@@ -133,7 +133,8 @@ def pre_delete_app(item):
     pass
 
 def post_delete_app(item):
-    pass
+    if not ghost_api_delete_alter_ego_app(get_apps_db(), item):
+        abort(422)
 
 def pre_insert_app(items):
     app = items[0]
