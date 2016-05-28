@@ -31,6 +31,11 @@ def update_app_manifest(app, config, module, package, log_file):
     module_exist = False
     all_app_modules_list = get_app_module_name_list(app['modules'])
     data = ""
+    if not key: # if the 'colored' MANIFEST doesn't' exist, maybe the legacy one exists and we should clone it
+        legacy_key_path = get_path_from_app(app) + '/MANIFEST'
+        legacy_key = bucket.get_key(key_path)
+        if legacy_key:
+            key = legacy_key.copy(bucket, key_path)
     if key:
         manifest = key.get_contents_as_string()
         if sys.version > '3':
