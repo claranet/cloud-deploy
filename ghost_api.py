@@ -1,3 +1,9 @@
+"""
+    Library with all needed functions by Ghost API
+"""
+# -*- coding: utf-8 -*-
+#!/usr/bin/env python
+
 from ghost_tools import ghost_app_object_copy
 from eve.methods.post import post_internal
 

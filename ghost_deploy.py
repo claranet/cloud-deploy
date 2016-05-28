@@ -1,3 +1,9 @@
+"""
+    Library to commonize functions on deploy and re-deploy commands
+"""
+# -*- coding: utf-8 -*-
+#!/usr/bin/env python
+
 from settings import cloud_connections, DEFAULT_PROVIDER
 
 def get_path_from_app(app):
