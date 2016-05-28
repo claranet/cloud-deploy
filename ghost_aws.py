@@ -4,6 +4,8 @@ import yaml
 
 from jinja2 import Environment, FileSystemLoader
 
+from boto.ec2.autoscale import Tag
+
 from libs.safe_deployment import SafeDeployment
 from libs.deploy import launch_deploy
 from libs.ec2 import find_ec2_pending_instances, find_ec2_running_instances
@@ -195,8 +197,36 @@ def update_auto_scale(cloud_connection, app, launch_config, log_file, update_as_
         setattr(as_group, 'max_size', app['autoscale']['max'])
         setattr(as_group, 'availability_zones', az)
         setattr(as_group, 'vpc_zone_identifier', ','.join(app['environment_infos']['subnet_ids']))
+        setattr(as_group, 'tags', get_auto_scale_tags(cloud_connection, as_group, app, log_file))
     as_group.update()
     log("Autoscaling group [{0}] updated.".format(app['autoscale']['name']), log_file)
+
+def get_auto_scale_tags(cloud_connection, as_group, app, log_file):
+    """
+    Get existing tags and set specific tags needed by Ghost
+    """
+    as_tags = {}
+    for tag in as_group.tags:
+        as_tags[tag.key] = tag
+
+    as_tags['app'] = Tag(key='app',
+                         value=app['name'],
+                         propagate_at_launch=True,
+                         resource_id=app['autoscale']['name'])
+    as_tags['env'] = Tag(key='env',
+                         value=app['env'],
+                         propagate_at_launch=True,
+                         resource_id=app['autoscale']['name'])
+    as_tags['role'] = Tag(key='role',
+                          value=app['role'],
+                          propagate_at_launch=True,
+                          resource_id=app['autoscale']['name'])
+    if app.get('blue_green') and app['blue_green'].get('color'):
+        as_tags['color'] = Tag(key='color',
+                               value=app['blue_green']['color'],
+                               propagate_at_launch=True,
+                               resource_id=app['autoscale']['name'])
+    return as_tags.values()
 
 def create_block_device(cloud_connection, region, rbd={}):
     conn = cloud_connection.get_connection(region, ["ec2"])
