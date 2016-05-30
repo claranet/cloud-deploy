@@ -186,7 +186,7 @@ def update_auto_scale(cloud_connection, app, launch_config, log_file, update_as_
     as_group.update()
     log("Autoscaling group [{0}] updated.".format(app['autoscale']['name']), log_file)
 
-def create_block_device(rbd={}):
+def create_block_device(cloud_connection, region, rbd={}):
     conn = cloud_connection.get_connection(region, ["ec2"])
     dev_sda1 = cloud_connection.launch_service(
         ["ec2", "blockdevicemapping", "EBSBlockDeviceType"],
