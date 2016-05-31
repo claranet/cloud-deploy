@@ -12,12 +12,14 @@ class AWSConnection(ACloudConnection):
         super(AWSConnection, self).__init__(log_file, **kwargs)
         assumed_account_id = self._parameters.get('assumed_account_id', None)
         if (assumed_account_id):
-            if self._parameters.get('assumed_region_name', None):
-                self._role_arn = "arn:aws-%s:iam::%s:role/" \
-                        %(self._parameters['assumed_region_name'].split("-")[0], assumed_account_id)
+            # If AWS region is in China, the ARN partition is 'aws-cn' instead of 'aws'
+            if self._parameters.get('assumed_region_name', '').startswith('cn-'):
+                aws_partition = "aws-cn"
             else:
-                self._role_arn = "arn:aws:iam::" + assumed_account_id + ":role/"
-            self._role_arn += self._parameters.get('assumed_role_name', '')
+                aws_partition = "aws"
+            role_arn_format = "arn:{0}:iam::{1}:role/{2}"
+            assumed_role_name = self._parameters.get('assumed_role_name', '')
+            self._role_arn = role_arn_format.format(aws_partition, assumed_account_id, assumed_role_name)
             self._role_session = "ghost_aws_cross_account"
         else:
             self._role_arn = None
