@@ -7,6 +7,7 @@ from ghost_aws import create_launch_config, generate_userdata, check_autoscale_e
 from settings import cloud_connections, DEFAULT_PROVIDER
 from ghost_tools import get_aws_connection_data
 from ghost_tools import b64decode_utf8
+from ghost_deploy import get_path_from_app_with_color
 
 COMMAND_DESCRIPTION = "Update LifeCycle Hooks scripts"
 
@@ -59,7 +60,7 @@ class Updatelifecyclehooks():
             lifecycle_hooks = app.get('lifecycle_hooks', None)
             conn = cloud_connection.get_connection(self._config.get('bucket_region', self._app['region']), ["s3"])
             bucket = conn.get_bucket(self._config['bucket_s3'])
-            prefix = '/ghost/{app}/{env}/{role}'.format(app=app['name'], env=app['env'], role=app['role'])
+            prefix = get_path_from_app_with_color(app)
             self._refresh_lifecycle_hook_script('pre_bootstrap', lifecycle_hooks, bucket, prefix)
             self._refresh_lifecycle_hook_script('post_bootstrap', lifecycle_hooks, bucket, prefix)
 
