@@ -102,14 +102,13 @@ def create_launch_config(cloud_connection, app, userdata, ami_id):
     d = time.strftime('%d%m%Y-%H%M',time.localtime())
     launch_config_name = "launchconfig.{0}.{1}.{2}.{3}.{4}".format(app['env'], app['region'], app['role'], app['name'], d)
     conn_as = cloud_connection.get_connection(app['region'], ["ec2", "autoscale"])
-    conn = cloud_connection.get_connection(app['region'], ["ec2"])
     if 'root_block_device' in app['environment_infos']:
         bdm = create_block_device(cloud_connection, app['region'], app['environment_infos']['root_block_device'])
     else:
         bdm = create_block_device(cloud_connection, app['region'])
     launch_config = cloud_connection.launch_service(
         ["ec2", "autoscale", "LaunchConfiguration"],
-        connection=conn,
+        connection=conn_as,
         name=launch_config_name,
         image_id=ami_id, key_name=app['environment_infos']['key_name'],
         security_groups=app['environment_infos']['security_groups'],
@@ -176,7 +175,7 @@ def purge_launch_configuration(cloud_connection, app, retention):
         return False
 
 def update_auto_scale(cloud_connection, app, launch_config, log_file, update_as_params=False):
-    conn = cloud_connection.get_connection(region, ["ec2", "autoscale"])
+    conn = cloud_connection.get_connection(app ['region'], ["ec2", "autoscale"])
     as_group = conn.get_all_groups(names=[app['autoscale']['name']])[0]
     setattr(as_group, 'launch_config_name', launch_config.name)
     if update_as_params:
