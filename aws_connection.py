@@ -80,9 +80,6 @@ class AWSConnection(ACloudConnection):
                 raise
         return(credentials)
 
-
-        print self._parameters
-
     def get_connection(self, region, services):
         connection = None
         try:
