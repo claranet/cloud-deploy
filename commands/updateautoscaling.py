@@ -47,7 +47,7 @@ class Updateautoscaling():
                         log("Launch configuration [{0}] created.".format(launch_config.name), self._log_file)
                         if launch_config:
                             update_auto_scale(self._cloud_connection, self._app, launch_config, self._log_file, update_as_params=True)
-                            if (purge_launch_configuration(self._app, self._config.get('launch_configuration_retention', 5))):
+                            if (purge_launch_configuration(self._cloud_connection, self._app, self._config.get('launch_configuration_retention', 5))):
                                 log("Old launch configurations removed for this app", self._log_file)
                             else:
                                 log("ERROR: Purge launch configurations failed", self._log_file)
