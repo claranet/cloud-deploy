@@ -58,7 +58,8 @@ class Updatelifecyclehooks():
 
             # Store lifecycle hooks scripts in S3
             lifecycle_hooks = app.get('lifecycle_hooks', None)
-            conn = self._cloud_connection.get_connection(self._config.get('bucket_region', self._app['region']), ["s3"])
+            cloud_connection = cloud_connections.get(self._app.get('provider', DEFAULT_PROVIDER))(self._log_file)
+            conn = cloud_connection.get_connection(self._config.get('bucket_region', self._app['region']), ["s3"])
             bucket = conn.get_bucket(self._config['bucket_s3'])
             prefix = '/ghost/{app}/{env}/{role}'.format(app=app['name'], env=app['env'], role=app['role'])
             self._refresh_lifecycle_hook_script('pre_bootstrap', lifecycle_hooks, bucket, prefix)
