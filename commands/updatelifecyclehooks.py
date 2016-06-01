@@ -53,12 +53,12 @@ class Updatelifecyclehooks():
     def execute(self):
         try:
             app = self._app
-            refresh_stage2(self._cloud_connection, self._config.get('bucket_region', self._app['region']), self._config)
+            cloud_connection = cloud_connections.get(self._app.get('provider', DEFAULT_PROVIDER))(self._log_file)
+            refresh_stage2(cloud_connection, self._config.get('bucket_region', self._app['region']), self._config)
             log('INFO: refreshed /ghost/stage2', self._log_file)
 
             # Store lifecycle hooks scripts in S3
             lifecycle_hooks = app.get('lifecycle_hooks', None)
-            cloud_connection = cloud_connections.get(self._app.get('provider', DEFAULT_PROVIDER))(self._log_file)
             conn = cloud_connection.get_connection(self._config.get('bucket_region', self._app['region']), ["s3"])
             bucket = conn.get_bucket(self._config['bucket_s3'])
             prefix = '/ghost/{app}/{env}/{role}'.format(app=app['name'], env=app['env'], role=app['role'])
