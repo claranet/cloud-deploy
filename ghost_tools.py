@@ -237,3 +237,6 @@ def ghost_app_object_copy(app, user):
         del copy_app['_links']
 
     return copy_app
+
+def get_app_friendly_name(app):
+    return "{0}/{1}/{2}".format(app['name'], app['env'], app['role'])
