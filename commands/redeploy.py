@@ -9,7 +9,7 @@ from settings import cloud_connections, DEFAULT_PROVIDER
 from ghost_log import log
 from ghost_aws import deploy_module_on_hosts
 from libs.deploy import execute_module_script_on_ghost
-from ghost_deploy import get_path_from_app, get_path_from_app_with_color, update_app_manifest
+from libs.deploy import get_path_from_app, get_path_from_app_with_color, update_app_manifest
 
 COMMAND_DESCRIPTION = "Re-deploy an old module package"
 
