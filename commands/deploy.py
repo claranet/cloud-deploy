@@ -16,7 +16,7 @@ from ghost_aws import deploy_module_on_hosts
 
 ROOT_PATH = os.path.dirname(os.path.realpath(__file__))
 
-COMMAND_DESCRIPTION = "Deploy a module"
+COMMAND_DESCRIPTION = "Deploy module(s)"
 
 class Deploy():
     _app = None
