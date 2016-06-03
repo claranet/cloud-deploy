@@ -58,9 +58,13 @@ class Swapbluegreen():
                 self._worker.update_status("aborted", message=self._get_notification_message_aborted(to_deploy_app, "Please run `Buildimage` first"))
                 return
             # Check ASG
-            if not (check_autoscale_exists(self._cloud_connection, to_deploy_app['autoscale']['name'], to_deploy_app['region'])
-                and check_autoscale_exists(self._cloud_connection, online_app['autoscale']['name'], online_app['region'])):
-                self._worker.update_status("aborted", message=self._get_notification_message_aborted(to_deploy_app, "Please set an AutoScale on both green and blue app"))
+            if to_deploy_app['autoscale']['name'] and online_app['autoscale']['name']:
+                if not (check_autoscale_exists(self._cloud_connection, to_deploy_app['autoscale']['name'], to_deploy_app['region'])
+                    and check_autoscale_exists(self._cloud_connection, online_app['autoscale']['name'], online_app['region'])):
+                    self._worker.update_status("aborted", message=self._get_notification_message_aborted(to_deploy_app, "Please set an AutoScale on both green and blue app"))
+                    return
+            else:
+                self._worker.update_status("aborted", message=self._get_notification_message_aborted(offline_app, "Please set an AutoScale on both green and blue app."))
                 return
             # Check if modules have been deployed
             if not check_app_manifest(to_deploy_app, self._config, self._log_file):

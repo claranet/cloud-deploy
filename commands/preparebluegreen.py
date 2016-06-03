@@ -27,15 +27,15 @@ class Preparebluegreen(object):
         self._config = worker._config
         self._worker = worker
         self._log_file = worker.log_file
-        # self._connection_data = get_aws_connection_data(
-        #     self._app.get('assumed_account_id', ''),
-        #     self._app.get('assumed_role_name', ''),
-        #     self._app.get('assumed_region_name', '')
-        # )
-        # self._cloud_connection = cloud_connections.get(self._app.get('provider', DEFAULT_PROVIDER))(
-        #     self._log_file,
-        #     **self._connection_data
-        # )
+        self._connection_data = get_aws_connection_data(
+            self._app.get('assumed_account_id', ''),
+            self._app.get('assumed_role_name', ''),
+            self._app.get('assumed_region_name', '')
+        )
+        self._cloud_connection = cloud_connections.get(self._app.get('provider', DEFAULT_PROVIDER))(
+            self._log_file,
+            **self._connection_data
+        )
 
     def _get_notification_message_failed(self, online_app, offline_app, e):
         app_name = get_app_friendly_name(online_app)
@@ -70,14 +70,18 @@ class Preparebluegreen(object):
                 return
 
             # Check if app has AS
-            if not (check_autoscale_exists(self._cloud_connection, offline_app['autoscale']['name'], offline_app['region'])
-                and check_autoscale_exists(self._cloud_connection, online_app['autoscale']['name'], online_app['region'])):
-                self._worker.update_status("aborted", message=self._get_notification_message_aborted(offline_app, "Please set an AutoScale on both green and blue app"))
+            if offline_app['autoscale']['name'] and online_app['autoscale']['name']:
+                if not (check_autoscale_exists(self._cloud_connection, offline_app['autoscale']['name'], offline_app['region'])
+                    and check_autoscale_exists(self._cloud_connection, online_app['autoscale']['name'], online_app['region'])):
+                    self._worker.update_status("aborted", message=self._get_notification_message_aborted(offline_app, "Please check that the configured AutoScale on both green and blue app exists."))
+                    return
+            else:
+                self._worker.update_status("aborted", message=self._get_notification_message_aborted(offline_app, "Please set an AutoScale on both green and blue app."))
                 return
 
             # Check if modules have been deployed
-            if not check_app_manifest(to_deploy_app, self._config, self._log_file):
-                self._worker.update_status("aborted", message=self._get_notification_message_aborted(to_deploy_app, "Please deploy your app's modules"))
+            if not check_app_manifest(offline_app, self._config, self._log_file):
+                self._worker.update_status("aborted", message=self._get_notification_message_aborted(offline_app, "Please deploy your app's modules"))
                 return
 
             self._worker.update_status("done")#, message=self._get_notification_message_done(online_app, ))

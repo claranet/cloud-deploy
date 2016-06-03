@@ -4,6 +4,7 @@
 
 import sys
 from libs.deploy import get_path_from_app_with_color
+from settings import cloud_connections, DEFAULT_PROVIDER
 
 def get_blue_green_apps(app, apps_db):
     """
@@ -25,7 +26,7 @@ def get_blue_green_apps(app, apps_db):
     else:
         return None, None
 
-def check_app_manifest(self, app, config, log_file):
+def check_app_manifest(app, config, log_file):
     key_path = get_path_from_app_with_color(app) + '/MANIFEST'
     cloud_connection = cloud_connections.get(app.get('provider', DEFAULT_PROVIDER))(log_file)
     conn = cloud_connection.get_connection(config.get('bucket_region', app['region']), ["s3"])
