@@ -3,7 +3,7 @@
 #!/usr/bin/env python
 
 import sys
-from libs.deploy import get_path_from_app_with_color
+from .deploy import get_path_from_app_with_color
 from settings import cloud_connections, DEFAULT_PROVIDER
 
 def get_blue_green_apps(app, apps_db):

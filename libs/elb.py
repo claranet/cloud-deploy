@@ -12,16 +12,34 @@
 #!/usr/bin/env python
 
 from ghost_log import log
+from boto.ec2.elb.listelement import ListElement
 
 def get_elb_from_autoscale(as_name, as_conn):
     """ Return a list of ELB names defined in
         the Autoscaling Group in parameter.
 
         :param  as_name  string: The Autoscaling Group name.
-        :param  region   string: The boto Autoscaling Group connection.
+        :param  as_conn  string: The boto Autoscaling Group connection.
         :return  a list of ELB names.
     """
     return as_conn.get_all_groups(names=[as_name])[0].load_balancers
+
+def register_elb_into_autoscale(as_name, as_conn, elb_names, log_file):
+    """ Modify the AutoScale Group to set the list of ELB to use
+
+    :param  as_name  string: string of the autoscaling group name.
+    :param  as_conn  string: The boto Autoscaling Group connection.
+    :param  elb_names  list: The name of the Elastic Load Balancers.
+    :param  log_file string: The log file
+    :return boolean(True if succeed otherwise False)
+    """
+    try:
+        autoscale_group = as_conn.get_all_groups(names=[as_name])[0]
+        setattr(autoscale_group, 'load_balancers', ListElement(elb_names))
+        autoscale_group.update()
+    except Exception as e:
+        log("Exception during register ELB operation into ASG: {0}" .format(str(e)), log_file)
+        raise
 
 def get_elb_instance_status_autoscaling_group(elb_conn, as_group, conn_as):
     """ Return a dict of instance ids as key and their status as value per elb.
@@ -59,6 +77,26 @@ def deregister_instance_from_elb(elb_conn, elb_names, hosts_id_list, log_file):
         log("Exception during deregister operation: {0}" .format(str(e)),log_file)
         raise
 
+def deregister_all_instances_from_elb(elb_conn, elbs_with_instances, log_file):
+    """ Deregistrer one or multiple instances in the ELB pool.
+
+        :param  elb_conn:  boto connection object to the ELB service.
+        :param  elbs_with_instances: list The name of the Elastic Load Balancers, and all instances in one of them. (dict(ex: {'elb_XXX1':{'instance_id':'inservice/outofservice'}}))
+        :param  log_file:  string  The log file
+        :return boolean(True if succeed otherwise False)
+    """
+    try:
+        for elb_name, elb_instances in elbs_with_instances.iteritems():
+            if not elb_conn.deregister_instances(elb_name, elb_instances.keys()).status:
+                log("Failed to deregister instances {0} in the ELB {1}" .format(str(hosts_id_list), elb_name), log_file)
+                raise
+            else:
+                log("Instances {0} well deregistered in the ELB {1}" .format(str(hosts_id_list), elb_name), log_file)
+        return True
+    except Exception as e:
+        log("Exception during deregister operation: {0}" .format(str(e)),log_file)
+        raise
+
 def register_instance_from_elb(elb_conn, elb_names, hosts_id_list, log_file):
     """ Registrer one or multiple instances in the ELB pool.
 
@@ -75,6 +113,27 @@ def register_instance_from_elb(elb_conn, elb_names, hosts_id_list, log_file):
                 raise
             else:
                 log("Instances {0} well registered in the ELB {1}" .format(str(hosts_id_list), elb_name), log_file)
+    except Exception as e:
+        log("Exception during register operation: {0}" .format(str(e)), log_file)
+        raise
+
+def register_all_instances_to_elb(elb_conn, elb_names, instances, log_file):
+    """ Registrer one or multiple instances in the ELB pool.
+
+        :param  elb_conn:  boto connection object to the ELB service.
+        :param  elb_names: list The name of the Elastic Load Balancers.
+        :param  instances: list The name of the Elastic Load Balancers, and all instances in one of them. (dict(ex: {'elb_XXX1':{'instance_id':'inservice/outofservice'}}))
+        :param  log_file:  string  The log file
+        :return boolean(True if succeed otherwise False)
+    """
+    try:
+        for elb_name in elb_names:
+            for elb_name, elb_instances in instances.iteritems():
+                if not elb_conn.register_instances(elb_name, elb_instances.keys()).status:
+                    log("Failed to register instances {0} in the ELB {1}" .format(str(hosts_id_list), elb_name), log_file)
+                    raise
+                else:
+                    log("Instances {0} well registered in the ELB {1}" .format(str(hosts_id_list), elb_name), log_file)
     except Exception as e:
         log("Exception during register operation: {0}" .format(str(e)), log_file)
         raise
