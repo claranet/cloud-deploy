@@ -197,9 +197,11 @@ def update_auto_scale(cloud_connection, app, launch_config, log_file, update_as_
         setattr(as_group, 'max_size', app['autoscale']['max'])
         setattr(as_group, 'availability_zones', az)
         setattr(as_group, 'vpc_zone_identifier', ','.join(app['environment_infos']['subnet_ids']))
-        setattr(as_group, 'tags', get_auto_scale_tags(cloud_connection, as_group, app, log_file))
     as_group.update()
     log("Autoscaling group [{0}] updated.".format(app['autoscale']['name']), log_file)
+    if update_as_params:
+        conn.create_or_update_tags(get_auto_scale_tags(cloud_connection, as_group, app, log_file))
+        log("Autoscaling tags [{0}] updated.".format(app['autoscale']['name']), log_file)
 
 def get_auto_scale_tags(cloud_connection, as_group, app, log_file):
     """
@@ -209,6 +211,7 @@ def get_auto_scale_tags(cloud_connection, as_group, app, log_file):
     for tag in as_group.tags:
         as_tags[tag.key] = tag
 
+    log("[{0}] has those tags enabled: {1}".format(app['autoscale']['name'], ", ".join(as_tags.keys())), log_file)
     as_tags['app'] = Tag(key='app',
                          value=app['name'],
                          propagate_at_launch=True,
@@ -226,6 +229,7 @@ def get_auto_scale_tags(cloud_connection, as_group, app, log_file):
                                value=app['blue_green']['color'],
                                propagate_at_launch=True,
                                resource_id=app['autoscale']['name'])
+    log("[{0}] will be updated with: {1}".format(app['autoscale']['name'], ", ".join(as_tags.keys())), log_file)
     return as_tags.values()
 
 def create_block_device(cloud_connection, region, rbd={}):
