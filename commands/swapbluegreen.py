@@ -54,7 +54,7 @@ class Swapbluegreen():
             return
         try:
             # Check AMI
-            if not to_deploy_app['ami']:
+            if 'ami' not in to_deploy_app:
                 self._worker.update_status("aborted", message=self._get_notification_message_aborted(to_deploy_app, "Please run `Buildimage` first"))
                 return
             # Check ASG
