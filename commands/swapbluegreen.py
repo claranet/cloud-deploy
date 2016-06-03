@@ -4,6 +4,7 @@ from ghost_log import log
 from ghost_tools import get_aws_connection_data, get_app_friendly_name
 from ghost_aws import check_autoscale_exists
 from settings import cloud_connections, DEFAULT_PROVIDER
+from libs.blue_green import get_blue_green_apps
 
 COMMAND_DESCRIPTION = "Swap the Blue/Green env"
 
@@ -43,23 +44,10 @@ class Swapbluegreen():
         notif = "Blue/green swap done for [{0}] between [{1}] and [{2}] on ELB '{3}' ({4})".format(app_name, as_old, as_new, elb_name, elb_dns)
         return _green(notif)
 
-    def _get_blue_green_apps(self):
-        app = self_.app
-        if app.get('blue_green') and app['blue_green'].get('alter_ego_id'):
-            alter_ego_app = self._worker._db.apps.find_one({ '_id': app['blue_green']['alter_ego_id']})
-            if app['blue_green']['is_online']:
-                return app, alter_ego_app
-            else:
-                if alter_ego_app['blue_green']['is_online']:
-                    return alter_ego_app, app
-                else:
-                    return None, None
-        else:
-            return None, None
-
     def execute(self):
         log(_green("STATE: Started"), self._log_file)
-        online_app, to_deploy_app = self._get_blue_green_apps()
+        online_app, to_deploy_app = get_blue_green_apps(self._app,
+                                                        self._worker._db.apps)
         if not online_app:
             self._worker.update_status("aborted", message=self._get_notification_message_aborted(self._app, "Blue/green is not enabled on this app or not well configured"))
             return
