@@ -1,1 +1,1 @@
-env = ['prod', 'preprod', 'dev', 'staging', 'test', 'demo']
+env = ['prod', 'preprod', 'dev', 'staging', 'test', 'demo', 'int', 'uat', 'oat']
