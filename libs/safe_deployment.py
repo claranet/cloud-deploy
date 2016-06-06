@@ -19,8 +19,6 @@
 """
 import time
 import haproxy
-import boto.ec2.autoscale
-import boto.ec2.elb
 
 from ghost_tools import GCallException
 from ghost_tools import log
@@ -32,7 +30,7 @@ from .elb import get_elb_instance_status_autoscaling_group, get_connection_drain
 class SafeDeployment():
     """ Class which will manage the safe deployment process """
 
-    def __init__(self, app, module, hosts_list, log_file, safe_infos, fabric_exec_strategy, as_name, region):
+    def __init__(self, app, module, hosts_list, log_file, safe_infos, fabric_exec_strategy, as_name):
         """
             :param  module        dict: Ghost object wich describe the module parameters.
             :param  app           dict: Ghost object which describe the application parameters.
@@ -42,7 +40,6 @@ class SafeDeployment():
             :param  lb_infos:     list: ELB names or Haproxy IPs.
             :param  fabric_exec_strategy  string: Deployment strategy(serial or parrallel).
             :param  as_name:      string: The name of the Autoscaling Group.
-            :param  region:       string: The AWS region.
         """
         self.app = app
         self.module = module
@@ -51,7 +48,6 @@ class SafeDeployment():
         self.fab_exec_strategy = fabric_exec_strategy
         self.safe_infos = safe_infos
         self.as_name = as_name
-        self.region = region
 
     def split_hosts_list(self, split_type):
         """
@@ -62,7 +58,7 @@ class SafeDeployment():
                                             deployment process cannot be perform.
 
         >>> from io import StringIO
-        >>> sd = SafeDeployment(None, None, None, StringIO(), None, None, None, None)
+        >>> sd = SafeDeployment(None, None, None, StringIO(), None, None, None)
 
         >>> sd.hosts_list = ['host1', 'host2']
         >>> sd.split_hosts_list('50%')
@@ -112,15 +108,18 @@ class SafeDeployment():
             raise GCallException("Cannot continue, not enought instances to perform the safe deployment")
         return [self.hosts_list[i::chunk] for i in range(chunk)]
 
-    def elb_safe_deployment(self, instances_list):
+    def elb_safe_deployment(self, instances_list, cloud_connection):
         """ Manage the safe deployment process for the ELB.
 
             :param  instances_list  list: Instances on which to deploy(list of dict. ex: [{'id':XXX, 'private_ip_address':XXXX}...]).
             :return                True if operation successed or raise an Exception.
         """
-        as_conn = boto.ec2.autoscale.connect_to_region(self.region)
-        elb_conn = boto.ec2.elb.connect_to_region(self.region)
-        elb_instances = get_elb_instance_status_autoscaling_group(elb_conn, self.as_name, self.region, as_conn)
+        app_region = self.app['region']
+
+        as_conn = cloud_connection.get_connection(app_region, ["ec2", "autoscale"])
+        elb_conn = cloud_connection.get_connection(app_region, ["ec2", "elb"])
+
+        elb_instances = get_elb_instance_status_autoscaling_group(elb_conn, self.as_name, as_conn)
         if not len(elb_instances):
             raise GCallException('Cannot continue because there is no ELB configured in the AutoScaling Group')
         elif len([i for i in elb_instances.values() if 'outofservice' in i.values()]):
@@ -134,7 +133,7 @@ class SafeDeployment():
             log('Waiting {0}s: The value set for wait_after_deploy' .format(self.safe_infos['wait_after_deploy']), self.log_file)
             time.sleep(int(self.safe_infos['wait_after_deploy']))
             register_instance_from_elb(elb_conn, elb_instances.keys(), [host['id'] for host in instances_list], self.log_file)
-            while len([i for i in get_elb_instance_status_autoscaling_group(elb_conn, self.as_name, self.region, as_conn).values() if 'outofservice' in i.values()]):
+            while len([i for i in get_elb_instance_status_autoscaling_group(elb_conn, self.as_name, as_conn).values() if 'outofservice' in i.values()]):
                 log('Waiting 10s because the instance is not in service in the ELB', self.log_file)
                 time.sleep(10)
             log('Instances: {0} have been deployed and are registered in their ELB' .format(str([host['private_ip_address'] for host in instances_list])), self.log_file)
@@ -190,7 +189,7 @@ class SafeDeployment():
                                  app_region: {2}' .format(self.safe_infos['app_tag_value'], self.app['env'], self.app['region']))
 
 
-    def safe_manager(self, safe_strategy):
+    def safe_manager(self, safe_strategy, cloud_connection):
         """  Global manager for the safe deployment process.
 
             :param  safe_strategy string: The type of safe deployment strategy(1by1-1/3-25%-50%)
@@ -198,7 +197,7 @@ class SafeDeployment():
         """
         for host_group in self.split_hosts_list(safe_strategy):
             if self.safe_infos['load_balancer_type'] == 'elb':
-                self.elb_safe_deployment(host_group)
+                self.elb_safe_deployment(host_group, cloud_connection)
             else:
                 self.haproxy_safe_deployment(host_group)
         return True
