@@ -152,7 +152,7 @@ def register_all_instances_to_elb(elb_conn, elb_names, instances, log_file):
     """
     try:
         for elb_name in elb_names:
-            for elb_name, elb_instances in instances.iteritems():
+            for unused_elb_name, elb_instances in instances.iteritems():
                 if not elb_conn.register_instances(elb_name, elb_instances.keys()).status:
                     log("Failed to register instances {0} in the ELB {1}" .format(str(elb_instances.keys()), elb_name), log_file)
                     raise

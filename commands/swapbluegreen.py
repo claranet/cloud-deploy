@@ -86,7 +86,7 @@ class Swapbluegreen():
                 time.sleep(wait_before_swap)
                 # 3- Register new uptodate instances to Prod ELB
                 log(_green('Register and put online new instances to online ELB {0}'.format(', '.join(elb_online_instances.keys()))), log_file)
-                register_all_instances_to_elb(elb_conn, elb_tempwarm_instances.keys(), elb_online_instances, log_file)
+                register_all_instances_to_elb(elb_conn, elb_online_instances.keys(), elb_tempwarm_instances, log_file)
                 # 4- Waiting for instances being in service
                 while len([i for i in get_elb_instance_status(elb_conn, elb_online_instances.keys()).values() if 'outofservice' in i.values()]):
                     log(_yellow('Waiting 10s because the instance is not in service in the ELB'), log_file)
@@ -102,6 +102,7 @@ class Swapbluegreen():
                 register_elb_into_autoscale(to_deploy_app['autoscale']['name'], as_conn, elb_online_instances.keys(), log_file)
                 register_elb_into_autoscale(online_app['autoscale']['name'], as_conn, elb_tempwarm_instances.keys(), log_file)
 
+                # TODO Update _is_online field in Mongo on both app
                 online_elb_name = elb_online_instances.keys()[0]
                 return str(online_elb_name), get_elb_dns_name(elb_conn, online_elb_name)
             elif swap_execution_strategy == 'bothversion':
