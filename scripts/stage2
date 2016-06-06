@@ -2,6 +2,10 @@
 set -x
 
 LOCK=/run/lock/ghost-stage-2
+AWS_BIN=$(which aws)
+if [ $? -ne 0 ]; then
+    AWS_BIN='/usr/local/bin/aws'
+fi
 
 while [ -d $LOCK ] ; do
     ls -l $LOCK
@@ -25,7 +29,7 @@ while [ -z "$APP" ] || [ -z "$ENV" ] || [ -z "$ROLE" ] ; do
   echo "Waiting 1s for (app, env, role) tags to be set..."
   sleep 1
 
-  TAGS=$(/usr/local/bin/aws ec2 describe-tags --filters "Name=resource-id,Values=$INSTANCE_ID" --region "$EC2_REGION")
+  TAGS=$($AWS_BIN ec2 describe-tags --filters "Name=resource-id,Values=$INSTANCE_ID" --region "$EC2_REGION")
 
   NAME=$(echo $TAGS | jq -r ".Tags[] | { key: .Key, value: .Value } | [.] | from_entries" | jq -r '.["Name"] | select (.!=null)')
   APP=$(echo $TAGS | jq -r ".Tags[] | { key: .Key, value: .Value } | [.] | from_entries" | jq -r '.["app"] | select (.!=null)')
@@ -34,7 +38,7 @@ while [ -z "$APP" ] || [ -z "$ENV" ] || [ -z "$ROLE" ] ; do
 done
 
 if [ ! -d /ghost ]; then
-    mkdir /ghost && chown -R admin:admin /ghost
+    mkdir /ghost
 fi
 
 if [ ! -d /var/lib/ghost ]; then
@@ -125,10 +129,9 @@ function deploy_module() {
 
     echo "--------------------------------" >> /tmp/$LOGFILE
     echo "Deploying module $MODULE_NAME in $TARGET" >> /tmp/$LOGFILE
-    /usr/local/bin/aws s3 cp s3://$S3_BUCKET/ghost/$APP/$ENV/$ROLE/$MODULE_NAME/$MODULE_FILE /tmp/$MODULE_FILE  --region "$S3_REGION"
+    $AWS_BIN s3 cp s3://$S3_BUCKET/ghost/$APP/$ENV/$ROLE/$MODULE_NAME/$MODULE_FILE /tmp/$MODULE_FILE  --region "$S3_REGION"
 
     mkdir -p /ghost/$UUID
-    chown -R admin:admin /ghost/$UUID
     echo "Extracting module in /ghost/$UUID" >> /tmp/$LOGFILE
     tar xvzf /tmp/$MODULE_FILE -C /ghost/$UUID > /dev/null
     if [ $? -ne 0 ] || [ ! -f /tmp/$MODULE_FILE ]; then
@@ -152,7 +155,7 @@ function deploy_module() {
             purge_latest_failed_deploy $MODULE_NAME $UUID
             exit_deployment -1
         fi
-        rm -v ./predeploy
+        rm -vf ./predeploy
     fi
 
     # Clear folder if not a symlink (not a Ghost managed module)
@@ -169,7 +172,7 @@ function deploy_module() {
         echo "Executing postdeploy script..." >> /tmp/$LOGFILE
         chmod +x postdeploy
         GHOST_MODULE_REPO=$GHOST_MODULE_REPO GHOST_MODULE_REV=$GHOST_MODULE_REV GHOST_MODULE_COMMIT=$GHOST_MODULE_COMMIT GHOST_MODULE_COMMIT_MESSAGE=$GHOST_MODULE_COMMIT_MESSAGE GHOST_MODULE_USER=$GHOST_MODULE_USER GHOST_APP=$APP GHOST_ENV=$ENV GHOST_ROLE=$ROLE GHOST_MODULE_NAME=$MODULE_NAME GHOST_MODULE_PATH=$TARGET ./postdeploy 2>&1 | tee -a /tmp/$LOGFILE
-        rm -v ./postdeploy
+        rm -vf ./postdeploy
     fi
 
     purge_oldest_succeed_deploy $MODULE_NAME $UUID
@@ -199,7 +202,7 @@ function exit_deployment() {
 function download_and_run_lifecycle_hook_script() {
     local script_name=$1
     echo "Downloading ${script_name} script" >> /tmp/$LOGFILE
-    /usr/local/bin/aws s3 cp s3://$S3_BUCKET/ghost/$APP/$ENV/$ROLE/${script_name} /tmp/ghost_${script_name} --region "$S3_REGION"
+    $AWS_BIN s3 cp s3://$S3_BUCKET/ghost/$APP/$ENV/$ROLE/${script_name} /tmp/ghost_${script_name} --region "$S3_REGION"
     if [ -e /tmp/ghost_${script_name} ]; then
         echo "Executing /tmp/ghost_${script_name} script..." >> /tmp/$LOGFILE
         chmod +x /tmp/ghost_${script_name}
@@ -212,7 +215,7 @@ function download_and_run_lifecycle_hook_script() {
 }
 
 echo "Downloading Manifest" >> /tmp/$LOGFILE
-/usr/local/bin/aws s3 cp s3://$S3_BUCKET/ghost/$APP/$ENV/$ROLE/MANIFEST /tmp/ --region "$S3_REGION"
+$AWS_BIN s3 cp s3://$S3_BUCKET/ghost/$APP/$ENV/$ROLE/MANIFEST /tmp/ --region "$S3_REGION"
 
 if [ $? -ne 0 ]; then
     echo "Manifest download error...Exiting" >> /tmp/$LOGFILE

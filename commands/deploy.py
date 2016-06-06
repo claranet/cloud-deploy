@@ -10,11 +10,13 @@ from time import sleep
 
 import boto.s3
 
-from ghost_tools import GCallException, gcall, deploy_module_on_hosts, log, refresh_stage2, get_app_module_name_list, clean_local_module_workspace
+from ghost_tools import GCallException, gcall, get_app_module_name_list, clean_local_module_workspace, refresh_stage2
+from ghost_log import log
+from ghost_aws import deploy_module_on_hosts
 
 ROOT_PATH = os.path.dirname(os.path.realpath(__file__))
 
-COMMAND_DESCRIPTION = "Deploy a module"
+COMMAND_DESCRIPTION = "Deploy module(s)"
 
 class Deploy():
     _app = None
@@ -99,8 +101,8 @@ class Deploy():
         return "{app_path}/{module}".format(app_path=self._get_path_from_app(), module=module['name'])
 
 
-    def _deploy_module(self, module, fabric_execution_strategy):
-        deploy_module_on_hosts(module, fabric_execution_strategy, self._app, self._config, self._log_file)
+    def _deploy_module(self, module, fabric_execution_strategy, safe_deployment_strategy):
+        deploy_module_on_hosts(module, fabric_execution_strategy, self._app, self._config, self._log_file, safe_deployment_strategy)
 
     def _package_module(self, module, ts, commit):
         path = self._get_buildpack_clone_path_from_module(module)
@@ -183,6 +185,7 @@ class Deploy():
 
     def execute(self):
         fabric_execution_strategy = self._job['options'][0] if 'options' in self._job and len(self._job['options']) > 0 else None
+        safe_deployment_strategy = self._job['options'][1] if 'options' in self._job and len(self._job['options']) > 1 else None
 
         self._apps_modules = self._find_modules_by_name(self._job['modules'])
         if not self._apps_modules:
@@ -199,7 +202,7 @@ class Deploy():
         try:
             deploy_ids = {}
             for module in self._apps_modules:
-                deploy_id = self._execute_deploy(module, fabric_execution_strategy)
+                deploy_id = self._execute_deploy(module, fabric_execution_strategy, safe_deployment_strategy)
                 deploy_ids[module['name']] = deploy_id
                 self._worker._db.jobs.update({ '_id': self._job['_id'], 'modules.name': module['name']}, {'$set': {'modules.$.deploy_id': deploy_id }})
                 self._worker._db.apps.update({ '_id': self._app['_id'], 'modules.name': module['name']}, {'$set': { 'modules.$.initialized': True }})
@@ -255,6 +258,7 @@ class Deploy():
             os.write(manifest, data)
         os.close(manifest)
         key.set_contents_from_filename(manifest_path)
+        os.remove(manifest_path)
 
     def _is_commit_hash(self, revision):
         """
@@ -296,14 +300,14 @@ class Deploy():
         resolved_revision = ''
         try:
             # git rev-parse returns a complete hash from an abbreviated hash, if valid
-            resolved_revision = git('--no-pager', 'rev-parse', revision).strip()
+            resolved_revision = git('--no-pager', 'rev-parse', revision, _tty_out=False).strip()
         except:
             pass
 
         # If resolved_revision begins with or equals revision, it is a commit hash
         return resolved_revision.find(revision) == 0
 
-    def _execute_deploy(self, module, fabric_execution_strategy):
+    def _execute_deploy(self, module, fabric_execution_strategy, safe_deployment_strategy):
         """
         Returns the deployment id
         """
@@ -333,7 +337,7 @@ class Deploy():
               self._log_file)
 
         # Resolve HEAD symbolic reference to identify the default branch
-        head = git('--no-pager', 'symbolic-ref', '--short', 'HEAD').strip()
+        head = git('--no-pager', 'symbolic-ref', '--short', 'HEAD', _tty_out=False).strip()
 
         # If revision is HEAD, replace it by the default branch
         if revision == 'HEAD':
@@ -380,8 +384,8 @@ class Deploy():
             gcall('du -hs .', 'Display current build directory disk usage', self._log_file)
 
         # Extract commit information
-        commit = git('--no-pager', 'rev-parse', '--short', 'HEAD').strip()
-        commit_message = git('--no-pager', 'log', '--max-count=1', '--format=%s', 'HEAD').strip()
+        commit = git('--no-pager', 'rev-parse', '--short', 'HEAD', _tty_out=False).strip()
+        commit_message = git('--no-pager', 'log', '--max-count=1', '--format=%s', 'HEAD', _tty_out=False).strip()
 
         # At last, reset remote origin URL
         gcall('git --no-pager remote set-url origin {r}'.format(r=git_repo), 'Git reset remote origin to {r}'.format(r=git_repo), self._log_file)
@@ -416,7 +420,7 @@ class Deploy():
 
             gcall('bash %s' % buildpack_path, 'Buildpack: Execute', self._log_file, env=buildpack_env)
             gcall('du -hs .', 'Display current build directory disk usage', self._log_file)
-            gcall('rm -v %s' % buildpack_path, 'Buildpack: Done, cleaning temporary file', self._log_file)
+            gcall('rm -vf %s' % buildpack_path, 'Buildpack: Done, cleaning temporary file', self._log_file)
 
         # Store postdeploy script in tarball
         if 'post_deploy' in module:
@@ -459,7 +463,7 @@ GHOST_MODULE_USER="{user}"
         self._update_manifest(module, pkg_name)
         all_app_modules_list = get_app_module_name_list(self._app['modules'])
         clean_local_module_workspace(self._get_path_from_app(), all_app_modules_list, self._log_file)
-        self._deploy_module(module, fabric_execution_strategy)
+        self._deploy_module(module, fabric_execution_strategy, safe_deployment_strategy)
 
         deployment = {'app_id': self._app['_id'], 'job_id': self._job['_id'], 'module': module['name'], 'revision': revision, 'commit': commit, 'commit_message': commit_message, 'timestamp': ts, 'package': pkg_name, 'module_path': module['path']}
         return self._worker._db.deploy_histories.insert(deployment)

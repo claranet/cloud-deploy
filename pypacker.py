@@ -1,10 +1,11 @@
 import sh
 from sh import git
 from subprocess32 import Popen, PIPE
-from ghost_tools import log
 import yaml
 import json
 import os
+
+from ghost_log import log
 
 PACKER_JSON_PATH="/tmp/packer/"
 PACKER_LOGDIR="/var/log/ghost/packer"
@@ -25,17 +26,17 @@ class Packer:
         salt_formulas_repo = config.get('salt_formulas_repo', SALT_FORMULAS_REPO)
         log("Getting Salt Formulas from {r}".format(r=salt_formulas_repo), self._log_file)
         try:
-            output=git("ls-remote", "--exit-code", salt_formulas_repo).strip()
-            log("salt_formulas_repo checked successfuly with output : " + output, self._log_file)
+            output=git("ls-remote", "--exit-code", salt_formulas_repo, config.get('salt_formulas_branch', 'master')).strip()
+            log("salt_formulas_repo checked successfuly with output: " + output, self._log_file)
         except sh.ErrorReturnCode, e:
             log("Invalid salt formulas repos. Please check your yaml 'config.yml' file", self._log_file)
             raise
-        git.clone([salt_formulas_repo, SALT_LOCAL_TREE + self.unique + '/'],'--recursive')
+        git.clone([salt_formulas_repo, '-b', config.get('salt_formulas_branch', 'master'), '--single-branch', SALT_LOCAL_TREE + self.unique + '/'])
         if config.get('salt_formulas_branch'):
             os.chdir(SALT_LOCAL_TREE + self.unique)
-            git.checkout(config['salt_formulas_branch'])
             git.submodule('init')
             git.submodule('update')
+
     def _build_salt_top(self, params):
         self.salt_path = SALT_LOCAL_TREE + self.unique + '/salt'
         self.salt_top_path = self.salt_path + '/top.sls'
@@ -77,13 +78,19 @@ class Packer:
             'associate_public_ip_address': self.packer_config['associate_public_ip_address'],
             'ami_block_device_mappings': self.packer_config['ami_block_device_mappings']
         }]
-        provisioners = [
-        {
-            'type': 'shell',
-            'inline':[
+
+        if self.packer_config['skip_salt_bootstrap'] in ['true', '1', 'y', 'yes', 'True']:
+            pre_salt_script = [ "echo 'salt bootstrap skipped'" ]
+        else:
+            pre_salt_script = [
                 "sudo DEBIAN_FRONTEND=noninteractive apt-get --assume-yes -o Dpkg::Options::='--force-confdef' -o Dpkg::Options::='--force-confold' update",
                 "sudo DEBIAN_FRONTEND=noninteractive apt-get --assume-yes -o Dpkg::Options::='--force-confdef' -o Dpkg::Options::='--force-confold' install curl"
             ]
+
+        provisioners = [
+        {
+            'type': 'shell',
+            'inline': pre_salt_script
         },
         {
             'type': 'salt-masterless',

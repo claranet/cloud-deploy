@@ -107,11 +107,22 @@ apps_schema = {
             'name': {'type': 'string'}
         }
     },
+    'safe-deployment': {
+        'type': 'dict',
+        'schema': {
+            'load_balancer_type' : {'type': 'string'},
+            'wait_after_deploy' : {'type': 'integer', 'min': 0},
+            'wait_before_deploy' : {'type': 'integer', 'min': 0},
+            'app_tag_value': {'type': 'string', 'required': False},
+            'ha_backend': {'type': 'string', 'required': False},
+            'api_port': {'type': 'integer', 'required': False}
+        }
+    },
     'build_infos': {
         'type': 'dict',
         'schema': {
             'ssh_username': {'type': 'string',
-                             'regex': '^[a-z\_][a-z0-9\_]{0,30}$',
+                             'regex': '^[a-z\_][a-z0-9\_\-]{0,30}$',
                              'required': True},
             'source_ami': {'type': 'string',
                            'regex': '^ami-[a-z0-9]*$',

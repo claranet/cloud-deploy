@@ -1,5 +1,6 @@
 accounts.yml
 .aws/
+.bash_aliases
 .bash_history
 .bashrc
 bin
