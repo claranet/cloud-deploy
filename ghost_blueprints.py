@@ -15,7 +15,7 @@ def list_commands():
     >>> from web_ui.tests import create_test_app_context; create_test_app_context()
     >>> import json
     >>> sorted(json.loads(list_commands().data).items())
-    [(u'buildimage', u'Build Image'), (u'createinstance', u'Create a new instance'), (u'deploy', u'Deploy a module'), (u'destroyallinstances', u'Destroy all instances'), (u'redeploy', u'Re-deploy an old module package'), (u'updateautoscaling', u'Update the autoscaling group and its LaunchConfiguration'), (u'updatelifecyclehooks', u'Update LifeCycle Hooks scripts')]
+    [(u'buildimage', u'Build Image'), (u'createinstance', u'Create a new instance'), (u'deploy', u'Deploy module(s)'), (u'destroyallinstances', u'Destroy all instances'), (u'redeploy', u'Re-deploy an old module package'), (u'updateautoscaling', u'Update the autoscaling group and its LaunchConfiguration'), (u'updatelifecyclehooks', u'Update LifeCycle Hooks scripts')]
     """
     commands = []
     for _, name, _ in pkgutil.iter_modules(['commands']):
