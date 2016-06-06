@@ -46,8 +46,6 @@ class Deploy():
                 self._log_file,
                 **self._connection_data
                 )
-        # FIXME Deal with multiple job modules.
-        # Deal only with first (0) job module for now
 
     def _find_modules_by_name(self, modules):
         result = []
