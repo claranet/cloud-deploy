@@ -24,6 +24,16 @@ def get_elb_from_autoscale(as_name, as_conn):
     """
     return as_conn.get_all_groups(names=[as_name])[0].load_balancers
 
+def get_elb_dns_name(elb_conn, elb_name):
+    """ Return the DNS name for the passed ELB
+
+        :param  elb_conn:  boto connection object to the ELB service.
+        :param  elb_name  string: The name of the Elastic Load Balancer.
+        :return string
+    """
+    elb = elb_conn.get_all_load_balancers(load_balancer_names=[elb_name])[0]
+    return elb.dns_name
+
 def register_elb_into_autoscale(as_name, as_conn, elb_names, log_file):
     """ Modify the AutoScale Group to set the list of ELB to use
 
@@ -44,8 +54,9 @@ def register_elb_into_autoscale(as_name, as_conn, elb_names, log_file):
 def get_elb_instance_status_autoscaling_group(elb_conn, as_group, conn_as):
     """ Return a dict of instance ids as key and their status as value per elb.
 
-        :param  elb_conn:  boto connection object to the ELB service.
+        :param  elb_conn: boto connection object to the ELB service.
         :param  as_group: string of the autoscaling group name.
+        :param   conn_as: The boto Autoscaling Group connection.
         :return dict(ex: {'elb_XXX1':{'instance_id':'inservice/outofservice'}})
     """
     as_instance_status = {}
@@ -55,6 +66,19 @@ def get_elb_instance_status_autoscaling_group(elb_conn, as_group, conn_as):
             as_instance_status[elb][instance.instance_id] = "inservice" if instance.state.lower() == "inservice" else "outofservice"
     return as_instance_status
 
+def get_elb_instance_status(elb_conn, elb_names):
+    """ Return a dict of instance ids as key and their status as value per elb.
+
+        :param  elb_conn:  boto connection object to the ELB service.
+        :param  elb_names  list: The name of the Elastic Load Balancers.
+        :return dict(ex: {'elb_XXX1':{'instance_id':'inservice/outofservice'}})
+    """
+    as_instance_status = {}
+    for elb in elb_names:
+        as_instance_status[elb] = {}
+        for instance in elb_conn.describe_instance_health(elb):
+            as_instance_status[elb][instance.instance_id] = "inservice" if instance.state.lower() == "inservice" else "outofservice"
+    return as_instance_status
 
 def deregister_instance_from_elb(elb_conn, elb_names, hosts_id_list, log_file):
     """ Deregistrer one or multiple instances in the ELB pool.
