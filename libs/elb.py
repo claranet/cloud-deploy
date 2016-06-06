@@ -88,10 +88,10 @@ def deregister_all_instances_from_elb(elb_conn, elbs_with_instances, log_file):
     try:
         for elb_name, elb_instances in elbs_with_instances.iteritems():
             if not elb_conn.deregister_instances(elb_name, elb_instances.keys()).status:
-                log("Failed to deregister instances {0} in the ELB {1}" .format(str(hosts_id_list), elb_name), log_file)
+                log("Failed to deregister instances {0} in the ELB {1}" .format(str(elb_instances.keys()), elb_name), log_file)
                 raise
             else:
-                log("Instances {0} well deregistered in the ELB {1}" .format(str(hosts_id_list), elb_name), log_file)
+                log("Instances {0} well deregistered in the ELB {1}" .format(str(elb_instances.keys()), elb_name), log_file)
         return True
     except Exception as e:
         log("Exception during deregister operation: {0}" .format(str(e)),log_file)
@@ -130,10 +130,10 @@ def register_all_instances_to_elb(elb_conn, elb_names, instances, log_file):
         for elb_name in elb_names:
             for elb_name, elb_instances in instances.iteritems():
                 if not elb_conn.register_instances(elb_name, elb_instances.keys()).status:
-                    log("Failed to register instances {0} in the ELB {1}" .format(str(hosts_id_list), elb_name), log_file)
+                    log("Failed to register instances {0} in the ELB {1}" .format(str(elb_instances.keys()), elb_name), log_file)
                     raise
                 else:
-                    log("Instances {0} well registered in the ELB {1}" .format(str(hosts_id_list), elb_name), log_file)
+                    log("Instances {0} well registered in the ELB {1}" .format(str(elb_instances.keys()), elb_name), log_file)
     except Exception as e:
         log("Exception during register operation: {0}" .format(str(e)), log_file)
         raise

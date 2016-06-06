@@ -3,6 +3,7 @@
 #!/usr/bin/env python
 
 import sys
+from ghost_log import log
 from .deploy import get_path_from_app_with_color
 from settings import cloud_connections, DEFAULT_PROVIDER
 
@@ -37,6 +38,6 @@ def check_app_manifest(app, config, log_file):
     manifest = key.get_contents_as_string()
     if sys.version > '3':
         manifest = manifest.decode('utf-8')
-    nb_deployed_modules = len(manifest.split('\n'))
+    nb_deployed_modules = len(manifest.strip().split('\n'))
     nb_app_modules = len(app['modules'])
     return nb_deployed_modules == nb_app_modules

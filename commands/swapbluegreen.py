@@ -2,7 +2,7 @@ from fabric.colors import green as _green, yellow as _yellow, red as _red
 
 import time
 from ghost_log import log
-from ghost_tools import get_aws_connection_data, get_app_friendly_name
+from ghost_tools import get_aws_connection_data, get_app_friendly_name, GCallException
 from settings import cloud_connections, DEFAULT_PROVIDER
 
 from ghost_aws import check_autoscale_exists, get_autoscaling_group_and_processes_to_suspend, suspend_autoscaling_group_processes, resume_autoscaling_group_processes
@@ -75,24 +75,24 @@ class Swapbluegreen():
 
             if swap_execution_strategy == 'isolated':
                 # 1- De-register old instances from Prod ELB
-                log('De-register all online instances from ELB {0}'.format(', '.join(elb_online_instances.keys())))
+                log('De-register all online instances from ELB {0}'.format(', '.join(elb_online_instances.keys())), log_file)
                 deregister_all_instances_from_elb(elb_conn, elb_online_instances, log_file)
                 # 2- Wait for ELB draining
                 wait_before_swap = int(get_connection_draining_value(elb_conn, elb_online_instances.keys())) + 1
                 log('Waiting {0}s: The ELB connection draining time' .format(wait_before_swap), log_file)
-                time.sleep(wait_before_deploy)
+                time.sleep(wait_before_swap)
                 # 3- Register new uptodate instances to Prod ELB
-                log('Register and put online new instances to online ELB {0}'.format(', '.join(elb_online_instances.keys())))
+                log('Register and put online new instances to online ELB {0}'.format(', '.join(elb_online_instances.keys())), log_file)
                 register_all_instances_to_elb(elb_conn, elb_online_instances.keys(), elb_tempwarm_instances, log_file)
                 # 4- Waiting for instances being in service
                 while len([i for i in get_elb_instance_status_autoscaling_group(elb_conn, to_deploy_app['autoscale']['name'], as_conn).values() if 'outofservice' in i.values()]):
                     log('Waiting 10s because the instance is not in service in the ELB', log_file)
                     time.sleep(10)
                 # 5- De-register uptodate instances from Temp ELB
-                log('De-register all instances from temp (warm) ELB {0}'.format(', '.join(elb_tempwarm_instances.keys())))
+                log('De-register all instances from temp (warm) ELB {0}'.format(', '.join(elb_tempwarm_instances.keys())), log_file)
                 deregister_all_instances_from_elb(elb_conn, elb_tempwarm_instances, log_file)
                 # 6- Register old instances to Temp ELB (usefull for another Rollback Swap)
-                log('Register old instances to Temp ELB {0} (usefull for another Rollback Swap)'.format(', '.join(elb_tempwarm_instances.keys())))
+                log('Register old instances to Temp ELB {0} (usefull for another Rollback Swap)'.format(', '.join(elb_tempwarm_instances.keys())), log_file)
                 register_all_instances_to_elb(elb_conn, elb_tempwarm_instances.keys(), elb_online_instances, log_file)
                 # 7- Update ELB in ASGs
                 register_elb_into_autoscale(to_deploy_app['autoscale']['name'], as_conn, elb_online_instances.keys(), log_file)
@@ -100,7 +100,7 @@ class Swapbluegreen():
             elif swap_execution_strategy == 'bothversion':
                 raise GCallException('Unimplemented strategy - TODO')
             else:
-                log("Invalid swap execution strategy selected : '{0}'. Please choose between 'isolated' and 'bothversion'".format(swap_execution_strategy))
+                log("Invalid swap execution strategy selected : '{0}'. Please choose between 'isolated' and 'bothversion'".format(swap_execution_strategy), log_file)
                 return None, None
 
         finally:
@@ -135,7 +135,7 @@ class Swapbluegreen():
                 self._worker.update_status("aborted", message=self._get_notification_message_aborted(offline_app, "Please set an AutoScale on both green and blue app."))
                 return
             # Check if we're ready to swap
-            log("AutoScale blue [{0}] and green [{1}] ready for swap".format(online_app['autoscale']['name'], to_deploy_app['autoscale']['name']))
+            log("AutoScale blue [{0}] and green [{1}] ready for swap".format(online_app['autoscale']['name'], to_deploy_app['autoscale']['name']), self._log_file)
 
             # Swap !
             elb_name, elb_dns = self._swap_asg(swap_execution_strategy, online_app, to_deploy_app, self._config, self._log_file)
