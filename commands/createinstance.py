@@ -1,7 +1,6 @@
 from fabric.colors import green as _green, yellow as _yellow, red as _red
 import os
 import time
-from jinja2 import Environment, FileSystemLoader
 from settings import cloud_connections, DEFAULT_PROVIDER
 
 from ghost_log import log

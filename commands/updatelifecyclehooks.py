@@ -2,8 +2,6 @@ import base64
 import sys
 import traceback
 
-from boto import s3
-
 from ghost_tools import refresh_stage2
 from ghost_log import log
 from ghost_aws import create_launch_config, generate_userdata, check_autoscale_exists, purge_launch_configuration, update_auto_scale

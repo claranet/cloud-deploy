@@ -1,9 +1,3 @@
-import json
-import re
-import time
-
-
-from pypacker import Packer
 from ghost_log import log
 from ghost_aws import create_launch_config, generate_userdata, check_autoscale_exists, purge_launch_configuration, update_auto_scale
 from settings import cloud_connections, DEFAULT_PROVIDER
