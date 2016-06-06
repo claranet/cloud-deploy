@@ -71,7 +71,7 @@ def deploy_module_on_hosts(cloud_connection, module, fabric_execution_strategy, 
     app_role = app['role']
     app_region = app['region']
     app_blue_green = app.get('blue_green', None)
-    if 'color' in app_blue_green:
+    if app_blue_green:
         app_color = app_blue_green.get('color', None)
     else:
         app_color = None
