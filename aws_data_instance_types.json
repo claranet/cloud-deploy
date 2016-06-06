@@ -411,6 +411,21 @@
         "type": "hiMemCurrentGen",
         "sizes": [
           {
+            "size": "x1.32xlarge",
+            "vCPU": "128",
+            "ECU": "349",
+            "memoryGiB": "1952",
+            "storageGB": "2 x 1920 SSD",
+            "valueColumns": [
+              {
+                "name": "linux",
+                "prices": {
+                  "USD": "13.338"
+                }
+              }
+            ]
+          },
+          {
             "size": "r3.large",
             "vCPU": "2",
             "ECU": "6.5",
@@ -1025,6 +1040,21 @@
       {
         "type": "hiMemCurrentGen",
         "sizes": [
+          {
+            "size": "x1.32xlarge",
+            "vCPU": "128",
+            "ECU": "349",
+            "memoryGiB": "1952",
+            "storageGB": "2 x 1920 SSD",
+            "valueColumns": [
+              {
+                "name": "linux",
+                "prices": {
+                  "USD": "13.338"
+                }
+              }
+            ]
+          },
           {
             "size": "r3.large",
             "vCPU": "2",
@@ -2196,6 +2226,21 @@
         "type": "hiMemCurrentGen",
         "sizes": [
           {
+            "size": "x1.32xlarge",
+            "vCPU": "128",
+            "ECU": "349",
+            "memoryGiB": "1952",
+            "storageGB": "2 x 1920 SSD",
+            "valueColumns": [
+              {
+                "name": "linux",
+                "prices": {
+                  "USD": "16.006"
+                }
+              }
+            ]
+          },
+          {
             "size": "r3.large",
             "vCPU": "2",
             "ECU": "6.5",
@@ -2810,6 +2855,21 @@
       {
         "type": "hiMemCurrentGen",
         "sizes": [
+          {
+            "size": "x1.32xlarge",
+            "vCPU": "128",
+            "ECU": "349",
+            "memoryGiB": "1952",
+            "storageGB": "2 x 1920 SSD",
+            "valueColumns": [
+              {
+                "name": "linux",
+                "prices": {
+                  "USD": "18.674"
+                }
+              }
+            ]
+          },
           {
             "size": "r3.large",
             "vCPU": "2",
@@ -3426,6 +3486,21 @@
         "type": "hiMemCurrentGen",
         "sizes": [
           {
+            "size": "x1.32xlarge",
+            "vCPU": "128",
+            "ECU": "349",
+            "memoryGiB": "1952",
+            "storageGB": "2 x 1920 SSD",
+            "valueColumns": [
+              {
+                "name": "linux",
+                "prices": {
+                  "USD": "19.341"
+                }
+              }
+            ]
+          },
+          {
             "size": "r3.large",
             "vCPU": "2",
             "ECU": "6.5",
@@ -4041,6 +4116,21 @@
         "type": "hiMemCurrentGen",
         "sizes": [
           {
+            "size": "x1.32xlarge",
+            "vCPU": "128",
+            "ECU": "349",
+            "memoryGiB": "1952",
+            "storageGB": "2 x 1920 SSD",
+            "valueColumns": [
+              {
+                "name": "linux",
+                "prices": {
+                  "USD": "19.341"
+                }
+              }
+            ]
+          },
+          {
             "size": "r3.large",
             "vCPU": "2",
             "ECU": "6.5",
@@ -4655,6 +4745,21 @@
       {
         "type": "hiMemCurrentGen",
         "sizes": [
+          {
+            "size": "x1.32xlarge",
+            "vCPU": "128",
+            "ECU": "349",
+            "memoryGiB": "1952",
+            "storageGB": "2 x 1920 SSD",
+            "valueColumns": [
+              {
+                "name": "linux",
+                "prices": {
+                  "USD": "19.341"
+                }
+              }
+            ]
+          },
           {
             "size": "r3.large",
             "vCPU": "2",
