@@ -70,6 +70,11 @@ def deploy_module_on_hosts(cloud_connection, module, fabric_execution_strategy, 
     app_env = app['env']
     app_role = app['role']
     app_region = app['region']
+    app_blue_green = app.get('blue_green', None)
+    if 'color' in app_blue_green:
+        app_color = app_blue_green.get('color', None)
+    else:
+        app_color = None
 
     # Retrieve autoscaling infos, if any
     as_conn = cloud_connection.get_connection(app_region, ["ec2", "autoscale"])
@@ -79,12 +84,12 @@ def deploy_module_on_hosts(cloud_connection, module, fabric_execution_strategy, 
         suspend_autoscaling_group_processes(as_conn, as_group, as_group_processes_to_suspend, log_file)
         # Wait for pending instances to become ready
         while True:
-            pending_instances = find_ec2_pending_instances(cloud_connection, app_name, app_env, app_role, app_region, as_group)
+            pending_instances = find_ec2_pending_instances(cloud_connection, app_name, app_env, app_role, app_region, as_group, ghost_color=app_color)
             if not pending_instances:
                 break
             log("INFO: waiting 10s for {} instance(s) to become running before proceeding with deployment: {}".format(len(pending_instances), pending_instances), log_file)
             time.sleep(10)
-        running_instances = find_ec2_running_instances(cloud_connection, app_name, app_env, app_role, app_region)
+        running_instances = find_ec2_running_instances(cloud_connection, app_name, app_env, app_role, app_region, ghost_color=app_color)
         if running_instances:
             hosts_list = [host['private_ip_address'] for host in running_instances]
             if safe_deployment_strategy:
@@ -93,16 +98,29 @@ def deploy_module_on_hosts(cloud_connection, module, fabric_execution_strategy, 
             else:
                 launch_deploy(app, module, hosts_list, fabric_execution_strategy, log_file)
         else:
-            raise GCallException("No instance found in region {region} with tags app:{app}, env:{env}, role:{role}".format(region=app_region,
-                                                                                                                           app=app_name,
-                                                                                                                           env=app_env,
-                                                                                                                           role=app_role))
+            raise GCallException("No instance found in region {region} with tags app:{app}, env:{env}, role:{role}{if_color}{color}".format(region=app_region,
+                                                                                                                                            app=app_name,
+                                                                                                                                            env=app_env,
+                                                                                                                                            role=app_role,
+                                                                                                                                            if_color=', color:' if app_color else '',
+                                                                                                                                            color=app_color if app_color else ''))
     finally:
         resume_autoscaling_group_processes(as_conn, as_group, as_group_processes_to_suspend, log_file)
 
 def create_launch_config(cloud_connection, app, userdata, ami_id):
     d = time.strftime('%d%m%Y-%H%M',time.localtime())
-    launch_config_name = "launchconfig.{0}.{1}.{2}.{3}.{4}".format(app['env'], app['region'], app['role'], app['name'], d)
+    blue_green = app.get('blue_green', None)
+    color = None
+    if blue_green:
+        color = app['blue_green'].get('color', 'None')
+
+    launch_config_name = "launchconfig.{0}.{1}.{2}.{3}{if_color}{color}.{4}".format(app['env'],
+                                                                                    app['region'],
+                                                                                    app['role'],
+                                                                                    app['name'],
+                                                                                    d,
+                                                                                    if_color='.' if color else '',
+                                                                                    color=color if color else '')
     conn_as = cloud_connection.get_connection(app['region'], ["ec2", "autoscale"])
     if 'root_block_device' in app['environment_infos']:
         bdm = create_block_device(cloud_connection, app['region'], app['environment_infos']['root_block_device'])
@@ -147,8 +165,17 @@ def purge_launch_configuration(cloud_connection, app, retention):
     conn_as = cloud_connection.get_connection(app['region'], ["ec2", "autoscale"])
     launchconfigs = []
     lcs = conn_as.get_all_launch_configurations()
+    blue_green = app.get('blue_green', None)
+    color = None
+    if blue_green:
+        color = app['blue_green'].get('color', 'None')
 
-    launchconfig_format = "launchconfig.{0}.{1}.{2}.{3}.".format(app['env'], app['region'], app['role'], app['name'])
+    launchconfig_format = "launchconfig.{0}.{1}.{2}.{3}{if_color}{color}.".format(app['env'],
+                                                                                  app['region'],
+                                                                                  app['role'],
+                                                                                  app['name'],
+                                                                                  if_color='.' if color else '',
+                                                                                  color=color if color else '')
 
     for lc in lcs:
         if launchconfig_format in lc.name:

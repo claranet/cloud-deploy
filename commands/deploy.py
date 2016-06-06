@@ -271,6 +271,10 @@ class Deploy():
         clone_path = self._get_buildpack_clone_path_from_module(module)
         revision = self._get_module_revision(module['name'])
 
+        blue_green = self._app.get('blue_green', None)
+        if blue_green:
+            color = self._app['blue_green'].get('color', 'None')
+
         if not os.path.exists(mirror_path):
             gcall('git --no-pager clone --bare --mirror {r} {m}'.format(r=git_repo, m=mirror_path),
                   'Create local git mirror for remote {r}'.format(r=git_repo),
@@ -397,8 +401,10 @@ GHOST_MODULE_USER="{user}"
 
         update_app_manifest(self._app, self._config, module, pkg_name, self._log_file)
         all_app_modules_list = get_app_module_name_list(self._app['modules'])
-        clean_local_module_workspace(get_path_from_app(self._app), all_app_modules_list, self._log_file)
-        clean_local_module_workspace(get_path_from_app_with_color(self._app), all_app_modules_list, self._log_file)
+        if blue_green:
+            clean_local_module_workspace(get_path_from_app_with_color(self._app), all_app_modules_list, self._log_file)
+        else:
+            clean_local_module_workspace(get_path_from_app(self._app), all_app_modules_list, self._log_file)
         self._deploy_module(module, fabric_execution_strategy, safe_deployment_strategy)
         if 'after_all_deploy' in module:
             log("After all deploy script found for '{0}'. Executing it.".format(module['name']), self._log_file)

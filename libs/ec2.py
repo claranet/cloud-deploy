@@ -6,19 +6,23 @@
 # -*- coding: utf-8 -*-
 #!/usr/bin/env python
 
-def find_ec2_pending_instances(cloud_connection, ghost_app, ghost_env, ghost_role, region, as_group):
+def find_ec2_pending_instances(cloud_connection, ghost_app, ghost_env, ghost_role, region, as_group, ghost_color=None):
     """ Return a list of dict info only for the instances in pending state.
 
         :param  ghost_app  string: The value for the instance tag "app".
         :param  ghost_env  string: The value for the instance tag "env".
         :param  ghost_role  string: The value for the instance tag "role".
+        :param  ghost_color  string: The value for the instance tag "color".
         :param  region  string: The AWS region where the instances are located.
         :return list of dict(ex: [{'id': instance_idXXX, 'private_ip_address': XXX_XXX_XXX_XXX},{...}])
     """
     conn_as = cloud_connection.get_connection(region, ["ec2", "autoscale"])
     conn = cloud_connection.get_connection(region, ["ec2"])
     # Retrieve pending instances
-    pending_instance_filters = {"tag:env": ghost_env, "tag:role": ghost_role, "tag:app": ghost_app, "instance-state-name": "pending"}
+    if ghost_color:
+        pending_instance_filters = {"tag:env": ghost_env, "tag:role": ghost_role, "tag:app": ghost_app, "tag:color": ghost_color, "instance-state-name": "pending"}
+    else:
+        pending_instance_filters = {"tag:env": ghost_env, "tag:role": ghost_role, "tag:app": ghost_app, "instance-state-name": "pending"}
     pending_instances = conn.get_only_instances(filters=pending_instance_filters)
     pending_instances_ids = [instance.id for instance in pending_instances]
     autoscale_instances = []
@@ -33,19 +37,23 @@ def find_ec2_pending_instances(cloud_connection, ghost_app, ghost_env, ghost_rol
         hosts.append({'id': instance.id, 'private_ip_address': instance.private_ip_address})
     return hosts
 
-def find_ec2_running_instances(cloud_connection, ghost_app, ghost_env, ghost_role, region):
+def find_ec2_running_instances(cloud_connection, ghost_app, ghost_env, ghost_role, region, ghost_color=None):
     """ Return a list of dict info only for the running instances.
 
         :param  ghost_app  string: The value for the instance tag "app".
         :param  ghost_env  string: The value for the instance tag "env".
         :param  ghost_role  string: The value for the instance tag "role".
+        :param  ghost_color  string: The value for the instance tag "color".
         :param  region  string: The AWS region where the instances are located.
         :return list of dict(ex: [{'id': instance_idXXX, 'private_ip_address': XXX_XXX_XXX_XXX},{...}])
     """
     conn_as = cloud_connection.get_connection(region, ["ec2", "autoscale"])
     conn = cloud_connection.get_connection(region, ["ec2"])
     # Retrieve running instances
-    running_instance_filters = {"tag:env": ghost_env, "tag:role": ghost_role, "tag:app": ghost_app, "instance-state-name": "running"}
+    if ghost_color:
+        running_instance_filters = {"tag:env": ghost_env, "tag:role": ghost_role, "tag:app": ghost_app, "tag:color": ghost_color, "instance-state-name": "running"}
+    else:
+        running_instance_filters = {"tag:env": ghost_env, "tag:role": ghost_role, "tag:app": ghost_app, "instance-state-name": "running"}
     running_instances = conn.get_only_instances(filters=running_instance_filters)
     hosts = []
     for instance in running_instances:

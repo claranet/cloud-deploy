@@ -30,6 +30,9 @@ class Createinstance():
                 self._log_file,
                 **self._connection_data
                 )
+        blue_green = self._app.get('blue_green', None)
+        if blue_green:
+            self._color = self._app['blue_green'].get('color', 'None')
 
 
     def _create_server(self, private_ip_address, subnet_id):
@@ -76,6 +79,9 @@ class Createinstance():
                     conn.create_tags([instance.id], {"role":self._app['role']})
                     conn.create_tags([instance.id], {"app":self._app['name']})
                     conn.create_tags([instance.id], {"app_id":self._app['_id']})
+                    if hasattr(self, '_color'):
+                        conn.create_tags([instance.id], {"color":self._color})
+
                     #Check instance state
                     while instance.state == u'pending':
                         log(_yellow("STATE: Instance state: %s" % instance.state), self._log_file)
