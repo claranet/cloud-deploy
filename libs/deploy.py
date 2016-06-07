@@ -12,7 +12,7 @@ from ghost_tools import render_stage2
 from ghost_log import log
 
 
-def get_key_path(config, region, key_name):
+def get_key_path(config, region, account, key_name):
     """
     Maps an AWS EC2 key pair name to a local private key path
 
@@ -20,7 +20,7 @@ def get_key_path(config, region, key_name):
 
     Without any configuration, an empty path is returned:
 
-    >>> get_key_path({}, None, None)
+    >>> get_key_path({}, None, None, None)
     ''
 
     Given a configuration with a single key path for all EC2 instances in all regions:
@@ -31,11 +31,11 @@ def get_key_path(config, region, key_name):
 
     The same key path is returned, whatever the region or key name:
 
-    >>> get_key_path(config, None, None)
+    >>> get_key_path(config, None, None, None)
     '/home/admin/key/morea.pem'
-    >>> get_key_path(config, 'eu-west-1', None)
+    >>> get_key_path(config, 'eu-west-1', 'account', None)
     '/home/admin/key/morea.pem'
-    >>> get_key_path(config, 'eu-west-1', 'morea')
+    >>> get_key_path(config, 'eu-west-1', 'account', 'morea')
     '/home/admin/key/morea.pem'
 
     Given a configuration with a mapping from regions to key paths:
@@ -43,25 +43,115 @@ def get_key_path(config, region, key_name):
     >>> config = {
     ...   'key_path': {
     ...     'eu-west-1': '/home/admin/key/morea-eu-west-1.pem',
-    ...     'us-west-2': '/home/admin/key/morea-us-west-2.pem'
+    ...     'us-west-2': '/home/admin/key/morea-us-west-2.pem',
     ...   }
     ... }
 
     The key path corresponding to the requested region is returned, whatever the key name:
 
-    >>> get_key_path(config, 'eu-west-1', None)
+    >>> get_key_path(config, 'eu-west-1', 'account', None)
     '/home/admin/key/morea-eu-west-1.pem'
-    >>> get_key_path(config, 'eu-west-1', 'morea')
+    >>> get_key_path(config, 'eu-west-1', 'account', 'morea')
     '/home/admin/key/morea-eu-west-1.pem'
-    >>> get_key_path(config, 'us-west-2', None)
+    >>> get_key_path(config, 'us-west-2', 'account', None)
     '/home/admin/key/morea-us-west-2.pem'
-    >>> get_key_path(config, 'us-west-2', 'morea')
+    >>> get_key_path(config, 'us-west-2', 'account', 'morea')
     '/home/admin/key/morea-us-west-2.pem'
+
+    If a mapping is missing, an empty key path is returned:
+
+    >>> get_key_path(config, 'us-west-1', 'account', 'morea')
+    ''
+
+    Given a configuration with mappings from regions to accounts to key paths:
+
+    >>> config = {
+    ...   'key_path': {
+    ...     'eu-west-1': {
+    ...       '123456789': '/home/admin/key/morea-account-1-eu-west-1.pem',
+    ...       '987654321': '/home/admin/key/morea-account-2-eu-west-1.pem',
+    ...     },
+    ...     'us-west-2': {
+    ...       '123456789': '/home/admin/key/morea-account-1-us-west-2.pem',
+    ...       '987654321': '/home/admin/key/morea-account-2-us-west-2.pem',
+    ...     }
+    ...   }
+    ... }
+
+    The key path corresponding to the requested region and account is returned:
+
+    >>> get_key_path(config, 'eu-west-1', '123456789', 'morea-key')
+    '/home/admin/key/morea-account-1-eu-west-1.pem'
+    >>> get_key_path(config, 'eu-west-1', '987654321', 'morea-key')
+    '/home/admin/key/morea-account-2-eu-west-1.pem'
+    >>> get_key_path(config, 'us-west-2', '123456789', 'morea-key')
+    '/home/admin/key/morea-account-1-us-west-2.pem'
+    >>> get_key_path(config, 'us-west-2', '987654321', 'morea-key')
+    '/home/admin/key/morea-account-2-us-west-2.pem'
+
+    If a mapping is missing, an empty key path is returned:
+
+    >>> get_key_path(config, 'us-west-2', 'morea-account-3', 'morea-key')
+    ''
+    >>> get_key_path(config, 'us-west-1', 'morea-123456789', 'morea-key')
+    ''
+
+    Given a configuration with mappings from regions to accounts to key names to key paths:
+
+    >>> config = {
+    ...   'key_path': {
+    ...     'eu-west-1': {
+    ...       # Account 1
+    ...       '123456789': {
+    ...         'morea-key-1': '/home/admin/key/morea-account-1-key-1-eu-west-1.pem',
+    ...         'morea-key-2': '/home/admin/key/morea-account-1-key-2-eu-west-1.pem',
+    ...       },
+    ...       # Account 2
+    ...       '987654321': {
+    ...         'morea-key-1': '/home/admin/key/morea-account-2-key-1-eu-west-1.pem',
+    ...         'morea-key-2': '/home/admin/key/morea-account-2-key-2-eu-west-1.pem',
+    ...       }
+    ...     },
+    ...     'us-west-2': {
+    ...       # Account 1
+    ...       '123456789': {
+    ...         'morea-key-1': '/home/admin/key/morea-account-1-key-1-us-west-2.pem',
+    ...         'morea-key-2': '/home/admin/key/morea-account-1-key-2-us-west-2.pem',
+    ...       },
+    ...       '987654321': {
+    ...         'morea-key-1': '/home/admin/key/morea-account-2-key-1-us-west-2.pem',
+    ...         'morea-key-2': '/home/admin/key/morea-account-2-key-2-us-west-2.pem',
+    ...       }
+    ...     }
+    ...   }
+    ... }
+
+    The key path corresponding to the requested region, account and key name is returned:
+
+    >>> get_key_path(config, 'eu-west-1', '123456789', 'morea-key-1')
+    '/home/admin/key/morea-account-1-key-1-eu-west-1.pem'
+    >>> get_key_path(config, 'eu-west-1', '123456789', 'morea-key-2')
+    '/home/admin/key/morea-account-1-key-2-eu-west-1.pem'
+    >>> get_key_path(config, 'us-west-2', '987654321', 'morea-key-1')
+    '/home/admin/key/morea-account-2-key-1-us-west-2.pem'
+    >>> get_key_path(config, 'us-west-2', '987654321', 'morea-key-2')
+    '/home/admin/key/morea-account-2-key-2-us-west-2.pem'
+
+    If a mapping is missing, an empty key path is returned:
+
+    >>> get_key_path(config, 'us-west-1', '666666666', 'morea-key-1')
+    ''
+    >>> get_key_path(config, 'us-west-1', '123456789', 'morea-key-3')
+    ''
     """
 
     key_path = config.get('key_path', '')
     if isinstance(key_path, dict):
-        key_path = key_path[region]
+        key_path = key_path.get(region, '')
+        if isinstance(key_path, dict):
+            key_path = key_path.get(account, '')
+            if isinstance(key_path, dict):
+                key_path = key_path.get(key_name, '')
 
     return key_path
 
@@ -75,7 +165,8 @@ def launch_deploy(app, module, hosts_list, fabric_execution_strategy, log_file):
         :param  log_file:     object for logging.
     """
     app_region = app['region']
-    key_filename = get_key_path(config, app_region, app['environment_infos']['key_name'])
+    app_assumed_account_id = app.get('assumed_account_id', '')
+    key_filename = get_key_path(config, app_region, app_assumed_account_id, app['environment_infos']['key_name'])
     app_ssh_username = app['build_infos']['ssh_username']
     bucket_region = config.get('bucket_region', app_region)
     stage2 = render_stage2(config, bucket_region)
