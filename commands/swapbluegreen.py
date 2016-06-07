@@ -66,6 +66,7 @@ class Swapbluegreen():
         """
         app_region = self._app['region']
         as_conn = self._cloud_connection.get_connection(app_region, ["ec2", "autoscale"])
+        as_conn3 = self._cloud_connection.get_connection(app_region, ['autoscaling'], boto_version='boto3')
         elb_conn = self._cloud_connection.get_connection(app_region, ["ec2", "elb"])
 
         # Retrieve autoscaling infos, if any
@@ -105,8 +106,8 @@ class Swapbluegreen():
                 register_all_instances_to_elb(elb_conn, elb_tempwarm_instances.keys(), elb_online_instances, log_file)
                 # 7- Update ELB in ASGs
                 log(_green('Update autoscale groups with their new ELB'), log_file)
-                register_elb_into_autoscale(to_deploy_app['autoscale']['name'], as_conn, elb_online_instances.keys(), log_file)
-                register_elb_into_autoscale(online_app['autoscale']['name'], as_conn, elb_tempwarm_instances.keys(), log_file)
+                register_elb_into_autoscale(to_deploy_app['autoscale']['name'], as_conn3, elb_tempwarm_instances.keys(), elb_online_instances.keys(), log_file)
+                register_elb_into_autoscale(online_app['autoscale']['name'], as_conn3, elb_online_instances.keys(), elb_tempwarm_instances.keys(), log_file)
 
                 # 8- Update _is_online field in DB on both app
                 self._update_app_is_online(online_app, False, log_file) # no more online anymore

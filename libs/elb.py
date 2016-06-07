@@ -34,19 +34,21 @@ def get_elb_dns_name(elb_conn, elb_name):
     elb = elb_conn.get_all_load_balancers(load_balancer_names=[elb_name])[0]
     return elb.dns_name
 
-def register_elb_into_autoscale(as_name, as_conn, elb_names, log_file):
+def register_elb_into_autoscale(as_name, as_conn3, elbs_to_deregister, elbs_to_register, log_file):
     """ Modify the AutoScale Group to set the list of ELB to use
 
     :param  as_name  string: string of the autoscaling group name.
-    :param  as_conn  string: The boto Autoscaling Group connection.
-    :param  elb_names  list: The name of the Elastic Load Balancers.
+    :param  as_conn3 string: The boto3 Autoscaling Group connection.
+    :param  elbs_to_deregister  list: The name of the Elastic Load Balancers.
+    :param  elbs_to_register  list: The name of the Elastic Load Balancers.
     :param  log_file string: The log file
     :return boolean(True if succeed otherwise False)
     """
     try:
-        autoscale_group = as_conn.get_all_groups(names=[as_name])[0]
-        setattr(autoscale_group, 'load_balancers', ListElement(elb_names))
-        autoscale_group.update()
+        as_conn3.detach_load_balancers(AutoScalingGroupName=as_name,
+                                       LoadBalancerNames=elbs_to_deregister)
+        as_conn3.attach_load_balancers(AutoScalingGroupName=as_name,
+                                       LoadBalancerNames=elbs_to_register)
     except Exception as e:
         log("Exception during register ELB operation into ASG: {0}" .format(str(e)), log_file)
         raise
