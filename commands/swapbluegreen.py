@@ -48,6 +48,12 @@ class Swapbluegreen():
         notif = "Blue/green swap done for [{0}] between [{1}] and [{2}] on ELB '{3}' ({4})".format(app_name, as_old, as_new, elb_name, elb_dns)
         return _green(notif)
 
+    def _update_app_is_online(self, app, is_online, log_file):
+        """ Updates the App DB object to set the 'is_online' attribute. This attribute should be at True when the ASG is mapped with the online ELB.
+        """
+        self._worker._db.apps.update({ '_id': app['_id']}, {'$set': {'blue_green.is_online': is_online }})
+        log("'{0}' has been set '{1}' for blue/green".format(app['_id'], 'online' if is_online else 'offline'), log_file)
+
     def _swap_asg(self, swap_execution_strategy, online_app, to_deploy_app, config, log_file):
         """ Swap group of instances from A to B atatched to the main ELB
 
@@ -102,7 +108,10 @@ class Swapbluegreen():
                 register_elb_into_autoscale(to_deploy_app['autoscale']['name'], as_conn, elb_online_instances.keys(), log_file)
                 register_elb_into_autoscale(online_app['autoscale']['name'], as_conn, elb_tempwarm_instances.keys(), log_file)
 
-                # TODO Update _is_online field in Mongo on both app
+                # 8- Update _is_online field in DB on both app
+                self._update_app_is_online(online_app, False, log_file) # no more online anymore
+                self._update_app_is_online(to_deploy_app, True, log_file) # promotion !
+
                 online_elb_name = elb_online_instances.keys()[0]
                 return str(online_elb_name), get_elb_dns_name(elb_conn, online_elb_name)
             elif swap_execution_strategy == 'bothversion':
@@ -112,7 +121,7 @@ class Swapbluegreen():
                 return None, None
 
         finally:
-            # 8- Resume autoscaling groups in any case
+            # 9- Resume autoscaling groups in any case
             resume_autoscaling_group_processes(as_conn, as_group_old, as_group_old_processes_to_suspend, log_file)
             resume_autoscaling_group_processes(as_conn, as_group_new, as_group_new_processes_to_suspend, log_file)
 
