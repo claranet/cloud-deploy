@@ -117,7 +117,7 @@ class Packer:
 
         packer_json['builders'] = builders
         packer_json['provisioners'] = provisioners
-        packer_json['variables'] = variables
+        #packer_json['variables'] = variables
         self.packer_file_path = PACKER_JSON_PATH + self.unique + ".json"
         log('packer file path: {0}'.format(self.packer_file_path), self._log_file)
         stream = file(self.packer_file_path, 'w')
@@ -134,6 +134,7 @@ class Packer:
             packer_env['AWS_ACCESS_KEY_ID'] = self.packer_config['credentials']['aws_access_key']
             packer_env['AWS_SECRET_ACCESS_KEY'] = self.packer_config['credentials']['aws_secret_key']
             packer_env['AWS_SESSION_TOKEN'] = self.packer_config['credentials']['token']
+            packer_env['AWS_SECURITY_TOKEN'] = self.packer_config['credentials']['token']
         process = Popen(cmd, stdout=PIPE, env=packer_env)
         while True:
             output = process.stdout.readline()
