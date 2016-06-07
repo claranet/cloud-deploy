@@ -72,7 +72,8 @@ class Buildimage():
             'subnet_id': self._app['build_infos']['subnet_id'],
             'associate_public_ip_address': '1',
             'skip_salt_bootstrap': salt_skip_bootstrap_option,
-            'ami_block_device_mappings': []
+            'ami_block_device_mappings': [],
+            'iam_instance_profile': self._app['environment_infos']['instance_profile']
         }
 
         for opt_vol in self._app['environment_infos'].get('optional_volumes'):

@@ -45,15 +45,16 @@ if [ ! -d /var/lib/ghost ]; then
     mkdir /var/lib/ghost
 fi
 
+IP=$(curl -s http://169.254.169.254/latest/meta-data/local-ipv4 | tr -s '.' '-')
+
 function zabbix_hostname(){
     #Update Zabbix agent name
-    IP=$(curl -s http://169.254.169.254/latest/meta-data/local-ipv4 | tr -s '.' '-')
     sed -i "s/.*Hostname=.*/&-${IP}/g" /etc/zabbix/zabbix_agentd.conf
     service zabbix-agent restart
 }
 
 function instance_hostname() {
-    EC2_HOSTNAME=$(echo $NAME| tr -s '.' '-')
+    EC2_HOSTNAME=$(echo ${NAME}-${IP}| tr -s '.' '-')
     salt-call --local network.mod_hostname "$EC2_HOSTNAME"
 }
 

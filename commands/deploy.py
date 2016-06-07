@@ -128,9 +128,9 @@ class Deploy():
     def _get_module_revision(self, module_name):
         for module in self._job['modules']:
             if 'name' in module and module['name'] == module_name:
-                if 'rev' in module:
+                if 'rev' in module and module['rev']:
                     return module['rev']
-                return 'master'
+                return 'HEAD'
 
     def _get_notification_message_done(self, deploy_ids):
         """

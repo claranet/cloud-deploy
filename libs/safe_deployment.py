@@ -128,7 +128,7 @@ class SafeDeployment():
         else:
             deregister_instance_from_elb(elb_conn, elb_instances.keys(), [host['id'] for host in instances_list], self.log_file)
             wait_before_deploy = int(get_connection_draining_value(elb_conn, elb_instances.keys())) + int(self.safe_infos['wait_before_deploy'])
-            log('Waiting {0}s: The connection draining time more the custom value set for wait_before_deploy' .format(wait_before_deploy), self.log_file)
+            log('Waiting {0}s: The connection draining time plus the custom value set for wait_before_deploy' .format(wait_before_deploy), self.log_file)
             time.sleep(wait_before_deploy)
             launch_deploy(self.app, self.module, [host['private_ip_address'] for host in instances_list], self.fab_exec_strategy, self.log_file)
             log('Waiting {0}s: The value set for wait_after_deploy' .format(self.safe_infos['wait_after_deploy']), self.log_file)
@@ -165,10 +165,10 @@ class SafeDeployment():
             hapi = haproxy.Haproxyapi(lb_infos, self.log_file, self.safe_infos['api_port'])
             ha_urls = hapi.get_haproxy_urls()
             if not self.haproxy_configuration_validation(hapi, ha_urls, self.safe_infos['ha_backend']):
-                raise GCallException('Cannot initialize the safe deployment process because there is differences in the Haproxy \
+                raise GCallException('Cannot initialize the safe deployment process because there are differences in the Haproxy \
                                     configuration files between the instances: {0}' .format(lb_infos))
             if not hapi.change_instance_state('disableserver', self.safe_infos['ha_backend'], [host['private_ip_address'] for host in instances_list]):
-                raise GCallException('Cannot disabled some instances: {0} in {1}. Deployment aborded' .format(instances_list, lb_infos))
+                raise GCallException('Cannot disable some instances: {0} in {1}. Deployment aborted' .format(instances_list, lb_infos))
             log('Waiting {0}s: The value set for wait_before_deploy' .format(self.safe_infos['wait_before_deploy']), self.log_file)
             time.sleep(int(self.safe_infos['wait_before_deploy']))
             launch_deploy(self.app, self.module, [host['private_ip_address'] for host in instances_list], self.fab_exec_strategy, self.log_file)
@@ -179,7 +179,7 @@ class SafeDeployment():
             # Add a sleep to let the time to pass the health check process
             time.sleep(5)
             if not self.haproxy_configuration_validation(hapi, ha_urls, self.safe_infos['ha_backend']):
-                raise GCallException('Error in the post safe deployment process because there is differences in the Haproxy \
+                raise GCallException('Error in the post safe deployment process because there are differences in the Haproxy \
                                     configuration files between the instances: {0}. Instances: {1} have been deployed but not well enabled' .format(lb_infos, instances_list))
             if not hapi.check_all_instances_up(self.safe_infos['ha_backend'], hapi.get_haproxy_conf(ha_urls[0], True)):
                 raise GCallException('Error in the post safe deployment process because some instances are disable or down in the Haproxy: {0}.' .format(lb_infos, instances_list))
