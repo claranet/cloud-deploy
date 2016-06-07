@@ -5,12 +5,14 @@
 # To be used with tox or virtualenv.
 
 import doctest
+import importlib
 
 modules = [
   "command",
   "commands.deploy",
   "ghost_blueprints",
   "ghost_tools",
+  "libs.safe_deployment",
   "run",
   "run_rqworkers",
   "web_ui.forms",
@@ -19,10 +21,10 @@ modules = [
 ]
 
 runner = doctest.DocTestRunner(verbose=True)
-finder = doctest.DocTestFinder(verbose=True)
+finder = doctest.DocTestFinder(verbose=True, exclude_empty=False)
 
 for module in modules:
-  for test in finder.find(__import__(module)):
+  for test in finder.find(importlib.import_module(module)):
     runner.run(test)
 
 runner.summarize()
