@@ -10,9 +10,13 @@ Updating dependencies:
     $ pip-compile -U
     $ pip-sync
 
-Running unit tests:
+Running unit tests with tox (sets up a virtualenv under the hood):
 
     $ tox
+
+Running unit tests directly (dependencies should be provided by the system or an active virtualenv):
+
+    $ ./run_tests.py
 
 # Deployment
 
