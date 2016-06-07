@@ -109,15 +109,9 @@ class Packer:
             'type': 'shell',
             'inline':["sudo rm -rf /srv/salt || echo 'salt: no cleanup salt'","sudo rm -rf /srv/pillar || echo 'salt: no cleanup pillar'"]
         }]
-        variables = {
-            "aws_access_key": "{{env `AWS_ACCESS_KEY_ID`}}",
-            "aws_secret_key": "{{env `AWS_SECRET_ACCESS_KEY`}}",
-            "token": "{{env `AWS_SESSION_TOKEN`}}"
-        }
 
         packer_json['builders'] = builders
         packer_json['provisioners'] = provisioners
-        #packer_json['variables'] = variables
         self.packer_file_path = PACKER_JSON_PATH + self.unique + ".json"
         log('packer file path: {0}'.format(self.packer_file_path), self._log_file)
         stream = file(self.packer_file_path, 'w')
