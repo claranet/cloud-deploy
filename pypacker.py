@@ -76,7 +76,8 @@ class Packer:
             'vpc_id': self.packer_config['vpc_id'],
             'subnet_id': self.packer_config['subnet_id'],
             'associate_public_ip_address': self.packer_config['associate_public_ip_address'],
-            'ami_block_device_mappings': self.packer_config['ami_block_device_mappings']
+            'ami_block_device_mappings': self.packer_config['ami_block_device_mappings'],
+            'ssh_pty': 'true'
         }]
 
         if self.packer_config['skip_salt_bootstrap'] in ['true', '1', 'y', 'yes', 'True']:
