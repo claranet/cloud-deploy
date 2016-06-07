@@ -56,6 +56,7 @@ function zabbix_hostname(){
 function instance_hostname() {
     EC2_HOSTNAME=$(echo ${NAME}-${IP}| tr -s '.' '-')
     salt-call --local network.mod_hostname "$EC2_HOSTNAME"
+    salt-call --local file.append /etc/hosts "$(echo "$IP"| tr -s '-' '.') $EC2_HOSTNAME"
 }
 
 if [ -z "$1" ] ; then
