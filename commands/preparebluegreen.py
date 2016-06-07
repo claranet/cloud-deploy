@@ -6,6 +6,7 @@ from ghost_aws import check_autoscale_exists
 from ghost_tools import GCallException, get_aws_connection_data, get_app_friendly_name, get_app_module_name_list
 from settings import cloud_connections, DEFAULT_PROVIDER
 from libs.blue_green import get_blue_green_apps, check_app_manifest
+from libs.autoscaling import get_instances_from_autoscaling
 from libs.deploy import get_path_from_app_with_color
 
 
@@ -55,6 +56,9 @@ class Preparebluegreen(object):
         """Execute all checks and preparations."""
         log(_green("STATE: Started"), self._log_file)
 
+        app_region = self._app['region']
+        as_conn = self._cloud_connection.get_connection(app_region, ['autoscaling'], boto_version='boto3')
+
         online_app, offline_app = get_blue_green_apps(self._app,
                                                       self._worker._db.apps)
 
@@ -84,11 +88,15 @@ class Preparebluegreen(object):
                 self._worker.update_status("aborted", message=self._get_notification_message_aborted(offline_app, "Please deploy your app's modules"))
                 return
 
+            # Check if instances are already running
+            if get_instances_from_autoscaling(offline_app['autoscale']['name'], as_conn):
+                self._worker.update_status("aborted", message=self._get_notification_message_aborted(offline_app, "Autoscaling Group of offline app should be empty."))
+                return
+
             self._worker.update_status("done")#, message=self._get_notification_message_done(online_app, ))
         except GCallException as e:
             self._worker.update_status("failed", message=self._get_notification_message_failed(online_app, offline_app, e))
 
-        # Check if instances are already running
         # Create the testing ELB : {uid}-{app-name}-{env}-{role}-bluegreen, duplicated from the PROD ELB
         # Update auto scale : attach testing ELB, update LaunchConfig, update AS value (duplicate from PROD/online AS)
         # Return / print Testing ELB url/dns
