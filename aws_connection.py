@@ -1,7 +1,7 @@
 import boto
 import boto.s3
 import boto.s3.connection
-
+import boto3
 from boto import vpc, iam
 from boto.ec2 import autoscale
 from boto.sts import STSConnection
@@ -83,26 +83,40 @@ class AWSConnection(ACloudConnection):
                 raise
         return(credentials)
 
-    def get_connection(self, region, services):
+    def get_connection(self, region, services, boto_version='boto2'):
         connection = None
         try:
-            aws_service = self._get_boto_service(boto, services)
+            if boto_version == 'boto2':
+                aws_service = self._get_boto_service(boto, services)
 
-            kwargs = {}
-            if aws_service == boto.s3:
-                # Use base S3 endpoint to support buckets with dots in their names
-                kwargs['calling_format'] = boto.s3.connection.OrdinaryCallingFormat()
+                kwargs = {}
+                if aws_service == boto.s3:
+                    # Use base S3 endpoint to support buckets with dots in their names
+                    kwargs['calling_format'] = boto.s3.connection.OrdinaryCallingFormat()
 
-            if not self._role_arn:
-                connection = aws_service.connect_to_region(region, **kwargs)
-            elif self.check_credentials():
-                connection = aws_service.connect_to_region(
-                        region,
+                if not self._role_arn:
+                    connection = aws_service.connect_to_region(region, **kwargs)
+                elif self.check_credentials():
+                    connection = aws_service.connect_to_region(
+                            region,
+                            aws_access_key_id=self._parameters['access_key'],
+                            aws_secret_access_key=self._parameters['secret_key'],
+                            security_token=self._parameters['session_token'],
+                            **kwargs
+                    )
+            elif boto_version == 'boto3':
+                if not self._role_arn:
+                    connection = boto3.client(services[0], region_name=region)
+                elif self.check_credentials():
+                    connection = boto3.client(
+                        services[0],
+                        region_name=region,
                         aws_access_key_id=self._parameters['access_key'],
                         aws_secret_access_key=self._parameters['secret_key'],
-                        security_token=self._parameters['session_token'],
-                        **kwargs
-                )
+                        aws_session_token=self._parameters['session_token']
+                    )
+            else:
+                raise ValueError('{0} is not a supported boto version.'.format(boto_version))
         except:
             if self._log_file:
                 log("An error occured when creating connection, check the exception error message for more details", self._log_file)
