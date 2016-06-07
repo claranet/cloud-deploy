@@ -73,7 +73,7 @@ class Buildimage():
             'associate_public_ip_address': '1',
             'skip_salt_bootstrap': salt_skip_bootstrap_option,
             'ami_block_device_mappings': [],
-            'instance_profile': self._app['environment_infos']['instance_profile']
+            'iam_instance_profile': self._app['environment_infos']['instance_profile']
         }
 
         for opt_vol in self._app['environment_infos'].get('optional_volumes'):
