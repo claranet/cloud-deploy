@@ -6,6 +6,9 @@
 # -*- coding: utf-8 -*-
 #!/usr/bin/env python
 
+from ghost_log import log
+from .blue_green import get_blue_green_from_app
+
 def find_ec2_pending_instances(cloud_connection, ghost_app, ghost_env, ghost_role, region, as_group, ghost_color=None):
     """ Return a list of dict info only for the instances in pending state.
 
@@ -62,3 +65,19 @@ def find_ec2_running_instances(cloud_connection, ghost_app, ghost_env, ghost_rol
         if not autoscale_instances or not autoscale_instances[0].lifecycle_state in ['Terminating', 'Terminating:Wait', 'Terminating:Proceed']:
             hosts.append({'id': instance.id, 'private_ip_address': instance.private_ip_address})
     return hosts
+
+def destroy_ec2_instances(conn, app, log_file):
+    """ Destroy all EC2 instances which matches the `ghost app` tags
+
+        :param  app  string: The ghost "app" object.
+        :param  conn: The boto2 EC2 connection object
+        :param  log_file: Logging path
+    """
+    app_blue_green, app_color = get_blue_green_from_app(app)
+    running_instances = find_ec2_running_instances(conn, app['name'], app['env'], app['role'], app['region'], app_color)
+    #Terminating instances
+    instances = []
+    for r in running_instances:
+        instances.append(r['id'])
+    log(instances, log_file)
+    conn.terminate_instances(instance_ids=instances)
