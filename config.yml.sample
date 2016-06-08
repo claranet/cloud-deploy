@@ -30,12 +30,16 @@ bucket_region: eu-west-1
 #
 #    key_path:
 #      eu-west-1:
+#        default:                            /home/admin/key/morea-default-eu-west-1.pem
 #        '123456789':
 #          client_dev_morea_eu-west-1:       /home/admin/key/client_preprod_morea_eu-west-1.pem
 #        '987654321':
 #          client_prod_app1_morea_eu-west-1: /home/admin/key/client_prod_app1_morea_eu-west-1.pem
 #          client_prod_app2_morea_eu-west-1: /home/admin/key/client_prod_app2_morea_eu-west-1.pem
 #      us-west-2:
+#        default:
+#          morea-key-1: /home/admin/key/morea-default-key-1-us-west-2.pem
+#          morea-key-2: /home/admin/key/morea-default-key-2-us-west-2.pem
 #        '987654321':
 #          client_prod_app1_morea_us-west-2: /home/admin/key/client_prod_app1_morea_us-west-2.pem
 #

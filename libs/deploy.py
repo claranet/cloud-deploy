@@ -100,6 +100,9 @@ def get_key_path(config, region, account, key_name, log_file):
     >>> config = yaml.load(\"\"\"
     ... key_path:
     ...   eu-west-1:
+    ...     default:
+    ...       morea-key-1: /home/admin/key/morea-default-key-1-eu-west-1.pem
+    ...       morea-key-2: /home/admin/key/morea-default-key-2-eu-west-1.pem
     ...     # Account 1
     ...     '123456789':
     ...       morea-key-1: /home/admin/key/morea-account-1-key-1-eu-west-1.pem
@@ -109,6 +112,7 @@ def get_key_path(config, region, account, key_name, log_file):
     ...       morea-key-1: /home/admin/key/morea-account-2-key-1-eu-west-1.pem
     ...       morea-key-2: /home/admin/key/morea-account-2-key-2-eu-west-1.pem
     ...   us-west-2:
+    ...     default:       /home/admin/key/morea-default-us-west-2.pem
     ...     # Account 1
     ...     '123456789':
     ...       morea-key-1: /home/admin/key/morea-account-1-key-1-us-west-2.pem
@@ -135,13 +139,22 @@ def get_key_path(config, region, account, key_name, log_file):
     ''
     >>> get_key_path(config, 'us-west-1', '123456789', 'morea-key-3', StringIO())
     ''
+
+    Defaults are also available in case no assumed account id is defined on the Ghost application:
+
+    >>> get_key_path(config, 'eu-west-1', '', 'morea-key-1', StringIO())
+    '/home/admin/key/morea-default-key-1-eu-west-1.pem'
+    >>> get_key_path(config, 'eu-west-1', '', 'morea-key-2', StringIO())
+    '/home/admin/key/morea-default-key-2-eu-west-1.pem'
+    >>> get_key_path(config, 'us-west-2', '', 'morea-key-3', StringIO())
+    '/home/admin/key/morea-default-us-west-2.pem'
     """
 
     key_path = config.get('key_path', '')
     if isinstance(key_path, dict):
         key_path = key_path.get(region, '')
         if isinstance(key_path, dict):
-            key_path = key_path.get(account, '')
+            key_path = key_path.get(account if account else 'default', '')
             if isinstance(key_path, dict):
                 key_path = key_path.get(key_name, '')
 
