@@ -34,6 +34,15 @@ def get_elb_dns_name(elb_conn, elb_name):
     elb = elb_conn.get_all_load_balancers(load_balancer_names=[elb_name])[0]
     return elb.dns_name
 
+def destroy_elb(elb_conn3, elb_name, log_file):
+    """ Destroy the specified ELB
+
+        :param  elb_conn3:  boto3 connection object to the ELB service.
+        :param  elb_name  string: The name of the Elastic Load Balancer.
+    """
+    log("  INFO: Destroying ELB {0}".format(elb_name), log_file)
+    response = elb_conn3.delete_load_balancer(LoadBalancerName=elb_name)
+
 def register_elb_into_autoscale(as_name, as_conn3, elbs_to_deregister, elbs_to_register, log_file):
     """ Modify the AutoScale Group to set the list of ELB to use
 
@@ -45,10 +54,10 @@ def register_elb_into_autoscale(as_name, as_conn3, elbs_to_deregister, elbs_to_r
     :return boolean(True if succeed otherwise False)
     """
     try:
-        as_conn3.detach_load_balancers(AutoScalingGroupName=as_name,
-                                       LoadBalancerNames=elbs_to_deregister)
-        as_conn3.attach_load_balancers(AutoScalingGroupName=as_name,
-                                       LoadBalancerNames=elbs_to_register)
+        if elbs_to_deregister and len(elbs_to_deregister) > 0:
+            as_conn3.detach_load_balancers(AutoScalingGroupName=as_name, LoadBalancerNames=elbs_to_deregister)
+        if elbs_to_register and len(elbs_to_register) > 0:
+            as_conn3.attach_load_balancers(AutoScalingGroupName=as_name, LoadBalancerNames=elbs_to_register)
     except Exception as e:
         log("Exception during register ELB operation into ASG: {0}" .format(str(e)), log_file)
         raise
