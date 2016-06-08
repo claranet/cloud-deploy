@@ -239,6 +239,10 @@ def get_auto_scale_tags(cloud_connection, as_group, app, log_file):
         as_tags[tag.key] = tag
 
     log("[{0}] has those tags enabled: {1}".format(app['autoscale']['name'], ", ".join(as_tags.keys())), log_file)
+    as_tags['app_id'] = Tag(key='app_id',
+                         value=app['_id'],
+                         propagate_at_launch=True,
+                         resource_id=app['autoscale']['name'])
     as_tags['app'] = Tag(key='app',
                          value=app['name'],
                          propagate_at_launch=True,
