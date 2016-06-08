@@ -160,8 +160,15 @@ def launch_deploy(app, module, hosts_list, fabric_execution_strategy, log_file):
     """
     app_region = app['region']
     app_assumed_account_id = app.get('assumed_account_id', '')
-    key_filename = get_key_path(config, app_region, app_assumed_account_id, app['environment_infos']['key_name'], log_file)
+
+    # FIXME: key_name and ssh_username should be dynamically retrieved from each EC2 instance.
+    # Indeed, in case of mixed deployments they may differ from one to another.
+    # This can happen when these values are changed on the Ghost app but not all live instances are replaced to use the new values.
+    app_key_name = app['environment_infos']['key_name']
     app_ssh_username = app['build_infos']['ssh_username']
+
+    key_filename = get_key_path(config, app_region, app_assumed_account_id, app_key_name, log_file)
+
     bucket_region = config.get('bucket_region', app_region)
     stage2 = render_stage2(config, bucket_region)
     if fabric_execution_strategy not in ['serial', 'parallel']:
@@ -176,5 +183,6 @@ def launch_deploy(app, module, hosts_list, fabric_execution_strategy, log_file):
     else:
         setattr(task, 'serial', True)
         setattr(task, 'parallel', False)
+
     log("Updating current instances in {}: {}".format(fabric_execution_strategy, hosts_list), log_file)
     fab_execute(task, module, app_ssh_username, key_filename, stage2, log_file, hosts=hosts_list)
