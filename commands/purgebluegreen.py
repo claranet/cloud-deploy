@@ -71,6 +71,7 @@ class Purgebluegreen():
                 return
 
             as_conn = self._cloud_connection.get_connection(app_region, ["ec2", "autoscale"])
+            ec2_conn = self._cloud_connection.get_connection(app_region, ["ec2"])
             elb_conn3 = self._cloud_connection.get_connection(app_region, ['elb'], boto_version='boto3')
             temp_elbs = get_elb_from_autoscale(offline_app['autoscale']['name'], as_conn)
 
@@ -84,7 +85,7 @@ class Purgebluegreen():
             # Update ASG and kill instances
             log("Update AutoScale with `0` on mix, max, desired values.", self._log_file)
             log("Destroy all instances in the AutoScale and all instances matching the `app_id` [{0}]".format(offline_app['_id']), self._log_file)
-            flush_instances_update_autoscale(as_conn, as_conn3, offline_app, self._log_file)
+            flush_instances_update_autoscale(as_conn, ec2_conn, offline_app, self._log_file)
             # Destroy temp ELB
             destroy_elb(elb_conn3, temp_elbs[0], self._log_file)
 
