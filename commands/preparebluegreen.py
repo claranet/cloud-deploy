@@ -8,7 +8,7 @@ from settings import cloud_connections, DEFAULT_PROVIDER
 from libs.blue_green import get_blue_green_apps, check_app_manifest
 from libs.autoscaling import get_instances_from_autoscaling
 from libs.deploy import get_path_from_app_with_color
-
+from libs.elb import get_elb_from_autoscale, copy_elb
 
 COMMAND_DESCRIPTION = "Prepare the Blue/Green env before swap"
 
@@ -47,9 +47,10 @@ class Preparebluegreen(object):
         notif = "Blue/green preparation aborted for [{0}] : {1}".format(get_app_friendly_name(app), msg)
         return _yellow(notif)
 
-    def _get_notification_message_done(self, online_app, as_old, as_new, elb_name, elb_dns):
-        app_name = get_app_friendly_name(online_app)
-        notif = "Blue/green preparation done for [{0}] between [{1}] and [{2}] on ELB '{3}' ({4})".format(app_name, as_old, as_new, elb_name, elb_dns)
+    def _get_notification_message_done(self, app, elb_name, elb_dns):
+        app_name = get_app_friendly_name(app)
+        as_name = app['autoscale']['name']
+        notif = "Blue/green preparation done for [{0}] by creating the temporary ELB [{1}/{2}] attached to the AutoScale '{3}'".format(app_name, elb_name, elb_dns, as_name)
         return _green(notif)
 
     def execute(self):
@@ -57,7 +58,8 @@ class Preparebluegreen(object):
         log(_green("STATE: Started"), self._log_file)
 
         app_region = self._app['region']
-        as_conn = self._cloud_connection.get_connection(app_region, ['autoscaling'], boto_version='boto3')
+        as_conn = self._cloud_connection.get_connection(app_region, ["ec2", "autoscale"])
+        as_conn3 = self._cloud_connection.get_connection(app_region, ['autoscaling'], boto_version='boto3')
 
         online_app, offline_app = get_blue_green_apps(self._app,
                                                       self._worker._db.apps)
@@ -89,14 +91,25 @@ class Preparebluegreen(object):
                 return
 
             # Check if instances are already running
-            if get_instances_from_autoscaling(offline_app['autoscale']['name'], as_conn):
+            if get_instances_from_autoscaling(offline_app['autoscale']['name'], as_conn3):
                 self._worker.update_status("aborted", message=self._get_notification_message_aborted(offline_app, "Autoscaling Group of offline app should be empty."))
                 return
 
-            self._worker.update_status("done")#, message=self._get_notification_message_done(online_app, ))
+            # Get the online ELB
+            online_elbs = get_elb_from_autoscale(online_app['autoscale']['name'], as_conn)
+            if len(online_elbs) == 0:
+                self._worker.update_status("aborted", message=self._get_notification_message_aborted(offline_app, "Online app AutoScale is not attached to a valid Elastic Load Balancer"))
+                return
+
+            # Create the temporary ELB: ghost-bluegreentemp-{original ELB name}, duplicated from the online ELB
+            elb_conn3 = self._cloud_connection.get_connection(app_region, ['elb'], boto_version='boto3')
+            online_elb = online_elbs[0]
+            temp_elb_name = "ghost-bluegreentemp-{0}".format(online_elb.name)[:31] # ELB name is 32 char long max
+            new_elb_dns = copy_elb(elb_conn3, temp_elb_name, online_elb)
+
+            self._worker.update_status("done", message=self._get_notification_message_done(offline_app, temp_elb_name, new_elb_dns))
         except GCallException as e:
             self._worker.update_status("failed", message=self._get_notification_message_failed(online_app, offline_app, e))
 
-        # Create the testing ELB : {uid}-{app-name}-{env}-{role}-bluegreen, duplicated from the PROD ELB
         # Update auto scale : attach testing ELB, update LaunchConfig, update AS value (duplicate from PROD/online AS)
         # Return / print Testing ELB url/dns

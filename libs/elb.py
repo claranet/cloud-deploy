@@ -14,6 +14,39 @@
 from ghost_log import log
 from boto.ec2.elb.listelement import ListElement
 
+def copy_elb(elb_conn3, elb_name, source_elb):
+    """
+    """
+    response = elb_conn3.create_load_balancer(
+        LoadBalancerName=elb_name,
+        Listeners=[
+            {
+                'Protocol': 'string',
+                'LoadBalancerPort': 123,
+                'InstanceProtocol': 'string',
+                'InstancePort': 123,
+                'SSLCertificateId': 'string'
+            },
+        ],
+        AvailabilityZones=[
+            'string',
+        ],
+        Subnets=[
+            'string',
+        ],
+        SecurityGroups=[
+            'string',
+        ],
+        Scheme='string',
+        Tags=[
+            {
+                'Key': 'string',
+                'Value': 'string'
+            },
+        ]
+    )
+    return response['DNSName']
+
 def get_elb_from_autoscale(as_name, as_conn):
     """ Return a list of ELB names defined in
         the Autoscaling Group in parameter.
