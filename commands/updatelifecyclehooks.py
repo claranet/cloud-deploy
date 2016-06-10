@@ -2,11 +2,11 @@ import base64
 import sys
 import traceback
 
-from boto import s3
-
 from ghost_tools import refresh_stage2
 from ghost_log import log
 from ghost_aws import create_launch_config, generate_userdata, check_autoscale_exists, purge_launch_configuration, update_auto_scale
+from settings import cloud_connections, DEFAULT_PROVIDER
+from ghost_tools import get_aws_connection_data
 
 COMMAND_DESCRIPTION = "Update LifeCycle Hooks scripts"
 
@@ -16,6 +16,7 @@ class Updatelifecyclehooks():
     _log_file = -1
     _worker = None
     _config = None
+    _cloud_connection = None
 
     def __init__(self, worker):
         self._app = worker.app
@@ -23,7 +24,15 @@ class Updatelifecyclehooks():
         self._log_file = worker.log_file
         self._config = worker._config
         self._worker = worker
-
+        self._connection_data = get_aws_connection_data(
+                self._app.get('assumed_account_id', ''),
+                self._app.get('assumed_role_name', ''),
+                self._app.get('assumed_region_name', '')
+                )
+        self._cloud_connection = cloud_connections.get(self._app.get('provider', DEFAULT_PROVIDER))(
+                self._log_file,
+                **self._connection_data
+                )
 
     def _refresh_lifecycle_hook_script(self, lifecycle_hook, lifecycle_hooks, bucket, prefix):
         key_name = '{prefix}/{lifecycle_hook}'.format(prefix=prefix, lifecycle_hook=lifecycle_hook)
@@ -42,12 +51,13 @@ class Updatelifecyclehooks():
     def execute(self):
         try:
             app = self._app
-            refresh_stage2(self._config.get('bucket_region', self._app['region']), self._config)
+            cloud_connection = cloud_connections.get(self._app.get('provider', DEFAULT_PROVIDER))(self._log_file)
+            refresh_stage2(cloud_connection, self._config.get('bucket_region', self._app['region']), self._config)
             log('INFO: refreshed /ghost/stage2', self._log_file)
 
             # Store lifecycle hooks scripts in S3
             lifecycle_hooks = app.get('lifecycle_hooks', None)
-            conn = s3.connect_to_region(self._config.get('bucket_region', self._app['region']))
+            conn = cloud_connection.get_connection(self._config.get('bucket_region', self._app['region']), ["s3"])
             bucket = conn.get_bucket(self._config['bucket_s3'])
             prefix = '/ghost/{app}/{env}/{role}'.format(app=app['name'], env=app['env'], role=app['role'])
             self._refresh_lifecycle_hook_script('pre_bootstrap', lifecycle_hooks, bucket, prefix)
@@ -57,16 +67,16 @@ class Updatelifecyclehooks():
             ami_id = self._app['ami']
             if ami_id:
                 if self._app['autoscale']['name']:
-                    if check_autoscale_exists(self._app['autoscale']['name'], self._app['region']):
+                    if check_autoscale_exists(self._cloud_connection, self._app['autoscale']['name'], self._app['region']):
                         userdata = None
                         launch_config = None
                         userdata = generate_userdata(self._config['bucket_s3'], self._config.get('bucket_region', self._app['region']), self._config['ghost_root_path'])
                         if userdata:
-                            launch_config = create_launch_config(self._app, userdata, ami_id)
+                            launch_config = create_launch_config(self._cloud_connection, self._app, userdata, ami_id)
                             log("Launch configuration [{0}] created.".format(launch_config.name), self._log_file)
                             if launch_config:
-                                update_auto_scale(self._app, launch_config, self._log_file)
-                                if (purge_launch_configuration(self._app, self._config.get('launch_configuration_retention', 5))):
+                                update_auto_scale(self._cloud_connection, self._app, launch_config, self._log_file)
+                                if (purge_launch_configuration(self._cloud_connection, self._app, self._config.get('launch_configuration_retention', 5))):
                                     log("Old launch configurations removed for this app", self._log_file)
                                 else:
                                     log("ERROR: Purge launch configurations failed", self._log_file)

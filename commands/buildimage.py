@@ -2,11 +2,11 @@ import json
 import re
 import time
 
-import boto.ec2.autoscale
-
 from pypacker import Packer
 from ghost_log import log
 from ghost_aws import create_launch_config, generate_userdata, check_autoscale_exists, purge_launch_configuration, update_auto_scale
+from ghost_tools import get_aws_connection_data
+from settings import cloud_connections, DEFAULT_PROVIDER
 
 COMMAND_DESCRIPTION = "Build Image"
 
@@ -22,10 +22,19 @@ class Buildimage():
         self._worker = worker
         self._config = worker._config
         self._log_file = worker.log_file
+        self._connection_data = get_aws_connection_data(
+                self._app.get('assumed_account_id', ''),
+                self._app.get('assumed_role_name', ''),
+                self._app.get('assumed_region_name', '')
+                )
+        self._cloud_connection = cloud_connections.get(self._app.get('provider', DEFAULT_PROVIDER))(
+                self._log_file,
+                **self._connection_data
+                )
         self._ami_name = "ami.{0}.{1}.{2}.{3}.{4}".format(self._app['env'], self._app['region'], self._app['role'], self._app['name'], time.strftime("%Y%m%d-%H%M%S"))
 
     def _purge_old_images(self):
-        conn = boto.ec2.connect_to_region(self._app['region'])
+        conn = self._cloud_connection.get_connection(self._app['region'], ["ec2"])
         retention = 5
         filtered_images = []
         images = conn.get_all_images(owners="self")
@@ -73,7 +82,8 @@ class Buildimage():
             'associate_public_ip_address': '1',
             'skip_salt_bootstrap': salt_skip_bootstrap_option,
             'ami_block_device_mappings': [],
-            'iam_instance_profile': self._app['environment_infos']['instance_profile']
+            'iam_instance_profile': self._app['environment_infos']['instance_profile'],
+            'credentials': self._cloud_connection.get_credentials()
         }
 
         for opt_vol in self._app['environment_infos'].get('optional_volumes'):
@@ -128,8 +138,10 @@ class Buildimage():
     def execute(self):
         skip_salt_bootstrap_option = self._job['options'][0] if 'options' in self._job and len(self._job['options']) > 0 else True
         json_packer = self._format_packer_from_app(skip_salt_bootstrap_option)
+        json_packer_for_log = json.loads(json_packer)
+        del json_packer_for_log['credentials']
         log("Generating a new AMI", self._log_file)
-        log("Packer options : %s" % json_packer, self._log_file)
+        log("Packer options : %s" %json.dumps(json_packer_for_log, sort_keys=True, indent=4, separators=(',', ': ')), self._log_file)
         pack = Packer(json_packer, self._config, self._log_file, self._job['_id'])
         ami_id = pack.build_image(self._format_salt_top_from_app_features(), self._format_salt_pillar_from_app_features())
         if ami_id is not "ERROR":
@@ -140,16 +152,16 @@ class Buildimage():
             else:
                 log("Purge old AMIs failed", self._log_file)
             if self._app['autoscale']['name']:
-                if check_autoscale_exists(self._app['autoscale']['name'], self._app['region']):
+                if check_autoscale_exists(self._cloud_connection, self._app['autoscale']['name'], self._app['region']):
                     userdata = None
                     launch_config = None
                     userdata = generate_userdata(self._config['bucket_s3'], self._config.get('bucket_region', self._app['region']), self._config['ghost_root_path'])
                     if userdata:
-                        launch_config = create_launch_config(self._app, userdata, ami_id)
+                        launch_config = create_launch_config(self._cloud_connection, self._app, userdata, ami_id)
                         log("Launch configuration [{0}] created.".format(launch_config.name), self._log_file)
                         if launch_config:
-                            update_auto_scale(self._app, launch_config, self._log_file)
-                            if (purge_launch_configuration(self._app, self._config.get('launch_configuration_retention', 5))):
+                            update_auto_scale(self._cloud_connection, self._app, launch_config, self._log_file)
+                            if (purge_launch_configuration(self._cloud_connection, self._app, self._config.get('launch_configuration_retention', 5))):
                                 log("Old launch configurations removed for this app", self._log_file)
                             else:
                                 log("ERROR: Purge launch configurations failed", self._log_file)

@@ -16,6 +16,11 @@ class Packer:
     def __init__(self, packer_config, config, log_file, job_id):
         self._log_file = log_file
         self.packer_config = json.loads(packer_config)
+        if self.packer_config['credentials']['aws_access_key']:
+            self._assumed_role = True
+        else:
+            self._assumed_role = False
+
         self.unique = str(job_id)
         if not os.path.exists(PACKER_JSON_PATH):
             os.makedirs(PACKER_JSON_PATH)
@@ -104,6 +109,7 @@ class Packer:
             'type': 'shell',
             'inline':["sudo rm -rf /srv/salt || echo 'salt: no cleanup salt'","sudo rm -rf /srv/pillar || echo 'salt: no cleanup pillar'"]
         }]
+
         packer_json['builders'] = builders
         packer_json['provisioners'] = provisioners
         self.packer_file_path = PACKER_JSON_PATH + self.unique + ".json"
@@ -118,6 +124,11 @@ class Packer:
         if not os.path.isdir(PACKER_LOGDIR):
             os.makedirs(PACKER_LOGDIR)
         packer_env['TMPDIR'] = PACKER_LOGDIR
+        if self._assumed_role:
+            packer_env['AWS_ACCESS_KEY_ID'] = self.packer_config['credentials']['aws_access_key']
+            packer_env['AWS_SECRET_ACCESS_KEY'] = self.packer_config['credentials']['aws_secret_key']
+            packer_env['AWS_SESSION_TOKEN'] = self.packer_config['credentials']['token']
+            packer_env['AWS_SECURITY_TOKEN'] = self.packer_config['credentials']['token']
         process = Popen(cmd, stdout=PIPE, env=packer_env)
         while True:
             output = process.stdout.readline()
@@ -145,8 +156,14 @@ class Packer:
         self._build_salt_top(salt_params)
         self._build_salt_pillar(features)
         self._build_packer_json()
-
-        ret_code, result = self._run_packer_cmd(['packer', 'build', '-machine-readable', self.packer_file_path])
+        ret_code, result = self._run_packer_cmd(
+                                        [
+                                            'packer',
+                                            'build',
+                                            '-machine-readable',
+                                            self.packer_file_path
+                                        ]
+                                    )
         if (ret_code == 0):
             ami = result.split(':')[1]
         else:

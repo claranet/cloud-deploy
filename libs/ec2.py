@@ -6,10 +6,7 @@
 # -*- coding: utf-8 -*-
 #!/usr/bin/env python
 
-import boto.ec2
-import boto.ec2.autoscale
-
-def find_ec2_pending_instances(ghost_app, ghost_env, ghost_role, region, as_group):
+def find_ec2_pending_instances(cloud_connection, ghost_app, ghost_env, ghost_role, region, as_group):
     """ Return a list of dict info only for the instances in pending state.
 
         :param  ghost_app  string: The value for the instance tag "app".
@@ -18,8 +15,8 @@ def find_ec2_pending_instances(ghost_app, ghost_env, ghost_role, region, as_grou
         :param  region  string: The AWS region where the instances are located.
         :return list of dict(ex: [{'id': instance_idXXX, 'private_ip_address': XXX_XXX_XXX_XXX},{...}])
     """
-    conn_as = boto.ec2.autoscale.connect_to_region(region)
-    conn = boto.ec2.connect_to_region(region)
+    conn_as = cloud_connection.get_connection(region, ["ec2", "autoscale"])
+    conn = cloud_connection.get_connection(region, ["ec2"])
     # Retrieve pending instances
     pending_instance_filters = {"tag:env": ghost_env, "tag:role": ghost_role, "tag:app": ghost_app, "instance-state-name": "pending"}
     pending_instances = conn.get_only_instances(filters=pending_instance_filters)
@@ -36,7 +33,7 @@ def find_ec2_pending_instances(ghost_app, ghost_env, ghost_role, region, as_grou
         hosts.append({'id': instance.id, 'private_ip_address': instance.private_ip_address})
     return hosts
 
-def find_ec2_running_instances(ghost_app, ghost_env, ghost_role, region):
+def find_ec2_running_instances(cloud_connection, ghost_app, ghost_env, ghost_role, region):
     """ Return a list of dict info only for the running instances.
 
         :param  ghost_app  string: The value for the instance tag "app".
@@ -45,8 +42,8 @@ def find_ec2_running_instances(ghost_app, ghost_env, ghost_role, region):
         :param  region  string: The AWS region where the instances are located.
         :return list of dict(ex: [{'id': instance_idXXX, 'private_ip_address': XXX_XXX_XXX_XXX},{...}])
     """
-    conn_as = boto.ec2.autoscale.connect_to_region(region)
-    conn = boto.ec2.connect_to_region(region)
+    conn_as = cloud_connection.get_connection(region, ["ec2", "autoscale"])
+    conn = cloud_connection.get_connection(region, ["ec2"])
     # Retrieve running instances
     running_instance_filters = {"tag:env": ghost_env, "tag:role": ghost_role, "tag:app": ghost_app, "instance-state-name": "running"}
     running_instances = conn.get_only_instances(filters=running_instance_filters)
