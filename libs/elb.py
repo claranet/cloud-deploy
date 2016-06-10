@@ -14,37 +14,49 @@
 from ghost_log import log
 from boto.ec2.elb.listelement import ListElement
 
-def copy_elb(elb_conn3, elb_name, source_elb):
+def copy_elb(elb_conn3, elb_name, source_elb_name):
+    """ Copy an existing ELB, currently copies basic configuration
+        (Subnets, SGs, first listener), health check and tags.
+
+        :param elb_conn3: boto3 elb client
+        :param elb_name string: created ELB name
+        :param source_elb_name string: source ELB name
+        :return created ELB endpoint
     """
-    """
+    source_elb = elb_conn3.describe_load_balancers(
+        LoadBalancerNames=[source_elb_name]
+    )['LoadBalancerDescriptions'][0]
+    source_elb_listener = source_elb['ListenerDescriptions'][0]['Listener']
+    source_elb_tags = elb_conn3.describe_tags(
+        LoadBalancerNames=[source_elb_name]
+    )['TagDescriptions'][0]['Tags']
+    dest_elb_listener = {
+        'Protocol': source_elb_listener['Protocol'],
+        'LoadBalancerPort': source_elb_listener['LoadBalancerPort'],
+        'InstanceProtocol': source_elb_listener['InstanceProtocol'],
+        'InstancePort': source_elb_listener['InstancePort']
+    }
+
+    # Check if listener needs SSLCertificate
+    if 'SSLCertificateId' in source_elb_listener:
+        dest_elb_listener['SSLCertificateId'] = source_elb_listener['SSLCertificateId']
+
+    # create ELB
     response = elb_conn3.create_load_balancer(
         LoadBalancerName=elb_name,
-        Listeners=[
-            {
-                'Protocol': 'string',
-                'LoadBalancerPort': 123,
-                'InstanceProtocol': 'string',
-                'InstancePort': 123,
-                'SSLCertificateId': 'string'
-            },
-        ],
-        AvailabilityZones=[
-            'string',
-        ],
-        Subnets=[
-            'string',
-        ],
-        SecurityGroups=[
-            'string',
-        ],
-        Scheme='string',
-        Tags=[
-            {
-                'Key': 'string',
-                'Value': 'string'
-            },
-        ]
+        Listeners=[dest_elb_listener],
+        Subnets=source_elb['Subnets'],
+        SecurityGroups=source_elb['SecurityGroups'],
+        Scheme=source_elb['Scheme'],
+        Tags=source_elb_tags
     )
+
+    # Configure Healthcheck
+    elb_conn3.configure_health_check(
+        LoadBalancerName=elb_name,
+        HealthCheck=source_elb['HealthCheck']
+    )
+
     return response['DNSName']
 
 def get_elb_from_autoscale(as_name, as_conn):

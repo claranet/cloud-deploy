@@ -8,7 +8,7 @@ from settings import cloud_connections, DEFAULT_PROVIDER
 from libs.blue_green import get_blue_green_apps, check_app_manifest
 from libs.autoscaling import get_instances_from_autoscaling
 from libs.deploy import get_path_from_app_with_color
-from libs.elb import get_elb_from_autoscale, copy_elb
+from libs.elb import get_elb_from_autoscale, copy_elb, register_elb_into_autoscale
 
 COMMAND_DESCRIPTION = "Prepare the Blue/Green env before swap"
 
@@ -114,8 +114,8 @@ class Preparebluegreen(object):
             # Create the temporary ELB: ghost-bluegreentemp-{original ELB name}, duplicated from the online ELB
             elb_conn3 = self._cloud_connection.get_connection(app_region, ['elb'], boto_version='boto3')
             online_elb = online_elbs[0]
-            temp_elb_name = "ghost-bluegreentemp-{0}".format(online_elb.name)[:31] # ELB name is 32 char long max
-            log(_green("Creating the temporary ELB [{0}] by copying parameters from [{1}]".format(temp_elb_name, online_elb.name)), self._log_file)
+            temp_elb_name = "ghost-bgtmp-{0}".format(online_elb)[:31] # ELB name is 32 char long max
+            log(_green("Creating the temporary ELB [{0}] by copying parameters from [{1}]".format(temp_elb_name, online_elb)), self._log_file)
             new_elb_dns = copy_elb(elb_conn3, temp_elb_name, online_elb)
 
             # Register the temporary ELB into the AutoScale
