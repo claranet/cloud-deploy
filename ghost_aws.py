@@ -213,11 +213,12 @@ def update_auto_scale(cloud_connection, app, launch_config, log_file, update_as_
         :param  update_as_params  Bool  If set to True the desired_capacity/min_size/max_size/subnets will be updated
         :return   None
     """
-    conn = cloud_connection.get_connection(app ['region'], ["ec2", "autoscale"])
+    conn = cloud_connection.get_connection(app['region'], ["ec2", "autoscale"])
     connvpc = cloud_connection.get_connection(app['region'], ["vpc"])
     az = [i.availability_zone for i in connvpc.get_all_subnets(subnet_ids=app['environment_infos']['subnet_ids'])]
     as_group = conn.get_all_groups(names=[app['autoscale']['name']])[0]
-    setattr(as_group, 'launch_config_name', launch_config.name)
+    if launch_config:
+        setattr(as_group, 'launch_config_name', launch_config.name)
     if update_as_params:
         setattr(as_group, 'desired_capacity', app['autoscale']['current'])
         setattr(as_group, 'min_size', app['autoscale']['min'])

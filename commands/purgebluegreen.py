@@ -46,7 +46,7 @@ class Purgebluegreen():
         return _green(notif)
 
     def _update_app_autoscale_options(self, app, log_file):
-        """ Updates the App DB object to set the 'is_online' attribute. This attribute should be at True when the ASG is mapped with the online ELB.
+        """ Updates the App DB object to set the 'autoscale' attribute.
         """
         self._worker._db.apps.update({ '_id': app['_id']}, {'$set': {
             'autoscale.min': 0,

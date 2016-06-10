@@ -2,7 +2,7 @@
 from fabric.colors import green as _green, yellow as _yellow, red as _red
 
 from ghost_log import log
-from ghost_aws import check_autoscale_exists
+from ghost_aws import check_autoscale_exists, update_auto_scale
 from ghost_tools import GCallException, get_aws_connection_data, get_app_friendly_name, get_app_module_name_list
 from settings import cloud_connections, DEFAULT_PROVIDER
 from libs.blue_green import get_blue_green_apps, check_app_manifest
@@ -52,6 +52,16 @@ class Preparebluegreen(object):
         as_name = app['autoscale']['name']
         notif = "Blue/green preparation done for [{0}] by creating the temporary ELB [{1}/{2}] attached to the AutoScale '{3}'".format(app_name, elb_name, elb_dns, as_name)
         return _green(notif)
+
+    def _update_app_autoscale_options(self, app, ref_app, log_file):
+        """ Updates the App DB object to set the 'autoscale' attribute.
+        """
+        self._worker._db.apps.update({ '_id': app['_id']}, {'$set': {
+            'autoscale.min': ref_app['autoscale']['min'],
+            'autoscale.max': ref_app['autoscale']['max'],
+            'autoscale.current': ref_app['autoscale']['current']
+        }})
+        log(_green("'{0}' autoscale has been update '{1}'".format(app['_id'], app['autoscale']['name'])), log_file)
 
     def execute(self):
         """Execute all checks and preparations."""
@@ -105,11 +115,22 @@ class Preparebluegreen(object):
             elb_conn3 = self._cloud_connection.get_connection(app_region, ['elb'], boto_version='boto3')
             online_elb = online_elbs[0]
             temp_elb_name = "ghost-bluegreentemp-{0}".format(online_elb.name)[:31] # ELB name is 32 char long max
+            log(_green("Creating the temporary ELB [{0}] by copying parameters from [{1}]".format(temp_elb_name, online_elb.name)), self._log_file)
             new_elb_dns = copy_elb(elb_conn3, temp_elb_name, online_elb)
+
+            # Register the temporary ELB into the AutoScale
+            log(_green("Attaching ELB [{0}] to the AutoScale [{1}]".format(temp_elb_name, offline_app['autoscale']['name'])), self._log_file)
+            register_elb_into_autoscale(offline_app['autoscale']['name'], as_conn3, [], [temp_elb_name], self._log_file)
+
+            offline_app['autoscale']['min'] = online_app['autoscale']['min']
+            offline_app['autoscale']['max'] = online_app['autoscale']['max']
+            offline_app['autoscale']['current'] = online_app['autoscale']['current']
+            # Update AutoScale properties in DB App
+            self._update_app_autoscale_options(offline_app, online_app, self._log_file)
+            # Update AutoScale properties and starts instances
+            update_auto_scale(self._cloud_connection, offline_app, None, self._log_file, update_as_params=True)
+            log(_green("Starting [{0}] instance(s) into the AutoScale [{1}]".format(offline_app['autoscale']['current'], offline_app['autoscale']['name'])), self._log_file)
 
             self._worker.update_status("done", message=self._get_notification_message_done(offline_app, temp_elb_name, new_elb_dns))
         except GCallException as e:
             self._worker.update_status("failed", message=self._get_notification_message_failed(online_app, offline_app, e))
-
-        # Update auto scale : attach testing ELB, update LaunchConfig, update AS value (duplicate from PROD/online AS)
-        # Return / print Testing ELB url/dns
