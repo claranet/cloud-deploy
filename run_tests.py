@@ -13,6 +13,7 @@ modules = [
   "ghost_blueprints",
   "ghost_tools",
   "libs.safe_deployment",
+  "libs.deploy",
   "run",
   "run_rqworkers",
   "web_ui.forms",
