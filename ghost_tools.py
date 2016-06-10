@@ -4,16 +4,22 @@ import yaml
 
 from jinja2 import Environment, FileSystemLoader
 
-import boto.ec2.autoscale
-import boto.ec2.blockdevicemapping
-import boto.s3
-
 from ghost_log import log
 
 ROOT_PATH = os.path.dirname(os.path.realpath(__file__))
 
 with open(os.path.dirname(os.path.realpath(__file__)) + '/config.yml', 'r') as conf_file:
     config = yaml.load(conf_file)
+
+def get_aws_connection_data(assumed_account_id, assumed_role_name, assumed_region_name=""):
+    """
+    Build a key-value dictionnatiory args for aws cross  connections
+    """
+    if assumed_account_id and assumed_role_name:
+        aws_connection_data = dict([("assumed_account_id", assumed_account_id), ("assumed_role_name", assumed_role_name), ("assumed_region_name", assumed_region_name)])
+    else:
+        aws_connection_data = dict()
+    return (aws_connection_data)
 
 def render_stage2(config, s3_region):
     """
@@ -58,11 +64,11 @@ def render_stage2(config, s3_region):
         return template.render(bucket_s3=bucket_s3, max_deploy_history=max_deploy_history, bucket_region=s3_region)
     return None
 
-def refresh_stage2(region, config):
+def refresh_stage2(cloud_connection, region, config):
     """
     Will update the second phase of bootstrap script on S3
     """
-    conn = boto.s3.connect_to_region(region)
+    conn = cloud_connection.get_connection(region, ["s3"])
     bucket_s3 = config['bucket_s3']
     bucket = conn.get_bucket(bucket_s3)
     stage2 = render_stage2(config, region)

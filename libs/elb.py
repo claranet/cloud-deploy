@@ -23,12 +23,11 @@ def get_elb_from_autoscale(as_name, as_conn):
     """
     return as_conn.get_all_groups(names=[as_name])[0].load_balancers
 
-def get_elb_instance_status_autoscaling_group(elb_conn, as_group, region, conn_as):
+def get_elb_instance_status_autoscaling_group(elb_conn, as_group, conn_as):
     """ Return a dict of instance ids as key and their status as value per elb.
 
         :param  elb_conn:  boto connection object to the ELB service.
         :param  as_group: string of the autoscaling group name.
-        :param  region   string: The AWS Region of the Autoscaling Group.
         :return dict(ex: {'elb_XXX1':{'instance_id':'inservice/outofservice'}})
     """
     as_instance_status = {}

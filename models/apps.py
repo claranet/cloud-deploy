@@ -9,6 +9,21 @@ apps_schema = {
         'regex': '^[a-zA-Z0-9_.+-]*$',
         'required': True
     },
+    'assumed_account_id': {
+        'type': 'string',
+        'regex': '^[a-zA-Z0-9_.+-]*$',
+        'required': False
+    },
+    'assumed_role_name': {
+        'type': 'string',
+        'regex': '^[a-zA-Z0-9_.+-]*$',
+        'required': False
+    },
+    'assumed_region_name': {
+        'type': 'string',
+        'regex': '^[a-zA-Z0-9_.+-]*$',
+        'required': False
+    },
     'region': {'type': 'string'},
     'instance_type': {'type': 'string'},
     'env': {'type': 'string',

@@ -4,9 +4,6 @@ import yaml
 
 from jinja2 import Environment, FileSystemLoader
 
-import boto.ec2.autoscale
-import boto.ec2.blockdevicemapping
-
 from libs.safe_deployment import SafeDeployment
 from libs.deploy import launch_deploy
 from libs.ec2 import find_ec2_pending_instances, find_ec2_running_instances
@@ -56,9 +53,10 @@ def resume_autoscaling_group_processes(as_conn, as_group, as_group_processes_to_
         log("Resuming auto-scaling group processes {0}".format(as_group_processes_to_suspend), log_file)
         as_conn.resume_processes(as_group, as_group_processes_to_suspend)
 
-def deploy_module_on_hosts(module, fabric_execution_strategy, app, config, log_file, safe_deployment_strategy):
+def deploy_module_on_hosts(cloud_connection, module, fabric_execution_strategy, app, config, log_file, safe_deployment_strategy):
     """ Prepare the deployment process on instances.
 
+        :param  cloud_connection           object: AWS Provider
         :param  module                     dict: Ghost object wich describe the module parameters.
         :param  app                        dict: Ghost object which describe the application parameters.
         :param  fabric_execution_strategy  string: Deployment strategy(serial or parrallel).
@@ -72,23 +70,24 @@ def deploy_module_on_hosts(module, fabric_execution_strategy, app, config, log_f
     app_region = app['region']
 
     # Retrieve autoscaling infos, if any
-    as_conn = boto.ec2.autoscale.connect_to_region(app_region)
+    as_conn = cloud_connection.get_connection(app_region, ["ec2", "autoscale"])
     as_group, as_group_processes_to_suspend = get_autoscaling_group_and_processes_to_suspend(as_conn, app, log_file)
     try:
+        # Suspend autoscaling
         suspend_autoscaling_group_processes(as_conn, as_group, as_group_processes_to_suspend, log_file)
         # Wait for pending instances to become ready
         while True:
-            pending_instances = find_ec2_pending_instances(app_name, app_env, app_role, app_region, as_group)
+            pending_instances = find_ec2_pending_instances(cloud_connection, app_name, app_env, app_role, app_region, as_group)
             if not pending_instances:
                 break
             log("INFO: waiting 10s for {} instance(s) to become running before proceeding with deployment: {}".format(len(pending_instances), pending_instances), log_file)
             time.sleep(10)
-        running_instances = find_ec2_running_instances(app_name, app_env, app_role, app_region)
+        running_instances = find_ec2_running_instances(cloud_connection, app_name, app_env, app_role, app_region)
         if running_instances:
             hosts_list = [host['private_ip_address'] for host in running_instances]
             if safe_deployment_strategy:
-                safedeploy = SafeDeployment(app, module, running_instances, log_file, app['safe-deployment'], fabric_execution_strategy, as_group, app_region)
-                safedeploy.safe_manager(safe_deployment_strategy)
+                safedeploy = SafeDeployment(app, module, running_instances, log_file, app['safe-deployment'], fabric_execution_strategy, as_group)
+                safedeploy.safe_manager(safe_deployment_strategy, cloud_connection)
             else:
                 launch_deploy(app, module, hosts_list, fabric_execution_strategy, log_file)
         else:
@@ -99,15 +98,18 @@ def deploy_module_on_hosts(module, fabric_execution_strategy, app, config, log_f
     finally:
         resume_autoscaling_group_processes(as_conn, as_group, as_group_processes_to_suspend, log_file)
 
-def create_launch_config(app, userdata, ami_id):
+def create_launch_config(cloud_connection, app, userdata, ami_id):
     d = time.strftime('%d%m%Y-%H%M',time.localtime())
     launch_config_name = "launchconfig.{0}.{1}.{2}.{3}.{4}".format(app['env'], app['region'], app['role'], app['name'], d)
-    conn_as = boto.ec2.autoscale.connect_to_region(app['region'])
+    conn_as = cloud_connection.get_connection(app['region'], ["ec2", "autoscale"])
     if 'root_block_device' in app['environment_infos']:
-        bdm = create_block_device(app['environment_infos']['root_block_device'])
+        bdm = create_block_device(cloud_connection, app['region'], app['environment_infos']['root_block_device'])
     else:
-        bdm = create_block_device()
-    launch_config = boto.ec2.autoscale.LaunchConfiguration(name=launch_config_name,
+        bdm = create_block_device(cloud_connection, app['region'])
+    launch_config = cloud_connection.launch_service(
+        ["ec2", "autoscale", "LaunchConfiguration"],
+        connection=conn_as,
+        name=launch_config_name,
         image_id=ami_id, key_name=app['environment_infos']['key_name'],
         security_groups=app['environment_infos']['security_groups'],
         user_data=userdata, instance_type=app['instance_type'], kernel_id=None,
@@ -131,16 +133,16 @@ def generate_userdata(bucket_s3, s3_region, root_ghost_path):
     else:
         return ""
 
-def check_autoscale_exists(as_name, region):
-    conn_as = boto.ec2.autoscale.connect_to_region(region)
+def check_autoscale_exists(cloud_connection, as_name, region):
+    conn_as = cloud_connection.get_connection(region, ["ec2", "autoscale"])
     autoscale = conn_as.get_all_groups(names=[as_name])
     if autoscale:
         return True
     else:
         return False
 
-def purge_launch_configuration(app, retention):
-    conn_as = boto.ec2.autoscale.connect_to_region(app['region'])
+def purge_launch_configuration(cloud_connection, app, retention):
+    conn_as = cloud_connection.get_connection(app['region'], ["ec2", "autoscale"])
     launchconfigs = []
     lcs = conn_as.get_all_launch_configurations()
 
@@ -172,8 +174,8 @@ def purge_launch_configuration(app, retention):
     else:
         return False
 
-def update_auto_scale(app, launch_config, log_file, update_as_params=False):
-    conn = boto.ec2.autoscale.connect_to_region(app['region'])
+def update_auto_scale(cloud_connection, app, launch_config, log_file, update_as_params=False):
+    conn = cloud_connection.get_connection(app ['region'], ["ec2", "autoscale"])
     as_group = conn.get_all_groups(names=[app['autoscale']['name']])[0]
     setattr(as_group, 'launch_config_name', launch_config.name)
     if update_as_params:
@@ -183,8 +185,13 @@ def update_auto_scale(app, launch_config, log_file, update_as_params=False):
     as_group.update()
     log("Autoscaling group [{0}] updated.".format(app['autoscale']['name']), log_file)
 
-def create_block_device(rbd={}):
-    dev_sda1 = boto.ec2.blockdevicemapping.EBSBlockDeviceType(delete_on_termination=True)
+def create_block_device(cloud_connection, region, rbd={}):
+    conn = cloud_connection.get_connection(region, ["ec2"])
+    dev_sda1 = cloud_connection.launch_service(
+        ["ec2", "blockdevicemapping", "EBSBlockDeviceType"],
+        connection=conn,
+        delete_on_termination=True
+    )
     if 'type' in rbd:
         dev_sda1.volume_type = rbd['type']
     else:
@@ -194,7 +201,10 @@ def create_block_device(rbd={}):
     else:
         rbd['size'] = 10
         dev_sda1.size = rbd['size']
-    bdm = boto.ec2.blockdevicemapping.BlockDeviceMapping()
+    bdm = cloud_connection.launch_service(
+        ["ec2", "blockdevicemapping", "BlockDeviceMapping"],
+        connection=conn
+    )
     if 'name' in rbd:
         bdm[rbd['name']] = dev_sda1
     else:
