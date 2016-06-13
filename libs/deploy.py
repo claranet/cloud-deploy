@@ -66,7 +66,7 @@ def get_path_from_app(app):
 
 def get_path_from_app_with_color(app):
     """
-    >>> get_path_from_app({'name': 'AppName', 'env': 'prod', 'role': 'webfront', 'blue_green': {'color': 'blue'}})
+    >>> get_path_from_app_with_color({'name': 'AppName', 'env': 'prod', 'role': 'webfront', 'blue_green': {'color': 'blue'}})
     '/ghost/AppName/prod/webfront/blue'
     """
     if 'blue_green' in app and 'color' in app['blue_green']:
