@@ -73,6 +73,11 @@ class Purgebluegreen():
             self._worker.update_status("aborted", message=self._get_notification_message_aborted(offline_app, "Not AutoScale group found on the offline app to purge."))
             return
 
+        # Check if we have two different AS !
+        if offline_app['autoscale']['name'] == online_app['autoscale']['name']:
+            self._worker.update_status("aborted", message=self._get_notification_message_aborted(offline_app, "Please set a different AutoScale on green and blue app."))
+            return
+
         # Retrieve autoscaling infos, if any
         app_region = offline_app['region']
         as_conn = self._cloud_connection.get_connection(app_region, ["ec2", "autoscale"])

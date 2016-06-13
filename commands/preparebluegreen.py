@@ -95,6 +95,11 @@ class Preparebluegreen(object):
                 self._worker.update_status("aborted", message=self._get_notification_message_aborted(offline_app, "Please set an AutoScale on both green and blue app."))
                 return
 
+            # Check if we have two different AS !
+            if offline_app['autoscale']['name'] == online_app['autoscale']['name']:
+                self._worker.update_status("aborted", message=self._get_notification_message_aborted(offline_app, "Please set a different AutoScale on green and blue app."))
+                return
+
             # Check if modules have been deployed
             if not check_app_manifest(offline_app, self._config, self._log_file):
                 self._worker.update_status("aborted", message=self._get_notification_message_aborted(offline_app, "Please deploy your app's modules"))
