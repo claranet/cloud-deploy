@@ -319,6 +319,31 @@ class Deploy():
         # If resolved_revision begins with or equals revision, it is a commit hash
         return resolved_revision.find(revision) == 0
 
+    def _execute_after_all_deploy(self, module, clone_path):
+        """ Executes the 'after all deploy' script on the Ghost instance when the current module has been deployed on each instances
+        """
+        # Execute after_all_deploy script
+        if 'after_all_deploy' in module:
+            log("After all deploy script found for '{0}'. Executing it.".format(module['name']), self._log_file)
+            after_all_deploy_source = base64.b64decode(module['after_all_deploy'])
+            after_all_deploy, after_all_deploy_path = tempfile.mkstemp(dir=clone_path)
+            if sys.version > '3':
+                os.write(after_all_deploy, bytes(after_all_deploy_source, 'UTF-8'))
+            else:
+                os.write(after_all_deploy, after_all_deploy_source)
+            os.close(after_all_deploy)
+
+            after_all_deploy_env = os.environ.copy()
+            after_all_deploy_env['GHOST_APP'] = self._app['name']
+            after_all_deploy_env['GHOST_ENV'] = self._app['env']
+            after_all_deploy_env['GHOST_ROLE'] = self._app['role']
+            after_all_deploy_env['GHOST_MODULE_NAME'] = module['name']
+            after_all_deploy_env['GHOST_MODULE_PATH'] = module['path']
+
+            gcall('bash %s' % after_all_deploy_path, 'After all deploy: Execute', self._log_file, env=after_all_deploy_env)
+            gcall('du -hs .', 'Display current build directory disk usage', self._log_file)
+            gcall('rm -vf %s' % after_all_deploy_path, 'After all deploy: Done, cleaning temporary file', self._log_file)
+
     def _execute_deploy(self, module, fabric_execution_strategy, safe_deployment_strategy):
         """
         Returns the deployment id
@@ -476,6 +501,7 @@ GHOST_MODULE_USER="{user}"
         all_app_modules_list = get_app_module_name_list(self._app['modules'])
         clean_local_module_workspace(self._get_path_from_app(), all_app_modules_list, self._log_file)
         self._deploy_module(module, fabric_execution_strategy, safe_deployment_strategy)
+        self._execute_after_all_deploy(module, clone_path)
 
         deployment = {'app_id': self._app['_id'], 'job_id': self._job['_id'], 'module': module['name'], 'revision': revision, 'commit': commit, 'commit_message': commit_message, 'timestamp': ts, 'package': pkg_name, 'module_path': module['path']}
         return self._worker._db.deploy_histories.insert(deployment)
