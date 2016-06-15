@@ -319,30 +319,29 @@ class Deploy():
         # If resolved_revision begins with or equals revision, it is a commit hash
         return resolved_revision.find(revision) == 0
 
-    def _execute_after_all_deploy(self, module, clone_path):
-        """ Executes the 'after all deploy' script on the Ghost instance when the current module has been deployed on each instances
+    def _execute_module_script_on_ghost(self, module, script_name clone_path):
+        """ Executes the given script on the Ghost instance
         """
-        # Execute after_all_deploy script
-        if 'after_all_deploy' in module:
-            log("After all deploy script found for '{0}'. Executing it.".format(module['name']), self._log_file)
-            after_all_deploy_source = base64.b64decode(module['after_all_deploy'])
-            after_all_deploy, after_all_deploy_path = tempfile.mkstemp(dir=clone_path)
+        # Execute script if available
+        if script_name in module:
+            script_source = base64.b64decode(module[script_name])
+            script, script_path = tempfile.mkstemp(dir=clone_path)
             if sys.version > '3':
-                os.write(after_all_deploy, bytes(after_all_deploy_source, 'UTF-8'))
+                os.write(script, bytes(script_source, 'UTF-8'))
             else:
-                os.write(after_all_deploy, after_all_deploy_source)
-            os.close(after_all_deploy)
+                os.write(script, script_source)
+            os.close(script)
 
-            after_all_deploy_env = os.environ.copy()
-            after_all_deploy_env['GHOST_APP'] = self._app['name']
-            after_all_deploy_env['GHOST_ENV'] = self._app['env']
-            after_all_deploy_env['GHOST_ROLE'] = self._app['role']
-            after_all_deploy_env['GHOST_MODULE_NAME'] = module['name']
-            after_all_deploy_env['GHOST_MODULE_PATH'] = module['path']
+            script_env = os.environ.copy()
+            script_env['GHOST_APP'] = self._app['name']
+            script_env['GHOST_ENV'] = self._app['env']
+            script_env['GHOST_ROLE'] = self._app['role']
+            script_env['GHOST_MODULE_NAME'] = module['name']
+            script_env['GHOST_MODULE_PATH'] = module['path']
 
-            gcall('bash %s' % after_all_deploy_path, 'After all deploy: Execute', self._log_file, env=after_all_deploy_env)
+            gcall('bash %s' % script_path, 'After all deploy: Execute', self._log_file, env=script_env)
             gcall('du -hs .', 'Display current build directory disk usage', self._log_file)
-            gcall('rm -vf %s' % after_all_deploy_path, 'After all deploy: Done, cleaning temporary file', self._log_file)
+            gcall('rm -vf %s' % script_path, 'After all deploy: Done, cleaning temporary file', self._log_file)
 
     def _execute_deploy(self, module, fabric_execution_strategy, safe_deployment_strategy):
         """
@@ -439,25 +438,7 @@ class Deploy():
             gcall('du -hs .', 'Display current build directory disk usage', self._log_file)
 
         # Execute buildpack
-        if 'build_pack' in module:
-            buildpack_source = base64.b64decode(module['build_pack'])
-            buildpack, buildpack_path = tempfile.mkstemp(dir=clone_path)
-            if sys.version > '3':
-                os.write(buildpack, bytes(buildpack_source, 'UTF-8'))
-            else:
-                os.write(buildpack, buildpack_source)
-            os.close(buildpack)
-
-            buildpack_env = os.environ.copy()
-            buildpack_env['GHOST_APP'] = self._app['name']
-            buildpack_env['GHOST_ENV'] = self._app['env']
-            buildpack_env['GHOST_ROLE'] = self._app['role']
-            buildpack_env['GHOST_MODULE_NAME'] = module['name']
-            buildpack_env['GHOST_MODULE_PATH'] = module['path']
-
-            gcall('bash %s' % buildpack_path, 'Buildpack: Execute', self._log_file, env=buildpack_env)
-            gcall('du -hs .', 'Display current build directory disk usage', self._log_file)
-            gcall('rm -vf %s' % buildpack_path, 'Buildpack: Done, cleaning temporary file', self._log_file)
+        self._execute_module_script_on_ghost(module, 'build_pack', clone_path)
 
         # Store postdeploy script in tarball
         if 'post_deploy' in module:
@@ -501,7 +482,9 @@ GHOST_MODULE_USER="{user}"
         all_app_modules_list = get_app_module_name_list(self._app['modules'])
         clean_local_module_workspace(self._get_path_from_app(), all_app_modules_list, self._log_file)
         self._deploy_module(module, fabric_execution_strategy, safe_deployment_strategy)
-        self._execute_after_all_deploy(module, clone_path)
+        if 'after_all_deploy' in module:
+            log("After all deploy script found for '{0}'. Executing it.".format(module['name']), self._log_file)
+            self._execute_module_script_on_ghost(module, 'after_all_deploy', clone_path)
 
         deployment = {'app_id': self._app['_id'], 'job_id': self._job['_id'], 'module': module['name'], 'revision': revision, 'commit': commit, 'commit_message': commit_message, 'timestamp': ts, 'package': pkg_name, 'module_path': module['path']}
         return self._worker._db.deploy_histories.insert(deployment)
