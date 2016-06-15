@@ -4,13 +4,53 @@
 # -*- coding: utf-8 -*-
 #!/usr/bin/env python
 
+import os
+import os.path
+import sys
+import tempfile
+import base64
 from copy import copy
 from fabric.api import execute as fab_execute
 from fabfile import deploy
 from ghost_tools import config
 from ghost_tools import render_stage2
 from ghost_log import log
-from ghost_tools import GCallException
+from ghost_tools import GCallException, gcall
+
+def execute_module_script_on_ghost(app, module, script_name, script_friendly_name, clone_path, log_file):
+    """ Executes the given script on the Ghost instance
+
+        :param    app: Ghost application
+        :param module: Ghost module to extract script from
+        :param script_name: string: the name of the script to found in module
+        :param script_friendly_name: string: the friendly name of the script for logs
+        :param clone_path: string: working directory of the current module
+        :param log_file: string: Log file path
+    """
+    # Execute script if available
+    if script_name in module:
+        theorical_script_path = "{0}/{1}".format(clone_path, script_name)
+        if os.path.isfile(theorical_script_path):
+            script_path = theorical_script_path
+        else:
+            script_source = base64.b64decode(module[script_name])
+            script, script_path = tempfile.mkstemp(dir=clone_path)
+            if sys.version > '3':
+                os.write(script, bytes(script_source, 'UTF-8'))
+            else:
+                os.write(script, script_source)
+            os.close(script)
+
+        script_env = os.environ.copy()
+        script_env['GHOST_APP'] = app['name']
+        script_env['GHOST_ENV'] = app['env']
+        script_env['GHOST_ROLE'] = app['role']
+        script_env['GHOST_MODULE_NAME'] = module['name']
+        script_env['GHOST_MODULE_PATH'] = module['path']
+
+        gcall('bash %s' % script_path, '%s: Execute' % script_friendly_name, log_file, env=script_env)
+        gcall('du -hs .', 'Display current build directory disk usage', log_file)
+        gcall('rm -vf %s' % script_path, '%s: Done, cleaning temporary file' % script_friendly_name, log_file)
 
 def get_key_path(config, region, account, key_name, log_file):
     """

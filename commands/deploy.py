@@ -14,6 +14,7 @@ from ghost_tools import get_aws_connection_data
 from ghost_log import log
 from ghost_aws import deploy_module_on_hosts
 from settings import cloud_connections, DEFAULT_PROVIDER
+from libs.deploy import execute_module_script_on_ghost
 
 ROOT_PATH = os.path.dirname(os.path.realpath(__file__))
 
@@ -319,30 +320,6 @@ class Deploy():
         # If resolved_revision begins with or equals revision, it is a commit hash
         return resolved_revision.find(revision) == 0
 
-    def _execute_module_script_on_ghost(self, module, script_name, script_friendly_name, clone_path):
-        """ Executes the given script on the Ghost instance
-        """
-        # Execute script if available
-        if script_name in module:
-            script_source = base64.b64decode(module[script_name])
-            script, script_path = tempfile.mkstemp(dir=clone_path)
-            if sys.version > '3':
-                os.write(script, bytes(script_source, 'UTF-8'))
-            else:
-                os.write(script, script_source)
-            os.close(script)
-
-            script_env = os.environ.copy()
-            script_env['GHOST_APP'] = self._app['name']
-            script_env['GHOST_ENV'] = self._app['env']
-            script_env['GHOST_ROLE'] = self._app['role']
-            script_env['GHOST_MODULE_NAME'] = module['name']
-            script_env['GHOST_MODULE_PATH'] = module['path']
-
-            gcall('bash %s' % script_path, '%s: Execute' % script_friendly_name, self._log_file, env=script_env)
-            gcall('du -hs .', 'Display current build directory disk usage', self._log_file)
-            gcall('rm -vf %s' % script_path, '%s: Done, cleaning temporary file' % script_friendly_name, self._log_file)
-
     def _execute_deploy(self, module, fabric_execution_strategy, safe_deployment_strategy):
         """
         Returns the deployment id
@@ -438,7 +415,7 @@ class Deploy():
             gcall('du -hs .', 'Display current build directory disk usage', self._log_file)
 
         # Execute buildpack
-        self._execute_module_script_on_ghost(module, 'build_pack', 'Buildpack', clone_path)
+        execute_module_script_on_ghost(self._app, module, 'build_pack', 'Buildpack', clone_path, self._log_file)
 
         # Store postdeploy script in tarball
         if 'post_deploy' in module:
@@ -449,6 +426,17 @@ class Deploy():
                     f.write(bytes(postdeploy_source, 'UTF-8'))
                 else:
                     f.write(postdeploy_source)
+            gcall('du -hs .', 'Display current build directory disk usage', self._log_file)
+
+        # Store after_all_deploy script in tarball
+        if 'after_all_deploy' in module:
+            log("Create after_all_deploy script for inclusion in target package", self._log_file)
+            afteralldeploy_source = base64.b64decode(module['after_all_deploy'])
+            with open(clone_path + '/after_all_deploy', 'w') as f:
+                if sys.version > '3':
+                    f.write(bytes(afteralldeploy_source, 'UTF-8'))
+                else:
+                    f.write(afteralldeploy_source)
             gcall('du -hs .', 'Display current build directory disk usage', self._log_file)
 
         # Store module metadata in tarball
@@ -484,7 +472,7 @@ GHOST_MODULE_USER="{user}"
         self._deploy_module(module, fabric_execution_strategy, safe_deployment_strategy)
         if 'after_all_deploy' in module:
             log("After all deploy script found for '{0}'. Executing it.".format(module['name']), self._log_file)
-            self._execute_module_script_on_ghost(module, 'after_all_deploy', 'After all deploy', clone_path)
+            execute_module_script_on_ghost(self._app, module, 'after_all_deploy', 'After all deploy', clone_path, self._log_file)
 
         deployment = {'app_id': self._app['_id'], 'job_id': self._job['_id'], 'module': module['name'], 'revision': revision, 'commit': commit, 'commit_message': commit_message, 'timestamp': ts, 'package': pkg_name, 'module_path': module['path']}
         return self._worker._db.deploy_histories.insert(deployment)
