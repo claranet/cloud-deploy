@@ -99,5 +99,5 @@ class Createinstance():
 
     def execute(self):
         subnet_id = self._job['options'][0] if 'options' in self._job and len(self._job['options']) > 0 else None
-        private_ip_address = self._job['options'][1] if 'options' in self._job and len(self._job['options']) > 0 else None
+        private_ip_address = self._job['options'][1] if 'options' in self._job and len(self._job['options']) > 1 else None
         self._create_server(private_ip_address, subnet_id)
