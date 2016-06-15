@@ -272,8 +272,7 @@ class Deploy():
         revision = self._get_module_revision(module['name'])
 
         blue_green = self._app.get('blue_green', None)
-        if blue_green:
-            color = self._app['blue_green'].get('color', 'None')
+        color = self._app['blue_green'].get('color', 'None') if blue_green else None
 
         if not os.path.exists(mirror_path):
             gcall('git --no-pager clone --bare --mirror {r} {m}'.format(r=git_repo, m=mirror_path),
