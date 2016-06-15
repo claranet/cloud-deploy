@@ -10,6 +10,7 @@ import importlib
 modules = [
   "command",
   "commands.deploy",
+  "commands.redeploy",
   "ghost_blueprints",
   "ghost_tools",
   "libs.safe_deployment",

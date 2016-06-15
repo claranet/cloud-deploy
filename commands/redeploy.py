@@ -45,6 +45,16 @@ class Redeploy():
         return result
 
     def _get_path_from_app(self):
+        """
+        >>> class worker:
+        ...     app = {'name': 'AppName', 'env': 'prod', 'role': 'webfront'}
+        ...     job = None
+        ...     log_file = None
+        ...     _config = None
+        ...     _db = None
+        >>> Redeploy(worker=worker())._get_path_from_app()
+        '/ghost/AppName/prod/webfront'
+        """
         return "/ghost/{name}/{env}/{role}".format(name=self._app['name'], env=self._app['env'], role=self._app['role'])
 
     def _get_clone_path_from_module(self, module):
@@ -54,9 +64,10 @@ class Redeploy():
         ...     job = None
         ...     log_file = None
         ...     _config = None
+        ...     _db = None
         >>> module = {'name': 'mod1', 'git_repo': 'git@bitbucket.org:morea/ghost.git'}
         >>> Redeploy(worker=worker())._get_clone_path_from_module(module)
-        '/ghost/AppName/prod/webfront/mod1'
+        '/ghost/AppName/prod/webfront/mod1/.redeploy'
         """
         return "{app_path}/{module}/.redeploy".format(app_path=self._get_path_from_app(), module=module['name'])
 
