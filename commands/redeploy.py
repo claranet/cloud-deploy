@@ -133,6 +133,8 @@ class Redeploy():
         conn = cloud_connection.get_connection(self._config.get('bucket_region', self._app['region']), ["s3"])
         bucket = conn.get_bucket(self._config['bucket_s3'])
         key = bucket.get_key(key_path)
+        if not key:
+            raise GCallException("Package '{0}' doesn't exist on bucket '{1}'".format(key_path, self._config['bucket_s3']))
         key.get_contents_to_filename(dest_package_path)
 
         gcall('tar -xf "{0}" -C "{1}"'.format(dest_package_path, clone_path), "Extracting package: %s" % package, self._log_file)
