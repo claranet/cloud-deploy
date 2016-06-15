@@ -106,6 +106,8 @@ class Buildimage():
                 continue
             if re.search('^zabbix-(.*)',i['name']):
                 continue
+            if re.search('^gem-(.*)',i['name']):
+                continue
             top.append(i['name'].encode('utf-8'))
         return top
 
