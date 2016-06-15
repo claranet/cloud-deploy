@@ -126,7 +126,7 @@ class Redeploy():
         gcall('rm -rf "%s"' % clone_path, 'Cleaning old temporary redeploy module working directory "%s"' % clone_path, self._log_file)
         gcall('mkdir -p "%s"' % clone_path, 'Recreating redeploy module working directory "%s"' % clone_path, self._log_file)
 
-        key_path = '{path}/{module}/{pkg_name}'.format(path=self._get_path_from_app(), module=module, pkg_name=package)
+        key_path = '{path}/{module}/{pkg_name}'.format(path=self._get_path_from_app(), module=module['name'], pkg_name=package)
         log("Downloading package: {0} from '{1}'".format(package, key_path), self._log_file)
         dest_package_path = "{0}/{1}".format(clone_path, package)
         cloud_connection = cloud_connections.get(self._app.get('provider', DEFAULT_PROVIDER))(self._log_file)
