@@ -67,9 +67,9 @@ class Redeploy():
         ...     _db = None
         >>> module = {'name': 'mod1', 'git_repo': 'git@bitbucket.org:morea/ghost.git'}
         >>> Redeploy(worker=worker())._get_clone_path_from_module(module)
-        '/ghost/AppName/prod/webfront/mod1/.redeploy'
+        '/ghost/AppName/prod/webfront/mod1'
         """
-        return "{app_path}/{module}/.redeploy".format(app_path=self._get_path_from_app(), module=module['name'])
+        return "{app_path}/{module}".format(app_path=self._get_path_from_app(), module=module['name'])
 
     def _update_manifest(self, module, package):
         key_path = self._get_path_from_app() + '/MANIFEST'
