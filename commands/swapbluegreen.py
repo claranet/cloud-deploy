@@ -80,36 +80,36 @@ class Swapbluegreen():
             # Suspend autoscaling groups
             suspend_autoscaling_group_processes(as_conn, as_group_old, as_group_old_processes_to_suspend, log_file)
             suspend_autoscaling_group_processes(as_conn, as_group_new, as_group_new_processes_to_suspend, log_file)
+
             # TODO enable Sticky on ELB
 
             log("Swapping using strategy '{0}'".format(swap_execution_strategy), log_file)
             if swap_execution_strategy == 'isolated':
-                # 1- De-register old instances from Prod ELB
                 log(_green('De-register all online instances from ELB {0}'.format(', '.join(elb_online_instances.keys()))), log_file)
                 deregister_all_instances_from_elb(elb_conn, elb_online_instances, log_file)
-                # 2- Wait for ELB draining
+
                 wait_before_swap = int(get_connection_draining_value(elb_conn, elb_online_instances.keys())) + 1
                 log(_green('Waiting {0}s: The ELB connection draining time' .format(wait_before_swap)), log_file)
                 time.sleep(wait_before_swap)
-                # 3- Register new uptodate instances to Prod ELB
+
                 log(_green('Register and put online new instances to online ELB {0}'.format(', '.join(elb_online_instances.keys()))), log_file)
                 register_all_instances_to_elb(elb_conn, elb_online_instances.keys(), elb_tempwarm_instances, log_file)
-                # 4- Waiting for instances being in service
+
                 while len([i for i in get_elb_instance_status(elb_conn, elb_online_instances.keys()).values() if 'outofservice' in i.values()]):
                     log(_yellow('Waiting 10s because the instance is not in service in the ELB'), log_file)
                     time.sleep(10)
-                # 5- De-register uptodate instances from Temp ELB
+
                 log(_green('De-register all instances from temp (warm) ELB {0}'.format(', '.join(elb_tempwarm_instances.keys()))), log_file)
                 deregister_all_instances_from_elb(elb_conn, elb_tempwarm_instances, log_file)
-                # 6- Register old instances to Temp ELB (usefull for another Rollback Swap)
+
                 log(_green('Register old instances to Temp ELB {0} (usefull for another Rollback Swap)'.format(', '.join(elb_tempwarm_instances.keys()))), log_file)
                 register_all_instances_to_elb(elb_conn, elb_tempwarm_instances.keys(), elb_online_instances, log_file)
-                # 7- Update ELB in ASGs
+
                 log(_green('Update autoscale groups with their new ELB'), log_file)
                 register_elb_into_autoscale(to_deploy_app['autoscale']['name'], as_conn3, elb_tempwarm_instances.keys(), elb_online_instances.keys(), log_file)
                 register_elb_into_autoscale(online_app['autoscale']['name'], as_conn3, elb_online_instances.keys(), elb_tempwarm_instances.keys(), log_file)
 
-                # 8- Update _is_online field in DB on both app
+                # Update _is_online field in DB on both app
                 self._update_app_is_online(online_app, False, log_file) # no more online anymore
                 self._update_app_is_online(to_deploy_app, True, log_file) # promotion !
 
@@ -122,7 +122,6 @@ class Swapbluegreen():
                 return None, None
 
         finally:
-            # 9- Resume autoscaling groups in any case
             resume_autoscaling_group_processes(as_conn, as_group_old, as_group_old_processes_to_suspend, log_file)
             resume_autoscaling_group_processes(as_conn, as_group_new, as_group_new_processes_to_suspend, log_file)
 
