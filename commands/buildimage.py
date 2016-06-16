@@ -35,7 +35,7 @@ class Buildimage():
 
     def _purge_old_images(self):
         conn = self._cloud_connection.get_connection(self._app['region'], ["ec2"])
-        retention = 5
+        retention = self._config.get('ami_retention', 5)
         filtered_images = []
         images = conn.get_all_images(owners="self")
 
