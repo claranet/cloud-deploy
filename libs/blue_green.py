@@ -8,7 +8,29 @@ from .deploy import get_path_from_app_with_color
 from settings import cloud_connections, DEFAULT_PROVIDER
 
 def get_blue_green_from_app(app):
-    """ Returns the blue_green object if exists and it's color field if exists
+    """
+    Returns the blue_green object if exists and it's color field if exists
+
+    >>> get_blue_green_from_app({})
+    (None, None)
+
+    >>> get_blue_green_from_app({'blue_green': None})
+    (None, None)
+
+    >>> get_blue_green_from_app({'blue_green': {}})
+    (None, None)
+
+    >>> get_blue_green_from_app({'blue_green': {'color': None}})
+    ({'color': None}, None)
+
+    >>> get_blue_green_from_app({'blue_green': {'color': ''}})
+    ({'color': ''}, '')
+
+    >>> get_blue_green_from_app({'blue_green': {'color': 'blue'}})
+    ({'color': 'blue'}, 'blue')
+
+    >>> get_blue_green_from_app({'blue_green': {'color': 'green'}})
+    ({'color': 'green'}, 'green')
     """
     if app.get('blue_green'):
         return app['blue_green'], app['blue_green'].get('color', None)
