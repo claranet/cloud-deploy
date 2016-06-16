@@ -35,13 +35,12 @@ class Buildimage():
                 **self._connection_data
                 )
         blue_green, self._color = get_blue_green_from_app(self._app)
-        self._ami_name = "ami.{0}.{1}.{2}.{3}{if_color}{color}.{4}".format(self._app['env'],
+        self._ami_name = "ami.{0}.{1}.{2}.{3}{color}.{4}".format(self._app['env'],
                                                                            self._app['region'],
                                                                            self._app['role'],
                                                                            self._app['name'],
                                                                            time.strftime("%Y%m%d-%H%M%S"),
-                                                                           if_color='.' if self._color else '',
-                                                                           color=self._color if self._color else '')
+                                                                           color='.%s' % self._color if self._color else '')
 
     def _purge_old_images(self):
         conn = self._cloud_connection.get_connection(self._app['region'], ["ec2"])
@@ -49,12 +48,11 @@ class Buildimage():
         filtered_images = []
         images = conn.get_all_images(owners="self")
 
-        ami_name_format = "ami.{0}.{1}.{2}.{3}{if_color}{color}".format(self._app['env'],
+        ami_name_format = "ami.{0}.{1}.{2}.{3}{color}".format(self._app['env'],
                                                                         self._app['region'],
                                                                         self._app['role'],
                                                                         self._app['name'],
-                                                                        if_color='.' if self._color else '',
-                                                                        color=self._color if self._color else '')
+                                                                        color='.%s' % self._color if self._color else '')
 
         for image in images:
             #log(image.name, self._log_file)
