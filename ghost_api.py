@@ -37,6 +37,25 @@ def ghost_api_check_green_app_exists(apps_db, app):
     ]})
     return green_app
 
+def ghost_api_clean_bluegreen_app(apps_db, app):
+    """
+    Removes the 'blue_green' document from both the current app and the associated app
+    """
+    orig_bluegreen_conf = app.get('blue_green')
+
+    if orig_bluegreen_conf:
+        update_res = apps_db.update_one({ '_id': app['_id']}, {'$unset': {'blue_green'}})
+        if not update_res.matched_count == 1: # if success, 1 row has been updated
+            return False
+
+    if orig_bluegreen_conf and orig_bluegreen_conf.get('alter_ego_id'):
+        update_res = apps_db.update_one({ '_id': orig_bluegreen_conf.get('alter_ego_id')}, {'$unset': {'blue_green'}})
+        if not update_res.matched_count == 1: # if success, 1 row has been updated
+            return False
+
+    return True
+
+
 def ghost_api_create_green_app(apps_db, app, user):
     """
     Create the Alter Ego application based on a copy of the current application
@@ -65,7 +84,6 @@ def ghost_api_create_green_app(apps_db, app, user):
     }
 
     update_res = apps_db.update_one({ '_id': green_app_db[0]['_id']}, {'$set': { 'blue_green': blue_green }})
-    print update_res
     if update_res.matched_count == 1:
         return green_app_db[0]['_id']
     else:

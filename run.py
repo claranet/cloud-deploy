@@ -21,7 +21,7 @@ from models.deployments import deployments
 
 from ghost_tools import get_rq_name_from_app
 from ghost_blueprints import commands_blueprint
-from ghost_api import ghost_api_bluegreen_is_enabled, ghost_api_enable_green_app, ghost_api_delete_alter_ego_app
+from ghost_api import ghost_api_bluegreen_is_enabled, ghost_api_enable_green_app, ghost_api_delete_alter_ego_app, ghost_api_clean_bluegreen_app
 
 def get_apps_db():
     return ghost.data.driver.db[apps['datasource']['source']]
@@ -119,6 +119,9 @@ def post_update_app(updates, original):
         if ghost_api_bluegreen_is_enabled(updates):
             # Maybe we need to have the "merged" app after update here instead of "original" one ?
             if not ghost_api_enable_green_app(get_apps_db(), original, request.authorization.username):
+                abort(422)
+        else:
+            if not ghost_api_clean_bluegreen_app(get_apps_db(), original):
                 abort(422)
     except Exception as e:
         print e
