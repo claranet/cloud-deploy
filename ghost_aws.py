@@ -9,6 +9,7 @@ from boto.ec2.autoscale import Tag
 from libs.safe_deployment import SafeDeployment
 from libs.deploy import launch_deploy
 from libs.ec2 import find_ec2_pending_instances, find_ec2_running_instances
+from libs.blue_green import get_blue_green_from_app
 
 from ghost_tools import GCallException
 from ghost_log import log
@@ -109,10 +110,7 @@ def deploy_module_on_hosts(cloud_connection, module, fabric_execution_strategy, 
 
 def create_launch_config(cloud_connection, app, userdata, ami_id):
     d = time.strftime('%d%m%Y-%H%M',time.localtime())
-    blue_green = app.get('blue_green', None)
-    color = None
-    if blue_green:
-        color = app['blue_green'].get('color', 'None')
+    blue_green, color = get_blue_green_from_app(app)
 
     launch_config_name = "launchconfig.{0}.{1}.{2}.{3}{if_color}{color}.{4}".format(app['env'],
                                                                                     app['region'],
@@ -165,10 +163,7 @@ def purge_launch_configuration(cloud_connection, app, retention):
     conn_as = cloud_connection.get_connection(app['region'], ["ec2", "autoscale"])
     launchconfigs = []
     lcs = conn_as.get_all_launch_configurations()
-    blue_green = app.get('blue_green', None)
-    color = None
-    if blue_green:
-        color = app['blue_green'].get('color', 'None')
+    blue_green, color = get_blue_green_from_app(app)
 
     launchconfig_format = "launchconfig.{0}.{1}.{2}.{3}{if_color}{color}.".format(app['env'],
                                                                                   app['region'],

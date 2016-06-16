@@ -7,6 +7,13 @@ from ghost_log import log
 from .deploy import get_path_from_app_with_color
 from settings import cloud_connections, DEFAULT_PROVIDER
 
+def get_blue_green_from_app(app):
+    """ Returns the blue_green object if exists and it's color field if exists
+    """
+    if app.get('blue_green'):
+        return app['blue_green'], app['blue_green'].get('color', None)
+    return None, None
+
 def get_blue_green_apps(app, apps_db):
     """
     Return app and alter_ego_app if at least one is online.

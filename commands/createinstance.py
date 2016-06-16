@@ -6,6 +6,7 @@ from settings import cloud_connections, DEFAULT_PROVIDER
 from ghost_log import log
 from ghost_aws import create_block_device, generate_userdata
 from ghost_tools import get_aws_connection_data
+from libs.blue_green import get_blue_green_from_app
 
 COMMAND_DESCRIPTION = "Create a new instance"
 
@@ -30,10 +31,7 @@ class Createinstance():
                 self._log_file,
                 **self._connection_data
                 )
-        blue_green = self._app.get('blue_green', None)
-        if blue_green:
-            self._color = self._app['blue_green'].get('color', 'None')
-
+        blue_green, self._color = get_blue_green_from_app(self._app)
 
     def _create_server(self, private_ip_address, subnet_id):
         root_ghost_path=os.path.dirname(os.path.dirname(os.path.realpath(os.path.realpath(__file__))))
@@ -79,7 +77,7 @@ class Createinstance():
                     conn.create_tags([instance.id], {"role":self._app['role']})
                     conn.create_tags([instance.id], {"app":self._app['name']})
                     conn.create_tags([instance.id], {"app_id":self._app['_id']})
-                    if hasattr(self, '_color'):
+                    if self._color:
                         conn.create_tags([instance.id], {"color":self._color})
 
                     #Check instance state

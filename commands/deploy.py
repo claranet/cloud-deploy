@@ -15,6 +15,7 @@ from ghost_aws import deploy_module_on_hosts
 from settings import cloud_connections, DEFAULT_PROVIDER
 from libs.deploy import execute_module_script_on_ghost
 from libs.deploy import get_path_from_app, get_path_from_app_with_color, update_app_manifest
+from libs.blue_green import get_blue_green_from_app
 
 ROOT_PATH = os.path.dirname(os.path.realpath(__file__))
 
@@ -271,8 +272,7 @@ class Deploy():
         clone_path = self._get_buildpack_clone_path_from_module(module)
         revision = self._get_module_revision(module['name'])
 
-        blue_green = self._app.get('blue_green', None)
-        color = self._app['blue_green'].get('color', 'None') if blue_green else None
+        blue_green, color = get_blue_green_from_app(self._app)
 
         if not os.path.exists(mirror_path):
             gcall('git --no-pager clone --bare --mirror {r} {m}'.format(r=git_repo, m=mirror_path),

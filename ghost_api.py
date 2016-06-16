@@ -6,6 +6,7 @@
 
 from ghost_tools import ghost_app_object_copy
 from eve.methods.post import post_internal
+from libs.blue_green import get_blue_green_from_app
 
 OPPOSITE_COLOR = {
     'blue': 'green',
@@ -27,8 +28,7 @@ def ghost_api_check_green_app_exists(apps_db, app):
     name = app.get('name')
     role = app.get('role')
     env = app.get('env')
-    blue_green = app.get('blue_green')
-    color = blue_green.get('color', 'blue') if blue_green else 'blue'
+    blue_green, color = get_blue_green_from_app(app)
     green_app = apps_db.find_one({'$and' : [
         {'name': name},
         {'role': role},
