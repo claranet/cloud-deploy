@@ -13,7 +13,7 @@ from redis import Redis
 from rq import Queue, cancel_job
 import rq_dashboard
 
-from settings import __dict__ as eve_settings
+from settings import __dict__ as eve_settings, REDIS_HOST
 from command import Command
 from models.apps import apps
 from models.jobs import jobs, CANCELLABLE_JOB_STATUSES, DELETABLE_JOB_STATUSES
@@ -277,8 +277,7 @@ ghost.on_inserted_jobs += post_insert_job
 ghost.on_delete_item_jobs += pre_delete_job
 ghost.on_delete_resource_job_enqueueings += pre_delete_job_enqueueings
 
-
-ghost.ghost_redis_connection = Redis()
+ghost.ghost_redis_connection = Redis(host=REDIS_HOST)
 
 # Register non-mongodb resources as plain Flask blueprints (they won't appear in /docs)
 ghost.register_blueprint(commands_blueprint)

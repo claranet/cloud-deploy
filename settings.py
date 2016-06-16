@@ -12,12 +12,14 @@ API_NAME = 'GHOST API'
 
 # Please note that MONGO_HOST and MONGO_PORT could very well be left
 # out as they already default to a bare bones local 'mongod' instance.
-MONGO_HOST = 'localhost'
+MONGO_HOST = config.get('mongo_host', 'localhost')
 MONGO_PORT = 27017
 #MONGO_USERNAME = 'user'
 #MONGO_PASSWORD = 'user'
 MONGO_DBNAME = 'apitest'
 MONGO_QUERY_BLACKLIST = ['$where']
+
+REDIS_HOST = config.get('redis_host', 'localhost')
 
 # Enable reads (GET) and inserts (POST) for resources/collections
 # (if you omit this line, the API will default to ['GET'] and provide
@@ -30,6 +32,9 @@ ITEM_METHODS = ['GET', 'PATCH', 'PUT', 'DELETE']
 
 # EVE Pagination
 PAGINATION_DEFAULT = config.get('eve_pagination_default', 23)
+
+# API BASE URL
+API_BASE_URL = config.get('api_base_url', 'http://localhost:5000')
 
 DOMAIN = {
     'job_enqueueings': job_enqueueings.job_enqueueings,
