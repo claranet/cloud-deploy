@@ -58,7 +58,8 @@ class Purgebluegreen():
     def execute(self):
         log(_green("STATE: Started"), self._log_file)
         online_app, offline_app = get_blue_green_apps(self._app,
-                                                        self._worker._db.apps)
+                                                      self._worker._db.apps,
+                                                      self._log_file)
         if not offline_app:
             self._worker.update_status("aborted", message=self._get_notification_message_aborted(self._app, "Blue/green is not enabled on this app or not well configured"))
             return

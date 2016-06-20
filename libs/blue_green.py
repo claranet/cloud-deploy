@@ -36,7 +36,7 @@ def get_blue_green_from_app(app):
         return app['blue_green'], app['blue_green'].get('color', None)
     return None, None
 
-def get_blue_green_apps(app, apps_db):
+def get_blue_green_apps(app, apps_db, log_file):
     """
     Return app and alter_ego_app if at least one is online.
 
@@ -46,12 +46,17 @@ def get_blue_green_apps(app, apps_db):
         alter_ego_app = apps_db.find_one(
             {'_id': app['blue_green']['alter_ego_id']}
         )
+        # Both app online is inconsistent
+        if app['blue_green']['is_online'] and alter_ego_app['blue_green']['is_online']:
+            log("ERROR: Both blue ({0}) and green ({1}) app are setted as 'online' which is not possible.".format(app['_id'], alter_ego_app['_id']), log_file)
+            return None, None
         if app['blue_green']['is_online']:
             return app, alter_ego_app
         else:
             if alter_ego_app['blue_green']['is_online']:
                 return alter_ego_app, app
             else:
+                log("ERROR: Nor blue ({0}) and green ({1}) app are setted as 'online'".format(app['_id'], alter_ego_app['_id']), log_file)
                 return None, None
     else:
         return None, None

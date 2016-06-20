@@ -72,7 +72,8 @@ class Preparebluegreen(object):
         as_conn3 = self._cloud_connection.get_connection(app_region, ['autoscaling'], boto_version='boto3')
 
         online_app, offline_app = get_blue_green_apps(self._app,
-                                                      self._worker._db.apps)
+                                                      self._worker._db.apps,
+                                                      self._log_file)
 
         try:
             # check if app is online
