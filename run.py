@@ -22,6 +22,7 @@ from models.deployments import deployments
 from ghost_tools import get_rq_name_from_app
 from ghost_blueprints import commands_blueprint
 from ghost_api import ghost_api_bluegreen_is_enabled, ghost_api_enable_green_app, ghost_api_delete_alter_ego_app, ghost_api_clean_bluegreen_app
+from libs.blue_green import get_blue_green_from_app
 
 def get_apps_db():
     return ghost.data.driver.db[apps['datasource']['source']]
@@ -117,10 +118,12 @@ def pre_update_app(updates, original):
     # Blue/green disabled ?
     try:
         blue_green_section, color = get_blue_green_from_app(updates)
-        if blue_green_section and
+        if (
+            blue_green_section and
             'enable_blue_green' in blue_green_section and
             isinstance(blue_green_section['enable_blue_green'], bool) and
-            not blue_green_section['enable_blue_green']:
+            not blue_green_section['enable_blue_green']
+        ):
 
             if not ghost_api_clean_bluegreen_app(get_apps_db(), original):
                 abort(422)

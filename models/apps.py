@@ -139,7 +139,7 @@ apps_schema = {
             'min': {'type': 'integer',
                     'min': 0},
             'max': {'type': 'integer',
-                    'min': 1},
+                    'min': 0},
             'current': {'type': 'integer'},
             'name': {'type': 'string'}
         }
