@@ -114,14 +114,30 @@ def pre_update_app(updates, original):
                     # Module found, can exit loop
                     break
 
+    # Blue/green disabled ?
+    try:
+        blue_green_section, color = get_blue_green_from_app(updates)
+        if blue_green_section and
+            'enable_blue_green' in blue_green_section and
+            isinstance(blue_green_section['enable_blue_green'], bool) and
+            not blue_green_section['enable_blue_green']:
+
+            if not ghost_api_clean_bluegreen_app(get_apps_db(), original):
+                abort(422)
+
+            if not ghost_api_delete_alter_ego_app(get_apps_db(), original):
+                abort(422)
+
+            del updates['blue_green']
+    except Exception as e:
+        print e
+        abort(500)
+
 def post_update_app(updates, original):
     try:
         if ghost_api_bluegreen_is_enabled(updates):
             # Maybe we need to have the "merged" app after update here instead of "original" one ?
             if not ghost_api_enable_green_app(get_apps_db(), original, request.authorization.username):
-                abort(422)
-        else:
-            if not ghost_api_clean_bluegreen_app(get_apps_db(), original):
                 abort(422)
     except Exception as e:
         print e
