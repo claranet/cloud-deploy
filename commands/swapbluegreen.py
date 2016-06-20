@@ -150,12 +150,12 @@ class Swapbluegreen():
                     self._worker.update_status("aborted", message=self._get_notification_message_aborted(to_deploy_app, "Please set an AutoScale on both green and blue app"))
                     return
             else:
-                self._worker.update_status("aborted", message=self._get_notification_message_aborted(offline_app, "Please set an AutoScale on both green and blue app."))
+                self._worker.update_status("aborted", message=self._get_notification_message_aborted(to_deploy_app, "Please set an AutoScale on both green and blue app."))
                 return
 
             # Check if we have two different AS !
-            if offline_app['autoscale']['name'] == online_app['autoscale']['name']:
-                self._worker.update_status("aborted", message=self._get_notification_message_aborted(offline_app, "Please set a different AutoScale on green and blue app."))
+            if to_deploy_app['autoscale']['name'] == online_app['autoscale']['name']:
+                self._worker.update_status("aborted", message=self._get_notification_message_aborted(to_deploy_app, "Please set a different AutoScale on green and blue app."))
                 return
 
             # Check if we're ready to swap
