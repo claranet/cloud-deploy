@@ -84,7 +84,11 @@ def ghost_api_create_green_app(apps_db, app, user):
     }
 
     update_res = apps_db.update_one({ '_id': green_app_db[0]['_id']}, {'$set': { 'blue_green': blue_green }})
-    if update_res.matched_count == 1:
+    update_res_ami = update_res
+    if 'ami' in app: # Keep baked AMI too on green app
+        ami_name = app['build_infos']['ami_name']
+        update_res_ami = apps_db.update_one({'_id': green_app_db[0]['_id']}, {'$set': {'ami': app['ami'], 'build_infos.ami_name': ami_name}})
+    if update_res.matched_count == 1 and update_res_ami.matched_count == 1:
         return green_app_db[0]['_id']
     else:
         return None
