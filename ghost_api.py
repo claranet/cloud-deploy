@@ -44,7 +44,7 @@ def ghost_api_clean_bluegreen_app(apps_db, app):
     orig_bluegreen_conf = app.get('blue_green')
 
     if orig_bluegreen_conf:
-        update_res = apps_db.update_one({ '_id': app['_id']}, {'$unset': {'blue_green'}})
+        update_res = apps_db.update_one({ '_id': app['_id']}, {'$unset': {'blue_green': ''}})
         if not update_res.matched_count == 1: # if success, 1 row has been updated
             return False
 
