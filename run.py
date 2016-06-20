@@ -135,7 +135,9 @@ def pre_update_app(updates, original):
 
 def post_update_app(updates, original):
     try:
-        if ghost_api_bluegreen_is_enabled(updates):
+        # Enable green app only if not already enabled
+        blue_green, color = get_blue_green_from_app(original)
+        if ghost_api_bluegreen_is_enabled(updates) and not blue_green and not color:
             # Maybe we need to have the "merged" app after update here instead of "original" one ?
             if not ghost_api_enable_green_app(get_apps_db(), original, request.authorization.username):
                 abort(422)
