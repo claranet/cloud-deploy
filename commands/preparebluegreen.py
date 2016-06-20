@@ -102,9 +102,9 @@ class Preparebluegreen(object):
                 return
 
             # Check if modules have been deployed
-            if not check_app_manifest(offline_app, self._config, self._log_file):
-                self._worker.update_status("aborted", message=self._get_notification_message_aborted(offline_app, "Please deploy your app's modules"))
-                return
+#            if not check_app_manifest(offline_app, self._config, self._log_file):
+#                self._worker.update_status("aborted", message=self._get_notification_message_aborted(offline_app, "Please deploy your app's modules"))
+#                return
 
             # Check if instances are already running
             if get_instances_from_autoscaling(offline_app['autoscale']['name'], as_conn3):
