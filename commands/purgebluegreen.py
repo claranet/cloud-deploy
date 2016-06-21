@@ -103,14 +103,21 @@ class Purgebluegreen():
             # Detach temp ELB from ASG
             log(_green("Detach the current temporary ELB [{0}] from the AutoScale [{1}]".format(temp_elbs, offline_app['autoscale']['name'])), self._log_file)
             register_elb_into_autoscale(offline_app['autoscale']['name'], as_conn3, temp_elbs, None, self._log_file)
+
             # Update ASG and kill instances
             log("Update AutoScale with `0` on mix, max, desired values.", self._log_file)
             log(_yellow("Destroy all instances in the AutoScale and all instances matching the `app_id` [{0}]".format(offline_app['_id'])), self._log_file)
             flush_instances_update_autoscale(as_conn, ec2_conn, offline_app, self._log_file)
+
             # Destroy temp ELB
-            destroy_elb(elb_conn3, temp_elbs[0], self._log_file)
+            if temp_elbs[0].startswith('ghost-bgtmp-'):
+                destroy_elb(elb_conn3, temp_elbs[0], self._log_file)
+            else:
+                log(_yellow(" WARNING: Cannot delete temporary ELB '{0}' because it was not created by Ghost".format(temp_elbs[0])), self._log_file)
+
             # Update App Autoscale values, next buildimage or updateautoscaling should not set values different from 0
             self._update_app_autoscale_options(offline_app, self._log_file)
+
             # All good
             self._worker.update_status("done", message=self._get_notification_message_done(offline_app))
         except GCallException as e:
