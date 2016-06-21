@@ -8,6 +8,7 @@ from settings import cloud_connections, DEFAULT_PROVIDER
 from ghost_aws import check_autoscale_exists, get_autoscaling_group_and_processes_to_suspend, suspend_autoscaling_group_processes, resume_autoscaling_group_processes
 from libs.elb import deregister_all_instances_from_elb, register_all_instances_to_elb, register_elb_into_autoscale
 from libs.elb import get_elb_instance_status_autoscaling_group, get_elb_instance_status, get_elb_from_autoscale, get_connection_draining_value, get_elb_dns_name
+from libs.elb import get_elb_by_name, elb_configure_health_check
 from libs.blue_green import get_blue_green_apps, check_app_manifest
 
 COMMAND_DESCRIPTION = "Swap the Blue/Green env"
@@ -68,6 +69,7 @@ class Swapbluegreen():
         as_conn = self._cloud_connection.get_connection(app_region, ["ec2", "autoscale"])
         as_conn3 = self._cloud_connection.get_connection(app_region, ['autoscaling'], boto_version='boto3')
         elb_conn = self._cloud_connection.get_connection(app_region, ["ec2", "elb"])
+        elb_conn3 = self._cloud_connection.get_connection(app_region, ['elb'], boto_version='boto3')
 
         # Retrieve autoscaling infos, if any
         as_group_old, as_group_old_processes_to_suspend = get_autoscaling_group_and_processes_to_suspend(as_conn, online_app, log_file)
@@ -81,10 +83,18 @@ class Swapbluegreen():
             suspend_autoscaling_group_processes(as_conn, as_group_old, as_group_old_processes_to_suspend, log_file)
             suspend_autoscaling_group_processes(as_conn, as_group_new, as_group_new_processes_to_suspend, log_file)
 
+            # Retrieve online ELB object
+            elb_online = get_elb_by_name(elb_conn3, elb_online_instances.keys()[0])
+            health_check_config = elb_online['HealthCheck']
+
             # TODO enable Sticky on ELB
 
             log("Swapping using strategy '{0}'".format(swap_execution_strategy), log_file)
             if swap_execution_strategy == 'isolated':
+                log(_green('Changing HealthCheck to be "minimal" on online ELB "{0}"'.format(elb_online['LoadBalancerName'])), log_file)
+                elb_configure_health_check(elb_conn3, elb_online['LoadBalancerName'],
+                                           health_check_config['Target'], 1, 0, health_check_config['UnhealthyThreshold'], 1)
+
                 log(_green('De-register all online instances from ELB {0}'.format(', '.join(elb_online_instances.keys()))), log_file)
                 deregister_all_instances_from_elb(elb_conn, elb_online_instances, log_file)
 
@@ -112,6 +122,11 @@ class Swapbluegreen():
                 # Update _is_online field in DB on both app
                 self._update_app_is_online(online_app, False, log_file) # no more online anymore
                 self._update_app_is_online(to_deploy_app, True, log_file) # promotion !
+
+                log(_green('Restoring original HealthCheck config on online ELB "{0}"'.format(elb_online['LoadBalancerName'])), log_file)
+                elb_configure_health_check(elb_conn3, elb_online['LoadBalancerName'],
+                                           health_check_config['Target'], health_check_config['Interval'], health_check_config['Timeout'],
+                                           health_check_config['UnhealthyThreshold'], health_check_config['HealthyThreshold'])
 
                 online_elb_name = elb_online_instances.keys()[0]
                 return str(online_elb_name), get_elb_dns_name(elb_conn, online_elb_name)

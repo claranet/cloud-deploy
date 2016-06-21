@@ -14,6 +14,30 @@
 from ghost_log import log
 from boto.ec2.elb.listelement import ListElement
 
+def elb_configure_health_check(elb_conn3, elb_name, target, interval, timeout, unhealthy_threshold, healthy_threshold):
+    """
+        Configures the ELB HealthCheck value
+    """
+    response = elb_conn3.configure_health_check(
+        LoadBalancerName=elb_name,
+        HealthCheck={
+            'Target': target,
+            'Interval': interval,
+            'Timeout': timeout,
+            'UnhealthyThreshold': unhealthy_threshold,
+            'HealthyThreshold': healthy_threshold
+        }
+    )
+    return response
+
+def get_elb_by_name(elb_conn3, elb_name):
+    """
+        :return the found ELB object
+    """
+    elb = elb_conn3.describe_load_balancers(
+        LoadBalancerNames=[elb_name])['LoadBalancerDescriptions'][0]
+    return elb
+
 def copy_elb(elb_conn3, elb_name, source_elb_name):
     """ Copy an existing ELB, currently copies basic configuration
         (Subnets, SGs, first listener), health check and tags.
@@ -23,9 +47,7 @@ def copy_elb(elb_conn3, elb_name, source_elb_name):
         :param source_elb_name string: source ELB name
         :return created ELB endpoint
     """
-    source_elb = elb_conn3.describe_load_balancers(
-        LoadBalancerNames=[source_elb_name]
-    )['LoadBalancerDescriptions'][0]
+    source_elb = get_elb_by_name(elb_conn3, source_elb_name)
     source_elb_listener = source_elb['ListenerDescriptions'][0]['Listener']
     source_elb_tags = elb_conn3.describe_tags(
         LoadBalancerNames=[source_elb_name]
