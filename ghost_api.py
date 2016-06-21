@@ -29,6 +29,8 @@ def ghost_api_check_green_app_exists(apps_db, app):
     role = app.get('role')
     env = app.get('env')
     blue_green, color = get_blue_green_from_app(app)
+    if not color:
+        color = 'blue' #handle default one
     green_app = apps_db.find_one({'$and' : [
         {'name': name},
         {'role': role},
@@ -68,6 +70,8 @@ def ghost_api_create_green_app(apps_db, app, user):
     green_app_db = post_internal('apps', green_app)
 
     if green_app_db[0]['_status'] == 'ERR': # _status == OK when insert done by Eve
+        print "ERROR when creating Green app for %s" % app['_id']
+        print green_app_db
         return None
 
     # Set blue-green params to the Green app
@@ -86,6 +90,7 @@ def ghost_api_create_green_app(apps_db, app, user):
     if update_res.matched_count == 1 and update_res_ami.matched_count == 1:
         return green_app_db[0]['_id']
     else:
+        print update_res
         return None
 
 def ghost_api_update_bluegreen_app(apps_db, blue_app, green_app_id):

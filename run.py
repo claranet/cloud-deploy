@@ -145,6 +145,7 @@ def post_update_app(updates, original):
             if not ghost_api_enable_green_app(get_apps_db(), original, request.authorization.username):
                 abort(422)
     except Exception as e:
+        print "Exception occured"
         print e
         abort(500)
 
