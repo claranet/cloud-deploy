@@ -93,7 +93,7 @@ class Swapbluegreen():
             if swap_execution_strategy == 'isolated':
                 log(_green('Changing HealthCheck to be "minimal" on online ELB "{0}"'.format(elb_online['LoadBalancerName'])), log_file)
                 elb_configure_health_check(elb_conn3, elb_online['LoadBalancerName'],
-                                           health_check_config['Target'], 1, 1, health_check_config['UnhealthyThreshold'], 2)
+                                           health_check_config['Target'], 5, 2, health_check_config['UnhealthyThreshold'], 2)
 
                 log(_green('De-register all online instances from ELB {0}'.format(', '.join(elb_online_instances.keys()))), log_file)
                 deregister_all_instances_from_elb(elb_conn, elb_online_instances, log_file)
