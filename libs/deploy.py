@@ -282,7 +282,7 @@ def launch_deploy(app, module, hosts_list, fabric_execution_strategy, log_file):
     for host, ret_code in result.iteritems():
         if ret_code != 0:
             hosts_error.append(host)
-    if len(hosts_error) > 0:
+    if len(hosts_error):
         raise GCallException("Deploy error on: %s" % (", ".join(hosts_error)))
 
 
