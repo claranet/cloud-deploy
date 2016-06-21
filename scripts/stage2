@@ -176,7 +176,7 @@ function deploy_module() {
         GHOST_MODULE_REPO=$GHOST_MODULE_REPO GHOST_MODULE_REV=$GHOST_MODULE_REV GHOST_MODULE_COMMIT=$GHOST_MODULE_COMMIT GHOST_MODULE_COMMIT_MESSAGE=$GHOST_MODULE_COMMIT_MESSAGE GHOST_MODULE_USER=$GHOST_MODULE_USER GHOST_APP=$APP GHOST_ENV=$ENV GHOST_ROLE=$ROLE GHOST_MODULE_NAME=$MODULE_NAME GHOST_MODULE_PATH=$TARGET ./postdeploy 2>&1 | tee -a /tmp/$LOGFILE
         local status=${PIPESTATUS[0]}
         if [ $status -ne 0 ]; then
-            # FIXME: if this is something we really want to do ?
+            # FIXME: is this is something we really want to do ?
             #purge_latest_failed_deploy $MODULE_NAME $UUID
             exit_deployment -1
         fi
