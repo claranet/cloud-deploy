@@ -219,9 +219,15 @@ def ghost_app_object_copy(app, user):
             # Remove 'initialized' RO fields
             if 'initialized' in copy_module:
                 del copy_module['initialized']
+            if 'last_deployment' in copy_module:
+                del copy_module['last_deployment']
+    # Remove RO fields
     if 'blue_green' in copy_app and 'alter_ego_id' in copy_app['blue_green']:
-        # Remove RO fields
         del copy_app['blue_green']['alter_ego_id']
+    if 'ami' in copy_app:
+        del copy_app['ami']
+    if 'build_infos' in copy_app and 'ami_name' in copy_app['build_infos']:
+        del copy_app['build_infos']['ami_name']
     # Cleaning Eve Fields
     del copy_app['_id']
     del copy_app['_etag']
