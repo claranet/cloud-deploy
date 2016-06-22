@@ -7,6 +7,15 @@ from ghost_log import log
 from .deploy import get_path_from_app_with_color
 from settings import cloud_connections, DEFAULT_PROVIDER
 
+def get_blue_green_config(config, command, key, default_value):
+    blue_green_section = config.get('blue_green', None)
+    if not blue_green_section:
+        return default_value
+    command_section = blue_green_section.get(command, None)
+    if not command_section:
+        return default_value
+    return command_section.get(key, default_value)
+
 def get_blue_green_from_app(app):
     """
     Returns the blue_green object if exists and it's color field if exists

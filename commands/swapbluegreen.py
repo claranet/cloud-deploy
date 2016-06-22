@@ -9,7 +9,7 @@ from ghost_aws import check_autoscale_exists, get_autoscaling_group_and_processe
 from libs.elb import deregister_all_instances_from_elb, register_all_instances_to_elb, register_elb_into_autoscale
 from libs.elb import get_elb_instance_status_autoscaling_group, get_elb_instance_status, get_elb_from_autoscale, get_connection_draining_value, get_elb_dns_name
 from libs.elb import get_elb_by_name, elb_configure_health_check
-from libs.blue_green import get_blue_green_apps, check_app_manifest
+from libs.blue_green import get_blue_green_apps, check_app_manifest, get_blue_green_config
 
 COMMAND_DESCRIPTION = "Swap the Blue/Green env"
 
@@ -86,14 +86,17 @@ class Swapbluegreen():
             # Retrieve online ELB object
             elb_online = get_elb_by_name(elb_conn3, elb_online_instances.keys()[0])
             health_check_config = elb_online['HealthCheck']
+            hc_interval = get_blue_green_config(self._config, 'swapbluegreen', 'healthcheck_interval', 5)
+            hc_timeout = get_blue_green_config(self._config, 'swapbluegreen', 'healthcheck_timeout', 2)
+            hc_healthy_threshold = get_blue_green_config(self._config, 'swapbluegreen', 'healthcheck_healthy_threshold', 2)
 
-            # TODO enable Sticky on ELB
+            # TODO enable Sticky on ELB ?
 
             log("Swapping using strategy '{0}'".format(swap_execution_strategy), log_file)
             if swap_execution_strategy == 'isolated':
                 log(_green('Changing HealthCheck to be "minimal" on online ELB "{0}"'.format(elb_online['LoadBalancerName'])), log_file)
                 elb_configure_health_check(elb_conn3, elb_online['LoadBalancerName'],
-                                           health_check_config['Target'], 5, 2, health_check_config['UnhealthyThreshold'], 2)
+                                           health_check_config['Target'], hc_interval, hc_timeout, health_check_config['UnhealthyThreshold'], hc_healthy_threshold)
 
                 log(_green('De-register all online instances from ELB {0}'.format(', '.join(elb_online_instances.keys()))), log_file)
                 deregister_all_instances_from_elb(elb_conn, elb_online_instances, log_file)

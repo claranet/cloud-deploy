@@ -6,7 +6,7 @@ from ghost_aws import check_autoscale_exists, update_auto_scale
 from ghost_aws import create_launch_config, generate_userdata
 from ghost_tools import GCallException, get_aws_connection_data, get_app_friendly_name, get_app_module_name_list
 from settings import cloud_connections, DEFAULT_PROVIDER
-from libs.blue_green import get_blue_green_apps, check_app_manifest
+from libs.blue_green import get_blue_green_apps, check_app_manifest, get_blue_green_config
 from libs.autoscaling import get_instances_from_autoscaling, get_autoscaling_group_object
 from libs.deploy import get_path_from_app_with_color
 from libs.elb import get_elb_from_autoscale, copy_elb, register_elb_into_autoscale
@@ -67,7 +67,7 @@ class Preparebluegreen(object):
     def execute(self):
         """Execute all checks and preparations."""
         log(_green("STATE: Started"), self._log_file)
-        copy_ami_option = self._job['options'][0] if 'options' in self._job and len(self._job['options']) > 0 else False
+        copy_ami_option = self._job['options'][0] if 'options' in self._job and len(self._job['options']) > 0 else get_blue_green_config(self._config, 'preparebluegreen', 'copy_ami', False)
 
         app_region = self._app['region']
         as_conn = self._cloud_connection.get_connection(app_region, ["ec2", "autoscale"])
@@ -108,9 +108,10 @@ class Preparebluegreen(object):
                 log("Copy AMI option activated. AMI used by [{0}] will be reused by [{1}]".format(online_app['autoscale']['name'], offline_app['autoscale']['name']), self._log_file)
 
             # Check if modules have been deployed
-#            if not check_app_manifest(offline_app, self._config, self._log_file):
-#                self._worker.update_status("aborted", message=self._get_notification_message_aborted(offline_app, "Please deploy your app's modules"))
-#                return
+            if get_blue_green_config(self._config, 'preparebluegreen', 'module_deploy_required', False):
+                if not check_app_manifest(offline_app, self._config, self._log_file):
+                    self._worker.update_status("aborted", message=self._get_notification_message_aborted(offline_app, "Please deploy your app's modules"))
+                    return
 
             # Check if instances are already running
             if get_instances_from_autoscaling(offline_app['autoscale']['name'], as_conn3):
