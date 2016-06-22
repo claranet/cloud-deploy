@@ -3,6 +3,7 @@ from fabric.colors import green as _green, yellow as _yellow, red as _red
 
 from ghost_log import log
 from ghost_aws import check_autoscale_exists, update_auto_scale
+from ghost_aws import create_launch_config, generate_userdata
 from ghost_tools import GCallException, get_aws_connection_data, get_app_friendly_name, get_app_module_name_list
 from settings import cloud_connections, DEFAULT_PROVIDER
 from libs.blue_green import get_blue_green_apps, check_app_manifest
@@ -66,6 +67,7 @@ class Preparebluegreen(object):
     def execute(self):
         """Execute all checks and preparations."""
         log(_green("STATE: Started"), self._log_file)
+        copy_ami_option = self._job['options'][0] if 'options' in self._job and len(self._job['options']) > 0 else False
 
         app_region = self._app['region']
         as_conn = self._cloud_connection.get_connection(app_region, ["ec2", "autoscale"])
@@ -82,8 +84,9 @@ class Preparebluegreen(object):
                 return
 
             # Check if app has up to date AMI
-            if 'ami' not in offline_app:
-                self._worker.update_status("aborted", message=self._get_notification_message_aborted(offline_app, "Please run `Buildimage` first"))
+            if ((not copy_ami_option and 'ami' not in offline_app) or
+                (copy_ami_option and 'ami' not in online_app)):
+                self._worker.update_status("aborted", message=self._get_notification_message_aborted(offline_app, "Please run `Buildimage` first or use the `copy_ami` option"))
                 return
 
             # Check if app has AS
@@ -131,10 +134,19 @@ class Preparebluegreen(object):
             offline_app['autoscale']['min'] = online_app['autoscale']['min']
             offline_app['autoscale']['max'] = online_app['autoscale']['max']
             offline_app['autoscale']['current'] = online_app['autoscale']['current']
+            if copy_ami_option:
+                offline_app['ami'] = online_app['ami']
+                offline_app['build_infos']['ami_name'] = online_app['build_infos']['ami_name']
             # Update AutoScale properties in DB App
             self._update_app_autoscale_options(offline_app, online_app, self._log_file)
             # Update AutoScale properties and starts instances
-            update_auto_scale(self._cloud_connection, offline_app, None, self._log_file, update_as_params=True)
+            launch_config = None
+            if copy_ami_option:
+                userdata = generate_userdata(self._config['bucket_s3'], self._config.get('bucket_region', self._app['region']), self._config['ghost_root_path'])
+                if userdata:
+                    launch_config = create_launch_config(self._cloud_connection, offline_app, userdata, offline_app['ami'])
+
+            update_auto_scale(self._cloud_connection, offline_app, launch_config, self._log_file, update_as_params=True)
             log(_green("Starting [{0}] instance(s) into the AutoScale [{1}]".format(offline_app['autoscale']['current'], offline_app['autoscale']['name'])), self._log_file)
 
             self._worker.update_status("done", message=self._get_notification_message_done(offline_app, temp_elb_name, new_elb_dns))
