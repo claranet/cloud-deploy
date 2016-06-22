@@ -1,3 +1,6 @@
+# -*- coding: utf-8 -*-
+from base64 import b64decode, b64encode
+
 import os
 from subprocess import call
 import yaml
@@ -159,3 +162,45 @@ def get_app_module_name_list(modules):
     Returns the list of module name from a Ghost App
     """
     return [app_module['name'] for app_module in modules if 'name' in app_module]
+
+def b64decode_utf8(ascii):
+    u"""
+    Converts an ASCII UTF8/base64 encoded string to a unicode string
+
+    >>> b64decode_utf8(None)
+
+    >>> b64decode_utf8('')
+    u''
+
+    >>> b64decode_utf8('aGVsbG8=')
+    u'hello'
+
+    >>> b64decode_utf8('w6ljaG8=')
+    u'\\xe9cho'
+    """
+    if ascii is not None:
+        return b64decode(ascii).decode('utf-8')
+
+def b64encode_utf8(string):
+    u"""
+    Converts an ASCII or unicode string to an ASCII UTF8/base64 encoded string
+
+    >>> b64encode_utf8(None)
+
+    >>> b64encode_utf8('')
+    ''
+
+    >>> b64encode_utf8(u'')
+    ''
+
+    >>> b64encode_utf8('hello')
+    'aGVsbG8='
+
+    >>> b64encode_utf8(u'écho')
+    'w6ljaG8='
+
+    >>> b64encode_utf8(u'\\xe9cho')
+    'w6ljaG8='
+    """
+    if string is not None:
+        return b64encode(string.encode('utf-8'))

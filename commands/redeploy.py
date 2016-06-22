@@ -112,13 +112,9 @@ class Redeploy():
             })
         for mod in sorted(modules, key=lambda mod: mod['index']):
             data = data + mod['name'] + ':' + mod['package'] + ':' + mod['path'] + '\n'
-        manifest, manifest_path = tempfile.mkstemp()
-        if sys.version > '3':
-            os.write(manifest, bytes(data, 'UTF-8'))
-        else:
-            os.write(manifest, data)
-        os.close(manifest)
-        key.set_contents_from_filename(manifest_path)
+
+        key.set_contents_from_string(data)
+        key.close()
 
     def _get_deploy_infos(self, deploy_id):
         deploy_infos = self._db.deploy_histories.find_one({'_id': ObjectId(deploy_id)})
