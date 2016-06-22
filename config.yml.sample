@@ -86,3 +86,6 @@ skip_salt_bootstrap: True
 
 # LaunchConfiguration retention history per AutoScaling Group
 launch_configuration_retention: 5
+
+# Images (AMI) retention history per app
+ami_retention: 5
