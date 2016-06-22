@@ -7,7 +7,7 @@ from ghost_aws import create_launch_config, generate_userdata
 from ghost_tools import GCallException, get_aws_connection_data, get_app_friendly_name, get_app_module_name_list
 from settings import cloud_connections, DEFAULT_PROVIDER
 from libs.blue_green import get_blue_green_apps, check_app_manifest
-from libs.autoscaling import get_instances_from_autoscaling
+from libs.autoscaling import get_instances_from_autoscaling, get_autoscaling_group_object
 from libs.deploy import get_path_from_app_with_color
 from libs.elb import get_elb_from_autoscale, copy_elb, register_elb_into_autoscale
 
@@ -133,7 +133,8 @@ class Preparebluegreen(object):
 
             offline_app['autoscale']['min'] = online_app['autoscale']['min']
             offline_app['autoscale']['max'] = online_app['autoscale']['max']
-            offline_app['autoscale']['current'] = online_app['autoscale']['current']
+            online_asg_object = get_autoscaling_group_object(as_conn3, online_app['autoscale']['name'])
+            offline_app['autoscale']['current'] = online_asg_object['DesiredCapacity']
             if copy_ami_option:
                 offline_app['ami'] = online_app['ami']
                 offline_app['build_infos']['ami_name'] = online_app['build_infos']['ami_name']

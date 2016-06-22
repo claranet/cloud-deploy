@@ -4,6 +4,20 @@
 
 from .ec2 import destroy_ec2_instances
 
+def get_autoscaling_group_object(as_conn3, as_name):
+    """
+    Retrieves and return the AutoScale Group if exists
+
+    :param  as_conn3 string: The boto3 Autoscaling Group connection.
+    :param  as_name  string: The Autoscaling Group name.
+    """
+    asgs = as_conn3.describe_auto_scaling_groups(
+        AutoScalingGroupNames=[as_name],
+        MaxRecords=1
+    )['AutoScalingGroups']
+
+    return asgs[0] if len(asgs) else None
+
 def get_instances_from_autoscaling(as_name, as_conn):
     """
     Return a list of instances associated with an AS Group.
