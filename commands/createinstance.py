@@ -32,7 +32,7 @@ class Createinstance():
                 )
 
 
-    def _create_server(self):
+    def _create_server(self, private_ip_address, subnet_id):
         root_ghost_path=os.path.dirname(os.path.dirname(os.path.realpath(os.path.realpath(__file__))))
 
         log(_green("STATE: Started"), self._log_file)
@@ -47,10 +47,10 @@ class Createinstance():
                 conn = self._cloud_connection.get_connection(self._app['region'], ["ec2"])
                 image = self._app['ami']
                 interface = self._cloud_connection.launch_service(
-                        ["ec2", "networkinterface", "NetworkInterfaceSpecification"], 
-                        subnet_id=self._app['environment_infos']['subnet_ids'][0],
+                        ["ec2", "networkinterface", "NetworkInterfaceSpecification"],
+                        subnet_id=subnet_id,
                         groups=self._app['environment_infos']['security_groups'],
-                        associate_public_ip_address=True
+                        associate_public_ip_address=True, private_ip_address=private_ip_address
                         )
                 interfaces = self._cloud_connection.launch_service(
                         ["ec2", "networkinterface", "NetworkInterfaceCollection"],
@@ -98,4 +98,6 @@ class Createinstance():
         return instance.ip_address
 
     def execute(self):
-        self._create_server()
+        subnet_id = self._job['options'][0] if 'options' in self._job and len(self._job['options']) > 0 else None
+        private_ip_address = self._job['options'][1] if 'options' in self._job and len(self._job['options']) > 1 else None
+        self._create_server(private_ip_address, subnet_id)
