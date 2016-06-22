@@ -38,7 +38,7 @@ def get_elb_by_name(elb_conn3, elb_name):
         LoadBalancerNames=[elb_name])['LoadBalancerDescriptions'][0]
     return elb
 
-def copy_elb(elb_conn3, elb_name, source_elb_name):
+def copy_elb(elb_conn3, elb_name, source_elb_name, special_tag):
     """ Copy an existing ELB, currently copies basic configuration
         (Subnets, SGs, first listener), health check and tags.
 
@@ -52,6 +52,7 @@ def copy_elb(elb_conn3, elb_name, source_elb_name):
     source_elb_tags = elb_conn3.describe_tags(
         LoadBalancerNames=[source_elb_name]
     )['TagDescriptions'][0]['Tags']
+    source_elb_tags.append(special_tag)
     dest_elb_listener = {
         'Protocol': source_elb_listener['Protocol'],
         'LoadBalancerPort': source_elb_listener['LoadBalancerPort'],

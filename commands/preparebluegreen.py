@@ -104,6 +104,9 @@ class Preparebluegreen(object):
                 self._worker.update_status("aborted", message=self._get_notification_message_aborted(offline_app, "Please set a different AutoScale on green and blue app."))
                 return
 
+            if copy_ami_option:
+                log("Copy AMI option activated. AMI used by [{0}] will be reused by [{1}]".format(online_app['autoscale']['name'], offline_app['autoscale']['name']), self._log_file)
+
             # Check if modules have been deployed
 #            if not check_app_manifest(offline_app, self._config, self._log_file):
 #                self._worker.update_status("aborted", message=self._get_notification_message_aborted(offline_app, "Please deploy your app's modules"))
@@ -125,7 +128,7 @@ class Preparebluegreen(object):
             online_elb = online_elbs[0]
             temp_elb_name = "ghost-bgtmp-{0}".format(online_elb)[:31] # ELB name is 32 char long max
             log(_green("Creating the temporary ELB [{0}] by copying parameters from [{1}]".format(temp_elb_name, online_elb)), self._log_file)
-            new_elb_dns = copy_elb(elb_conn3, temp_elb_name, online_elb)
+            new_elb_dns = copy_elb(elb_conn3, temp_elb_name, online_elb, {'Key': 'app_id', 'Value': str(offline_app['_id'])})
 
             # Register the temporary ELB into the AutoScale
             log(_green("Attaching ELB [{0}] to the AutoScale [{1}]".format(temp_elb_name, offline_app['autoscale']['name'])), self._log_file)
