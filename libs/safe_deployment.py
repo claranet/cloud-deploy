@@ -59,7 +59,7 @@ class SafeDeployment():
                                             deployment process cannot be perform.
 
         >>> from io import StringIO
-        >>> sd = SafeDeployment(None, None, None, StringIO(), None, None, None)
+        >>> sd = SafeDeployment(None, None, None, None, StringIO(), None, None, None)
 
         >>> sd.hosts_list = ['host1', 'host2']
         >>> sd.split_hosts_list('50%')
