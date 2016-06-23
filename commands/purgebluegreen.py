@@ -89,8 +89,7 @@ class Purgebluegreen():
             as_conn3 = self._cloud_connection.get_connection(app_region, ['autoscaling'], boto_version='boto3')
             # Check if instances are running
             if not get_instances_from_autoscaling(offline_app['autoscale']['name'], as_conn3):
-                self._worker.update_status("aborted", message=self._get_notification_message_aborted(offline_app, "Autoscaling Group of offline app is empty. Nothing to do"))
-                return
+                log(_yellow(" WARNING: Autoscaling Group [{%s}] of offline app is empty. No running instances to clean detected." % offline_app['autoscale']['name']), self._log_file)
 
             ec2_conn = self._cloud_connection.get_connection(app_region, ["ec2"])
             elb_conn3 = self._cloud_connection.get_connection(app_region, ['elb'], boto_version='boto3')
