@@ -110,7 +110,7 @@ class Purgebluegreen():
             flush_instances_update_autoscale(as_conn, ec2_conn, offline_app, self._log_file)
 
             # Destroy temp ELB
-            if temp_elbs[0].startswith('ghost-bgtmp-'):
+            if temp_elbs[0].startswith('bgtmp-'):
                 destroy_elb(elb_conn3, temp_elbs[0], self._log_file)
             else:
                 log(_yellow(" WARNING: Cannot delete temporary ELB '{0}' because it was not created by Ghost".format(temp_elbs[0])), self._log_file)

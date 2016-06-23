@@ -127,7 +127,7 @@ class Preparebluegreen(object):
             # Create the temporary ELB: ghost-bluegreentemp-{original ELB name}, duplicated from the online ELB
             elb_conn3 = self._cloud_connection.get_connection(app_region, ['elb'], boto_version='boto3')
             online_elb = online_elbs[0]
-            temp_elb_name = "ghost-bgtmp-{0}".format(online_elb)[:31] # ELB name is 32 char long max
+            temp_elb_name = "bgtmp-{0}".format(offline_app['_id'])[:31] # ELB name is 32 char long max
             log(_green("Creating the temporary ELB [{0}] by copying parameters from [{1}]".format(temp_elb_name, online_elb)), self._log_file)
             new_elb_dns = copy_elb(elb_conn3, temp_elb_name, online_elb, {'Key': 'app_id', 'Value': str(offline_app['_id'])})
 
