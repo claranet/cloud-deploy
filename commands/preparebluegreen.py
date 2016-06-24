@@ -145,7 +145,7 @@ class Preparebluegreen(object):
             if copy_ami_option:
                 offline_app['ami'] = online_app['ami']
                 offline_app['build_infos']['ami_name'] = online_app['build_infos']['ami_name']
-                log("Copying AMI [{0}]({1}) into offline app [{3}]".format(offline_app['ami'], offline_app['build_infos']['ami_name'], str(offline_app['_id'])), self._log_file)
+                log("Copying AMI [{0}]({1}) into offline app [{2}]".format(offline_app['ami'], offline_app['build_infos']['ami_name'], str(offline_app['_id'])), self._log_file)
                 self._update_app_ami(offline_app)
             # Update AutoScale properties in DB App
             self._update_app_autoscale_options(offline_app, online_app, self._log_file)
