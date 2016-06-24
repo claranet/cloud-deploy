@@ -10,7 +10,7 @@ from fabfile import deploy
 from ghost_tools import config
 from ghost_tools import render_stage2
 from ghost_log import log
-
+from ghost_tools import GCallException
 
 def get_key_path(config, region, account, key_name, log_file):
     """
@@ -199,4 +199,12 @@ def launch_deploy(app, module, hosts_list, fabric_execution_strategy, log_file):
         setattr(task, 'parallel', False)
 
     log("Updating current instances in {}: {}".format(fabric_execution_strategy, hosts_list), log_file)
-    fab_execute(task, module, app_ssh_username, key_filename, stage2, log_file, hosts=hosts_list)
+    result = fab_execute(task, module, app_ssh_username, key_filename, stage2, log_file, hosts=hosts_list)
+    hosts_error = []
+    for host, ret_code in result.iteritems():
+        if ret_code != 0:
+            hosts_error.append(host)
+    if len(hosts_error):
+        raise GCallException("Deploy error on: %s" % (", ".join(hosts_error)))
+
+
