@@ -133,8 +133,8 @@ class Buildimage():
             if not feature_name in pillar:
                 pillar[feature_name] = {}
             if len(values) == 2:
-                ft_param_key = values[0]
-                ft_param_val = values[1]
+                ft_param_key = values[0].encode('utf-8')
+                ft_param_val = values[1].encode('utf-8')
                 if not ft_param_key in pillar[feature_name]:
                     pillar[feature_name][ft_param_key] = []
                 pillar[feature_name][ft_param_key].append(ft_param_val)
