@@ -9,6 +9,7 @@ import importlib
 
 modules = [
   "command",
+  "commands.buildimage",
   "commands.deploy",
   "ghost_blueprints",
   "ghost_tools",

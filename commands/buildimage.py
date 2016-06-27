@@ -113,6 +113,17 @@ class Buildimage():
 
     def _format_salt_pillar_from_app_features(self):
         """ Generates the pillar dictionnary object with all required features and their options
+        >>> class worker:
+        ...     app = { \
+                    'name': 'AppName', 'env': 'prod', 'role': 'webfront', 'region': 'eu-west-1',\
+                    'features': [{'name': 'pkg', 'version': 'git_vim'}, {'name': 'pkg', 'version': 'package=lsof'}, {'name': 'pkg', 'version': 'package=curl'}]\
+                 }
+        ...     job = None
+        ...     log_file = None
+        ...     _config = None
+        ...     _db = None
+        >>> Buildimage(worker=worker())._format_salt_pillar_from_app_features()
+        {'pkg': {'version': 'git_vim', 'package': ['lsof', 'curl']}}
         """
         pillar = {}
         for ft in self._app['features']:
@@ -138,13 +149,14 @@ class Buildimage():
         """
         >>> from bson.objectid import ObjectId
         >>> class worker:
-        ...   app = None
+        ...   app = {'name': 'AppName', 'env': 'prod', 'role': 'webfront', 'region': 'eu-west-1'}
         ...   job = None
         ...   log_file = None
         ...   _config = None
-        >>> Deploy(worker=worker())._get_notification_message_done('')
+        ...   _db = None
+        >>> Buildimage(worker=worker())._get_notification_message_done('')
         'Build image OK: []'
-        >>> Deploy(worker=worker())._get_notification_message_done('012345678901234567890123')
+        >>> Buildimage(worker=worker())._get_notification_message_done('012345678901234567890123')
         'Build image OK: [012345678901234567890123]'
         """
         return 'Build image OK: [{0}]'.format(ami_id)
