@@ -112,10 +112,22 @@ class Buildimage():
         return top
 
     def _format_salt_pillar_from_app_features(self):
+        """ Generates the pillar dictionnary object with all required features and their options
+        """
         pillar = {}
-        for i in self._app['features']:
-            pillar[i['name'].encode('utf-8')] = {}
-            pillar[i['name'].encode('utf-8')] = {'version': i['version'].encode('utf-8')}
+        for ft in self._app['features']:
+            values = ft['version'].split('=')
+            feature_name = ft['name'].encode('utf-8')
+            if not feature_name in pillar:
+                pillar[feature_name] = {}
+            if len(values) == 2:
+                ft_param_key = values[0]
+                ft_param_val = values[1]
+                if not ft_param_key in pillar[feature_name]:
+                    pillar[feature_name][ft_param_key] = []
+                pillar[feature_name][ft_param_key].append(ft_param_val)
+            else:
+                pillar[feature_name]['version'] = ft['version'].encode('utf-8')
         return pillar
 
     def _update_app_ami(self, ami_id):
