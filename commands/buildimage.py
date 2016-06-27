@@ -108,7 +108,8 @@ class Buildimage():
                 continue
             if re.search('^gem-(.*)',i['name']):
                 continue
-            top.append(i['name'].encode('utf-8'))
+            if not i['name'].encode('utf-8') in top:
+                top.append(i['name'].encode('utf-8'))
         return top
 
     def _format_salt_pillar_from_app_features(self):
