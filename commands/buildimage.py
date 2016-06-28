@@ -141,7 +141,7 @@ class Buildimage():
         """
         pillar = {}
         for ft in self._app['features']:
-            values = ft['version'].split('=')
+            values = ft['version'].split('=', 1) # Split only one time
             feature_name = ft['name'].encode('utf-8')
             if not feature_name in pillar:
                 pillar[feature_name] = {}
