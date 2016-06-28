@@ -14,6 +14,7 @@ from ghost_tools import get_aws_connection_data
 from ghost_log import log
 from ghost_aws import deploy_module_on_hosts
 from settings import cloud_connections, DEFAULT_PROVIDER
+from libs.deploy import execute_module_script_on_ghost
 
 ROOT_PATH = os.path.dirname(os.path.realpath(__file__))
 
@@ -414,25 +415,7 @@ class Deploy():
             gcall('du -hs .', 'Display current build directory disk usage', self._log_file)
 
         # Execute buildpack
-        if 'build_pack' in module:
-            buildpack_source = base64.b64decode(module['build_pack'])
-            buildpack, buildpack_path = tempfile.mkstemp(dir=clone_path)
-            if sys.version > '3':
-                os.write(buildpack, bytes(buildpack_source, 'UTF-8'))
-            else:
-                os.write(buildpack, buildpack_source)
-            os.close(buildpack)
-
-            buildpack_env = os.environ.copy()
-            buildpack_env['GHOST_APP'] = self._app['name']
-            buildpack_env['GHOST_ENV'] = self._app['env']
-            buildpack_env['GHOST_ROLE'] = self._app['role']
-            buildpack_env['GHOST_MODULE_NAME'] = module['name']
-            buildpack_env['GHOST_MODULE_PATH'] = module['path']
-
-            gcall('bash %s' % buildpack_path, 'Buildpack: Execute', self._log_file, env=buildpack_env)
-            gcall('du -hs .', 'Display current build directory disk usage', self._log_file)
-            gcall('rm -vf %s' % buildpack_path, 'Buildpack: Done, cleaning temporary file', self._log_file)
+        execute_module_script_on_ghost(self._app, module, 'build_pack', 'Buildpack', clone_path, self._log_file)
 
         # Store postdeploy script in tarball
         if 'post_deploy' in module:
@@ -443,6 +426,17 @@ class Deploy():
                     f.write(bytes(postdeploy_source, 'UTF-8'))
                 else:
                     f.write(postdeploy_source)
+            gcall('du -hs .', 'Display current build directory disk usage', self._log_file)
+
+        # Store after_all_deploy script in tarball
+        if 'after_all_deploy' in module:
+            log("Create after_all_deploy script for inclusion in target package", self._log_file)
+            afteralldeploy_source = base64.b64decode(module['after_all_deploy'])
+            with open(clone_path + '/after_all_deploy', 'w') as f:
+                if sys.version > '3':
+                    f.write(bytes(afteralldeploy_source, 'UTF-8'))
+                else:
+                    f.write(afteralldeploy_source)
             gcall('du -hs .', 'Display current build directory disk usage', self._log_file)
 
         # Store module metadata in tarball
@@ -476,6 +470,9 @@ GHOST_MODULE_USER="{user}"
         all_app_modules_list = get_app_module_name_list(self._app['modules'])
         clean_local_module_workspace(self._get_path_from_app(), all_app_modules_list, self._log_file)
         self._deploy_module(module, fabric_execution_strategy, safe_deployment_strategy)
+        if 'after_all_deploy' in module:
+            log("After all deploy script found for '{0}'. Executing it.".format(module['name']), self._log_file)
+            execute_module_script_on_ghost(self._app, module, 'after_all_deploy', 'After all deploy', clone_path, self._log_file)
 
         deployment = {'app_id': self._app['_id'], 'job_id': self._job['_id'], 'module': module['name'], 'revision': revision, 'commit': commit, 'commit_message': commit_message, 'timestamp': ts, 'package': pkg_name, 'module_path': module['path']}
         return self._worker._db.deploy_histories.insert(deployment)
