@@ -100,6 +100,19 @@ class Buildimage():
         return json.dumps(datas, sort_keys=True, indent=4, separators=(',', ': '))
 
     def _format_salt_top_from_app_features(self):
+        """ Generates the formula dictionnary object with all required features
+        >>> class worker:
+        ...     app = { \
+                    'name': 'AppName', 'env': 'prod', 'role': 'webfront', 'region': 'eu-west-1',\
+                    'features': [{'name': 'pkg', 'version': 'git_vim'}, {'name': 'pkg', 'version': 'package=lsof'}, {'name': 'pkg', 'version': 'package=curl'}]\
+                 }
+        ...     job = None
+        ...     log_file = None
+        ...     _config = None
+        ...     _db = None
+        >>> Buildimage(worker=worker())._format_salt_top_from_app_features()
+        ['pkg']
+        """
         top = []
         for i in self._app['features']:
             if re.search('^(php|php5)-(.*)',i['name']):
@@ -123,8 +136,8 @@ class Buildimage():
         ...     log_file = None
         ...     _config = None
         ...     _db = None
-        >>> Buildimage(worker=worker())._format_salt_pillar_from_app_features()
-        {'pkg': {'version': 'git_vim', 'package': ['lsof', 'curl']}}
+        >>> sorted(Buildimage(worker=worker())._format_salt_pillar_from_app_features().items())
+        [('pkg', {'package': ['lsof', 'curl'], 'version': 'git_vim'})]
         """
         pillar = {}
         for ft in self._app['features']:
