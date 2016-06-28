@@ -32,6 +32,8 @@ apps_schema = {
     'lifecycle_hooks': {
         'type': 'dict',
         'schema': {
+            'pre_buildimage': {'type': 'string'},
+            'post_buildimage': {'type': 'string'},
             'pre_bootstrap': {'type': 'string'},
             'post_bootstrap': {'type': 'string'},
         }
