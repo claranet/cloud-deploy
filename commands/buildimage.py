@@ -1,11 +1,12 @@
 import json
 import re
 import time
+import io
 
 from pypacker import Packer
 from ghost_log import log
 from ghost_aws import create_launch_config, generate_userdata, check_autoscale_exists, purge_launch_configuration, update_auto_scale
-from ghost_tools import get_aws_connection_data
+from ghost_tools import get_aws_connection_data, b64decode_utf8
 from settings import cloud_connections, DEFAULT_PROVIDER
 
 COMMAND_DESCRIPTION = "Build Image"
@@ -122,6 +123,20 @@ class Buildimage():
             self._db.apps.update({'_id': self._app['_id']},{'$set': {'ami': ami_id, 'build_infos.ami_name': self._ami_name}})
             self._worker.update_status("done")
 
+    def _generate_buildimage_hook(self, hook_name):
+        log("Create '%s' script for Packer" % hook_name, self._log_file)
+        hook_source = b64decode_utf8(self._app['lifecycle_hooks'][hook_name])
+        hook_file_path = "/ghost/{name}/{env}/{role}/hook-{hook_name}".format(name=self._app['name'], env=self._app['env'], role=self._app['role'], hook_name=hook_name)
+        with io.open(hook_file_path, mode='w', encoding='utf-8') as f:
+            f.write(hook_source)
+        return hook_file_path
+
+    def _get_buildimage_hooks(self):
+        hooks = {}
+        hooks['pre_buildimage'] = self._generate_buildimage_hook('pre_buildimage')
+        hooks['post_buildimage'] = self._generate_buildimage_hook('post_buildimage')
+        return hooks
+
     def _get_notification_message_done(self, ami_id):
         """
         >>> from bson.objectid import ObjectId
@@ -145,7 +160,7 @@ class Buildimage():
         log("Generating a new AMI", self._log_file)
         log("Packer options : %s" %json.dumps(json_packer_for_log, sort_keys=True, indent=4, separators=(',', ': ')), self._log_file)
         pack = Packer(json_packer, self._config, self._log_file, self._job['_id'])
-        ami_id = pack.build_image(self._format_salt_top_from_app_features(), self._format_salt_pillar_from_app_features())
+        ami_id = pack.build_image(self._format_salt_top_from_app_features(), self._format_salt_pillar_from_app_features(), self._get_buildimage_hooks())
         if ami_id is not "ERROR":
             log("Update app in MongoDB to update AMI: {0}".format(ami_id), self._log_file)
             self._update_app_ami(ami_id)
