@@ -126,7 +126,11 @@ class Buildimage():
 
     def _generate_buildimage_hook(self, hook_name):
         log("Create '%s' script for Packer" % hook_name, self._log_file)
-        hook_source = b64decode_utf8(self._app['lifecycle_hooks'][hook_name])
+        lfc_hooks = self._app.get('lifecycle_hooks', None)
+        if not lfc_hooks or not lfc_hooks.get(hook_name, None):
+            hook_source = ''
+        else:
+            hook_source = b64decode_utf8(self._app['lifecycle_hooks'][hook_name])
         app_path = "/ghost/{name}/{env}/{role}".format(name=self._app['name'], env=self._app['env'], role=self._app['role'])
         if not os.path.exists(app_path):
             os.makedirs(app_path)
