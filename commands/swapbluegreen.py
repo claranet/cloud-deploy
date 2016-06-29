@@ -180,7 +180,6 @@ class Swapbluegreen():
 
     def execute(self):
         log(_green("STATE: Started"), self._log_file)
-        log(_green("Swap Strategy: {0}" .format(self._job['options'][0])), self._log_file)
         swap_execution_strategy = self._job['options'][0] if 'options' in self._job and len(self._job['options']) > 0 else "isolated"
         online_app, to_deploy_app = get_blue_green_apps(self._app,
                                                         self._worker._db.apps,
