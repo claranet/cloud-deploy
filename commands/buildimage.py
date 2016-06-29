@@ -2,6 +2,7 @@ import json
 import re
 import time
 import io
+import os
 
 from pypacker import Packer
 from ghost_log import log
@@ -126,7 +127,10 @@ class Buildimage():
     def _generate_buildimage_hook(self, hook_name):
         log("Create '%s' script for Packer" % hook_name, self._log_file)
         hook_source = b64decode_utf8(self._app['lifecycle_hooks'][hook_name])
-        hook_file_path = "/ghost/{name}/{env}/{role}/hook-{hook_name}".format(name=self._app['name'], env=self._app['env'], role=self._app['role'], hook_name=hook_name)
+        app_path = "/ghost/{name}/{env}/{role}".format(name=self._app['name'], env=self._app['env'], role=self._app['role'])
+        if not os.path.exists(app_path):
+            os.makedirs(app_path)
+        hook_file_path = "{app_path}/hook-{hook_name}".format(app_path=app_path, hook_name=hook_name)
         with io.open(hook_file_path, mode='w', encoding='utf-8') as f:
             f.write(hook_source)
         return hook_file_path
