@@ -185,13 +185,16 @@ def update_auto_scale(cloud_connection, app, launch_config, log_file, update_as_
         :return   None
     """
     conn = cloud_connection.get_connection(app ['region'], ["ec2", "autoscale"])
+    connvpc = cloud_connection.get_connection(app['region'], ["vpc"])
+    az = [i['availability_zone'] for i in connvpc.get_all_subnets() if i['id'] in app['environment_infos']['subnet_ids']]
     as_group = conn.get_all_groups(names=[app['autoscale']['name']])[0]
     setattr(as_group, 'launch_config_name', launch_config.name)
     if update_as_params:
         setattr(as_group, 'desired_capacity', app['autoscale']['current'])
         setattr(as_group, 'min_size', app['autoscale']['min'])
         setattr(as_group, 'max_size', app['autoscale']['max'])
-        setattr(as_group, 'vpc_zone_identifier', app['environment_infos']['subnet_ids'])
+        setattr(as_group, 'availability_zones', az)
+        setattr(as_group, 'vpc_zone_identifier', ','.join(app['environment_infos']['subnet_ids']))
     as_group.update()
     log("Autoscaling group [{0}] updated.".format(app['autoscale']['name']), log_file)
 
