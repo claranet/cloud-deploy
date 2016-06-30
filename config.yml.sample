@@ -56,8 +56,11 @@ bucket_region: eu-west-1
 #          client_dev_morea_eu-west-1:     /home/admin/key/client_dev_morea_us-west-2.pem
 #          client_preprod_morea_eu-west-1: /home/admin/key/client_preprod_morea_us-west-2.pem
 #
-# Note: account ids must be quoted to be parsed as string instead of numbers.
-# Failing to do so with result in empty `key_path` as no match will be found.
+# Notes:
+# - account ids must be quoted to be parsed as string instead of numbers.
+#   Failing to do so with result in empty `key_path` as no match will be found.
+# - no account id must be specified for applications in the same AWS account as Ghost.
+#   In that case, use `default`.
 
 key_path: /home/admin/key/client_morea.pem
 
