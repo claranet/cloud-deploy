@@ -102,6 +102,19 @@ class Buildimage():
         return json.dumps(datas, sort_keys=True, indent=4, separators=(',', ': '))
 
     def _format_salt_top_from_app_features(self):
+        """ Generates the formula dictionnary object with all required features
+        >>> class worker:
+        ...     app = { \
+                    'name': 'AppName', 'env': 'prod', 'role': 'webfront', 'region': 'eu-west-1',\
+                    'features': [{'name': 'pkg', 'version': 'git_vim'}, {'name': 'pkg', 'version': 'package=lsof'}, {'name': 'pkg', 'version': 'package=curl'}]\
+                 }
+        ...     job = None
+        ...     log_file = None
+        ...     _config = None
+        ...     _db = None
+        >>> Buildimage(worker=worker())._format_salt_top_from_app_features()
+        ['pkg']
+        """
         top = []
         for i in self._app['features']:
             if re.search('^(php|php5)-(.*)',i['name']):
@@ -110,14 +123,38 @@ class Buildimage():
                 continue
             if re.search('^gem-(.*)',i['name']):
                 continue
-            top.append(i['name'].encode('utf-8'))
+            if not i['name'].encode('utf-8') in top:
+                top.append(i['name'].encode('utf-8'))
         return top
 
     def _format_salt_pillar_from_app_features(self):
+        """ Generates the pillar dictionnary object with all required features and their options
+        >>> class worker:
+        ...     app = { \
+                    'name': 'AppName', 'env': 'prod', 'role': 'webfront', 'region': 'eu-west-1',\
+                    'features': [{'name': 'pkg', 'version': 'git_vim'}, {'name': 'pkg', 'version': 'package=lsof'}, {'name': 'pkg', 'version': 'package=curl'}]\
+                 }
+        ...     job = None
+        ...     log_file = None
+        ...     _config = None
+        ...     _db = None
+        >>> sorted(Buildimage(worker=worker())._format_salt_pillar_from_app_features().items())
+        [('pkg', {'package': ['lsof', 'curl'], 'version': 'git_vim'})]
+        """
         pillar = {}
-        for i in self._app['features']:
-            pillar[i['name'].encode('utf-8')] = {}
-            pillar[i['name'].encode('utf-8')] = {'version': i['version'].encode('utf-8')}
+        for ft in self._app['features']:
+            values = ft['version'].split('=', 1) # Split only one time
+            feature_name = ft['name'].encode('utf-8')
+            if not feature_name in pillar:
+                pillar[feature_name] = {}
+            if len(values) == 2:
+                ft_param_key = values[0].encode('utf-8')
+                ft_param_val = values[1].encode('utf-8')
+                if not ft_param_key in pillar[feature_name]:
+                    pillar[feature_name][ft_param_key] = []
+                pillar[feature_name][ft_param_key].append(ft_param_val)
+            else:
+                pillar[feature_name]['version'] = ft['version'].encode('utf-8')
         return pillar
 
     def _update_app_ami(self, ami_id):
@@ -149,13 +186,14 @@ class Buildimage():
         """
         >>> from bson.objectid import ObjectId
         >>> class worker:
-        ...   app = None
+        ...   app = {'name': 'AppName', 'env': 'prod', 'role': 'webfront', 'region': 'eu-west-1'}
         ...   job = None
         ...   log_file = None
         ...   _config = None
-        >>> Deploy(worker=worker())._get_notification_message_done('')
+        ...   _db = None
+        >>> Buildimage(worker=worker())._get_notification_message_done('')
         'Build image OK: []'
-        >>> Deploy(worker=worker())._get_notification_message_done('012345678901234567890123')
+        >>> Buildimage(worker=worker())._get_notification_message_done('012345678901234567890123')
         'Build image OK: [012345678901234567890123]'
         """
         return 'Build image OK: [{0}]'.format(ami_id)
