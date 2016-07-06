@@ -1,13 +1,16 @@
 import boto
+import boto.s3
+import boto.s3.connection
+
 from boto import vpc, iam
 from boto.ec2 import autoscale
-from boto.sts import STSConnection 
+from boto.sts import STSConnection
 from cloud_connection import ACloudConnection
 
 from ghost_log import log
 
 class AWSConnection(ACloudConnection):
-   
+
     def __init__(self, log_file=None, **kwargs):
         super(AWSConnection, self).__init__(log_file, **kwargs)
         assumed_account_id = self._parameters.get('assumed_account_id', None)
@@ -29,7 +32,7 @@ class AWSConnection(ACloudConnection):
         Recursive help function to build the boto connection hierarchy
         the order of services list is important and should be like this:
         ['ec2'], ['ec2', 'autoscale'], [s3], ['ec2', 'elb'] and not like
-        this : ['autoscale', 'ec2'], ['s3', 'ec2']. Check the GHOST API
+        this : ['autoscale', 'ec2'], ['elb', 'ec2']. Check the GHOST API
         documentation for more informations
         """
         if attributes:
@@ -84,14 +87,21 @@ class AWSConnection(ACloudConnection):
         connection = None
         try:
             aws_service = self._get_boto_service(boto, services)
+
+            kwargs = {}
+            if aws_service == boto.s3:
+                # Use base S3 endpoint to support buckets with dots in their names
+                kwargs['calling_format'] = boto.s3.connection.OrdinaryCallingFormat()
+
             if not self._role_arn:
-                connection = aws_service.connect_to_region(region)
+                connection = aws_service.connect_to_region(region, **kwargs)
             elif self.check_credentials():
                 connection = aws_service.connect_to_region(
                         region,
                         aws_access_key_id=self._parameters['access_key'],
                         aws_secret_access_key=self._parameters['secret_key'],
-                        security_token=self._parameters['session_token']
+                        security_token=self._parameters['session_token'],
+                        **kwargs
                 )
         except:
             if self._log_file:

@@ -26,6 +26,7 @@ EC2_AVAIL_ZONE=$(curl -s http://169.254.169.254/latest/meta-data/placement/avail
 EC2_REGION="`echo \"$EC2_AVAIL_ZONE\" | sed -e 's:\([0-9][0-9]*\)[a-z]*\$:\\1:'`"
 
 while [ -z "$APP" ] || [ -z "$ENV" ] || [ -z "$ROLE" ] ; do
+  # TODO: Exit with error after N retry
   echo "Waiting 1s for (app, env, role) tags to be set..."
   sleep 1
 
@@ -54,8 +55,10 @@ function zabbix_hostname(){
 }
 
 function instance_hostname() {
-    EC2_HOSTNAME=$(echo ${NAME}-${IP}| tr -s '.' '-')
+    MAX_NAME=$(($(getconf HOST_NAME_MAX)-16))
+    EC2_HOSTNAME=$(echo ${NAME:0:$MAX_NAME}-${IP}| tr -s '.' '-')
     salt-call --local network.mod_hostname "$EC2_HOSTNAME"
+    salt-call --local file.append /etc/hosts "$(echo $IP| tr -s '-' '.') $EC2_HOSTNAME"
 }
 
 if [ -z "$1" ] ; then
@@ -107,21 +110,21 @@ function deploy_module() {
     MODULE_NAME=$1
     if [ -z $MODULE_NAME ]; then
         echo "MODULE_NAME cannot be empty"
-        exit_deployment -1
+        exit_deployment -10
     fi
     MODULE_FILE=$2
     if [ -z $MODULE_FILE ]; then
         echo "MODULE_FILE cannot be empty"
-        exit_deployment -1
+        exit_deployment -10
     fi
     TARGET=$3
     if [ -z $TARGET ]; then
         echo "TARGET cannot be empty"
-        exit_deployment -1
+        exit_deployment -10
     fi
     if [ ${TARGET%%+(/)} == "/tmp" ]; then
         echo "TARGET path cannot be /tmp"
-        exit_deployment -1
+        exit_deployment -10
     fi
     TARGETDIR=$(dirname $TARGET)
     if [ ! -d $TARGETDIR ]; then
@@ -137,7 +140,7 @@ function deploy_module() {
     tar xvzf /tmp/$MODULE_FILE -C /ghost/$UUID > /dev/null
     if [ $? -ne 0 ] || [ ! -f /tmp/$MODULE_FILE ]; then
         echo "Extracting module failed !"
-        exit_deployment -1
+        exit_deployment -11
     fi
 
     rm -rf /tmp/$MODULE_FILE
@@ -154,7 +157,7 @@ function deploy_module() {
         local status=${PIPESTATUS[0]}
         if [ $status -ne 0 ]; then
             purge_latest_failed_deploy $MODULE_NAME $UUID
-            exit_deployment -1
+            exit_deployment -12
         fi
         rm -vf ./predeploy
     fi
@@ -173,6 +176,11 @@ function deploy_module() {
         echo "Executing postdeploy script..." >> /tmp/$LOGFILE
         chmod +x postdeploy
         GHOST_MODULE_REPO=$GHOST_MODULE_REPO GHOST_MODULE_REV=$GHOST_MODULE_REV GHOST_MODULE_COMMIT=$GHOST_MODULE_COMMIT GHOST_MODULE_COMMIT_MESSAGE=$GHOST_MODULE_COMMIT_MESSAGE GHOST_MODULE_USER=$GHOST_MODULE_USER GHOST_APP=$APP GHOST_ENV=$ENV GHOST_ROLE=$ROLE GHOST_MODULE_NAME=$MODULE_NAME GHOST_MODULE_PATH=$TARGET ./postdeploy 2>&1 | tee -a /tmp/$LOGFILE
+        local status=${PIPESTATUS[0]}
+        if [ $status -ne 0 ]; then
+            purge_latest_failed_deploy $MODULE_NAME $UUID
+            exit_deployment -13
+        fi
         rm -vf ./postdeploy
     fi
 
@@ -210,7 +218,7 @@ function download_and_run_lifecycle_hook_script() {
         GHOST_APP=$APP GHOST_ENV=$ENV GHOST_ROLE=$ROLE /tmp/ghost_${script_name} 2>&1 | tee -a /tmp/$LOGFILE
         local status=${PIPESTATUS[0]}
         if [ $status -ne 0 ]; then
-            exit_deployment -1
+            exit_deployment -5
         fi
     fi
 }
@@ -221,7 +229,7 @@ $AWS_BIN s3 cp s3://$S3_BUCKET/ghost/$APP/$ENV/$ROLE/MANIFEST /tmp/ --region "$S
 if [ $? -ne 0 ]; then
     echo "Manifest download error...Exiting" >> /tmp/$LOGFILE
     # init zabbix before quit
-    exit_deployment 10
+    exit_deployment -3
 fi
 
 if [ -n "$1" ]; then

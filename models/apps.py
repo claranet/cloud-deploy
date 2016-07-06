@@ -32,6 +32,8 @@ apps_schema = {
     'lifecycle_hooks': {
         'type': 'dict',
         'schema': {
+            'pre_buildimage': {'type': 'string'},
+            'post_buildimage': {'type': 'string'},
             'pre_bootstrap': {'type': 'string'},
             'post_bootstrap': {'type': 'string'},
         }
@@ -48,7 +50,7 @@ apps_schema = {
                 },
                 'version': {
                     'type': 'string',
-                    'regex': '^[a-zA-Z0-9\.\-\_\/:~\+]*$',
+                    'regex': '^[a-zA-Z0-9\.\-\_\/:~\+=]*$',
                     'required': False
                 }
             }
@@ -89,6 +91,7 @@ apps_schema = {
                 'build_pack': {'type': 'string'},
                 'pre_deploy': {'type': 'string'},
                 'post_deploy': {'type': 'string'},
+                'after_all_deploy': {'type': 'string'},
                 'path': {'type': 'string',
                          'regex': '^(/[a-zA-Z0-9\.\-\_]+)+$',
                          'required': True},

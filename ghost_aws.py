@@ -86,8 +86,8 @@ def deploy_module_on_hosts(cloud_connection, module, fabric_execution_strategy, 
         if running_instances:
             hosts_list = [host['private_ip_address'] for host in running_instances]
             if safe_deployment_strategy:
-                safedeploy = SafeDeployment(app, module, running_instances, log_file, app['safe-deployment'], fabric_execution_strategy, as_group)
-                safedeploy.safe_manager(safe_deployment_strategy, cloud_connection)
+                safedeploy = SafeDeployment(cloud_connection, app, module, running_instances, log_file, app['safe-deployment'], fabric_execution_strategy, as_group)
+                safedeploy.safe_manager(safe_deployment_strategy)
             else:
                 launch_deploy(app, module, hosts_list, fabric_execution_strategy, log_file)
         else:
@@ -175,13 +175,26 @@ def purge_launch_configuration(cloud_connection, app, retention):
         return False
 
 def update_auto_scale(cloud_connection, app, launch_config, log_file, update_as_params=False):
+    """ Update the AutoScaling parameters.
+
+        :param  cloud_connection
+        :param  app               dict  The app config define in Ghost.
+        :param  launch_config     boto obj  The new launch configuration.
+        :param  log_file          log file obj
+        :param  update_as_params  Bool  If set to True the desired_capacity/min_size/max_size/subnets will be updated
+        :return   None
+    """
     conn = cloud_connection.get_connection(app ['region'], ["ec2", "autoscale"])
+    connvpc = cloud_connection.get_connection(app['region'], ["vpc"])
+    az = [i.availability_zone for i in connvpc.get_all_subnets(subnet_ids=app['environment_infos']['subnet_ids'])]
     as_group = conn.get_all_groups(names=[app['autoscale']['name']])[0]
     setattr(as_group, 'launch_config_name', launch_config.name)
     if update_as_params:
         setattr(as_group, 'desired_capacity', app['autoscale']['current'])
         setattr(as_group, 'min_size', app['autoscale']['min'])
         setattr(as_group, 'max_size', app['autoscale']['max'])
+        setattr(as_group, 'availability_zones', az)
+        setattr(as_group, 'vpc_zone_identifier', ','.join(app['environment_infos']['subnet_ids']))
     as_group.update()
     log("Autoscaling group [{0}] updated.".format(app['autoscale']['name']), log_file)
 

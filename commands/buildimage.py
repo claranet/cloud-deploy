@@ -1,11 +1,13 @@
 import json
 import re
 import time
+import io
+import os
 
 from pypacker import Packer
 from ghost_log import log
 from ghost_aws import create_launch_config, generate_userdata, check_autoscale_exists, purge_launch_configuration, update_auto_scale
-from ghost_tools import get_aws_connection_data
+from ghost_tools import get_aws_connection_data, b64decode_utf8
 from settings import cloud_connections, DEFAULT_PROVIDER
 
 COMMAND_DESCRIPTION = "Build Image"
@@ -35,7 +37,7 @@ class Buildimage():
 
     def _purge_old_images(self):
         conn = self._cloud_connection.get_connection(self._app['region'], ["ec2"])
-        retention = 5
+        retention = self._config.get('ami_retention', 5)
         filtered_images = []
         images = conn.get_all_images(owners="self")
 
@@ -100,37 +102,98 @@ class Buildimage():
         return json.dumps(datas, sort_keys=True, indent=4, separators=(',', ': '))
 
     def _format_salt_top_from_app_features(self):
+        """ Generates the formula dictionnary object with all required features
+        >>> class worker:
+        ...     app = { \
+                    'name': 'AppName', 'env': 'prod', 'role': 'webfront', 'region': 'eu-west-1',\
+                    'features': [{'name': 'pkg', 'version': 'git_vim'}, {'name': 'pkg', 'version': 'package=lsof'}, {'name': 'pkg', 'version': 'package=curl'}]\
+                 }
+        ...     job = None
+        ...     log_file = None
+        ...     _config = None
+        ...     _db = None
+        >>> Buildimage(worker=worker())._format_salt_top_from_app_features()
+        ['pkg']
+        """
         top = []
         for i in self._app['features']:
             if re.search('^(php|php5)-(.*)',i['name']):
                 continue
             if re.search('^zabbix-(.*)',i['name']):
                 continue
-            top.append(i['name'].encode('utf-8'))
+            if re.search('^gem-(.*)',i['name']):
+                continue
+            if not i['name'].encode('utf-8') in top:
+                top.append(i['name'].encode('utf-8'))
         return top
 
     def _format_salt_pillar_from_app_features(self):
+        """ Generates the pillar dictionnary object with all required features and their options
+        >>> class worker:
+        ...     app = { \
+                    'name': 'AppName', 'env': 'prod', 'role': 'webfront', 'region': 'eu-west-1',\
+                    'features': [{'name': 'pkg', 'version': 'git_vim'}, {'name': 'pkg', 'version': 'package=lsof'}, {'name': 'pkg', 'version': 'package=curl'}]\
+                 }
+        ...     job = None
+        ...     log_file = None
+        ...     _config = None
+        ...     _db = None
+        >>> sorted(Buildimage(worker=worker())._format_salt_pillar_from_app_features().items())
+        [('pkg', {'package': ['lsof', 'curl'], 'version': 'git_vim'})]
+        """
         pillar = {}
-        for i in self._app['features']:
-            pillar[i['name'].encode('utf-8')] = {}
-            pillar[i['name'].encode('utf-8')] = {'version': i['version'].encode('utf-8')}
+        for ft in self._app['features']:
+            values = ft['version'].split('=', 1) # Split only one time
+            feature_name = ft['name'].encode('utf-8')
+            if not feature_name in pillar:
+                pillar[feature_name] = {}
+            if len(values) == 2:
+                ft_param_key = values[0].encode('utf-8')
+                ft_param_val = values[1].encode('utf-8')
+                if not ft_param_key in pillar[feature_name]:
+                    pillar[feature_name][ft_param_key] = []
+                pillar[feature_name][ft_param_key].append(ft_param_val)
+            else:
+                pillar[feature_name]['version'] = ft['version'].encode('utf-8')
         return pillar
 
     def _update_app_ami(self, ami_id):
             self._db.apps.update({'_id': self._app['_id']},{'$set': {'ami': ami_id, 'build_infos.ami_name': self._ami_name}})
             self._worker.update_status("done")
 
+    def _generate_buildimage_hook(self, hook_name):
+        log("Create '%s' script for Packer" % hook_name, self._log_file)
+        lfc_hooks = self._app.get('lifecycle_hooks', None)
+        if not lfc_hooks or not lfc_hooks.get(hook_name, None):
+            hook_source = ''
+        else:
+            hook_source = b64decode_utf8(self._app['lifecycle_hooks'][hook_name])
+        app_path = "/ghost/{name}/{env}/{role}".format(name=self._app['name'], env=self._app['env'], role=self._app['role'])
+        if not os.path.exists(app_path):
+            os.makedirs(app_path)
+        hook_file_path = "{app_path}/hook-{hook_name}".format(app_path=app_path, hook_name=hook_name)
+        with io.open(hook_file_path, mode='w', encoding='utf-8') as f:
+            f.write(hook_source)
+        return hook_file_path
+
+    def _get_buildimage_hooks(self):
+        hooks = {}
+        hooks['pre_buildimage'] = self._generate_buildimage_hook('pre_buildimage')
+        hooks['post_buildimage'] = self._generate_buildimage_hook('post_buildimage')
+        return hooks
+
     def _get_notification_message_done(self, ami_id):
         """
         >>> from bson.objectid import ObjectId
         >>> class worker:
-        ...   app = None
+        ...   app = {'name': 'AppName', 'env': 'prod', 'role': 'webfront', 'region': 'eu-west-1'}
         ...   job = None
         ...   log_file = None
         ...   _config = None
-        >>> Deploy(worker=worker())._get_notification_message_done('')
+        ...   _db = None
+        >>> Buildimage(worker=worker())._get_notification_message_done('')
         'Build image OK: []'
-        >>> Deploy(worker=worker())._get_notification_message_done('012345678901234567890123')
+        >>> Buildimage(worker=worker())._get_notification_message_done('012345678901234567890123')
         'Build image OK: [012345678901234567890123]'
         """
         return 'Build image OK: [{0}]'.format(ami_id)
@@ -143,7 +206,7 @@ class Buildimage():
         log("Generating a new AMI", self._log_file)
         log("Packer options : %s" %json.dumps(json_packer_for_log, sort_keys=True, indent=4, separators=(',', ': ')), self._log_file)
         pack = Packer(json_packer, self._config, self._log_file, self._job['_id'])
-        ami_id = pack.build_image(self._format_salt_top_from_app_features(), self._format_salt_pillar_from_app_features())
+        ami_id = pack.build_image(self._format_salt_top_from_app_features(), self._format_salt_pillar_from_app_features(), self._get_buildimage_hooks())
         if ami_id is not "ERROR":
             log("Update app in MongoDB to update AMI: {0}".format(ami_id), self._log_file)
             self._update_app_ami(ami_id)

@@ -69,7 +69,7 @@ class Packer:
         log('pillar: features.sls: {0}'.format(features), self._log_file)
         yaml.dump(features, stream_features, default_flow_style=False)
 
-    def _build_packer_json(self):
+    def _build_packer_json(self, hooks):
         packer_json = {}
         builders = [{
             'type': 'amazon-ebs',
@@ -97,6 +97,10 @@ class Packer:
         provisioners = [
         {
             'type': 'shell',
+            'script': hooks['pre_buildimage']
+        },
+        {
+            'type': 'shell',
             'inline': pre_salt_script
         },
         {
@@ -104,6 +108,10 @@ class Packer:
             'local_state_tree': self.salt_path,
             'local_pillar_roots': SALT_LOCAL_TREE + self.unique + '/pillar',
             'skip_bootstrap': self.packer_config['skip_salt_bootstrap'],
+        },
+        {
+            'type': 'shell',
+            'script': hooks['post_buildimage']
         },
         {
             'type': 'shell',
@@ -152,10 +160,10 @@ class Packer:
         rc = process.poll()
         return rc, result
 
-    def build_image(self, salt_params, features):
+    def build_image(self, salt_params, features, hooks):
         self._build_salt_top(salt_params)
         self._build_salt_pillar(features)
-        self._build_packer_json()
+        self._build_packer_json(hooks)
         ret_code, result = self._run_packer_cmd(
                                         [
                                             'packer',

@@ -30,7 +30,7 @@ from .elb import get_elb_instance_status_autoscaling_group, get_connection_drain
 class SafeDeployment():
     """ Class which will manage the safe deployment process """
 
-    def __init__(self, app, module, hosts_list, log_file, safe_infos, fabric_exec_strategy, as_name):
+    def __init__(self, cloud_connection, app, module, hosts_list, log_file, safe_infos, fabric_exec_strategy, as_name):
         """
             :param  module        dict: Ghost object wich describe the module parameters.
             :param  app           dict: Ghost object which describe the application parameters.
@@ -41,6 +41,7 @@ class SafeDeployment():
             :param  fabric_exec_strategy  string: Deployment strategy(serial or parrallel).
             :param  as_name:      string: The name of the Autoscaling Group.
         """
+        self.cloud_connection = cloud_connection
         self.app = app
         self.module = module
         self.hosts_list = hosts_list
@@ -58,7 +59,7 @@ class SafeDeployment():
                                             deployment process cannot be perform.
 
         >>> from io import StringIO
-        >>> sd = SafeDeployment(None, None, None, StringIO(), None, None, None)
+        >>> sd = SafeDeployment(None, None, None, None, StringIO(), None, None, None)
 
         >>> sd.hosts_list = ['host1', 'host2']
         >>> sd.split_hosts_list('50%')
@@ -108,7 +109,7 @@ class SafeDeployment():
             raise GCallException("Cannot continue, not enought instances to perform the safe deployment")
         return [self.hosts_list[i::chunk] for i in range(chunk)]
 
-    def elb_safe_deployment(self, instances_list, cloud_connection):
+    def elb_safe_deployment(self, instances_list):
         """ Manage the safe deployment process for the ELB.
 
             :param  instances_list  list: Instances on which to deploy(list of dict. ex: [{'id':XXX, 'private_ip_address':XXXX}...]).
@@ -116,8 +117,8 @@ class SafeDeployment():
         """
         app_region = self.app['region']
 
-        as_conn = cloud_connection.get_connection(app_region, ["ec2", "autoscale"])
-        elb_conn = cloud_connection.get_connection(app_region, ["ec2", "elb"])
+        as_conn = self.cloud_connection.get_connection(app_region, ["ec2", "autoscale"])
+        elb_conn = self.cloud_connection.get_connection(app_region, ["ec2", "elb"])
 
         elb_instances = get_elb_instance_status_autoscaling_group(elb_conn, self.as_name, as_conn)
         if not len(elb_instances):
@@ -159,7 +160,8 @@ class SafeDeployment():
             :param  instances_list  list: Instances on which to deploy(list of dict. ex: [{'id':XXX, 'private_ip_address':XXXX}...]).
             :return                 True if operation successed or raise an Exception.
         """
-        lb_infos = [host['private_ip_address'] for host in find_ec2_running_instances(self.safe_infos['app_tag_value'], self.app['env'], 'loadbalancer', self.app['region'])]
+        lb_infos = [host['private_ip_address'] for host in find_ec2_running_instances(self.cloud_connection,
+                     self.safe_infos['app_tag_value'], self.app['env'], 'loadbalancer', self.app['region'])]
         if lb_infos:
             hapi = haproxy.Haproxyapi(lb_infos, self.log_file, self.safe_infos['api_port'])
             ha_urls = hapi.get_haproxy_urls()
@@ -189,7 +191,7 @@ class SafeDeployment():
                                  app_region: {2}' .format(self.safe_infos['app_tag_value'], self.app['env'], self.app['region']))
 
 
-    def safe_manager(self, safe_strategy, cloud_connection):
+    def safe_manager(self, safe_strategy):
         """  Global manager for the safe deployment process.
 
             :param  safe_strategy string: The type of safe deployment strategy(1by1-1/3-25%-50%)
@@ -197,7 +199,7 @@ class SafeDeployment():
         """
         for host_group in self.split_hosts_list(safe_strategy):
             if self.safe_infos['load_balancer_type'] == 'elb':
-                self.elb_safe_deployment(host_group, cloud_connection)
+                self.elb_safe_deployment(host_group)
             else:
                 self.haproxy_safe_deployment(host_group)
         return True

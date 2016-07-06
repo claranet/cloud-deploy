@@ -3,11 +3,12 @@ import sys
 import tempfile
 from bson.objectid import ObjectId
 
-from ghost_tools import GCallException, get_app_module_name_list, clean_local_module_workspace
+from ghost_tools import GCallException, gcall, get_app_module_name_list, clean_local_module_workspace
 from ghost_tools import get_aws_connection_data
 from settings import cloud_connections, DEFAULT_PROVIDER
 from ghost_log import log
 from ghost_aws import deploy_module_on_hosts
+from libs.deploy import execute_module_script_on_ghost
 
 COMMAND_DESCRIPTION = "Re-deploy an old module package"
 
@@ -44,7 +45,31 @@ class Redeploy():
         return result
 
     def _get_path_from_app(self):
+        """
+        >>> class worker:
+        ...     app = {'name': 'AppName', 'env': 'prod', 'role': 'webfront'}
+        ...     job = None
+        ...     log_file = None
+        ...     _config = None
+        ...     _db = None
+        >>> Redeploy(worker=worker())._get_path_from_app()
+        '/ghost/AppName/prod/webfront'
+        """
         return "/ghost/{name}/{env}/{role}".format(name=self._app['name'], env=self._app['env'], role=self._app['role'])
+
+    def _get_clone_path_from_module(self, module):
+        """
+        >>> class worker:
+        ...     app = {'name': 'AppName', 'env': 'prod', 'role': 'webfront'}
+        ...     job = None
+        ...     log_file = None
+        ...     _config = None
+        ...     _db = None
+        >>> module = {'name': 'mod1', 'git_repo': 'git@bitbucket.org:morea/ghost.git'}
+        >>> Redeploy(worker=worker())._get_clone_path_from_module(module)
+        '/ghost/AppName/prod/webfront/mod1'
+        """
+        return "{app_path}/{module}".format(app_path=self._get_path_from_app(), module=module['name'])
 
     def _update_manifest(self, module, package):
         key_path = self._get_path_from_app() + '/MANIFEST'
@@ -87,13 +112,9 @@ class Redeploy():
             })
         for mod in sorted(modules, key=lambda mod: mod['index']):
             data = data + mod['name'] + ':' + mod['package'] + ':' + mod['path'] + '\n'
-        manifest, manifest_path = tempfile.mkstemp()
-        if sys.version > '3':
-            os.write(manifest, bytes(data, 'UTF-8'))
-        else:
-            os.write(manifest, data)
-        os.close(manifest)
-        key.set_contents_from_filename(manifest_path)
+
+        key.set_contents_from_string(data)
+        key.close()
 
     def _get_deploy_infos(self, deploy_id):
         deploy_infos = self._db.deploy_histories.find_one({'_id': ObjectId(deploy_id)})
@@ -107,13 +128,39 @@ class Redeploy():
     def _deploy_module(self, module, fabric_execution_strategy, safe_deployment_strategy):
         deploy_module_on_hosts(self._cloud_connection, module, fabric_execution_strategy, self._app, self._config, self._log_file, safe_deployment_strategy)
 
+    def _local_extract_package(self, module, package):
+        clone_path = self._get_clone_path_from_module(module)
+        gcall('rm -rf "%s"' % clone_path, 'Cleaning old temporary redeploy module working directory "%s"' % clone_path, self._log_file)
+        gcall('mkdir -p "%s"' % clone_path, 'Recreating redeploy module working directory "%s"' % clone_path, self._log_file)
+
+        key_path = '{path}/{module}/{pkg_name}'.format(path=self._get_path_from_app(), module=module['name'], pkg_name=package)
+        log("Downloading package: {0} from '{1}'".format(package, key_path), self._log_file)
+        dest_package_path = "{0}/{1}".format(clone_path, package)
+        cloud_connection = cloud_connections.get(self._app.get('provider', DEFAULT_PROVIDER))(self._log_file)
+        conn = cloud_connection.get_connection(self._config.get('bucket_region', self._app['region']), ["s3"])
+        bucket = conn.get_bucket(self._config['bucket_s3'])
+        key = bucket.get_key(key_path)
+        if not key:
+            raise GCallException("Package '{0}' doesn't exist on bucket '{1}'".format(key_path, self._config['bucket_s3']))
+        key.get_contents_to_filename(dest_package_path)
+
+        gcall('tar -xf "{0}" -C "{1}"'.format(dest_package_path, clone_path), "Extracting package: %s" % package, self._log_file)
+        return clone_path
+
     def _execute_redeploy(self, deploy_id, fabric_execution_strategy, safe_deployment_strategy):
         module, package = self._get_deploy_infos(deploy_id)
         if module and package:
             self._update_manifest(module, package)
             all_app_modules_list = get_app_module_name_list(self._app['modules'])
             clean_local_module_workspace(self._get_path_from_app(), all_app_modules_list, self._log_file)
+            # Download and extract package before launching deploy
+            clone_path = self._local_extract_package(module, package)
+
+            # Re-deploy
             self._deploy_module(module, fabric_execution_strategy, safe_deployment_strategy)
+
+            # After all deploy exec
+            execute_module_script_on_ghost(self._app, module, 'after_all_deploy', 'After all deploy', clone_path, self._log_file)
         else:
             raise GCallException("Redeploy on deployment ID: {0} failed".format(deploy_id))
 

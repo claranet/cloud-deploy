@@ -1,4 +1,3 @@
-import base64
 import sys
 import traceback
 
@@ -7,6 +6,7 @@ from ghost_log import log
 from ghost_aws import create_launch_config, generate_userdata, check_autoscale_exists, purge_launch_configuration, update_auto_scale
 from settings import cloud_connections, DEFAULT_PROVIDER
 from ghost_tools import get_aws_connection_data
+from ghost_tools import b64decode_utf8
 
 COMMAND_DESCRIPTION = "Update LifeCycle Hooks scripts"
 
@@ -38,7 +38,7 @@ class Updatelifecyclehooks():
         key_name = '{prefix}/{lifecycle_hook}'.format(prefix=prefix, lifecycle_hook=lifecycle_hook)
         lifecycle_hook_source = lifecycle_hooks is not None and lifecycle_hooks.get(lifecycle_hook, None)
         if lifecycle_hook_source:
-            lifecycle_hook_source = base64.b64decode(lifecycle_hook_source)
+            lifecycle_hook_source = b64decode_utf8(lifecycle_hook_source)
             k = bucket.new_key(key_name)
             k.set_contents_from_string(lifecycle_hook_source)
             k.close()
