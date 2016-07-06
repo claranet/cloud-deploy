@@ -211,7 +211,7 @@ ghost = Eve(auth=BCryptAuth, settings=eve_settings)
 Bootstrap(ghost)
 ghost.config.from_object(rq_dashboard.default_settings)
 ghost.register_blueprint(rq_dashboard.blueprint, url_prefix='/rq')
-ghost.register_blueprint(eve_docs, url_prefix='/docs')
+ghost.register_blueprint(eve_docs, url_prefix='/docs/api')
 
 # Register eve hooks
 ghost.on_fetched_item_apps += post_fetched_app
