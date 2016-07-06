@@ -1,0 +1,3 @@
+[submodule "ghost-doc"]
+	path = ghost-doc
+	url = git@bitbucket.org:morea/ghost-doc.git
