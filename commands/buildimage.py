@@ -138,7 +138,8 @@ class Buildimage():
         ...     log_file = None
         ...     _config = None
         ...     _db = None
-        >>> sorted(Buildimage(worker=worker())._format_salt_pillar_from_app_features().items())
+        >>> import pprint
+        >>> pprint.pprint(Buildimage(worker=worker())._format_salt_pillar_from_app_features().items())
         [('pkg', {'package': ['lsof', 'curl'], 'version': 'git_vim'})]
         """
         pillar = {}
