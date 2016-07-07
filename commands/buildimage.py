@@ -138,7 +138,8 @@ class Buildimage():
         ...     log_file = None
         ...     _config = None
         ...     _db = None
-        >>> sorted(Buildimage(worker=worker())._format_salt_pillar_from_app_features().items())
+        >>> import pprint
+        >>> pprint.pprint(Buildimage(worker=worker())._format_salt_pillar_from_app_features().items())
         [('pkg', {'package': ['lsof', 'curl'], 'version': 'git_vim'})]
         """
         pillar = {}
@@ -165,7 +166,7 @@ class Buildimage():
         log("Create '%s' script for Packer" % hook_name, self._log_file)
         lfc_hooks = self._app.get('lifecycle_hooks', None)
         if not lfc_hooks or not lfc_hooks.get(hook_name, None):
-            hook_source = ''
+            hook_source = u''
         else:
             hook_source = b64decode_utf8(self._app['lifecycle_hooks'][hook_name])
         app_path = "/ghost/{name}/{env}/{role}".format(name=self._app['name'], env=self._app['env'], role=self._app['role'])

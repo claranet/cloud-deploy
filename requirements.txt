@@ -33,7 +33,7 @@ itsdangerous==0.24        # via eve, flask
 Jinja2==2.8               # via eve, flask
 markupsafe==0.23          # via eve, jinja2
 paramiko==1.16.0          # via fabric
-pip-tools==1.6.1
+pip-tools==1.7.0
 pycparser==2.14           # via cffi
 pycrypto==2.6.1           # via paramiko
 pymongo==3.2.2
