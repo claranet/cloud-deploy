@@ -188,7 +188,6 @@ class Buildimage():
         ...   f.read()
         u'echo Custom post-buildimage script'
         """
-        pillar = {}
         log("Create '%s' script for Packer" % hook_name, self._log_file)
         lfc_hooks = self._app.get('lifecycle_hooks', None)
         if not lfc_hooks or not lfc_hooks.get(hook_name, None):
