@@ -3,6 +3,7 @@ from fabric.colors import green as _green, yellow as _yellow, red as _red
 from ghost_log import log
 from ghost_tools import get_aws_connection_data
 from settings import cloud_connections, DEFAULT_PROVIDER
+from libs.ec2 import find_ec2_running_instances
 
 COMMAND_DESCRIPTION = "Destroy all instances"
 
@@ -35,12 +36,11 @@ class Destroyallinstances():
         log(" CONF: Region: {0}".format(self._app['region']), self._log_file)
         try:
             conn = self._cloud_connection.get_connection(self._app['region'], ["ec2"])
-            reservations = conn.get_all_instances(filters={"tag:app_id" : self._app['_id']})
+            running_instances = find_ec2_running_instances(self._cloud_connection, self._app['name'], self._app['env'], self._app['role'], self._app['region'])
             #Terminating instances
             instances = []
-            for r in reservations:
-                  for i in r.instances:
-                        instances.append(i.id)
+            for r in running_instances:
+                instances.append(r['id'])
             log(instances, self._log_file)
             conn.terminate_instances(instance_ids=instances)
 
