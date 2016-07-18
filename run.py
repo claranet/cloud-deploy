@@ -22,7 +22,7 @@ from models.deployments import deployments
 from ghost_tools import get_rq_name_from_app
 from ghost_blueprints import commands_blueprint
 from ghost_api import ghost_api_bluegreen_is_enabled, ghost_api_enable_green_app, ghost_api_delete_alter_ego_app, ghost_api_clean_bluegreen_app
-from libs.blue_green import get_blue_green_from_app
+from libs.blue_green import BLUE_GREEN_COMMANDS, get_blue_green_from_app, ghost_has_blue_green_enabled
 
 def get_apps_db():
     return ghost.data.driver.db[apps['datasource']['source']]
@@ -208,6 +208,10 @@ def pre_insert_job(items):
     app = get_apps_db().find_one({'_id': ObjectId(app_id)})
     if not app:
         abort(404)
+    if not ghost_has_blue_green_enabled():
+        # Blue/Green is disabled, but trying to use a blue/green command - denied
+        if job.get('command') in BLUE_GREEN_COMMANDS:
+            abort(422)
     if job.get('command') == 'deploy':
         for module in job['modules']:
             not_exist = True

@@ -4,10 +4,22 @@
 
 import sys
 from ghost_log import log
+from ghost_tools import config
 from .deploy import get_path_from_app_with_color
 from settings import cloud_connections, DEFAULT_PROVIDER
 
+BLUE_GREEN_COMMANDS = ['preparebluegreen', 'swapbluegreen', 'purgebluegreen']
+
+def ghost_has_blue_green_enabled():
+    """
+    Return if Ghost has Blue/Green option enabled globally
+    """
+    return config.get('blue_green') and config.get('blue_green').get('enabled', False)
+
 def get_blue_green_config(config, command, key, default_value):
+    """
+    Return the Blue Green command option from global config
+    """
     blue_green_section = config.get('blue_green', None)
     if not blue_green_section:
         return default_value
