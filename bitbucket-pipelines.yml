@@ -8,6 +8,8 @@ pipelines:
         script: # Modify the commands below to build your repository.
           - DEBIAN_FRONTEND=noninteractive apt-get --assume-yes -o Dpkg::Options::='--force-confdef' -o Dpkg::Options::='--force-confold' update
           - DEBIAN_FRONTEND=noninteractive apt-get --assume-yes -o Dpkg::Options::='--force-confdef' -o Dpkg::Options::='--force-confold' install git
+          - git --version
+          - git status
           - pip install -r requirements.txt
           - pip --version
           - tox --version
