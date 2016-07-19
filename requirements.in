@@ -28,6 +28,7 @@ setproctitle
 sh
 six
 subprocess32
+tox
 Werkzeug
 WTForms
 yapf
