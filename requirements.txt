@@ -34,6 +34,8 @@ Jinja2==2.8               # via eve, flask
 markupsafe==0.23          # via eve, jinja2
 paramiko==1.16.0          # via fabric
 pip-tools==1.7.0
+pluggy==0.3.1             # via tox
+py==1.4.31                # via tox
 pycparser==2.14           # via cffi
 pycrypto==2.6.1           # via paramiko
 pymongo==3.2.2
@@ -50,8 +52,9 @@ sh==1.11
 simplejson==3.8.2         # via eve
 six==1.10.0
 subprocess32==3.2.7
-visitor==0.1.2            # via flask-bootstrap
 tox==2.3.1
+visitor==0.1.2            # via flask-bootstrap
+virtualenv==15.0.2        # via tox
 Werkzeug==0.11.3          # via eve, flask, flask-wtf
 WTForms==2.1              # via flask-wtf
 yapf==0.7.0
