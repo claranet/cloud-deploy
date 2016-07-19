@@ -1,17 +1,8 @@
 # docker-compose.yml
-vendors:
-  image: python:2
-  working_dir: /mnt
-  volumes:
-    - .:/mnt
-  environment:
-    PYTHONUSERBASE: /mnt/vendor
-  command: pip install -r requirements.txt --user --upgrade
-
 queue:
   image: redis      
-  ports:
-   - '6379:6379'
+  expose:
+   - '6379'
 
 backend_data:
   image: busybox
@@ -21,39 +12,41 @@ backend:
   image: mongo
   volumes_from:
     - backend_data
-  ports:
-    - '27017:27017'
+  expose:
+    - '27017'
 
 worker:
-  image: python:2
+  build: .
   working_dir: /mnt
   volumes:
     - .:/mnt
   links:
     - queue
     - backend
-  environment:
-    PYTHONPATH: .
-    PYTHONUSERBASE: /mnt/vendor
   command: python run_rqworkers.py
+  environment:
+    - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+    - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
 
 api:
-  image: python:2
+  build: .
   working_dir: /mnt
   volumes:
     - .:/mnt
   ports:
     - '5000:5000'
+  expose:
+    - '5000'
   links:
     - queue
     - backend
-  environment:
-    PYTHONPATH: .
-    PYTHONUSERBASE: /mnt/vendor
   command: python run.py
+  environment:
+    - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+    - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
 
 web-ui:
-  image: python:2
+  build: .
   working_dir: /mnt
   volumes:
     - .:/mnt
@@ -61,8 +54,7 @@ web-ui:
     - '5001:5001'
   links:
     - api
-    - backend
-  environment:
-    PYTHONPATH: .
-    PYTHONUSERBASE: /mnt/vendor
   command: python run_web_ui.py
+  environment:
+    - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+    - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
