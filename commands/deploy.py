@@ -273,7 +273,7 @@ class Deploy():
 
         ***NOTE***:
         This test invokes git rev-parse in the current working directory and will fail
-        if commit 8f6c4dba19559319a6a898d093f3f3aaa09cd6e9 is not in the history.
+        if git is not installed or run outside of a git workspace.
 
         >>> class worker:
         ...   app = {}
@@ -290,17 +290,18 @@ class Deploy():
         >>> Deploy(worker=worker())._is_commit_hash('dev')
         False
 
-        >>> Deploy(worker=worker())._is_commit_hash('8f6c4dba19559319a6a898d093f3f3aaa09cd6e9')
+        >>> current_git_hash = git('--no-pager', 'rev-parse', 'HEAD', _tty_out=False).strip()
+        >>> Deploy(worker=worker())._is_commit_hash(current_git_hash)
         True
 
         A valid abbreviated hash must be at least 4 characters long:
 
-        >>> Deploy(worker=worker())._is_commit_hash('8f6c')
+        >>> Deploy(worker=worker())._is_commit_hash(current_git_hash[:4])
         True
 
         Shorter substrings won't match:
 
-        >>> Deploy(worker=worker())._is_commit_hash('8f6')
+        >>> Deploy(worker=worker())._is_commit_hash(current_git_hash[:3])
         False
         """
 
