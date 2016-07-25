@@ -16,7 +16,7 @@ apps_schema = {
     },
     'role': {
         'type': 'string',
-        'allowed': instance_role.role,
+        'regex': '^[a-z0-9\-\_]*$',
         'required': True
     },
     'assumed_account_id': {
