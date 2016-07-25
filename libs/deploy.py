@@ -49,7 +49,7 @@ def execute_module_script_on_ghost(app, module, script_name, script_friendly_nam
         script_env['GHOST_ENV'] = app['env']
         script_env['GHOST_ROLE'] = app['role']
         if app.get('blue_green', None):
-            buildpack_env['GHOST_ENV_COLOR'] = app['blue_green'].get('color', '')
+            script_env['GHOST_ENV_COLOR'] = app['blue_green'].get('color', '')
         script_env['GHOST_MODULE_NAME'] = module['name']
         script_env['GHOST_MODULE_PATH'] = module['path']
 
