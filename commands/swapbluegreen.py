@@ -66,16 +66,21 @@ class Swapbluegreen():
         log(_green('Waiting {0}s: The ELB connection draining time' .format(wait_before_swap)), self._log_file)
         time.sleep(wait_before_swap)
 
-    def _wait_until_instances_registered(self, elb_conn, elb_names):
+    def _wait_until_instances_registered(self, elb_conn, elb_names, timeout):
         """ Wait until each instances become online in the Load Balancer.
+            If timeout value is reached, raise an exception
 
             elb_conn    boto2 obj   Connection object to the ELB endpoint.
             elb_names   list        A list of ELB names.
+            timeout     int         Maximum time to wait before the instances become healthy.
             return      None
         """
+        t = 0
         while len([i for i in get_elb_instance_status(elb_conn, elb_names).values() if 'outofservice' in i.values()]):
+            if t > timeout: raise Exception
             log(_yellow('Waiting 10s because the instance is not in service in the ELB'), self._log_file)
             time.sleep(10)
+            t += 10
 
     def _update_health_check(self, elb_conn3, elb_name, health_check_config, hc_params, action):
         """ Update the ELB Health Check parameter
@@ -136,6 +141,7 @@ class Swapbluegreen():
 
             hc_params = {'hc_interval': get_blue_green_config(self._config, 'swapbluegreen', 'healthcheck_interval', 5),
                          'hc_timeout': get_blue_green_config(self._config, 'swapbluegreen', 'healthcheck_timeout', 2),
+                         'registration_timeout': get_blue_green_config(self._config, 'swapbluegreen', 'registreation_timeout', 45),
                          'hc_healthy_threshold': get_blue_green_config(self._config, 'swapbluegreen', 'healthcheck_healthy_threshold', 2)}
 
             log("Swapping using strategy '{0}'".format(swap_execution_strategy), self._log_file)
@@ -146,15 +152,21 @@ class Swapbluegreen():
                 self._wait_draining_connection(elb_conn, elb_online_instances.keys())
                 log(_green('Register and put online new instances to online ELB {0}'.format(', '.join(elb_online_instances.keys()))), self._log_file)
                 register_all_instances_to_elb(elb_conn, elb_online_instances.keys(), elb_tempwarm_instances, self._log_file)
-                self._wait_until_instances_registered(elb_conn, elb_online_instances.keys())
             elif swap_execution_strategy == 'overlap':
                 log(_green('De-register old instances from ELB {0}'.format(', '.join(elb_online_instances.keys()))), self._log_file)
                 deregister_all_instances_from_elb(elb_conn, elb_online_instances, self._log_file)
                 log(_green('Register new instances in the ELB: {0}' .format(elb_online['LoadBalancerName'])), self._log_file)
                 register_all_instances_to_elb(elb_conn, elb_online_instances.keys(), elb_tempwarm_instances, self._log_file)
-                self._wait_until_instances_registered(elb_conn, elb_online_instances.keys())
             else:
                 log("Invalid swap execution strategy selected : '{0}'. Please choose between 'isolated' and 'overlap'".format(swap_execution_strategy), self._log_file)
+                return None, None
+            try:
+                self._wait_until_instances_registered(elb_conn, elb_online_instances.keys(), hc_params['registration_timeout'])
+            except:
+                log("Timeout reached while waiting the instances registration. Rollback process launch")
+                register_all_instances_to_elb(elb_conn, elb_online_instances.keys(), elb_online_instances, self._log_file)
+                deregister_all_instances_from_elb(elb_conn, elb_tempwarm_instances, self._log_file)
+                log("Rollback completed.")
                 return None, None
 
             log(_green('De-register all instances from temp (warm) ELB {0}'.format(', '.join(elb_tempwarm_instances.keys()))), self._log_file)
@@ -211,8 +223,17 @@ class Swapbluegreen():
                 self._worker.update_status("aborted", message=self._get_notification_message_aborted(to_deploy_app, "Please set a different AutoScale on green and blue app."))
                 return
 
-            # Check if we're ready to swap
-            log(_green("AutoScale blue [{0}] and green [{1}] ready for swap".format(online_app['autoscale']['name'], to_deploy_app['autoscale']['name'])), self._log_file)
+            # Check if we're ready to swap. If an instance is out of service
+            # into the ELB pool raise an exception
+            app_region = self._app['region']
+            as_conn = self._cloud_connection.get_connection(app_region, ["ec2", "autoscale"])
+            elb_conn = self._cloud_connection.get_connection(app_region, ["ec2", "elb"])
+
+            elb_instances = get_elb_instance_status_autoscaling_group(elb_conn, to_deploy_app['autoscale']['name'], as_conn)
+            if len([i for i in elb_instances.values() if 'outofservice' in i.values()]):
+                raise GCallException('Cannot continue because one or more instances are in the out of service state in the temp ELB')
+            else:
+                log(_green("AutoScale blue [{0}] and green [{1}] ready for swap".format(online_app['autoscale']['name'], to_deploy_app['autoscale']['name'])), self._log_file)
 
             # Swap !
             elb_name, elb_dns = self._swap_asg(swap_execution_strategy, online_app, to_deploy_app, self._config, self._log_file)
