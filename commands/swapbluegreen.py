@@ -8,7 +8,7 @@ from settings import cloud_connections, DEFAULT_PROVIDER
 from ghost_aws import check_autoscale_exists, get_autoscaling_group_and_processes_to_suspend, suspend_autoscaling_group_processes, resume_autoscaling_group_processes
 from libs.elb import deregister_all_instances_from_elb, register_all_instances_to_elb, register_elb_into_autoscale
 from libs.elb import get_elb_instance_status_autoscaling_group, get_elb_instance_status, get_connection_draining_value, get_elb_dns_name
-from libs.elb import get_elb_by_name, elb_configure_health_check
+from libs.elb import get_elb_by_name, elb_configure_health_check, deregister_instance_from_elb
 from libs.blue_green import get_blue_green_apps, check_app_manifest, get_blue_green_config
 
 COMMAND_DESCRIPTION = "Swap the Blue/Green env"
@@ -164,7 +164,7 @@ class Swapbluegreen():
                 self._wait_until_instances_registered(elb_conn, elb_online_instances.keys(), hc_params['registration_timeout'])
             except:
                 log(_red("Timeout reached while waiting the instances registration. Rollback process launch"), self._log_file)
-                deregister_all_instances_from_elb(elb_conn, elb_online_instances, self._log_file)
+                deregister_instance_from_elb(elb_conn, elb_online_instances.keys(), elb_tempwarm_instances[elb_tempwarm_instances.keys()[0]].keys(), self._log_file)
                 register_all_instances_to_elb(elb_conn, elb_online_instances.keys(), elb_online_instances, self._log_file)
                 register_all_instances_to_elb(elb_conn, elb_tempwarm_instances.keys(), elb_tempwarm_instances, self._log_file)
                 log(_yellow("Rollback completed."), self._log_file)

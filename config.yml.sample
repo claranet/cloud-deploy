@@ -108,4 +108,5 @@ blue_green:
         # Options to set on ELB HealthCheck when swapping
         healthcheck_interval: 5
         healthcheck_timeout: 2
+        registreation_timeout: 60
         healthcheck_healthy_threshold: 2
