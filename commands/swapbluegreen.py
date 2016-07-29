@@ -163,10 +163,11 @@ class Swapbluegreen():
             try:
                 self._wait_until_instances_registered(elb_conn, elb_online_instances.keys(), hc_params['registration_timeout'])
             except:
-                log("Timeout reached while waiting the instances registration. Rollback process launch")
+                log(_red("Timeout reached while waiting the instances registration. Rollback process launch"), self._log_file)
+                deregister_all_instances_from_elb(elb_conn, elb_online_instances, self._log_file)
                 register_all_instances_to_elb(elb_conn, elb_online_instances.keys(), elb_online_instances, self._log_file)
-                deregister_all_instances_from_elb(elb_conn, elb_tempwarm_instances, self._log_file)
-                log("Rollback completed.")
+                register_all_instances_to_elb(elb_conn, elb_tempwarm_instances.keys(), elb_tempwarm_instances, self._log_file)
+                log(_yellow("Rollback completed."), self._log_file)
                 return None, None
 
             log(_green('De-register all instances from temp (warm) ELB {0}'.format(', '.join(elb_tempwarm_instances.keys()))), self._log_file)
