@@ -34,8 +34,7 @@ class Destroyallinstances():
         log(_yellow(" INFO: Destroy all EC2 instances related to app {0} [{1}]".format(get_app_friendly_name(self._app), self._app['_id'])), self._log_file)
         log(" CONF: Region: {0}".format(self._app['region']), self._log_file)
         try:
-            conn = self._cloud_connection.get_connection(self._app['region'], ["ec2"])
-            destroy_ec2_instances(conn, self._app, self._log_file)
+            destroy_ec2_instances(self._cloud_connection, self._app, self._log_file)
 
             self._worker.update_status("done", message="Instance deletion OK: [{0}]".format(self._app['name']))
             log(_green("STATE: End"), self._log_file)

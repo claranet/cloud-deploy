@@ -106,7 +106,7 @@ class Purgebluegreen():
             # Update ASG and kill instances
             log("Update AutoScale with `0` on mix, max, desired values.", self._log_file)
             log(_yellow("Destroy all instances in the AutoScale and all instances matching the `app_id` [{0}]".format(offline_app['_id'])), self._log_file)
-            flush_instances_update_autoscale(as_conn, ec2_conn, offline_app, self._log_file)
+            flush_instances_update_autoscale(as_conn, self._cloud_connection, offline_app, self._log_file)
 
             # Destroy temp ELB
             if temp_elbs[0].startswith('bgtmp-'):
