@@ -125,8 +125,8 @@ def update_app_manifest(app, config, module, package, log_file):
     for mod in sorted(modules, key=lambda mod: mod['index']):
         data = data + mod['name'] + ':' + mod['package'] + ':' + mod['path'] + '\n'
 
-        key.set_contents_from_string(data)
-        key.close()
+    key.set_contents_from_string(data)
+    key.close()
 
 def get_key_path(config, region, account, key_name, log_file):
     """

@@ -284,4 +284,4 @@ ghost.ghost_redis_connection = Redis()
 ghost.register_blueprint(commands_blueprint)
 
 if __name__ == '__main__':
-    ghost.run(host='0.0.0.0', debug=True)
+    ghost.run(host='0.0.0.0')
