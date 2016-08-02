@@ -14,6 +14,8 @@ from ghost_log import log
 from ghost_aws import deploy_module_on_hosts
 from settings import cloud_connections, DEFAULT_PROVIDER
 from libs.deploy import execute_module_script_on_ghost
+from libs.deploy import get_path_from_app, get_path_from_app_with_color, update_app_manifest
+from libs.blue_green import get_blue_green_from_app
 
 ROOT_PATH = os.path.dirname(os.path.realpath(__file__))
 
@@ -56,18 +58,6 @@ class Deploy():
                         result.append(item)
         return result
 
-    def _get_path_from_app(self):
-        """
-        >>> class worker:
-        ...     app = {'name': 'AppName', 'env': 'prod', 'role': 'webfront'}
-        ...     job = None
-        ...     log_file = None
-        ...     _config = None
-        >>> Deploy(worker=worker())._get_path_from_app()
-        '/ghost/AppName/prod/webfront'
-        """
-        return "/ghost/{name}/{env}/{role}".format(name=self._app['name'], env=self._app['env'], role=self._app['role'])
-
     def _get_mirror_path_from_module(self, module):
         """
         >>> class worker:
@@ -106,8 +96,7 @@ class Deploy():
         >>> Deploy(worker=worker())._get_buildpack_clone_path_from_module(module)
         '/ghost/AppName/prod/webfront/mod1'
         """
-        return "{app_path}/{module}".format(app_path=self._get_path_from_app(), module=module['name'])
-
+        return "{app_path}/{module}".format(app_path=get_path_from_app_with_color(self._app), module=module['name'])
 
     def _deploy_module(self, module, fabric_execution_strategy, safe_deployment_strategy):
         deploy_module_on_hosts(self._cloud_connection, module, fabric_execution_strategy, self._app, self._config, self._log_file, safe_deployment_strategy)
@@ -222,51 +211,6 @@ class Deploy():
         except GCallException as e:
             self._worker.update_status("failed", message=self._get_notification_message_failed(module_list, e))
 
-    def _update_manifest(self, module, package):
-        key_path = self._get_path_from_app() + '/MANIFEST'
-        cloud_connection = cloud_connections.get(self._app.get('provider', DEFAULT_PROVIDER))(self._log_file)
-        conn = cloud_connection.get_connection(self._config.get('bucket_region', self._app['region']), ["s3"])
-        bucket = conn.get_bucket(self._config['bucket_s3'])
-        key = bucket.get_key(key_path)
-        modules = []
-        module_exist = False
-        all_app_modules_list = get_app_module_name_list(self._app['modules'])
-        data = ""
-        if key:
-            manifest = key.get_contents_as_string()
-            if sys.version > '3':
-                manifest = manifest.decode('utf-8')
-            for line in manifest.split('\n'):
-                if line:
-                    mod = {}
-                    tmp = line.split(':')
-                    mod['name'] = tmp[0]
-                    if mod['name'] == module['name']:
-                        mod['package'] = package
-                        mod['path'] = module['path']
-                        module_exist = True
-                    else:
-                        mod['package'] = tmp[1]
-                        mod['path'] = tmp[2]
-                    # Only keep modules that have not been removed from the app
-                    if mod['name'] in all_app_modules_list:
-                        mod['index'] = all_app_modules_list.index(mod['name'])
-                        modules.append(mod)
-        if not key:
-            key = bucket.new_key(key_path)
-        if not module_exist:
-            modules.append({
-                'name': module['name'],
-                'package': package,
-                'path': module['path'],
-                'index': all_app_modules_list.index(module['name'])
-            })
-        for mod in sorted(modules, key=lambda mod: mod['index']):
-            data = data + mod['name'] + ':' + mod['package'] + ':' + mod['path'] + '\n'
-
-        key.set_contents_from_string(data)
-        key.close()
-
     def _is_commit_hash(self, revision):
         """
         Returns True is revision is a valid commit hash, False otherwise.
@@ -327,6 +271,8 @@ class Deploy():
         mirror_path = self._get_mirror_path_from_module(module)
         clone_path = self._get_buildpack_clone_path_from_module(module)
         revision = self._get_module_revision(module['name'])
+
+        blue_green, color = get_blue_green_from_app(self._app)
 
         if not os.path.exists(mirror_path):
             gcall('git --no-pager clone --bare --mirror {r} {m}'.format(r=git_repo, m=mirror_path),
@@ -452,9 +398,12 @@ GHOST_MODULE_USER="{user}"
         # Create tar archive
         pkg_name = self._package_module(module, ts, commit)
 
-        self._update_manifest(module, pkg_name)
+        update_app_manifest(self._app, self._config, module, pkg_name, self._log_file)
         all_app_modules_list = get_app_module_name_list(self._app['modules'])
-        clean_local_module_workspace(self._get_path_from_app(), all_app_modules_list, self._log_file)
+        if blue_green:
+            clean_local_module_workspace(get_path_from_app_with_color(self._app), all_app_modules_list, self._log_file)
+        else:
+            clean_local_module_workspace(get_path_from_app(self._app), all_app_modules_list, self._log_file)
         self._deploy_module(module, fabric_execution_strategy, safe_deployment_strategy)
         if 'after_all_deploy' in module:
             log("After all deploy script found for '{0}'. Executing it.".format(module['name']), self._log_file)

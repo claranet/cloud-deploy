@@ -4,7 +4,7 @@ import gunicorn.app.base
 from gunicorn.six import iteritems
 
 from web_ui import app as web_ui_app
-from web_ui import websocket 
+from web_ui import websocket
 
 app = web_ui_app.app
 ws = websocket.create_ws(app)

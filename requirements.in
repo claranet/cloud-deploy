@@ -5,6 +5,7 @@ argparse
 bcrypt
 blinker                   # needed at runtime for flask events
 boto
+boto3
 click
 Eve
 Fabric

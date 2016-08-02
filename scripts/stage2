@@ -36,6 +36,7 @@ while [ -z "$APP" ] || [ -z "$ENV" ] || [ -z "$ROLE" ] ; do
   APP=$(echo $TAGS | jq -r ".Tags[] | { key: .Key, value: .Value } | [.] | from_entries" | jq -r '.["app"] | select (.!=null)')
   ENV=$(echo $TAGS | jq -r ".Tags[] | { key: .Key, value: .Value } | [.] | from_entries" | jq -r '.["env"] | select (.!=null)')
   ROLE=$(echo $TAGS | jq -r ".Tags[] | { key: .Key, value: .Value } | [.] | from_entries" | jq -r '.["role"] | select (.!=null)')
+  COLOR=$(echo $TAGS | jq -r ".Tags[] | { key: .Key, value: .Value } | [.] | from_entries" | jq -r '.["color"] | select (.!=null)')
 done
 
 if [ ! -d /ghost ]; then
@@ -44,6 +45,12 @@ fi
 
 if [ ! -d /var/lib/ghost ]; then
     mkdir /var/lib/ghost
+fi
+
+if [ ! -z "$COLOR" ]; then
+    APP_PATH=ghost/$APP/$ENV/$ROLE/$COLOR
+else
+    APP_PATH=ghost/$APP/$ENV/$ROLE
 fi
 
 IP=$(curl -s http://169.254.169.254/latest/meta-data/local-ipv4 | tr -s '.' '-')
@@ -133,7 +140,8 @@ function deploy_module() {
 
     echo "--------------------------------" >> /tmp/$LOGFILE
     echo "Deploying module $MODULE_NAME in $TARGET" >> /tmp/$LOGFILE
-    $AWS_BIN s3 cp s3://$S3_BUCKET/ghost/$APP/$ENV/$ROLE/$MODULE_NAME/$MODULE_FILE /tmp/$MODULE_FILE  --region "$S3_REGION"
+
+    $AWS_BIN s3 cp s3://${S3_BUCKET}/${APP_PATH}/$MODULE_NAME/$MODULE_FILE /tmp/$MODULE_FILE  --region "$S3_REGION"
 
     mkdir -p /ghost/$UUID
     echo "Extracting module in /ghost/$UUID" >> /tmp/$LOGFILE
@@ -153,7 +161,7 @@ function deploy_module() {
     if [ -e predeploy ]; then
         echo "Executing predeploy script..." >> /tmp/$LOGFILE
         chmod +x predeploy
-        GHOST_MODULE_REPO=$GHOST_MODULE_REPO GHOST_MODULE_REV=$GHOST_MODULE_REV GHOST_MODULE_COMMIT=$GHOST_MODULE_COMMIT GHOST_MODULE_COMMIT_MESSAGE=$GHOST_MODULE_COMMIT_MESSAGE GHOST_MODULE_USER=$GHOST_MODULE_USER GHOST_APP=$APP GHOST_ENV=$ENV GHOST_ROLE=$ROLE GHOST_MODULE_NAME=$MODULE_NAME GHOST_MODULE_PATH=$TARGET ./predeploy 2>&1 | tee -a /tmp/$LOGFILE
+        GHOST_MODULE_REPO=$GHOST_MODULE_REPO GHOST_MODULE_REV=$GHOST_MODULE_REV GHOST_MODULE_COMMIT=$GHOST_MODULE_COMMIT GHOST_MODULE_COMMIT_MESSAGE=$GHOST_MODULE_COMMIT_MESSAGE GHOST_MODULE_USER=$GHOST_MODULE_USER GHOST_APP=$APP GHOST_ENV=$ENV GHOST_ENV_COLOR=$COLOR GHOST_ROLE=$ROLE GHOST_MODULE_NAME=$MODULE_NAME GHOST_MODULE_PATH=$TARGET ./predeploy 2>&1 | tee -a /tmp/$LOGFILE
         local status=${PIPESTATUS[0]}
         if [ $status -ne 0 ]; then
             purge_latest_failed_deploy $MODULE_NAME $UUID
@@ -175,7 +183,8 @@ function deploy_module() {
     if [ -e postdeploy ]; then
         echo "Executing postdeploy script..." >> /tmp/$LOGFILE
         chmod +x postdeploy
-        GHOST_MODULE_REPO=$GHOST_MODULE_REPO GHOST_MODULE_REV=$GHOST_MODULE_REV GHOST_MODULE_COMMIT=$GHOST_MODULE_COMMIT GHOST_MODULE_COMMIT_MESSAGE=$GHOST_MODULE_COMMIT_MESSAGE GHOST_MODULE_USER=$GHOST_MODULE_USER GHOST_APP=$APP GHOST_ENV=$ENV GHOST_ROLE=$ROLE GHOST_MODULE_NAME=$MODULE_NAME GHOST_MODULE_PATH=$TARGET ./postdeploy 2>&1 | tee -a /tmp/$LOGFILE
+
+        GHOST_MODULE_REPO=$GHOST_MODULE_REPO GHOST_MODULE_REV=$GHOST_MODULE_REV GHOST_MODULE_COMMIT=$GHOST_MODULE_COMMIT GHOST_MODULE_COMMIT_MESSAGE=$GHOST_MODULE_COMMIT_MESSAGE GHOST_MODULE_USER=$GHOST_MODULE_USER GHOST_APP=$APP GHOST_ENV=$ENV GHOST_ENV_COLOR=$COLOR GHOST_ROLE=$ROLE GHOST_MODULE_NAME=$MODULE_NAME GHOST_MODULE_PATH=$TARGET ./postdeploy 2>&1 | tee -a /tmp/$LOGFILE
         local status=${PIPESTATUS[0]}
         if [ $status -ne 0 ]; then
             purge_latest_failed_deploy $MODULE_NAME $UUID
@@ -211,7 +220,7 @@ function exit_deployment() {
 function download_and_run_lifecycle_hook_script() {
     local script_name=$1
     echo "Downloading ${script_name} script" >> /tmp/$LOGFILE
-    $AWS_BIN s3 cp s3://$S3_BUCKET/ghost/$APP/$ENV/$ROLE/${script_name} /tmp/ghost_${script_name} --region "$S3_REGION"
+    $AWS_BIN s3 cp s3://${S3_BUCKET}/${APP_PATH}/${script_name} /tmp/ghost_${script_name} --region "$S3_REGION"
     if [ -e /tmp/ghost_${script_name} ]; then
         echo "Executing /tmp/ghost_${script_name} script..." >> /tmp/$LOGFILE
         chmod +x /tmp/ghost_${script_name}
@@ -224,7 +233,7 @@ function download_and_run_lifecycle_hook_script() {
 }
 
 echo "Downloading Manifest" >> /tmp/$LOGFILE
-$AWS_BIN s3 cp s3://$S3_BUCKET/ghost/$APP/$ENV/$ROLE/MANIFEST /tmp/ --region "$S3_REGION"
+$AWS_BIN s3 cp s3://${S3_BUCKET}/${APP_PATH}/MANIFEST /tmp/ --region "$S3_REGION"
 
 if [ $? -ne 0 ]; then
     echo "Manifest download error...Exiting" >> /tmp/$LOGFILE

@@ -97,3 +97,16 @@ ami_retention: 5
 display_amis_from_aws_accounts:
   - '379101102735' # Debian global
   - '673060587306' # Debian China
+
+# Blue/Green options
+blue_green:
+    enabled: false
+    preparebluegreen:
+        copy_ami: false
+        module_deploy_required: false
+    swapbluegreen:
+        # Options to set on ELB HealthCheck when swapping
+        healthcheck_interval: 5
+        healthcheck_timeout: 2
+        registreation_timeout: 60
+        healthcheck_healthy_threshold: 2

@@ -21,6 +21,8 @@ from models.deployments import deployments
 
 from ghost_tools import get_rq_name_from_app
 from ghost_blueprints import commands_blueprint
+from ghost_api import ghost_api_bluegreen_is_enabled, ghost_api_enable_green_app, ghost_api_delete_alter_ego_app, ghost_api_clean_bluegreen_app
+from libs.blue_green import BLUE_GREEN_COMMANDS, get_blue_green_from_app, ghost_has_blue_green_enabled
 
 def get_apps_db():
     return ghost.data.driver.db[apps['datasource']['source']]
@@ -113,6 +115,40 @@ def pre_update_app(updates, original):
                     # Module found, can exit loop
                     break
 
+    # Blue/green disabled ?
+    try:
+        blue_green_section, color = get_blue_green_from_app(updates)
+        if (
+            blue_green_section and
+            'enable_blue_green' in blue_green_section and
+            isinstance(blue_green_section['enable_blue_green'], bool) and
+            not blue_green_section['enable_blue_green']
+        ):
+
+            if not ghost_api_clean_bluegreen_app(get_apps_db(), original):
+                abort(422)
+
+            if not ghost_api_delete_alter_ego_app(get_apps_db(), original):
+                abort(422)
+
+            del updates['blue_green']
+    except Exception as e:
+        print e
+        abort(500)
+
+def post_update_app(updates, original):
+    try:
+        # Enable green app only if not already enabled
+        blue_green, color = get_blue_green_from_app(original)
+        if ghost_api_bluegreen_is_enabled(updates) and not color:
+            # Maybe we need to have the "merged" app after update here instead of "original" one ?
+            if not ghost_api_enable_green_app(get_apps_db(), original, request.authorization.username):
+                abort(422)
+    except Exception as e:
+        print "Exception occured"
+        print e
+        abort(500)
+
 def pre_replace_app(item, original):
     #TODO: implement (or not?) application replacement
     pass
@@ -122,18 +158,31 @@ def pre_delete_app(item):
     pass
 
 def post_delete_app(item):
-    pass
+    if not ghost_api_delete_alter_ego_app(get_apps_db(), item):
+        abort(422)
 
 def pre_insert_app(items):
     app = items[0]
     name = app.get('name')
     role = app.get('role')
     env = app.get('env')
-    if get_apps_db().find_one({'$and' : [{'name': name}, {'role': role}, {'env': env}]}):
-        abort(422)
+    blue_green = app.get('blue_green', None)
+    # We can now insert a new app with a different color
+    if blue_green and blue_green.get('color', None):
+        if get_apps_db().find_one({'$and' : [{'name': name}, {'role': role}, {'env': env}, {'blue_green.color': blue_green['color']}]}):
+            abort(422)
+    else:
+        if get_apps_db().find_one({'$and' : [{'name': name}, {'role': role}, {'env': env}]}):
+            abort(422)
     for module in app.get('modules'):
         module['initialized'] = False
     app['user'] = request.authorization.username
+
+def post_insert_app(items):
+    app = items[0]
+    if ghost_api_bluegreen_is_enabled(app):
+        if not ghost_api_enable_green_app(get_apps_db(), app, request.authorization.username):
+            abort(422)
 
 def post_fetched_app(response):
     # Do we need to embed each module's last_deployment?
@@ -153,15 +202,16 @@ def post_fetched_app(response):
         if deployment:
             module['last_deployment'] = deployment if embed_last_deployment else deployment['_id']
 
-def post_insert_app(items):
-    pass
-
 def pre_insert_job(items):
     job = items[0]
     app_id = job.get('app_id')
     app = get_apps_db().find_one({'_id': ObjectId(app_id)})
     if not app:
         abort(404)
+    if not ghost_has_blue_green_enabled():
+        # Blue/Green is disabled, but trying to use a blue/green command - denied
+        if job.get('command') in BLUE_GREEN_COMMANDS:
+            abort(422)
     if job.get('command') == 'deploy':
         for module in job['modules']:
             not_exist = True
@@ -216,6 +266,7 @@ ghost.register_blueprint(eve_docs, url_prefix='/docs/api')
 # Register eve hooks
 ghost.on_fetched_item_apps += post_fetched_app
 ghost.on_update_apps += pre_update_app
+ghost.on_updated_apps += post_update_app
 ghost.on_replace_apps += pre_replace_app
 ghost.on_delete_item_apps += pre_delete_app
 ghost.on_deleted_item_apps += post_delete_app

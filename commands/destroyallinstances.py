@@ -1,9 +1,9 @@
 from fabric.colors import green as _green, yellow as _yellow, red as _red
 
 from ghost_log import log
-from ghost_tools import get_aws_connection_data
+from ghost_tools import get_aws_connection_data, get_app_friendly_name
 from settings import cloud_connections, DEFAULT_PROVIDER
-from libs.ec2 import find_ec2_running_instances
+from libs.ec2 import destroy_ec2_instances
 
 COMMAND_DESCRIPTION = "Destroy all instances"
 
@@ -31,18 +31,10 @@ class Destroyallinstances():
 
     def _destroy_server(self):
         log(_green("STATE: Started"), self._log_file)
-        log(_yellow(" INFO: Destroy EC2 instance"), self._log_file)
-        log(" CONF: AMI: {0}".format(self._app['ami']), self._log_file)
+        log(_yellow(" INFO: Destroy all EC2 instances related to app {0} [{1}]".format(get_app_friendly_name(self._app), self._app['_id'])), self._log_file)
         log(" CONF: Region: {0}".format(self._app['region']), self._log_file)
         try:
-            conn = self._cloud_connection.get_connection(self._app['region'], ["ec2"])
-            running_instances = find_ec2_running_instances(self._cloud_connection, self._app['name'], self._app['env'], self._app['role'], self._app['region'])
-            #Terminating instances
-            instances = []
-            for r in running_instances:
-                instances.append(r['id'])
-            log(instances, self._log_file)
-            conn.terminate_instances(instance_ids=instances)
+            destroy_ec2_instances(self._cloud_connection, self._app, self._log_file)
 
             self._worker.update_status("done", message="Instance deletion OK: [{0}]".format(self._app['name']))
             log(_green("STATE: End"), self._log_file)
@@ -50,7 +42,6 @@ class Destroyallinstances():
             log(_red("I/O error({0}): {1}".format(e.errno, e.strerror)), self._log_file)
             self._worker.update_status("failed", message="Creating Instance Failed: [{0}]\n{1}".format(self._app['name'], str(e)))
             log(_red("STATE: END"), self._log_file)
-
 
     def execute(self):
         self._destroy_server()

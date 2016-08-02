@@ -4,6 +4,7 @@ from base64 import b64decode, b64encode
 import os
 from subprocess import call
 import yaml
+import copy
 
 from jinja2 import Environment, FileSystemLoader
 
@@ -204,3 +205,44 @@ def b64encode_utf8(string):
     """
     if string is not None:
         return b64encode(string.encode('utf-8'))
+
+def ghost_app_object_copy(app, user):
+    """
+    Returns a clean copy of a Ghost application
+    by removing Eve fields and ReadOnly fields
+    """
+    copy_app = copy.copy(app)
+    if user:
+        copy_app['user'] = user
+    if 'modules' in copy_app:
+        for copy_module in copy_app['modules']:
+            # Remove 'initialized' RO fields
+            if 'initialized' in copy_module:
+                del copy_module['initialized']
+            if 'last_deployment' in copy_module:
+                del copy_module['last_deployment']
+    # Remove RO fields
+    if 'blue_green' in copy_app and 'alter_ego_id' in copy_app['blue_green']:
+        del copy_app['blue_green']['alter_ego_id']
+    if 'ami' in copy_app:
+        del copy_app['ami']
+    if 'build_infos' in copy_app and 'ami_name' in copy_app['build_infos']:
+        del copy_app['build_infos']['ami_name']
+    # Cleaning Eve Fields
+    del copy_app['_id']
+    del copy_app['_etag']
+    del copy_app['_version']
+    del copy_app['_created']
+    del copy_app['_updated']
+    # Cleaning Eve response meta from internal_post
+    if '_latest_version' in copy_app:
+        del copy_app['_latest_version']
+    if '_status' in copy_app:
+        del copy_app['_status']
+    if '_links' in copy_app:
+        del copy_app['_links']
+
+    return copy_app
+
+def get_app_friendly_name(app):
+    return "{0}/{1}/{2}".format(app['name'], app['env'], app['role'])
