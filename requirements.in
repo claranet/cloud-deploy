@@ -5,6 +5,7 @@ argparse
 bcrypt
 blinker                   # needed at runtime for flask events
 boto
+boto3
 click
 Eve
 Fabric
@@ -28,6 +29,7 @@ setproctitle
 sh
 six
 subprocess32
+tox
 Werkzeug
 WTForms
 yapf

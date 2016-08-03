@@ -14,8 +14,9 @@ modules = [
   "commands.redeploy",
   "ghost_blueprints",
   "ghost_tools",
-  "libs.safe_deployment",
+  "libs.blue_green",
   "libs.deploy",
+  "libs.safe_deployment",
   "run",
   "run_rqworkers",
   "web_ui.forms",
@@ -30,4 +31,5 @@ for module in modules:
   for test in finder.find(importlib.import_module(module)):
     runner.run(test)
 
-runner.summarize()
+test_result = runner.summarize() # return a tuple (f, t), where f is the total number of failed examples, and t is the total number of tried examples.
+exit (test_result[0])

@@ -9,6 +9,7 @@ from ghost_log import log
 from ghost_aws import create_launch_config, generate_userdata, check_autoscale_exists, purge_launch_configuration, update_auto_scale
 from ghost_tools import get_aws_connection_data, b64decode_utf8
 from settings import cloud_connections, DEFAULT_PROVIDER
+from libs.blue_green import get_blue_green_from_app
 
 COMMAND_DESCRIPTION = "Build Image"
 
@@ -33,7 +34,13 @@ class Buildimage():
                 self._log_file,
                 **self._connection_data
                 )
-        self._ami_name = "ami.{0}.{1}.{2}.{3}.{4}".format(self._app['env'], self._app['region'], self._app['role'], self._app['name'], time.strftime("%Y%m%d-%H%M%S"))
+        blue_green, self._color = get_blue_green_from_app(self._app)
+        self._ami_name = "ami.{0}.{1}.{2}.{3}{color}.{4}".format(self._app['env'],
+                                                                           self._app['region'],
+                                                                           self._app['role'],
+                                                                           self._app['name'],
+                                                                           time.strftime("%Y%m%d-%H%M%S"),
+                                                                           color='.%s' % self._color if self._color else '')
 
     def _purge_old_images(self):
         conn = self._cloud_connection.get_connection(self._app['region'], ["ec2"])
@@ -41,7 +48,11 @@ class Buildimage():
         filtered_images = []
         images = conn.get_all_images(owners="self")
 
-        ami_name_format = "ami.{0}.{1}.{2}.{3}".format(self._app['env'], self._app['region'], self._app['role'], self._app['name'])
+        ami_name_format = "ami.{0}.{1}.{2}.{3}{color}".format(self._app['env'],
+                                                                        self._app['region'],
+                                                                        self._app['role'],
+                                                                        self._app['name'],
+                                                                        color='.%s' % self._color if self._color else '')
 
         for image in images:
             #log(image.name, self._log_file)
