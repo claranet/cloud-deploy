@@ -2,6 +2,7 @@ import env
 import instance_role
 import resources
 import volumes
+import tags
 
 apps_schema = {
     'name': {
@@ -195,6 +196,11 @@ apps_schema = {
                                    'name': {'type': 'string',
                                             'regex': '^/[a-z0-9]+/[a-z0-9]+$'}
                                }},
+                              'instance_tags':
+                              {'type': 'list',
+                               'required': False,
+                               'schema': tags.block
+                              },
                               'optional_volumes': {'type': 'list',
                                                    'required': False,
                                                    'schema': volumes.block}

@@ -249,6 +249,11 @@ def get_auto_scale_tags(cloud_connection, as_group, app, log_file):
                                value=app['blue_green']['color'],
                                propagate_at_launch=True,
                                resource_id=app['autoscale']['name'])
+    for k, v in app['environment_infos']['instance_tags'].items():
+        as_tags[k] = Tag(key= k,
+                         value= v,
+                         propagate_at_launch= True,
+                         resource_id= app['autoscale']['name'])
     log("[{0}] will be updated with: {1}".format(app['autoscale']['name'], ", ".join(as_tags.keys())), log_file)
     return as_tags.values()
 
