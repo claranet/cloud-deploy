@@ -84,6 +84,7 @@ class Buildimage():
             return False
 
     def _format_packer_from_app(self, salt_skip_bootstrap_option):
+        instance_tags = {i['tag_name']: i['tag_value'] for i in self._app['environment_infos']['instance_tags']}
         datas = {
             'region': self._app['region'],
             'ami_name': self._ami_name,
@@ -96,7 +97,8 @@ class Buildimage():
             'skip_salt_bootstrap': salt_skip_bootstrap_option,
             'ami_block_device_mappings': [],
             'iam_instance_profile': self._app['environment_infos']['instance_profile'],
-            'credentials': self._cloud_connection.get_credentials()
+            'credentials': self._cloud_connection.get_credentials(),
+            'tags': instance_tags
         }
 
         for opt_vol in self._app['environment_infos'].get('optional_volumes'):

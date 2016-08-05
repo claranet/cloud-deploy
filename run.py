@@ -23,6 +23,7 @@ from ghost_tools import get_rq_name_from_app
 from ghost_blueprints import commands_blueprint
 from ghost_api import ghost_api_bluegreen_is_enabled, ghost_api_enable_green_app, ghost_api_delete_alter_ego_app, ghost_api_clean_bluegreen_app
 from libs.blue_green import BLUE_GREEN_COMMANDS, get_blue_green_from_app, ghost_has_blue_green_enabled
+from ghost_aws import normalize_application_tags
 
 def get_apps_db():
     return ghost.data.driver.db[apps['datasource']['source']]
@@ -114,7 +115,7 @@ def pre_update_app(updates, original):
                             break
                     # Module found, can exit loop
                     break
-
+    updates['environment_infos']['instance_tags'] = normalize_application_tags(original, updates)
     # Blue/green disabled ?
     try:
         blue_green_section, color = get_blue_green_from_app(updates)
@@ -180,6 +181,8 @@ def pre_insert_app(items):
 
 def post_insert_app(items):
     app = items[0]
+    instance_tags = normalize_application_tags(app, app)
+    get_apps_db().update_one({ '_id': app['_id']}, {'$set': {'environment_infos.instance_tags': instance_tags }})
     if ghost_api_bluegreen_is_enabled(app):
         if not ghost_api_enable_green_app(get_apps_db(), app, request.authorization.username):
             abort(422)
@@ -234,7 +237,7 @@ def post_insert_job(items):
     app_id = job.get('app_id')
     app = get_apps_db().find_one({'_id': ObjectId(app_id)})
 
-    # Place job in app's queue 
+    # Place job in app's queue
     rq_job = Queue(name=get_rq_name_from_app(app), connection=ghost.ghost_redis_connection, default_timeout=3600).enqueue(Command().execute, job_id, job_id=job_id)
     assert rq_job.id == job_id
 

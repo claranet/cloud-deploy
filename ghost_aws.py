@@ -224,36 +224,36 @@ def get_auto_scale_tags(cloud_connection, as_group, app, log_file):
     Get existing tags and set specific tags needed by Ghost
     """
     as_tags = {}
-    for tag in as_group.tags:
-        as_tags[tag.key] = tag
+    #for tag in as_group.tags:
+    #    as_tags[tag.key] = tag
 
-    log("[{0}] has those tags enabled: {1}".format(app['autoscale']['name'], ", ".join(as_tags.keys())), log_file)
-    as_tags['app_id'] = Tag(key='app_id',
-                         value=app['_id'],
-                         propagate_at_launch=True,
-                         resource_id=app['autoscale']['name'])
-    as_tags['app'] = Tag(key='app',
-                         value=app['name'],
-                         propagate_at_launch=True,
-                         resource_id=app['autoscale']['name'])
-    as_tags['env'] = Tag(key='env',
-                         value=app['env'],
-                         propagate_at_launch=True,
-                         resource_id=app['autoscale']['name'])
-    as_tags['role'] = Tag(key='role',
-                          value=app['role'],
-                          propagate_at_launch=True,
-                          resource_id=app['autoscale']['name'])
+   # log("[{0}] has those tags enabled: {1}".format(app['autoscale']['name'], ", ".join(as_tags.keys())), log_file)
+   # as_tags['app_id'] = Tag(key='app_id',
+   #                      value=app['_id'],
+   #                      propagate_at_launch=True,
+   #                      resource_id=app['autoscale']['name'])
+   # as_tags['app'] = Tag(key='app',
+   #                      value=app['name'],
+   #                      propagate_at_launch=True,
+   #                      resource_id=app['autoscale']['name'])
+   # as_tags['env'] = Tag(key='env',
+   #                      value=app['env'],
+   #                      propagate_at_launch=True,
+   #                      resource_id=app['autoscale']['name'])
+   # as_tags['role'] = Tag(key='role',
+   #                       value=app['role'],
+   #                       propagate_at_launch=True,
+   #                       resource_id=app['autoscale']['name'])
     if app.get('blue_green') and app['blue_green'].get('color'):
         as_tags['color'] = Tag(key='color',
                                value=app['blue_green']['color'],
                                propagate_at_launch=True,
                                resource_id=app['autoscale']['name'])
-    for k, v in app['environment_infos']['instance_tags'].items():
-        as_tags[k] = Tag(key= k,
-                         value= v,
-                         propagate_at_launch= True,
-                         resource_id= app['autoscale']['name'])
+    for app_tags in app['environment_infos']['instance_tags']:
+        as_tags[app_tags['tag_name']] = Tag(key= app_tags['tag_name'],
+                                            value= app_tags['tag_value'],
+                                            propagate_at_launch= True,
+                                            resource_id= app['autoscale']['name'])
     log("[{0}] will be updated with: {1}".format(app['autoscale']['name'], ", ".join(as_tags.keys())), log_file)
     return as_tags.values()
 
@@ -283,3 +283,32 @@ def create_block_device(cloud_connection, region, rbd={}):
         rbd['name'] = "/dev/xvda"
         bdm[rbd['name']] = dev_sda1
     return bdm
+
+
+def normalize_application_tags(app_original, app_updated):
+    """ Simple function to normalize application tags when application is created or updated.
+        It aims to ensure that requiered tags are always well defined and
+        replace app variables in tag value if exist.
+        (ex: with the tag {'tag_value': 'ec2.GHOST_APP_NAME'} the function will
+        replaced GHOST_APP_NAME by the application name)
+
+        :param  app_original  string: The ghost "app" object before modification.
+        :param  app_updated   string: The ghost "app" object with the new modifications.
+        :return Bool True if update succeed, False otherwise
+    """
+    predefined_tags = {"app_id": app_original['_id'].__str__(), "env": app_original['env'], "app": app_original['name'],
+                       "role": app_original['role'], "Name": "ec2.GHOST_APP_ENV.GHOST_APP_ROLE.GHOST_APP_NAME"}
+    app_variables = {"GHOST_APP_ENV": app_original['env'], "GHOST_APP_ROLE": app_original['role'], "GHOST_APP_NAME": app_original['name']}
+    app_tags = app_updated['environment_infos']['instance_tags']
+    missing_predefined_tags = [k for k,v in predefined_tags.items() if k not in [i['tag_name'] for i in app_tags]]
+    if missing_predefined_tags:
+        for missing_tag in missing_predefined_tags:
+            if missing_tag == 'Name':
+                app_tags.append({'tag_name': missing_tag, 'tag_editable': True, 'tag_value': predefined_tags[missing_tag]})
+            else:
+                app_tags.append({'tag_name': missing_tag, 'tag_editable': False, 'tag_value': predefined_tags[missing_tag]})
+    for tag in app_tags:
+        if next((x for x in app_variables.keys() if x in tag['tag_value']), False):
+            for tag_name in [x for x in app_variables.keys() if x in tag['tag_value']]:
+                tag['tag_value'] = tag['tag_value'].replace(tag_name, app_variables[tag_name])
+    return app_tags
