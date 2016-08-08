@@ -90,6 +90,8 @@ def get_elb_from_autoscale(as_name, as_conn):
         :param  as_conn  string: The boto Autoscaling Group connection.
         :return  a list of ELB names.
     """
+    if not as_name: # prevent to get all ASG and use first one...
+        return []
     return as_conn.get_all_groups(names=[as_name])[0].load_balancers
 
 def get_elb_dns_name(elb_conn, elb_name):
