@@ -21,6 +21,7 @@ gevent-websocket
 gunicorn                  # needed at runtime
 Jinja2
 pip-tools
+psutil
 pymongo
 PyYAML
 redis
