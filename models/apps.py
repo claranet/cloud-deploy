@@ -88,7 +88,7 @@ apps_schema = {
             'schema': {
                 'var_key': {
                     'type': 'string',
-                    'regex': '^[a-zA-Z_]+[a-zA-Z0-9_]*$',
+                    'regex': '^(?!GHOST|ghost)[a-zA-Z_]+[a-zA-Z0-9_]*$',
                     'required': False
                 },
                 'var_value': {
