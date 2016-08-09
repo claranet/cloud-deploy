@@ -10,7 +10,9 @@ from ghost_log import log
 PACKER_JSON_PATH="/tmp/packer/"
 PACKER_LOGDIR="/var/log/ghost/packer"
 SALT_LOCAL_TREE="/tmp/salt/"
+SALT_LOCAL_MIRROR="/ghost/.salt-mirror/"
 SALT_FORMULAS_REPO="git@bitbucket.org:morea/morea-salt-formulas.git"
+ZABBIX_REPO="git@bitbucket.org:morea/zabbix.git"
 
 class Packer:
     def __init__(self, packer_config, config, log_file, job_id):
@@ -27,8 +29,10 @@ class Packer:
         if not os.path.exists(SALT_LOCAL_TREE):
             os.makedirs(SALT_LOCAL_TREE)
         os.makedirs(SALT_LOCAL_TREE + self.unique)
+
         #Use the configured git repository, if any
         salt_formulas_repo = config.get('salt_formulas_repo', SALT_FORMULAS_REPO)
+        zabbix_repo = config.get('zabbix_repo', ZABBIX_REPO)
         log("Getting Salt Formulas from {r}".format(r=salt_formulas_repo), self._log_file)
         try:
             output=git("ls-remote", "--exit-code", salt_formulas_repo, config.get('salt_formulas_branch', 'master')).strip()
@@ -36,7 +40,20 @@ class Packer:
         except sh.ErrorReturnCode, e:
             log("Invalid salt formulas repos. Please check your yaml 'config.yml' file", self._log_file)
             raise
-        git.clone([salt_formulas_repo, '-b', config.get('salt_formulas_branch', 'master'), '--single-branch', SALT_LOCAL_TREE + self.unique + '/'])
+
+        #Creates the SALT local mirror
+        if not os.path.exists(SALT_LOCAL_MIRROR):
+            os.makedirs(SALT_LOCAL_MIRROR)
+            os.chdir(SALT_LOCAL_MIRROR)
+            git.init(['--bare'])
+            git.config(['--global', 'cache.directory', SALT_LOCAL_MIRROR])
+            git.remote(['add', 'salt', salt_formulas_repo])
+            git.remote(['add', 'zabbix', zabbix_repo])
+
+        os.chdir(SALT_LOCAL_MIRROR)
+        git.fetch(['--all'])
+
+        git.clone(['--reference', SALT_LOCAL_MIRROR, salt_formulas_repo, '-b', config.get('salt_formulas_branch', 'master'), '--single-branch', SALT_LOCAL_TREE + self.unique + '/'])
         if config.get('salt_formulas_branch'):
             os.chdir(SALT_LOCAL_TREE + self.unique)
             git.submodule('init')
