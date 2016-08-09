@@ -81,6 +81,23 @@ apps_schema = {
             }
         }
     },
+    'env_vars': {
+        'type': 'list',
+        'schema': {
+            'type': 'dict',
+            'schema': {
+                'var_key': {
+                    'type': 'string',
+                    'regex': '^[a-zA-Z_]+[a-zA-Z0-9_]*$',
+                    'required': False
+                },
+                'var_value': {
+                    'type': 'string',
+                    'required': False
+                }
+            }
+        }
+    },
     'ami': {'type': 'string',
             'regex': '^ami-[a-z0-9]*$',
             'readonly': True},
