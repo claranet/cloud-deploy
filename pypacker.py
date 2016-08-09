@@ -43,6 +43,7 @@ class Packer:
 
         #Creates the SALT local mirror
         if not os.path.exists(SALT_LOCAL_MIRROR):
+            log("Creating local mirror [{r}] for the first time".format(r=SALT_LOCAL_MIRROR), self._log_file)
             os.makedirs(SALT_LOCAL_MIRROR)
             os.chdir(SALT_LOCAL_MIRROR)
             git.init(['--bare'])
@@ -50,11 +51,14 @@ class Packer:
             git.remote(['add', 'salt', salt_formulas_repo])
             git.remote(['add', 'zabbix', zabbix_repo])
 
+        log("Fetching local mirror [{r}] remotes".format(r=SALT_LOCAL_MIRROR), self._log_file)
         os.chdir(SALT_LOCAL_MIRROR)
         git.fetch(['--all'])
 
+        log("Cloning [{r}] repo with local mirror reference".format(r=salt_formulas_repo), self._log_file)
         git.clone(['--reference', SALT_LOCAL_MIRROR, salt_formulas_repo, '-b', config.get('salt_formulas_branch', 'master'), '--single-branch', SALT_LOCAL_TREE + self.unique + '/'])
         if config.get('salt_formulas_branch'):
+            log("Submodule init and update", self._log_file)
             os.chdir(SALT_LOCAL_TREE + self.unique)
             git.submodule('init')
             git.submodule('update')
