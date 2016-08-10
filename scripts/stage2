@@ -219,9 +219,15 @@ function exit_deployment() {
 
 function download_and_run_lifecycle_hook_script() {
     local script_name=$1
+    echo "Downloading custom vars script" >> /tmp/$LOGFILE
+    $AWS_BIN s3 cp s3://${S3_BUCKET}/${APP_PATH}/custom_env_vars /tmp/ghost_custom_env_vars --region "$S3_REGION" | grep -v HeadObject 2> /dev/null
     echo "Downloading ${script_name} script" >> /tmp/$LOGFILE
     $AWS_BIN s3 cp s3://${S3_BUCKET}/${APP_PATH}/${script_name} /tmp/ghost_${script_name} --region "$S3_REGION" | grep -v HeadObject 2> /dev/null
     if [ -e /tmp/ghost_${script_name} ]; then
+        if [ -e /tmp/ghost_custom_env_vars ]; then
+            echo "Sourcing custom vars in env" >> /tmp/$LOGFILE
+            source /tmp/ghost_custom_env_vars
+        fi
         echo "Executing /tmp/ghost_${script_name} script..." >> /tmp/$LOGFILE
         chmod +x /tmp/ghost_${script_name}
         GHOST_APP=$APP GHOST_ENV=$ENV GHOST_ENV_COLOR=$COLOR GHOST_ROLE=$ROLE /tmp/ghost_${script_name} 2>&1 | tee -a /tmp/$LOGFILE

@@ -35,6 +35,20 @@ class Updatelifecyclehooks():
                 **self._connection_data
                 )
 
+    def _refresh_env_vars(self, custom_env_vars, bucket, prefix):
+        key_name = '{prefix}/{var_file}'.format(prefix=prefix, var_file='custom_env_vars')
+        env_vars_source = u"""
+#!/bin/bash
+
+"""
+        env_vars_source = env_vars_source + u''.join([u'export {key}="{val}" \n'.format(key=env_var['var_key'], val=env_var['var_value']) for env_var in custom_env_vars])
+
+        k = bucket.new_key(key_name)
+        k.set_contents_from_string(env_vars_source)
+        k.close()
+
+        log('INFO: uploaded {key}'.format(key=key_name), self._log_file)
+
     def _refresh_lifecycle_hook_script(self, lifecycle_hook, lifecycle_hooks, bucket, prefix):
         key_name = '{prefix}/{lifecycle_hook}'.format(prefix=prefix, lifecycle_hook=lifecycle_hook)
         lifecycle_hook_source = lifecycle_hooks is not None and lifecycle_hooks.get(lifecycle_hook, None)
@@ -61,6 +75,7 @@ class Updatelifecyclehooks():
             conn = cloud_connection.get_connection(self._config.get('bucket_region', self._app['region']), ["s3"])
             bucket = conn.get_bucket(self._config['bucket_s3'])
             prefix = get_path_from_app_with_color(app)
+            self._refresh_env_vars(app.get('env_vars', []), bucket, prefix)
             self._refresh_lifecycle_hook_script('pre_bootstrap', lifecycle_hooks, bucket, prefix)
             self._refresh_lifecycle_hook_script('post_bootstrap', lifecycle_hooks, bucket, prefix)
 
