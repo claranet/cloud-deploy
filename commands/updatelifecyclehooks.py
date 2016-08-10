@@ -37,8 +37,7 @@ class Updatelifecyclehooks():
 
     def _refresh_env_vars(self, custom_env_vars, bucket, prefix):
         key_name = '{prefix}/{var_file}'.format(prefix=prefix, var_file='custom_env_vars')
-        env_vars_source = u"""
-#!/bin/bash
+        env_vars_source = u"""#!/bin/bash
 
 """
         env_vars_source = env_vars_source + u''.join([u'export {key}="{val}" \n'.format(key=env_var['var_key'], val=env_var['var_value']) for env_var in custom_env_vars])

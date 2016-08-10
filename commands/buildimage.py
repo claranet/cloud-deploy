@@ -49,10 +49,10 @@ class Buildimage():
         images = conn.get_all_images(owners="self")
 
         ami_name_format = "ami.{0}.{1}.{2}.{3}{color}".format(self._app['env'],
-                                                                        self._app['region'],
-                                                                        self._app['role'],
-                                                                        self._app['name'],
-                                                                        color='.%s' % self._color if self._color else '')
+                                                              self._app['region'],
+                                                              self._app['role'],
+                                                              self._app['name'],
+                                                              color='.%s' % self._color if self._color else '')
 
         for image in images:
             #log(image.name, self._log_file)
@@ -83,6 +83,14 @@ class Buildimage():
         else:
             return False
 
+    def _format_ghost_env_vars(self):
+        ghost_vars = []
+        ghost_vars.append('GHOST_APP=%s' % self._app['name'])
+        ghost_vars.append('GHOST_ENV=%s' % self._app['env'])
+        ghost_vars.append('GHOST_ENV_COLOR=%s' % (self._color if self._color else ''))
+        ghost_vars.append('GHOST_ROLE=%s' % self._app['role'])
+        return ghost_vars
+
     def _format_packer_from_app(self, salt_skip_bootstrap_option):
         instance_tags = {i['tag_name']: i['tag_value'] for i in self._app['environment_infos']['instance_tags']}
         datas = {
@@ -98,7 +106,9 @@ class Buildimage():
             'ami_block_device_mappings': [],
             'iam_instance_profile': self._app['environment_infos']['instance_profile'],
             'credentials': self._cloud_connection.get_credentials(),
-            'tags': instance_tags
+            'tags': instance_tags,
+            'ghost_env_vars': self._format_ghost_env_vars(),
+            'custom_env_vars': self._app.get('env_vars', [])
         }
 
         for opt_vol in self._app['environment_infos'].get('optional_volumes'):
