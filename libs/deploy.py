@@ -56,7 +56,7 @@ def execute_module_script_on_ghost(app, module, script_name, script_friendly_nam
         custom_env_vars = app.get('env_vars', None)
         if custom_env_vars and len(custom_env_vars):
             for env_var in custom_env_vars:
-                script_env[env_var['var_key']] = env_var['var_value']
+                script_env[env_var['var_key']] = env_var['var_value'].encode('utf-8')
 
         gcall('bash %s' % script_path, '%s: Execute' % script_friendly_name, log_file, env=script_env)
         gcall('du -hs .', 'Display current build directory disk usage', log_file)
