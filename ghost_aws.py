@@ -218,8 +218,8 @@ def update_auto_scale(cloud_connection, app, launch_config, log_file, update_as_
     if update_as_params:
         app_tags = get_app_tags(app, log_file)
         as_tags = get_autoscale_tags(as_group, log_file)
-        conn.create_or_update_tags(app_tags)
-        conn.delete_tags([k for k,v in as_tags.items() if k not in app_tags.keys()])
+        conn.create_or_update_tags(app_tags.values())
+        conn.delete_tags([v for k,v in as_tags.items() if k not in app_tags.keys()])
         log("Autoscaling tags [{0}] updated.".format(app['autoscale']['name']), log_file)
 
 def get_autoscale_tags(as_group, log_file):
@@ -255,7 +255,7 @@ def get_app_tags(app, log_file):
                                             propagate_at_launch= True,
                                             resource_id= app['autoscale']['name'])
     log("[{0}] will be updated with: {1}".format(app['autoscale']['name'], ", ".join(tags_app.keys())), log_file)
-    return tags_app.values()
+    return tags_app
 
 def create_block_device(cloud_connection, region, rbd={}):
     conn = cloud_connection.get_connection(region, ["ec2"])

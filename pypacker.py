@@ -83,7 +83,8 @@ class Packer:
             'associate_public_ip_address': self.packer_config['associate_public_ip_address'],
             'ami_block_device_mappings': self.packer_config['ami_block_device_mappings'],
             'ssh_pty': 'true',
-            'iam_instance_profile': self.packer_config['iam_instance_profile']
+            'iam_instance_profile': self.packer_config['iam_instance_profile'],
+            'tags': self.packer_config['tags']
         }]
 
         if self.packer_config['skip_salt_bootstrap'] in ['true', '1', 'y', 'yes', 'True']:
