@@ -216,46 +216,46 @@ def update_auto_scale(cloud_connection, app, launch_config, log_file, update_as_
     as_group.update()
     log("Autoscaling group [{0}] updated.".format(app['autoscale']['name']), log_file)
     if update_as_params:
-        conn.create_or_update_tags(get_auto_scale_tags(cloud_connection, as_group, app, log_file))
+        app_tags = get_app_tags(app, log_file)
+        as_tags = get_autoscale_tags(as_group, log_file)
+        conn.create_or_update_tags(app_tags)
+        conn.delete_tags([k for k,v in as_tags.items() if k not in app_tags.keys()])
         log("Autoscaling tags [{0}] updated.".format(app['autoscale']['name']), log_file)
 
-def get_auto_scale_tags(cloud_connection, as_group, app, log_file):
-    """
-    Get existing tags and set specific tags needed by Ghost
+def get_autoscale_tags(as_group, log_file):
+    """ Return the current Tags set for an AutoScaling.
+
+        :param as_group
+        :param log_file
+        :return  dict  Every tags defined for this AutoScaling
     """
     as_tags = {}
-    #for tag in as_group.tags:
-    #    as_tags[tag.key] = tag
+    for tag in as_group.tags:
+        as_tags[tag.key] = tag
+    log("Tags currently set  {0}" .format(", ".join(as_tags.keys())), log_file)
+    return as_tags
 
-   # log("[{0}] has those tags enabled: {1}".format(app['autoscale']['name'], ", ".join(as_tags.keys())), log_file)
-   # as_tags['app_id'] = Tag(key='app_id',
-   #                      value=app['_id'],
-   #                      propagate_at_launch=True,
-   #                      resource_id=app['autoscale']['name'])
-   # as_tags['app'] = Tag(key='app',
-   #                      value=app['name'],
-   #                      propagate_at_launch=True,
-   #                      resource_id=app['autoscale']['name'])
-   # as_tags['env'] = Tag(key='env',
-   #                      value=app['env'],
-   #                      propagate_at_launch=True,
-   #                      resource_id=app['autoscale']['name'])
-   # as_tags['role'] = Tag(key='role',
-   #                       value=app['role'],
-   #                       propagate_at_launch=True,
-   #                       resource_id=app['autoscale']['name'])
+
+def get_app_tags(app, log_file):
+    """ Return the tags defined for this application.
+
+        :param  app  dict The application object
+        :log_file   obj Log file objet
+        :return  dict  Every tags defined for this Ghost Application
+    """
+    tags_app = {}
     if app.get('blue_green') and app['blue_green'].get('color'):
-        as_tags['color'] = Tag(key='color',
+        tags_app['color'] = Tag(key='color',
                                value=app['blue_green']['color'],
                                propagate_at_launch=True,
                                resource_id=app['autoscale']['name'])
     for app_tags in app['environment_infos']['instance_tags']:
-        as_tags[app_tags['tag_name']] = Tag(key= app_tags['tag_name'],
+        tags_app[app_tags['tag_name']] = Tag(key= app_tags['tag_name'],
                                             value= app_tags['tag_value'],
                                             propagate_at_launch= True,
                                             resource_id= app['autoscale']['name'])
-    log("[{0}] will be updated with: {1}".format(app['autoscale']['name'], ", ".join(as_tags.keys())), log_file)
-    return as_tags.values()
+    log("[{0}] will be updated with: {1}".format(app['autoscale']['name'], ", ".join(tags_app.keys())), log_file)
+    return tags_app.values()
 
 def create_block_device(cloud_connection, region, rbd={}):
     conn = cloud_connection.get_connection(region, ["ec2"])
