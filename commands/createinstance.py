@@ -71,12 +71,6 @@ class Createinstance():
                 #Getting instance metadata
                 instance = reservation.instances[0]
                 if instance.id:
-                    #Adding tags from app
-                    #conn.create_tags([instance.id], {"Name":"ec2.{0}.{1}.{2}".format(self._app['env'], self._app['role'], self._app['name'])})
-                    #conn.create_tags([instance.id], {"env":self._app['env']})
-                    #conn.create_tags([instance.id], {"role":self._app['role']})
-                    #conn.create_tags([instance.id], {"app":self._app['name']})
-                    #conn.create_tags([instance.id], {"app_id":self._app['_id']})
                     for app_tags in self._app['environment_infos']['instance_tags']:
                         conn.create_tags([instance.id], {app_tags['tag_name']: app_tags['tag_value']})
                     if self._color:
