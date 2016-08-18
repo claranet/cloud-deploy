@@ -313,9 +313,9 @@ def normalize_application_tags(app_original, app_updated):
 
         Test with a custom Tag Name
 
-        >>> from pprint import pprint
         >>> app_original = {'_id': 1111, 'env': 'prod', 'name': 'app1', 'role': 'webfront', 'modules': [{'name': 'mod1', 'git_repo': 'git@github.com/test/mod1'}, {'name': 'mod2', 'git_repo': 'git@github.com/test/mod2'}], 'environment_infos': {'instance_tags':[]}}
-        >>> app_updated = {'_id': 1111, 'env': 'prod', 'name': 'app1', 'role': 'webfront', 'modules': [{'name': 'mod1', 'git_repo': 'git@github.com/test/mod1'}, {'name': 'mod2', 'git_repo': 'git@github.com/test/mod2'}], 'environment_infos': {'instance_tags':[{'tag_editable': True, 'tag_name': 'Name', 'tag_value': 'Prod.Server1'}]}}
+        >>> app_updated = deepcopy(app_original)
+        >>> app_updated['environment_infos']['instance_tags'] = [{'tag_editable': True, 'tag_name': 'Name', 'tag_value': 'Prod.Server1'}]
         >>> pprint(sorted(normalize_application_tags(app_original, app_updated), key=lambda d: d['tag_name']))
         [{'tag_editable': True, 'tag_name': 'Name', 'tag_value': 'Prod.Server1'},
          {'tag_editable': False, 'tag_name': 'app', 'tag_value': 'app1'},
@@ -326,7 +326,6 @@ def normalize_application_tags(app_original, app_updated):
 
         Test with a custom Tag Name build with variables
 
-        >>> from pprint import pprint
         >>> app_original = {'_id': 1111, 'env': 'prod', 'name': 'app1', 'role': 'webfront', 'modules': [{'name': 'mod1', 'git_repo': 'git@github.com/test/mod1'}, {'name': 'mod2', 'git_repo': 'git@github.com/test/mod2'}], 'environment_infos': {'instance_tags':[]}}
         >>> app_updated = {'_id': 1111, 'env': 'prod', 'name': 'app1', 'role': 'webfront', 'modules': [{'name': 'mod1', 'git_repo': 'git@github.com/test/mod1'}, {'name': 'mod2', 'git_repo': 'git@github.com/test/mod2'}], 'environment_infos': {'instance_tags':[{'tag_editable': True, 'tag_name': 'Name', 'tag_value': 'GHOST_APP_ENV.GHOST_APP_ROLE.Server1'}]}}
         >>> pprint(sorted(normalize_application_tags(app_original, app_updated), key=lambda d: d['tag_name']))
@@ -340,7 +339,6 @@ def normalize_application_tags(app_original, app_updated):
 
         Test with a custom tag
 
-        >>> from pprint import pprint
         >>> app_original = {'_id': 1111, 'env': 'prod', 'name': 'app1', 'role': 'webfront', 'modules': [{'name': 'mod1', 'git_repo': 'git@github.com/test/mod1'}, {'name': 'mod2', 'git_repo': 'git@github.com/test/mod2'}], 'environment_infos': {'instance_tags':[]}}
         >>> app_updated = {'_id': 1111, 'env': 'prod', 'name': 'app1', 'role': 'webfront', 'modules': [{'name': 'mod1', 'git_repo': 'git@github.com/test/mod1'}, {'name': 'mod2', 'git_repo': 'git@github.com/test/mod2'}], 'environment_infos': {'instance_tags':[{'tag_editable': True, 'tag_name': 'billing', 'tag_value': 'account1'}]}}
         >>> pprint(sorted(normalize_application_tags(app_original, app_updated), key=lambda d: d['tag_name']))
@@ -356,7 +354,6 @@ def normalize_application_tags(app_original, app_updated):
 
         Test with a custom tag updated
 
-        >>> from pprint import pprint
         >>> app_original = {'_id': 1111, 'env': 'prod', 'name': 'app1', 'role': 'webfront', 'modules': [{'name': 'mod1', 'git_repo': 'git@github.com/test/mod1'}, {'name': 'mod2', 'git_repo': 'git@github.com/test/mod2'}], 'environment_infos': {'instance_tags':[{'tag_editable': True, 'tag_name': 'billing', 'tag_value': 'account1'}]}}
         >>> app_updated = {'_id': 1111, 'env': 'prod', 'name': 'app1', 'role': 'webfront', 'modules': [{'name': 'mod1', 'git_repo': 'git@github.com/test/mod1'}, {'name': 'mod2', 'git_repo': 'git@github.com/test/mod2'}], 'environment_infos': {'instance_tags':[{'tag_editable': True, 'tag_name': 'billing', 'tag_value': 'account2'}]}}
         >>> pprint(sorted(normalize_application_tags(app_original, app_updated), key=lambda d: d['tag_name']))
