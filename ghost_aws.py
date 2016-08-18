@@ -296,12 +296,18 @@ def normalize_application_tags(app_original, app_updated):
         :param  app_updated   string: The ghost "app" object with the new modifications.
         :return list  A list of dict. Each dict define a tag
 
-
+        >>> from copy import deepcopy
+        >>> from pprint import pprint
         >>> app_original = {'_id': 1111, 'env': 'prod', 'name': 'app1', 'role': 'webfront', 'modules': [{'name': 'mod1', 'git_repo': 'git@github.com/test/mod1'}, {'name': 'mod2', 'git_repo': 'git@github.com/test/mod2'}], 'environment_infos': {'instance_tags':[]}}
-        >>> app_updated = {'_id': 1111, 'env': 'prod', 'name': 'app1', 'role': 'webfront', 'modules': [{'name': 'mod1', 'git_repo': 'git@github.com/test/mod1'}, {'name': 'mod2', 'git_repo': 'git@github.com/test/mod2'}], 'environment_infos': {'instance_tags':[]}}
-        >>> sorted(normalize_application_tags(app_original, app_updated), key=lambda d: d['tag_name'])
-        sorted([{'tag_name': 'app_id', 'tag_editable': False, 'tag_value': '1111'}, {'tag_name': 'app', 'tag_editable': False, 'tag_value': 'app1'}, {'tag_name': 'Name', 'tag_editable': True, 'tag_value': 'ec2.prod.webfront.app1'}, {'tag_name': 'env', 'tag_editable': False, 'tag_value': 'prod'}, {'tag_name': 'role', 'tag_editable': False, 'tag_value': 'webfront'}], key=lambda d: d['tag_name'])
-
+        >>> app_updated = deepcopy(app_original)
+        >>> pprint(sorted(normalize_application_tags(app_original, app_updated), key=lambda d: d['tag_name']))
+        [{'tag_editable': True,
+          'tag_name': 'Name',
+          'tag_value': 'ec2.prod.webfront.app1'},
+         {'tag_editable': False, 'tag_name': 'app', 'tag_value': 'app1'},
+         {'tag_editable': False, 'tag_name': 'app_id', 'tag_value': '1111'},
+         {'tag_editable': False, 'tag_name': 'env', 'tag_value': 'prod'},
+         {'tag_editable': False, 'tag_name': 'role', 'tag_value': 'webfront'}]
     """
     predefined_tags = {"app_id": app_original['_id'].__str__(), "env": app_original['env'], "app": app_original['name'],
                        "role": app_original['role'], "Name": "ec2.GHOST_APP_ENV.GHOST_APP_ROLE.GHOST_APP_NAME"}
