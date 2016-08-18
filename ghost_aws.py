@@ -296,9 +296,11 @@ def normalize_application_tags(app_original, app_updated):
         :param  app_updated   string: The ghost "app" object with the new modifications.
         :return list  A list of dict. Each dict define a tag
 
+        Test with only the default tag Name
+
         >>> from copy import deepcopy
         >>> from pprint import pprint
-        >>> app_original = {'_id': 1111, 'env': 'prod', 'name': 'app1', 'role': 'webfront', 'modules': [{'name': 'mod1', 'git_repo': 'git@github.com/test/mod1'}, {'name': 'mod2', 'git_repo': 'git@github.com/test/mod2'}], 'environment_infos': {'instance_tags':[]}}
+        >>> app_original = {'_id': 1111, 'env': 'prod', 'name': 'app1', 'role': 'webfront', 'modules': [{'name': 'mod1', 'git_repo': 'git@github.com/test/mod1'}, {'name': 'mod2', 'git_repo': 'git@github.com/test/mod2'}], 'environment_infos': {'instance_tags':[{'tag_editable': True, 'tag_name': 'Name', 'tag_value': 'ec2.GHOST_APP_ENV.GHOST_APP_ROLE.GHOST_APP_NAME'}]}}
         >>> app_updated = deepcopy(app_original)
         >>> pprint(sorted(normalize_application_tags(app_original, app_updated), key=lambda d: d['tag_name']))
         [{'tag_editable': True,
@@ -306,6 +308,64 @@ def normalize_application_tags(app_original, app_updated):
           'tag_value': 'ec2.prod.webfront.app1'},
          {'tag_editable': False, 'tag_name': 'app', 'tag_value': 'app1'},
          {'tag_editable': False, 'tag_name': 'app_id', 'tag_value': '1111'},
+         {'tag_editable': False, 'tag_name': 'env', 'tag_value': 'prod'},
+         {'tag_editable': False, 'tag_name': 'role', 'tag_value': 'webfront'}]
+
+        Test with a custom Tag Name
+
+        >>> from pprint import pprint
+        >>> app_original = {'_id': 1111, 'env': 'prod', 'name': 'app1', 'role': 'webfront', 'modules': [{'name': 'mod1', 'git_repo': 'git@github.com/test/mod1'}, {'name': 'mod2', 'git_repo': 'git@github.com/test/mod2'}], 'environment_infos': {'instance_tags':[]}}
+        >>> app_updated = {'_id': 1111, 'env': 'prod', 'name': 'app1', 'role': 'webfront', 'modules': [{'name': 'mod1', 'git_repo': 'git@github.com/test/mod1'}, {'name': 'mod2', 'git_repo': 'git@github.com/test/mod2'}], 'environment_infos': {'instance_tags':[{'tag_editable': True, 'tag_name': 'Name', 'tag_value': 'Prod.Server1'}]}}
+        >>> pprint(sorted(normalize_application_tags(app_original, app_updated), key=lambda d: d['tag_name']))
+        [{'tag_editable': True, 'tag_name': 'Name', 'tag_value': 'Prod.Server1'},
+         {'tag_editable': False, 'tag_name': 'app', 'tag_value': 'app1'},
+         {'tag_editable': False, 'tag_name': 'app_id', 'tag_value': '1111'},
+         {'tag_editable': False, 'tag_name': 'env', 'tag_value': 'prod'},
+         {'tag_editable': False, 'tag_name': 'role', 'tag_value': 'webfront'}]
+
+
+        Test with a custom Tag Name build with variables
+
+        >>> from pprint import pprint
+        >>> app_original = {'_id': 1111, 'env': 'prod', 'name': 'app1', 'role': 'webfront', 'modules': [{'name': 'mod1', 'git_repo': 'git@github.com/test/mod1'}, {'name': 'mod2', 'git_repo': 'git@github.com/test/mod2'}], 'environment_infos': {'instance_tags':[]}}
+        >>> app_updated = {'_id': 1111, 'env': 'prod', 'name': 'app1', 'role': 'webfront', 'modules': [{'name': 'mod1', 'git_repo': 'git@github.com/test/mod1'}, {'name': 'mod2', 'git_repo': 'git@github.com/test/mod2'}], 'environment_infos': {'instance_tags':[{'tag_editable': True, 'tag_name': 'Name', 'tag_value': 'GHOST_APP_ENV.GHOST_APP_ROLE.Server1'}]}}
+        >>> pprint(sorted(normalize_application_tags(app_original, app_updated), key=lambda d: d['tag_name']))
+        [{'tag_editable': True,
+          'tag_name': 'Name',
+          'tag_value': 'prod.webfront.Server1'},
+         {'tag_editable': False, 'tag_name': 'app', 'tag_value': 'app1'},
+         {'tag_editable': False, 'tag_name': 'app_id', 'tag_value': '1111'},
+         {'tag_editable': False, 'tag_name': 'env', 'tag_value': 'prod'},
+         {'tag_editable': False, 'tag_name': 'role', 'tag_value': 'webfront'}]
+
+        Test with a custom tag
+
+        >>> from pprint import pprint
+        >>> app_original = {'_id': 1111, 'env': 'prod', 'name': 'app1', 'role': 'webfront', 'modules': [{'name': 'mod1', 'git_repo': 'git@github.com/test/mod1'}, {'name': 'mod2', 'git_repo': 'git@github.com/test/mod2'}], 'environment_infos': {'instance_tags':[]}}
+        >>> app_updated = {'_id': 1111, 'env': 'prod', 'name': 'app1', 'role': 'webfront', 'modules': [{'name': 'mod1', 'git_repo': 'git@github.com/test/mod1'}, {'name': 'mod2', 'git_repo': 'git@github.com/test/mod2'}], 'environment_infos': {'instance_tags':[{'tag_editable': True, 'tag_name': 'billing', 'tag_value': 'account1'}]}}
+        >>> pprint(sorted(normalize_application_tags(app_original, app_updated), key=lambda d: d['tag_name']))
+        [{'tag_editable': True,
+          'tag_name': 'Name',
+          'tag_value': 'ec2.prod.webfront.app1'},
+         {'tag_editable': False, 'tag_name': 'app', 'tag_value': 'app1'},
+         {'tag_editable': False, 'tag_name': 'app_id', 'tag_value': '1111'},
+         {'tag_editable': True, 'tag_name': 'billing', 'tag_value': 'account1'},
+         {'tag_editable': False, 'tag_name': 'env', 'tag_value': 'prod'},
+         {'tag_editable': False, 'tag_name': 'role', 'tag_value': 'webfront'}]
+
+
+        Test with a custom tag updated
+
+        >>> from pprint import pprint
+        >>> app_original = {'_id': 1111, 'env': 'prod', 'name': 'app1', 'role': 'webfront', 'modules': [{'name': 'mod1', 'git_repo': 'git@github.com/test/mod1'}, {'name': 'mod2', 'git_repo': 'git@github.com/test/mod2'}], 'environment_infos': {'instance_tags':[{'tag_editable': True, 'tag_name': 'billing', 'tag_value': 'account1'}]}}
+        >>> app_updated = {'_id': 1111, 'env': 'prod', 'name': 'app1', 'role': 'webfront', 'modules': [{'name': 'mod1', 'git_repo': 'git@github.com/test/mod1'}, {'name': 'mod2', 'git_repo': 'git@github.com/test/mod2'}], 'environment_infos': {'instance_tags':[{'tag_editable': True, 'tag_name': 'billing', 'tag_value': 'account2'}]}}
+        >>> pprint(sorted(normalize_application_tags(app_original, app_updated), key=lambda d: d['tag_name']))
+        [{'tag_editable': True,
+          'tag_name': 'Name',
+          'tag_value': 'ec2.prod.webfront.app1'},
+         {'tag_editable': False, 'tag_name': 'app', 'tag_value': 'app1'},
+         {'tag_editable': False, 'tag_name': 'app_id', 'tag_value': '1111'},
+         {'tag_editable': True, 'tag_name': 'billing', 'tag_value': 'account2'},
          {'tag_editable': False, 'tag_name': 'env', 'tag_value': 'prod'},
          {'tag_editable': False, 'tag_name': 'role', 'tag_value': 'webfront'}]
     """
