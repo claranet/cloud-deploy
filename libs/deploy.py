@@ -68,8 +68,19 @@ def get_path_from_app_with_color(app):
     """
     >>> get_path_from_app_with_color({'name': 'AppName', 'env': 'prod', 'role': 'webfront', 'blue_green': {'color': 'blue'}})
     '/ghost/AppName/prod/webfront/blue'
+
+    Fallback on legacy behavior if blue/green data is not available
+
+    >>> get_path_from_app_with_color({'name': 'AppName', 'env': 'prod', 'role': 'webfront', 'blue_green': {'color': None}})
+    '/ghost/AppName/prod/webfront'
+
+    >>> get_path_from_app_with_color({'name': 'AppName', 'env': 'prod', 'role': 'webfront', 'blue_green': None})
+    '/ghost/AppName/prod/webfront'
+
+    >>> get_path_from_app_with_color({'name': 'AppName', 'env': 'prod', 'role': 'webfront'})
+    '/ghost/AppName/prod/webfront'
     """
-    if 'blue_green' in app and 'color' in app['blue_green']:
+    if 'blue_green' in app and app['blue_green'] and 'color' in app['blue_green'] and app['blue_green']['color']:
         return "/ghost/{name}/{env}/{role}/{color}".format(name=app['name'], env=app['env'],
                                                            role=app['role'], color=app['blue_green']['color'])
     else:

@@ -37,3 +37,4 @@ src/*.egg-info
 venv-ghost
 .vim/
 .viminfo
+.vscode/

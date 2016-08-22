@@ -9,7 +9,7 @@ from settings import cloud_connections, DEFAULT_PROVIDER
 from ghost_log import log
 from ghost_aws import deploy_module_on_hosts
 from libs.deploy import execute_module_script_on_ghost
-from libs.deploy import get_path_from_app, get_path_from_app_with_color, update_app_manifest
+from libs.deploy import get_path_from_app_with_color, update_app_manifest
 
 COMMAND_DESCRIPTION = "Re-deploy an old module package"
 
@@ -62,7 +62,7 @@ class Redeploy():
         gcall('rm -rf "%s"' % clone_path, 'Cleaning old temporary redeploy module working directory "%s"' % clone_path, self._log_file)
         gcall('mkdir -p "%s"' % clone_path, 'Recreating redeploy module working directory "%s"' % clone_path, self._log_file)
 
-        key_path = '{path}/{module}/{pkg_name}'.format(path=self._get_path_from_app(), module=module['name'], pkg_name=package)
+        key_path = '{path}/{module}/{pkg_name}'.format(path=get_path_from_app_with_color(), module=module['name'], pkg_name=package)
         log("Downloading package: {0} from '{1}'".format(package, key_path), self._log_file)
         dest_package_path = "{0}/{1}".format(clone_path, package)
         cloud_connection = cloud_connections.get(self._app.get('provider', DEFAULT_PROVIDER))(self._log_file)
@@ -81,7 +81,7 @@ class Redeploy():
         if module and package:
             update_app_manifest(self._app, self._config, module, package, self._log_file)
             all_app_modules_list = get_app_module_name_list(self._app['modules'])
-            clean_local_module_workspace(self._get_path_from_app(), all_app_modules_list, self._log_file)
+            clean_local_module_workspace(get_path_from_app_with_color(), all_app_modules_list, self._log_file)
             # Download and extract package before launching deploy
             clone_path = self._local_extract_package(module, package)
 
