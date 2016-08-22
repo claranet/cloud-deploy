@@ -9,7 +9,7 @@ from settings import cloud_connections, DEFAULT_PROVIDER
 from ghost_log import log
 from ghost_aws import deploy_module_on_hosts
 from libs.deploy import execute_module_script_on_ghost
-from libs.deploy import get_path_from_app_with_color, update_app_manifest
+from libs.deploy import get_path_from_app_with_color, get_buildpack_clone_path_from_module, update_app_manifest
 
 COMMAND_DESCRIPTION = "Re-deploy an old module package"
 
@@ -58,7 +58,7 @@ class Redeploy():
         deploy_module_on_hosts(self._cloud_connection, module, fabric_execution_strategy, self._app, self._config, self._log_file, safe_deployment_strategy)
 
     def _local_extract_package(self, module, package):
-        clone_path = self._get_clone_path_from_module(module)
+        clone_path = get_buildpack_clone_path_from_module(self._app, module)
         gcall('rm -rf "%s"' % clone_path, 'Cleaning old temporary redeploy module working directory "%s"' % clone_path, self._log_file)
         gcall('mkdir -p "%s"' % clone_path, 'Recreating redeploy module working directory "%s"' % clone_path, self._log_file)
 
