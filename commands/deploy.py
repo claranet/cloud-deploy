@@ -14,8 +14,7 @@ from ghost_log import log
 from ghost_aws import deploy_module_on_hosts
 from settings import cloud_connections, DEFAULT_PROVIDER
 from libs.deploy import execute_module_script_on_ghost
-from libs.deploy import get_path_from_app, get_path_from_app_with_color, update_app_manifest
-from libs.blue_green import get_blue_green_from_app
+from libs.deploy import get_path_from_app_with_color, update_app_manifest
 
 ROOT_PATH = os.path.dirname(os.path.realpath(__file__))
 
@@ -272,8 +271,6 @@ class Deploy():
         clone_path = self._get_buildpack_clone_path_from_module(module)
         revision = self._get_module_revision(module['name'])
 
-        blue_green, color = get_blue_green_from_app(self._app)
-
         if not os.path.exists(mirror_path):
             gcall('git --no-pager clone --bare --mirror {r} {m}'.format(r=git_repo, m=mirror_path),
                   'Create local git mirror for remote {r}'.format(r=git_repo),
@@ -400,10 +397,7 @@ GHOST_MODULE_USER="{user}"
 
         update_app_manifest(self._app, self._config, module, pkg_name, self._log_file)
         all_app_modules_list = get_app_module_name_list(self._app['modules'])
-        if blue_green:
-            clean_local_module_workspace(get_path_from_app_with_color(self._app), all_app_modules_list, self._log_file)
-        else:
-            clean_local_module_workspace(get_path_from_app(self._app), all_app_modules_list, self._log_file)
+        clean_local_module_workspace(get_path_from_app_with_color(self._app), all_app_modules_list, self._log_file)
         self._deploy_module(module, fabric_execution_strategy, safe_deployment_strategy)
         if 'after_all_deploy' in module:
             log("After all deploy script found for '{0}'. Executing it.".format(module['name']), self._log_file)
