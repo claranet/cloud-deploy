@@ -14,7 +14,7 @@ from ghost_log import log
 from ghost_aws import deploy_module_on_hosts
 from settings import cloud_connections, DEFAULT_PROVIDER
 from libs.deploy import execute_module_script_on_ghost
-from libs.deploy import get_path_from_app_with_color, update_app_manifest
+from libs.deploy import get_path_from_app_with_color, get_buildpack_clone_path_from_module, update_app_manifest
 
 ROOT_PATH = os.path.dirname(os.path.realpath(__file__))
 
@@ -81,27 +81,14 @@ class Deploy():
         >>> Deploy(worker=worker())._get_intermediate_clone_path_from_module(module)
         '/ghost/.tmp/AppName/prod/webfront/mod1'
         """
-        clone_path = self._get_buildpack_clone_path_from_module(module)
+        clone_path = get_buildpack_clone_path_from_module(self._app, module)
         return '{}/.tmp{}'.format(clone_path[:6], clone_path[6:])
-
-    def _get_buildpack_clone_path_from_module(self, module):
-        """
-        >>> class worker:
-        ...     app = {'name': 'AppName', 'env': 'prod', 'role': 'webfront'}
-        ...     job = None
-        ...     log_file = None
-        ...     _config = None
-        >>> module = {'name': 'mod1', 'git_repo': 'git@bitbucket.org:morea/ghost.git'}
-        >>> Deploy(worker=worker())._get_buildpack_clone_path_from_module(module)
-        '/ghost/AppName/prod/webfront/mod1'
-        """
-        return "{app_path}/{module}".format(app_path=get_path_from_app_with_color(self._app), module=module['name'])
 
     def _deploy_module(self, module, fabric_execution_strategy, safe_deployment_strategy):
         deploy_module_on_hosts(self._cloud_connection, module, fabric_execution_strategy, self._app, self._config, self._log_file, safe_deployment_strategy)
 
     def _package_module(self, module, ts, commit):
-        path = self._get_buildpack_clone_path_from_module(module)
+        path = get_buildpack_clone_path_from_module(self._app, module)
         os.chdir(path)
         pkg_name = "{0}_{1}_{2}".format(ts, module['name'], commit)
         pkg_path = '../{0}'.format(pkg_name)
@@ -268,7 +255,7 @@ class Deploy():
 
         git_repo = module['git_repo']
         mirror_path = self._get_mirror_path_from_module(module)
-        clone_path = self._get_buildpack_clone_path_from_module(module)
+        clone_path = get_buildpack_clone_path_from_module(self._app, module)
         revision = self._get_module_revision(module['name'])
 
         if not os.path.exists(mirror_path):

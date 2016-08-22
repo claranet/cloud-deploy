@@ -86,6 +86,16 @@ def get_path_from_app_with_color(app):
     else:
         return get_path_from_app(app)
 
+def get_buildpack_clone_path_from_module(app, module):
+    """
+    >>> app = {'name': 'AppName', 'env': 'prod', 'role': 'webfront'}
+    >>> module = {'name': 'mod1', 'git_repo': 'git@bitbucket.org:morea/ghost.git'}
+    >>> get_buildpack_clone_path_from_module(app, module)
+    '/ghost/AppName/prod/webfront/mod1'
+    """
+    return "{app_path}/{module}".format(app_path=get_path_from_app_with_color(app), module=module['name'])
+
+
 def update_app_manifest(app, config, module, package, log_file):
     """
     Update the app manifest into S3
