@@ -79,7 +79,7 @@ class Redeploy():
     def _execute_redeploy(self, deploy_id, fabric_execution_strategy, safe_deployment_strategy):
         module, package = self._get_deploy_infos(deploy_id)
         if module and package:
-            update_app_manifest(self._app, self._config, module, pkg_name, self._log_file)
+            update_app_manifest(self._app, self._config, module, package, self._log_file)
             all_app_modules_list = get_app_module_name_list(self._app['modules'])
             clean_local_module_workspace(self._get_path_from_app(), all_app_modules_list, self._log_file)
             # Download and extract package before launching deploy
