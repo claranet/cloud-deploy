@@ -155,7 +155,7 @@ class Buildimage():
         """
         pillar = {}
         for ft in self._app['features']:
-            values = ft['version'].split('=', 1) # Split only one time
+            values = ft.get('version', '').split('=', 1) # Split only one time
             feature_name = ft['name'].encode('utf-8')
             if not feature_name in pillar:
                 pillar[feature_name] = {}
@@ -166,7 +166,7 @@ class Buildimage():
                     pillar[feature_name][ft_param_key] = []
                 pillar[feature_name][ft_param_key].append(ft_param_val)
             else:
-                pillar[feature_name]['version'] = ft['version'].encode('utf-8')
+                pillar[feature_name]['version'] = ft.get('version', '').encode('utf-8')
         return pillar
 
     def _update_app_ami(self, ami_id):
