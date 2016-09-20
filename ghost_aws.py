@@ -104,7 +104,7 @@ def deploy_module_on_hosts(cloud_connection, module, fabric_execution_strategy, 
         resume_autoscaling_group_processes(as_conn, as_group, as_group_processes_to_suspend, log_file)
 
 def create_launch_config(cloud_connection, app, userdata, ami_id):
-    d = time.strftime('%d%m%Y-%H%M',time.localtime())
+    d = time.strftime('%d%m%Y-%H%M%S', time.localtime())
     blue_green, app_color = get_blue_green_from_app(app)
 
     launch_config_name = "launchconfig.{0}.{1}.{2}.{3}{color}.{4}".format(app['env'],
