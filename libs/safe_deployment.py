@@ -115,6 +115,9 @@ class SafeDeployment():
             :param  instances_list  list: Instances on which to deploy(list of dict. ex: [{'id':XXX, 'private_ip_address':XXXX}...]).
             :return                True if operation successed or raise an Exception.
         """
+        if not self.as_name:
+            raise GCallException('Cannot continue because there is no AuoScaling Group configured')
+
         app_region = self.app['region']
 
         as_conn = self.cloud_connection.get_connection(app_region, ["ec2", "autoscale"])
