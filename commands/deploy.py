@@ -64,9 +64,9 @@ class Deploy():
         ...     job = None
         ...     log_file = None
         ...     _config = None
-        >>> module = {'git_repo': 'git@bitbucket.org:morea/ghost.git'}
+        >>> module = {'git_repo': 'git@bitbucket.org:claranet/ghost.git'}
         >>> Deploy(worker=worker())._get_mirror_path_from_module(module)
-        '/ghost/.mirrors/git@bitbucket.org:morea/ghost.git'
+        '/ghost/.mirrors/git@bitbucket.org:claranet/ghost.git'
         """
         return "/ghost/.mirrors/{remote}".format(remote=module['git_repo'])
 
@@ -77,7 +77,7 @@ class Deploy():
         ...     job = None
         ...     log_file = None
         ...     _config = None
-        >>> module = {'name': 'mod1', 'git_repo': 'git@bitbucket.org:morea/ghost.git'}
+        >>> module = {'name': 'mod1', 'git_repo': 'git@bitbucket.org:claranet/ghost.git'}
         >>> Deploy(worker=worker())._get_intermediate_clone_path_from_module(module)
         '/ghost/.tmp/AppName/prod/webfront/mod1'
         """

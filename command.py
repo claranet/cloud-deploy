@@ -15,7 +15,6 @@ from settings import MONGO_DBNAME
 
 LOG_ROOT='/var/log/ghost'
 ROOT_PATH=os.path.dirname(os.path.realpath(__file__))
-MAIL_LOG_FROM='no-reply@morea.fr'
 
 def format_notif(app, job):
     """
@@ -109,7 +108,7 @@ class Command:
             os.system('gzip -k '+log)
             log = log+'.gz'
         for mail in self.app['log_notifications']:
-            notif.send_mail(From=MAIL_LOG_FROM, To=mail, subject=subject, body=body, attachments=[log])
+            notif.send_mail(From=ses_settings['mail_from'], To=mail, subject=subject, body=body, attachments=[log])
             pass
 
 
