@@ -116,3 +116,5 @@ blue_green:
         healthcheck_timeout: 2
         registreation_timeout: 60
         healthcheck_healthy_threshold: 2
+    purgebluegreen:
+        destroy_temporary_elb: true
