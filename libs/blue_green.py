@@ -28,6 +28,9 @@ def get_blue_green_config(config, command, key, default_value):
         return default_value
     return command_section.get(key, default_value)
 
+def get_blue_green_destroy_temporary_elb_config(config):
+    return get_blue_green_config(config, 'purgebluegreen', 'destroy_temporary_elb', True)
+
 def get_blue_green_from_app(app):
     """
     Returns the blue_green object if exists and it's color field if exists

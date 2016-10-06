@@ -7,7 +7,7 @@ from settings import cloud_connections, DEFAULT_PROVIDER
 from ghost_aws import check_autoscale_exists, get_autoscaling_group_and_processes_to_suspend, suspend_autoscaling_group_processes, resume_autoscaling_group_processes
 from libs.elb import get_elb_instance_status_autoscaling_group, get_elb_from_autoscale, destroy_elb, register_elb_into_autoscale
 from libs.autoscaling import get_instances_from_autoscaling, flush_instances_update_autoscale
-from libs.blue_green import get_blue_green_apps, get_blue_green_config
+from libs.blue_green import get_blue_green_apps, get_blue_green_destroy_temporary_elb_config
 
 COMMAND_DESCRIPTION = "Purge the Blue/Green env"
 
@@ -57,7 +57,7 @@ class Purgebluegreen():
 
     def execute(self):
         log(_green("STATE: Started"), self._log_file)
-        destroy_temporary_elb_option = self._job['options'][0] if 'options' in self._job and len(self._job['options']) > 0 else get_blue_green_config(self._config, 'purgebluegreen', 'destroy_temporary_elb', True)
+        destroy_temporary_elb_option = self._job['options'][0] if 'options' in self._job and len(self._job['options']) > 0 else get_blue_green_destroy_temporary_elb_config(self._config)
 
         online_app, offline_app = get_blue_green_apps(self._app,
                                                       self._worker._db.apps,
