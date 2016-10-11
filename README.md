@@ -67,7 +67,7 @@ Running unit tests directly (dependencies should be provided by the system or an
         "role" : "webserver",
 ***REMOVED***
         "log_notifications" : [
-            "ingenieurs@claranet.com",
+            "ingenieurs@morea.fr",
             "wbb-notification@void.fr"
         ],
         "ami": "ami_id", // Stored by Packer

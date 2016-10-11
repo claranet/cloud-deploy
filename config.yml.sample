@@ -1,7 +1,7 @@
 ses_settings:
     aws_access_key: XXXXXXXXXXXXXXXXXX
     aws_secret_key: XXXXXXXXXXXXXXXXXX
-    mail_from: no-reply@claranet.com
+    mail_from: no-reply@morea.fr
     region: eu-west-1
 bucket_s3: ghost-eu-west-1-***REMOVED***
 bucket_region: eu-west-1
@@ -10,52 +10,52 @@ bucket_region: eu-west-1
 #
 # * a single key path if all EC2 instances in all regions use the same key
 #
-#    key_path: /home/admin/key/client_claranet.pem
+#    key_path: /home/admin/key/client_morea.pem
 #
 # * a mapping from regions to key paths if all EC2 instances in each region use the same key but they differ between regions
 #
 #    key_path:
-#      eu-west-1: /home/admin/key/client_claranet_eu-west-1.pem
-#      us-west-2: /home/admin/key/client_claranet_us-west-2.pem
+#      eu-west-1: /home/admin/key/client_morea_eu-west-1.pem
+#      us-west-2: /home/admin/key/client_morea_us-west-2.pem
 #
 # * mappings from regions to accounts to key paths if all EC2 instances in each region use the same key but they differ between regions and accounts
 #
 #    key_path:
 #      eu-west-1:
-#        '123456789': /home/admin/key/client_preprod_claranet_eu-west-1.pem
-#        '987654321': /home/admin/key/client_prod_claranet_eu-west-1.pem
+#        '123456789': /home/admin/key/client_preprod_morea_eu-west-1.pem
+#        '987654321': /home/admin/key/client_prod_morea_eu-west-1.pem
 #      us-west-2:
-#        '987654321': /home/admin/key/client_prod_claranet_us-west-2.pem
+#        '987654321': /home/admin/key/client_prod_morea_us-west-2.pem
 #
 # * mappings from regions to accounts to key names to key paths if all EC2 instances in each region use the same key but they differ between regions, accounts and instances
 #
 #    key_path:
 #      eu-west-1:
-#        default:                            /home/admin/key/claranet-default-eu-west-1.pem
+#        default:                            /home/admin/key/morea-default-eu-west-1.pem
 #        '123456789':
-#          client_dev_claranet_eu-west-1:       /home/admin/key/client_preprod_claranet_eu-west-1.pem
+#          client_dev_morea_eu-west-1:       /home/admin/key/client_preprod_morea_eu-west-1.pem
 #        '987654321':
-#          client_prod_app1_claranet_eu-west-1: /home/admin/key/client_prod_app1_claranet_eu-west-1.pem
-#          client_prod_app2_claranet_eu-west-1: /home/admin/key/client_prod_app2_claranet_eu-west-1.pem
+#          client_prod_app1_morea_eu-west-1: /home/admin/key/client_prod_app1_morea_eu-west-1.pem
+#          client_prod_app2_morea_eu-west-1: /home/admin/key/client_prod_app2_morea_eu-west-1.pem
 #      us-west-2:
 #        default:
-#          claranet-key-1: /home/admin/key/claranet-default-key-1-us-west-2.pem
-#          claranet-key-2: /home/admin/key/claranet-default-key-2-us-west-2.pem
+#          morea-key-1: /home/admin/key/morea-default-key-1-us-west-2.pem
+#          morea-key-2: /home/admin/key/morea-default-key-2-us-west-2.pem
 #        '987654321':
-#          client_prod_app1_claranet_us-west-2: /home/admin/key/client_prod_app1_claranet_us-west-2.pem
+#          client_prod_app1_morea_us-west-2: /home/admin/key/client_prod_app1_morea_us-west-2.pem
 #
 # A mix of the last three options can also be achieved:
 #
 #    key_path:
 #      # Same key for all instances in the eu-west-1 region, no matter the account or key_name
-#      eu-west-1: /home/admin/key/client_dev_claranet_eu-west-1.pem
+#      eu-west-1: /home/admin/key/client_dev_morea_eu-west-1.pem
 #      us-west-2:
 #        # Same key for all instances in the eu-west-1 region and client_account_prod account, no matter key_name
-#        '987654321': /home/admin/key/client_prod_claranet_us-west-2.pem
+#        '987654321': /home/admin/key/client_prod_morea_us-west-2.pem
 #        '123456789':
 #          # Key pair names mapping to local paths
-#          client_dev_claranet_eu-west-1:     /home/admin/key/client_dev_claranet_us-west-2.pem
-#          client_preprod_claranet_eu-west-1: /home/admin/key/client_preprod_claranet_us-west-2.pem
+#          client_dev_morea_eu-west-1:     /home/admin/key/client_dev_morea_us-west-2.pem
+#          client_preprod_morea_eu-west-1: /home/admin/key/client_preprod_morea_us-west-2.pem
 #
 # Notes:
 # - account ids must be quoted to be parsed as string instead of numbers.
@@ -63,7 +63,7 @@ bucket_region: eu-west-1
 # - no account id must be specified for applications in the same AWS account as Ghost.
 #   In that case, use `default`.
 
-key_path: /home/admin/key/client_claranet.pem
+key_path: /home/admin/key/client_morea.pem
 
 salt_formulas_branch: dev
 ghost_root_path: /usr/local/share/ghost
