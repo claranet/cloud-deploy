@@ -13,7 +13,7 @@ from pymongo import MongoClient
 import logging
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s %(levelname)s %(message)s')
 
-from settings import MONGO_DBNAME, MONGO_HOST, MONGO_PORT
+from settings import MONGO_DBNAME, MONGO_HOST, MONGO_PORT, REDIS_HOST
 
 from ghost_tools import config, get_rq_name_from_app, get_app_from_rq_name
 
@@ -43,7 +43,7 @@ def delete_rq_queue_and_worker(rqworker_name, ghost_rq_queues, ghost_rq_workers)
     logging.info('Killed rqworker {0}'.format(rqworker_name))
 
 def manage_rq_workers():
-    ghost_redis_connection = Redis()
+    ghost_redis_connection = Redis(host=REDIS_HOST)
     ghost_rq_queues = {}
     ghost_rq_workers = {}
 

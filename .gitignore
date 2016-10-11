@@ -38,3 +38,5 @@ venv-ghost
 .vim/
 .viminfo
 .vscode/
+vendor/
+venv/
