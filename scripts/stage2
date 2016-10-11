@@ -235,6 +235,9 @@ function download_and_run_lifecycle_hook_script() {
         if [ $status -ne 0 ]; then
             exit_deployment -5
         fi
+        if [ -e /tmp/ghost_custom_env_vars ]; then
+            rm -vf /tmp/ghost_custom_env_vars
+        fi
     fi
 }
 
