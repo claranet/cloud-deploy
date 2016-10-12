@@ -9,7 +9,7 @@ from settings import cloud_connections, DEFAULT_PROVIDER
 from ghost_log import log
 from ghost_aws import deploy_module_on_hosts
 from libs.deploy import execute_module_script_on_ghost
-from libs.deploy import get_path_from_app_with_color, get_buildpack_clone_path_from_module, update_app_manifest
+from libs.deploy import get_path_from_app_with_color, get_buildpack_clone_path_from_module, update_app_manifest, rollback_app_manifest
 
 COMMAND_DESCRIPTION = "Re-deploy an old module package"
 
@@ -79,14 +79,19 @@ class Redeploy():
     def _execute_redeploy(self, deploy_id, fabric_execution_strategy, safe_deployment_strategy):
         module, package = self._get_deploy_infos(deploy_id)
         if module and package:
-            update_app_manifest(self._app, self._config, module, package, self._log_file)
+            before_update_manifest = update_app_manifest(self._app, self._config, module, package, self._log_file)
             all_app_modules_list = get_app_module_name_list(self._app['modules'])
             clean_local_module_workspace(get_path_from_app_with_color(self._app), all_app_modules_list, self._log_file)
             # Download and extract package before launching deploy
             clone_path = self._local_extract_package(module, package)
 
-            # Re-deploy
-            self._deploy_module(module, fabric_execution_strategy, safe_deployment_strategy)
+            try:
+                # Re-deploy
+                self._deploy_module(module, fabric_execution_strategy, safe_deployment_strategy)
+            except GCallException as e:
+                log("Redeploy error occured, app manifest will be restored to its previous state", self._log_file)
+                rollback_app_manifest(self._app, self._config, before_update_manifest, self._log_file)
+                raise e
 
             # After all deploy exec
             execute_module_script_on_ghost(self._app, module, 'after_all_deploy', 'After all deploy', clone_path, self._log_file)

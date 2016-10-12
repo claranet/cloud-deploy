@@ -95,30 +95,46 @@ def get_buildpack_clone_path_from_module(app, module):
     """
     return "{app_path}/{module}".format(app_path=get_path_from_app_with_color(app), module=module['name'])
 
-
-def update_app_manifest(app, config, module, package, log_file):
-    """
-    Update the app manifest into S3
-    """
+def _get_app_manifest_from_s3(app, config, log_file):
     key_path = get_path_from_app_with_color(app) + '/MANIFEST'
     cloud_connection = cloud_connections.get(app.get('provider', DEFAULT_PROVIDER))(log_file)
     conn = cloud_connection.get_connection(config.get('bucket_region', app['region']), ["s3"])
     bucket = conn.get_bucket(config['bucket_s3'])
     key = bucket.get_key(key_path)
+
+    return key, key_path, bucket
+
+def rollback_app_manifest(app, config, old_manifest, log_file):
+    """
+    Restores app manifest data to its previous state
+    """
+    key, key_path, bucket = _get_app_manifest_from_s3(app, config, log_file)
+
+    key.set_contents_from_string(old_manifest)
+    key.close()
+
+def update_app_manifest(app, config, module, package, log_file):
+    """
+    Update the app manifest into S3
+    and Returns the manifest before update (used in case of rollback)
+    """
+    key, key_path, bucket = _get_app_manifest_from_s3(app, config, log_file)
+
     modules = []
     module_exist = False
     all_app_modules_list = get_app_module_name_list(app['modules'])
     data = ""
+    old_manifest = None
     if not key: # if the 'colored' MANIFEST doesn't' exist, maybe the legacy one exists and we should clone it
         legacy_key_path = get_path_from_app(app) + '/MANIFEST'
-        legacy_key = bucket.get_key(key_path)
+        legacy_key = bucket.get_key(legacy_key_path)
         if legacy_key:
             key = legacy_key.copy(bucket, key_path)
     if key:
-        manifest = key.get_contents_as_string()
+        old_manifest = key.get_contents_as_string()
         if sys.version > '3':
-            manifest = manifest.decode('utf-8')
-        for line in manifest.split('\n'):
+            old_manifest = old_manifest.decode('utf-8')
+        for line in old_manifest.split('\n'):
             if line:
                 mod = {}
                 tmp = line.split(':')
@@ -148,6 +164,7 @@ def update_app_manifest(app, config, module, package, log_file):
 
     key.set_contents_from_string(data)
     key.close()
+    return old_manifest
 
 def get_key_path(config, region, account, key_name, log_file):
     """
