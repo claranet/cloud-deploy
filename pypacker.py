@@ -83,7 +83,8 @@ class Packer:
             'associate_public_ip_address': self.packer_config['associate_public_ip_address'],
             'ami_block_device_mappings': self.packer_config['ami_block_device_mappings'],
             'ssh_pty': 'true',
-            'iam_instance_profile': self.packer_config['iam_instance_profile']
+            'iam_instance_profile': self.packer_config['iam_instance_profile'],
+            'tags': self.packer_config['tags']
         }]
 
         if self.packer_config['skip_salt_bootstrap'] in ['true', '1', 'y', 'yes', 'True']:
@@ -93,10 +94,11 @@ class Packer:
                 "sudo DEBIAN_FRONTEND=noninteractive apt-get --assume-yes -o Dpkg::Options::='--force-confdef' -o Dpkg::Options::='--force-confold' update",
                 "sudo DEBIAN_FRONTEND=noninteractive apt-get --assume-yes -o Dpkg::Options::='--force-confdef' -o Dpkg::Options::='--force-confold' install curl"
             ]
-
+        formatted_env_vars = self.packer_config['ghost_env_vars'] + ['%s=%s' % (envvar['var_key'], envvar['var_value']) for envvar in self.packer_config['custom_env_vars']]
         provisioners = [
         {
             'type': 'shell',
+            'environment_vars': formatted_env_vars,
             'script': hooks['pre_buildimage']
         },
         {
@@ -111,11 +113,12 @@ class Packer:
         },
         {
             'type': 'shell',
+            'environment_vars': formatted_env_vars,
             'script': hooks['post_buildimage']
         },
         {
             'type': 'shell',
-            'inline':["sudo rm -rf /srv/salt || echo 'salt: no cleanup salt'","sudo rm -rf /srv/pillar || echo 'salt: no cleanup pillar'"]
+            'inline': ["sudo rm -rf /srv/salt || echo 'salt: no cleanup salt'", "sudo rm -rf /srv/pillar || echo 'salt: no cleanup pillar'"]
         }]
 
         packer_json['builders'] = builders

@@ -14,6 +14,7 @@ modules = [
   "commands.redeploy",
   "ghost_blueprints",
   "ghost_tools",
+  "ghost_aws",
   "libs.blue_green",
   "libs.deploy",
   "libs.safe_deployment",

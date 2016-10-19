@@ -49,10 +49,10 @@ class Buildimage():
         images = conn.get_all_images(owners="self")
 
         ami_name_format = "ami.{0}.{1}.{2}.{3}{color}".format(self._app['env'],
-                                                                        self._app['region'],
-                                                                        self._app['role'],
-                                                                        self._app['name'],
-                                                                        color='.%s' % self._color if self._color else '')
+                                                              self._app['region'],
+                                                              self._app['role'],
+                                                              self._app['name'],
+                                                              color='.%s' % self._color if self._color else '')
 
         for image in images:
             #log(image.name, self._log_file)
@@ -83,7 +83,16 @@ class Buildimage():
         else:
             return False
 
+    def _format_ghost_env_vars(self):
+        ghost_vars = []
+        ghost_vars.append('GHOST_APP=%s' % self._app['name'])
+        ghost_vars.append('GHOST_ENV=%s' % self._app['env'])
+        ghost_vars.append('GHOST_ENV_COLOR=%s' % (self._color if self._color else ''))
+        ghost_vars.append('GHOST_ROLE=%s' % self._app['role'])
+        return ghost_vars
+
     def _format_packer_from_app(self, salt_skip_bootstrap_option):
+        instance_tags = {i['tag_name']: i['tag_value'] for i in self._app['environment_infos']['instance_tags']}
         datas = {
             'region': self._app['region'],
             'ami_name': self._ami_name,
@@ -96,7 +105,10 @@ class Buildimage():
             'skip_salt_bootstrap': salt_skip_bootstrap_option,
             'ami_block_device_mappings': [],
             'iam_instance_profile': self._app['environment_infos']['instance_profile'],
-            'credentials': self._cloud_connection.get_credentials()
+            'credentials': self._cloud_connection.get_credentials(),
+            'tags': instance_tags,
+            'ghost_env_vars': self._format_ghost_env_vars(),
+            'custom_env_vars': self._app.get('env_vars', [])
         }
 
         for opt_vol in self._app['environment_infos'].get('optional_volumes'):
@@ -155,7 +167,7 @@ class Buildimage():
         """
         pillar = {}
         for ft in self._app['features']:
-            values = ft['version'].split('=', 1) # Split only one time
+            values = ft.get('version', '').split('=', 1) # Split only one time
             feature_name = ft['name'].encode('utf-8')
             if not feature_name in pillar:
                 pillar[feature_name] = {}
@@ -166,7 +178,7 @@ class Buildimage():
                     pillar[feature_name][ft_param_key] = []
                 pillar[feature_name][ft_param_key].append(ft_param_val)
             else:
-                pillar[feature_name]['version'] = ft['version'].encode('utf-8')
+                pillar[feature_name]['version'] = ft.get('version', '').encode('utf-8')
         return pillar
 
     def _update_app_ami(self, ami_id):

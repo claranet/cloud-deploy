@@ -1,0 +1,60 @@
+# docker-compose.yml
+queue:
+  image: redis      
+  expose:
+   - '6379'
+
+backend_data:
+  image: busybox
+  command: tail -f /dev/null
+
+backend:
+  image: mongo
+  volumes_from:
+    - backend_data
+  expose:
+    - '27017'
+
+worker:
+  build: .
+  working_dir: /mnt
+  volumes:
+    - .:/mnt
+  links:
+    - queue
+    - backend
+  command: python run_rqworkers.py
+  environment:
+    - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+    - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+
+api:
+  build: .
+  working_dir: /mnt
+  volumes:
+    - .:/mnt
+  ports:
+    - '5000:5000'
+  expose:
+    - '5000'
+  links:
+    - queue
+    - backend
+  command: python run.py
+  environment:
+    - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+    - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+
+web-ui:
+  build: .
+  working_dir: /mnt
+  volumes:
+    - .:/mnt
+  ports:
+    - '5001:5001'
+  links:
+    - api
+  command: python run_web_ui.py
+  environment:
+    - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+    - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}

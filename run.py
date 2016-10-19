@@ -13,7 +13,7 @@ from redis import Redis
 from rq import Queue, cancel_job
 import rq_dashboard
 
-from settings import __dict__ as eve_settings
+from settings import __dict__ as eve_settings, REDIS_HOST
 from command import Command
 from models.apps import apps
 from models.jobs import jobs, CANCELLABLE_JOB_STATUSES, DELETABLE_JOB_STATUSES
@@ -23,6 +23,7 @@ from ghost_tools import get_rq_name_from_app
 from ghost_blueprints import commands_blueprint
 from ghost_api import ghost_api_bluegreen_is_enabled, ghost_api_enable_green_app, ghost_api_delete_alter_ego_app, ghost_api_clean_bluegreen_app
 from libs.blue_green import BLUE_GREEN_COMMANDS, get_blue_green_from_app, ghost_has_blue_green_enabled
+from ghost_aws import normalize_application_tags
 
 def get_apps_db():
     return ghost.data.driver.db[apps['datasource']['source']]
@@ -40,7 +41,7 @@ def pre_update_app(updates, original):
     Uninitialized modules stay so, modified or not:
 
     >>> from copy import deepcopy
-    >>> base_original = {'modules': [{'name': 'mod1', 'git_repo': 'git@github.com/test/mod1'}, {'name': 'mod2', 'git_repo': 'git@github.com/test/mod2'}]}
+    >>> base_original = {'_id': 1111, 'env': 'prod', 'name': 'app1', 'role': 'webfront', 'modules': [{'name': 'mod1', 'git_repo': 'git@github.com/test/mod1'}, {'name': 'mod2', 'git_repo': 'git@github.com/test/mod2'}], 'environment_infos': {'instance_tags':[]}}
     >>> original = deepcopy(base_original)
     >>> updates = deepcopy(base_original)
     >>> pre_update_app(updates, original)
@@ -114,7 +115,7 @@ def pre_update_app(updates, original):
                             break
                     # Module found, can exit loop
                     break
-
+    updates['environment_infos']['instance_tags'] = normalize_application_tags(original, updates)
     # Blue/green disabled ?
     try:
         blue_green_section, color = get_blue_green_from_app(updates)
@@ -180,6 +181,8 @@ def pre_insert_app(items):
 
 def post_insert_app(items):
     app = items[0]
+    instance_tags = normalize_application_tags(app, app)
+    get_apps_db().update_one({ '_id': app['_id']}, {'$set': {'environment_infos.instance_tags': instance_tags }})
     if ghost_api_bluegreen_is_enabled(app):
         if not ghost_api_enable_green_app(get_apps_db(), app, request.authorization.username):
             abort(422)
@@ -234,7 +237,7 @@ def post_insert_job(items):
     app_id = job.get('app_id')
     app = get_apps_db().find_one({'_id': ObjectId(app_id)})
 
-    # Place job in app's queue 
+    # Place job in app's queue
     rq_job = Queue(name=get_rq_name_from_app(app), connection=ghost.ghost_redis_connection, default_timeout=3600).enqueue(Command().execute, job_id, job_id=job_id)
     assert rq_job.id == job_id
 
@@ -277,8 +280,7 @@ ghost.on_inserted_jobs += post_insert_job
 ghost.on_delete_item_jobs += pre_delete_job
 ghost.on_delete_resource_job_enqueueings += pre_delete_job_enqueueings
 
-
-ghost.ghost_redis_connection = Redis()
+ghost.ghost_redis_connection = Redis(host=REDIS_HOST)
 
 # Register non-mongodb resources as plain Flask blueprints (they won't appear in /docs)
 ghost.register_blueprint(commands_blueprint)

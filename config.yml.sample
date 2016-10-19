@@ -1,3 +1,8 @@
+# Need to be set when used with docker-compose (docker link use DNS to map containers)
+api_base_url: http://api:5000
+redis_host: queue
+mongo_host: backend
+
 ses_settings:
     aws_access_key: XXXXXXXXXXXXXXXXXX
     aws_secret_key: XXXXXXXXXXXXXXXXXX

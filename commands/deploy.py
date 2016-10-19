@@ -14,7 +14,7 @@ from ghost_log import log
 from ghost_aws import deploy_module_on_hosts
 from settings import cloud_connections, DEFAULT_PROVIDER
 from libs.deploy import execute_module_script_on_ghost
-from libs.deploy import get_path_from_app_with_color, get_buildpack_clone_path_from_module, update_app_manifest
+from libs.deploy import get_path_from_app_with_color, get_buildpack_clone_path_from_module, update_app_manifest, rollback_app_manifest
 
 ROOT_PATH = os.path.dirname(os.path.realpath(__file__))
 
@@ -190,7 +190,7 @@ class Deploy():
             for module in self._apps_modules:
                 deploy_id = self._execute_deploy(module, fabric_execution_strategy, safe_deployment_strategy)
                 deploy_ids[module['name']] = deploy_id
-                self._worker._db.jobs.update({ '_id': self._job['_id'], 'modules.name': module['name']}, {'$set': {'modules.$.deploy_id': deploy_id }})
+                self._worker._db.jobs.update({ '_id': self._job['_id'], 'modules.name': module['name']}, {'$set': { 'modules.$.deploy_id': deploy_id }})
                 self._worker._db.apps.update({ '_id': self._app['_id'], 'modules.name': module['name']}, {'$set': { 'modules.$.initialized': True }})
 
             self._worker.update_status("done", message=self._get_notification_message_done(deploy_ids))
@@ -375,6 +375,9 @@ GHOST_MODULE_USER="{user}"
             "user": self._job['user']
         }
         module_metadata = module_metadata.format(**metavars)
+        custom_env_vars = self._app.get('env_vars', None)
+        if custom_env_vars and len(custom_env_vars):
+            module_metadata = module_metadata + u''.join([u'export {key}="{val}" \n'.format(key=env_var['var_key'], val=env_var['var_value']) for env_var in custom_env_vars])
         with io.open(clone_path + '/.ghost-metadata', mode='w', encoding='utf-8') as f:
             f.write(module_metadata)
         gcall('du -hs .', 'Display current build directory disk usage', self._log_file)
@@ -382,10 +385,16 @@ GHOST_MODULE_USER="{user}"
         # Create tar archive
         pkg_name = self._package_module(module, ts, commit)
 
-        update_app_manifest(self._app, self._config, module, pkg_name, self._log_file)
-        all_app_modules_list = get_app_module_name_list(self._app['modules'])
-        clean_local_module_workspace(get_path_from_app_with_color(self._app), all_app_modules_list, self._log_file)
-        self._deploy_module(module, fabric_execution_strategy, safe_deployment_strategy)
+        before_update_manifest = update_app_manifest(self._app, self._config, module, pkg_name, self._log_file)
+        try:
+            all_app_modules_list = get_app_module_name_list(self._app['modules'])
+            clean_local_module_workspace(get_path_from_app_with_color(self._app), all_app_modules_list, self._log_file)
+            self._deploy_module(module, fabric_execution_strategy, safe_deployment_strategy)
+        except GCallException as e:
+            log("Deploy error occured, app manifest will be restored to its previous state", self._log_file)
+            rollback_app_manifest(self._app, self._config, before_update_manifest, self._log_file)
+            raise e
+
         if 'after_all_deploy' in module:
             log("After all deploy script found for '{0}'. Executing it.".format(module['name']), self._log_file)
             execute_module_script_on_ghost(self._app, module, 'after_all_deploy', 'After all deploy', clone_path, self._log_file)

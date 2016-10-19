@@ -20,6 +20,12 @@ Running unit tests directly (dependencies should be provided by the system or an
 
 # Deployment
 
+## docker-compose
+
+    $ export AWS_ACCESS_KEY_ID=AKIAI*******
+    $ export AWS_SECRET_ACCESS_KEY=********************
+    $ docker-compose up
+
 ## Sur instance EC2:
 * utiliser morea-salt-formulas
 * Role IAM avec Policy :

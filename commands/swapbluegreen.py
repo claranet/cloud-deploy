@@ -110,7 +110,7 @@ class Swapbluegreen():
     def _swap_asg(self, swap_execution_strategy, online_app, to_deploy_app, config, log_file):
         """ Swap group of instances from A to B atatched to the main ELB
 
-        :param  swap_execution_strategy  string: The swap strategy which can be 'isolated' or 'bothversion'
+        :param  swap_execution_strategy  string: The swap strategy which can be 'isolated' or 'overlap'
         :param  online_app Ghost app object: ASG instances to de-register
         :param  to_deploy_app Ghost app object: ASG instances to register
         :param  config: Ghost config

@@ -1,3 +1,6 @@
 [submodule "ghost-doc"]
 	path = ghost-doc
 	url = git@bitbucket.org:morea/ghost-doc.git
+[submodule "ghost-feature-presets"]
+	path = ghost-feature-presets
+	url = git@bitbucket.org:morea/ghost-feature-presets.git

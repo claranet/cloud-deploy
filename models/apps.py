@@ -2,6 +2,7 @@ import env
 import instance_role
 import resources
 import volumes
+import tags
 
 apps_schema = {
     'name': {
@@ -75,6 +76,23 @@ apps_schema = {
                 'version': {
                     'type': 'string',
                     'regex': '^[a-zA-Z0-9\.\-\_\/:~\+=]*$',
+                    'required': False
+                }
+            }
+        }
+    },
+    'env_vars': {
+        'type': 'list',
+        'schema': {
+            'type': 'dict',
+            'schema': {
+                'var_key': {
+                    'type': 'string',
+                    'regex': '^(?!GHOST|ghost)[a-zA-Z_]+[a-zA-Z0-9_]*$',
+                    'required': False
+                },
+                'var_value': {
+                    'type': 'string',
                     'required': False
                 }
             }
@@ -195,6 +213,11 @@ apps_schema = {
                                    'name': {'type': 'string',
                                             'regex': '^/[a-z0-9]+/[a-z0-9]+$'}
                                }},
+                              'instance_tags':
+                              {'type': 'list',
+                               'required': False,
+                               'schema': tags.block
+                              },
                               'optional_volumes': {'type': 'list',
                                                    'required': False,
                                                    'schema': volumes.block}
