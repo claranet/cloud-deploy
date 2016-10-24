@@ -218,7 +218,7 @@ def update_auto_scale(cloud_connection, app, launch_config, log_file, update_as_
     if update_as_params:
         app_tags = get_app_tags(app, log_file)
         as_tags = get_autoscale_tags(as_group, log_file)
-        conn.delete_tags([v for k,v in as_tags.items() if k not in app_tags.keys()])
+        conn.delete_tags([v for k,v in as_tags.items() if k and k not in app_tags.keys() and v])
         conn.create_or_update_tags(app_tags.values())
         log("Autoscaling tags [{0}] updated.".format(app['autoscale']['name']), log_file)
 
