@@ -92,7 +92,9 @@ class Buildimage():
         return ghost_vars
 
     def _format_packer_from_app(self, salt_skip_bootstrap_option):
-        instance_tags = {i['tag_name']: i['tag_value'] for i in self._app['environment_infos']['instance_tags']}
+        instance_tags = {}
+        if 'instance_tags' in self._app['environment_infos']:
+            instance_tags = {i['tag_name']: i['tag_value'] for i in self._app['environment_infos']['instance_tags']}
         datas = {
             'region': self._app['region'],
             'ami_name': self._ami_name,
