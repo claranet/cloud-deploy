@@ -1,7 +1,7 @@
 from fabric.colors import green as _green, yellow as _yellow, red as _red
 
 from ghost_log import log
-from ghost_tools import get_aws_connection_data, get_app_friendly_name, GCallException
+from ghost_tools import get_aws_connection_data, get_app_friendly_name, GCallException, boolify
 from settings import cloud_connections, DEFAULT_PROVIDER
 
 from ghost_aws import check_autoscale_exists, get_autoscaling_group_and_processes_to_suspend, suspend_autoscaling_group_processes, resume_autoscaling_group_processes
@@ -58,6 +58,7 @@ class Purgebluegreen():
     def execute(self):
         log(_green("STATE: Started"), self._log_file)
         destroy_temporary_elb_option = self._job['options'][0] if 'options' in self._job and len(self._job['options']) > 0 else get_blue_green_destroy_temporary_elb_config(self._config)
+        destroy_temporary_elb_option = boolify(destroy_temporary_elb_option)
 
         online_app, offline_app = get_blue_green_apps(self._app,
                                                       self._worker._db.apps,
