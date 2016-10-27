@@ -19,7 +19,7 @@ def find_ec2_pending_instances(cloud_connection, ghost_app, ghost_env, ghost_rol
         :param  region  string: The AWS region where the instances are located.
         :return list of dict(ex: [{'id': instance_idXXX, 'private_ip_address': XXX_XXX_XXX_XXX},{...}])
     """
-    conn_as = cloud_connection.get_connection(region, ["ec2", "autoscale"])
+    conn_as = cloud_connection.get_connection(region, ['autoscaling'], boto_version='boto3')
     conn = cloud_connection.get_connection(region, ["ec2"])
     # Retrieve pending instances
     if ghost_color:
@@ -30,11 +30,14 @@ def find_ec2_pending_instances(cloud_connection, ghost_app, ghost_env, ghost_rol
     pending_instances_ids = [instance.id for instance in pending_instances]
     autoscale_instances = []
     if as_group:
-        autoscale_instances = conn_as.get_all_groups(names=[as_group])[0].instances
+        autoscale_instances = conn_as.describe_auto_scaling_groups(
+            AutoScalingGroupNames=[as_group],
+            MaxRecords=1
+        )['AutoScalingGroups'][0]['Instances']
     for autoscale_instance in autoscale_instances:
         # Instances in autoscale "Pending" state may not have their tags set yet
-        if not autoscale_instance.instance_id in pending_instances_ids and autoscale_instance.lifecycle_state in ['Pending', 'Pending:Wait', 'Pending:Proceed']:
-            pending_instances.append(conn.get_only_instances(instance_ids=[autoscale_instance.instance_id])[0])
+        if not autoscale_instance['InstanceId'] in pending_instances_ids and autoscale_instance['LifecycleState'] in ['Pending', 'Pending:Wait', 'Pending:Proceed']:
+            pending_instances.append(conn.get_only_instances(instance_ids=[autoscale_instance['InstanceId']])[0])
     hosts = []
     for instance in pending_instances:
         hosts.append({'id': instance.id, 'private_ip_address': instance.private_ip_address})
@@ -50,7 +53,7 @@ def find_ec2_running_instances(cloud_connection, ghost_app, ghost_env, ghost_rol
         :param  region  string: The AWS region where the instances are located.
         :return list of dict(ex: [{'id': instance_idXXX, 'private_ip_address': XXX_XXX_XXX_XXX},{...}])
     """
-    conn_as = cloud_connection.get_connection(region, ["ec2", "autoscale"])
+    conn_as = cloud_connection.get_connection(region, ['autoscaling'], boto_version='boto3')
     conn = cloud_connection.get_connection(region, ["ec2"])
     # Retrieve running instances
     if ghost_color:
@@ -61,8 +64,8 @@ def find_ec2_running_instances(cloud_connection, ghost_app, ghost_env, ghost_rol
     hosts = []
     for instance in running_instances:
         # Instances in autoscale "Terminating:*" states are still "running" but no longer in the Load Balancer
-        autoscale_instances = conn_as.get_all_autoscaling_instances(instance_ids=[instance.id])
-        if not autoscale_instances or not autoscale_instances[0].lifecycle_state in ['Terminating', 'Terminating:Wait', 'Terminating:Proceed']:
+        autoscale_instances = conn_as.describe_auto_scaling_instances(InstanceIds=[instance.id])['AutoScalingInstances']
+        if not autoscale_instances or not autoscale_instances[0]['LifecycleState'] in ['Terminating', 'Terminating:Wait', 'Terminating:Proceed']:
             hosts.append({'id': instance.id, 'private_ip_address': instance.private_ip_address})
     return hosts
 

@@ -74,7 +74,6 @@ class Preparebluegreen(object):
         copy_ami_option = boolify(copy_ami_option)
 
         app_region = self._app['region']
-        as_conn = self._cloud_connection.get_connection(app_region, ["ec2", "autoscale"])
         as_conn3 = self._cloud_connection.get_connection(app_region, ['autoscaling'], boto_version='boto3')
 
         online_app, offline_app = get_blue_green_apps(self._app,
@@ -125,7 +124,7 @@ class Preparebluegreen(object):
                 return
 
             # Get the online ELB
-            online_elbs = get_elb_from_autoscale(online_app['autoscale']['name'], as_conn)
+            online_elbs = get_elb_from_autoscale(online_app['autoscale']['name'], as_conn3)
             if len(online_elbs) == 0:
                 self._worker.update_status("aborted", message=self._get_notification_message_aborted(offline_app, "Online app AutoScale is not attached to a valid Elastic Load Balancer"))
                 return

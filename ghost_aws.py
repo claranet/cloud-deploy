@@ -4,11 +4,10 @@ import yaml
 
 from jinja2 import Environment, FileSystemLoader
 
-from boto.ec2.autoscale import Tag
-
 from libs.safe_deployment import SafeDeployment
 from libs.deploy import launch_deploy
 from libs.ec2 import find_ec2_pending_instances, find_ec2_running_instances
+from libs.autoscaling import get_autoscaling_group_object
 from libs.blue_green import get_blue_green_from_app
 
 from ghost_tools import GCallException
@@ -22,26 +21,27 @@ with open(os.path.dirname(os.path.realpath(__file__)) + '/config.yml', 'r') as c
 def get_autoscaling_group_and_processes_to_suspend(as_conn, app, log_file):
     if 'autoscale' in app.keys() and 'name' in app['autoscale'].keys() and app['autoscale']['name']:
         as_name = app['autoscale']['name']
-        as_list = as_conn.get_all_groups(names=[as_name])
+        as_list = as_conn.describe_auto_scaling_groups(
+            AutoScalingGroupNames=[as_name]
+        )['AutoScalingGroups']
 
         if len(as_list) == 1:
-            as_group = as_list[0].name
+            as_group = as_list[0]
             log("INFO: Auto-scaling group {0} found".format(as_name), log_file)
 
             # Determine if the auto-scaling Launch and/or Terminate processes should be suspended (i.e. they are already suspended and should remain as is)
             as_processes_to_suspend = {'Launch': None, 'Terminate': None}
-            for suspended_process in as_list[0].suspended_processes:
-                if suspended_process.process_name in ['Launch', 'Terminate']:
-                    del as_processes_to_suspend[suspended_process.process_name]
-                    log("INFO: Auto-scaling group {0} {1} process is already suspended".format(as_name, suspended_process.process_name), log_file)
+            for suspended_process in as_group['SuspendedProcesses']:
+                if suspended_process['ProcessName'] in ['Launch', 'Terminate']:
+                    del as_processes_to_suspend[suspended_process['ProcessName']]
+                    log("INFO: Auto-scaling group {0} {1} process is already suspended".format(as_name, suspended_process['ProcessName']), log_file)
 
-            return as_group, as_processes_to_suspend.keys()
+            return as_group['AutoScalingGroupName'], as_processes_to_suspend.keys()
         else:
             log("WARNING: Auto-scaling group {0} not found".format(as_name), log_file)
-            all_as = as_conn.get_all_groups()
-            if len(all_as) > 0:
-                for ec2_as in all_as:
-                    log("WARNING:    Auto-scaling group found: {0}".format(ec2_as.name), log_file)
+            if len(as_list) > 1:
+                for ec2_as in as_list:
+                    log("WARNING:    Auto-scaling group found: {0}".format(ec2_as['AutoScalingGroupName']), log_file)
             else:
                 log("WARNING: No auto-scaling group found", log_file)
     return None, None
@@ -49,12 +49,18 @@ def get_autoscaling_group_and_processes_to_suspend(as_conn, app, log_file):
 def suspend_autoscaling_group_processes(as_conn, as_group, as_group_processes_to_suspend, log_file):
     if as_group and as_group_processes_to_suspend:
         log("Suspending auto-scaling group processes {0}".format(as_group_processes_to_suspend), log_file)
-        as_conn.suspend_processes(as_group, as_group_processes_to_suspend)
+        as_conn.suspend_processes(
+            AutoScalingGroupName=as_group,
+            ScalingProcesses=as_group_processes_to_suspend
+        )
 
-def resume_autoscaling_group_processes(as_conn, as_group, as_group_processes_to_suspend, log_file):
-    if as_group and as_group_processes_to_suspend:
-        log("Resuming auto-scaling group processes {0}".format(as_group_processes_to_suspend), log_file)
-        as_conn.resume_processes(as_group, as_group_processes_to_suspend)
+def resume_autoscaling_group_processes(as_conn, as_group, as_group_processes_to_resume, log_file):
+    if as_group and as_group_processes_to_resume:
+        log("Resuming auto-scaling group processes {0}".format(as_group_processes_to_resume), log_file)
+        as_conn.resume_processes(
+            AutoScalingGroupName=as_group,
+            ScalingProcesses=as_group_processes_to_resume
+        )
 
 def deploy_module_on_hosts(cloud_connection, module, fabric_execution_strategy, app, config, log_file, safe_deployment_strategy):
     """ Prepare the deployment process on instances.
@@ -74,7 +80,7 @@ def deploy_module_on_hosts(cloud_connection, module, fabric_execution_strategy, 
     app_blue_green, app_color = get_blue_green_from_app(app)
 
     # Retrieve autoscaling infos, if any
-    as_conn = cloud_connection.get_connection(app_region, ["ec2", "autoscale"])
+    as_conn = cloud_connection.get_connection(app_region, ['autoscaling'], boto_version='boto3')
     as_group, as_group_processes_to_suspend = get_autoscaling_group_and_processes_to_suspend(as_conn, app, log_file)
     try:
         # Suspend autoscaling
@@ -146,12 +152,8 @@ def generate_userdata(bucket_s3, s3_region, root_ghost_path):
         return ""
 
 def check_autoscale_exists(cloud_connection, as_name, region):
-    conn_as = cloud_connection.get_connection(region, ["ec2", "autoscale"])
-    autoscale = conn_as.get_all_groups(names=[as_name])
-    if autoscale:
-        return True
-    else:
-        return False
+    conn_as = cloud_connection.get_connection(region, ['autoscaling'], boto_version='boto3')
+    return get_autoscaling_group_object(conn_as, as_name) is not None
 
 def purge_launch_configuration(cloud_connection, app, retention):
     conn_as = cloud_connection.get_connection(app['region'], ["ec2", "autoscale"])
@@ -201,27 +203,32 @@ def update_auto_scale(cloud_connection, app, launch_config, log_file, update_as_
         :param  update_as_params  Bool  If set to True the desired_capacity/min_size/max_size/subnets will be updated
         :return   None
     """
-    conn = cloud_connection.get_connection(app['region'], ["ec2", "autoscale"])
+    as_conn = cloud_connection.get_connection(app['region'], ['autoscaling'], boto_version='boto3')
     connvpc = cloud_connection.get_connection(app['region'], ["vpc"])
     az = [i.availability_zone for i in connvpc.get_all_subnets(subnet_ids=app['environment_infos']['subnet_ids'])]
-    as_group = conn.get_all_groups(names=[app['autoscale']['name']])[0]
+    as_group = get_autoscaling_group_object(as_conn, app['autoscale']['name'])
     if launch_config:
-        setattr(as_group, 'launch_config_name', launch_config.name)
+        as_conn.update_auto_scaling_group(
+            AutoScalingGroupName=app['autoscale']['name'],
+            LaunchConfigurationName=launch_config.name
+        )
     if update_as_params:
-        setattr(as_group, 'desired_capacity', app['autoscale']['current'])
-        setattr(as_group, 'min_size', app['autoscale']['min'])
-        setattr(as_group, 'max_size', app['autoscale']['max'])
-        setattr(as_group, 'availability_zones', az)
-        setattr(as_group, 'vpc_zone_identifier', ','.join(app['environment_infos']['subnet_ids']))
-    as_group.update()
+        as_conn.update_auto_scaling_group(
+            AutoScalingGroupName=app['autoscale']['name'],
+            MinSize=app['autoscale']['min'],
+            MaxSize=app['autoscale']['max'],
+            DesiredCapacity=app['autoscale']['current'],
+            AvailabilityZones=az,
+            VPCZoneIdentifier=','.join(app['environment_infos']['subnet_ids'])
+        )
     log("Autoscaling group [{0}] updated.".format(app['autoscale']['name']), log_file)
     if update_as_params:
         app_tags = get_app_tags(app, log_file)
         as_tags = get_autoscale_tags(as_group, log_file)
         to_delete_tags = [v for k,v in as_tags.items() if k and k not in app_tags.keys() and v]
         if to_delete_tags and len(to_delete_tags):
-            conn.delete_tags(to_delete_tags)
-        conn.create_or_update_tags(app_tags.values())
+            as_conn.delete_tags(Tags=to_delete_tags)
+        as_conn.create_or_update_tags(Tags=app_tags.values())
         log("Autoscaling tags [{0}] updated.".format(app['autoscale']['name']), log_file)
 
 def get_autoscale_tags(as_group, log_file):
@@ -232,11 +239,10 @@ def get_autoscale_tags(as_group, log_file):
         :return  dict  Every tags defined for this AutoScaling
     """
     as_tags = {}
-    for tag in as_group.tags:
-        as_tags[tag.key] = tag
+    for tag in as_group['Tags']:
+        as_tags[tag['Key']] = tag
     log("Tags currently set  {0}" .format(", ".join(as_tags.keys())), log_file)
     return as_tags
-
 
 def get_app_tags(app, log_file):
     """ Return the tags defined for this application.
@@ -247,16 +253,22 @@ def get_app_tags(app, log_file):
     """
     tags_app = {}
     if app.get('blue_green') and app['blue_green'].get('color'):
-        tags_app['color'] = Tag(key='color',
-                               value=app['blue_green']['color'],
-                               propagate_at_launch=True,
-                               resource_id=app['autoscale']['name'])
+        tags_app['color'] = {
+            'Key': 'color',
+            'Value': app['blue_green']['color'],
+            'PropagateAtLaunch': True,
+            'ResourceId': app['autoscale']['name'],
+            'ResourceType': 'auto-scaling-group'
+        }
     i_tags = app['environment_infos']['instance_tags'] if 'instance_tags' in app['environment_infos'] else []
     for app_tags in i_tags:
-        tags_app[app_tags['tag_name']] = Tag(key= app_tags['tag_name'],
-                                            value= app_tags['tag_value'],
-                                            propagate_at_launch= True,
-                                            resource_id= app['autoscale']['name'])
+        tags_app[app_tags['tag_name']] = {
+            'Key': app_tags['tag_name'],
+            'Value': app_tags['tag_value'],
+            'PropagateAtLaunch': True,
+            'ResourceId': app['autoscale']['name'],
+            'ResourceType': 'auto-scaling-group'
+        }
     log("[{0}] will be updated with: {1}".format(app['autoscale']['name'], ", ".join(tags_app.keys())), log_file)
     return tags_app
 

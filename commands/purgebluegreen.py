@@ -81,19 +81,18 @@ class Purgebluegreen():
 
         # Retrieve autoscaling infos, if any
         app_region = offline_app['region']
-        as_conn = self._cloud_connection.get_connection(app_region, ["ec2", "autoscale"])
-        as_group, as_group_processes_to_suspend = get_autoscaling_group_and_processes_to_suspend(as_conn, offline_app, self._log_file)
-        suspend_autoscaling_group_processes(as_conn, as_group, as_group_processes_to_suspend, self._log_file)
+        as_conn3 = self._cloud_connection.get_connection(app_region, ['autoscaling'], boto_version='boto3')
+        as_group, as_group_processes_to_suspend = get_autoscaling_group_and_processes_to_suspend(as_conn3, offline_app, self._log_file)
+        suspend_autoscaling_group_processes(as_conn3, as_group, as_group_processes_to_suspend, self._log_file)
 
         try:
-            as_conn3 = self._cloud_connection.get_connection(app_region, ['autoscaling'], boto_version='boto3')
             # Check if instances are running
             if not get_instances_from_autoscaling(offline_app['autoscale']['name'], as_conn3):
                 log(_yellow(" WARNING: Autoscaling Group [{%s}] of offline app is empty. No running instances to clean detected." % offline_app['autoscale']['name']), self._log_file)
 
             ec2_conn = self._cloud_connection.get_connection(app_region, ["ec2"])
             elb_conn3 = self._cloud_connection.get_connection(app_region, ['elb'], boto_version='boto3')
-            temp_elbs = get_elb_from_autoscale(offline_app['autoscale']['name'], as_conn)
+            temp_elbs = get_elb_from_autoscale(offline_app['autoscale']['name'], as_conn3)
 
             if len(temp_elbs) != 1:
                 self._worker.update_status("aborted", message=self._get_notification_message_aborted(offline_app, "There are *not* only one (temporary) ELB associated to the ASG '{0}' \nELB found: {1}".format(offline_app['autoscale']['name'], str(temp_elbs))))
@@ -106,7 +105,7 @@ class Purgebluegreen():
             # Update ASG and kill instances
             log("Update AutoScale with `0` on mix, max, desired values.", self._log_file)
             log(_yellow("Destroy all instances in the AutoScale and all instances matching the `app_id` [{0}]".format(offline_app['_id'])), self._log_file)
-            flush_instances_update_autoscale(as_conn, self._cloud_connection, offline_app, self._log_file)
+            flush_instances_update_autoscale(as_conn3, self._cloud_connection, offline_app, self._log_file)
 
             # Destroy temp ELB
             if temp_elbs[0].startswith('bgtmp-'):
@@ -123,4 +122,4 @@ class Purgebluegreen():
             self._worker.update_status("failed", message=self._get_notification_message_failed(offline_app, str(e)))
         finally:
             # Resume autoscaling groups in any case
-            resume_autoscaling_group_processes(as_conn, as_group, as_group_processes_to_suspend, self._log_file)
+            resume_autoscaling_group_processes(as_conn3, as_group, as_group_processes_to_suspend, self._log_file)
