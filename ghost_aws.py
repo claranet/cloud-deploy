@@ -251,7 +251,8 @@ def get_app_tags(app, log_file):
                                value=app['blue_green']['color'],
                                propagate_at_launch=True,
                                resource_id=app['autoscale']['name'])
-    for app_tags in app['environment_infos']['instance_tags']:
+    i_tags = app['environment_infos']['instance_tags'] if 'instance_tags' in app['environment_infos'] else []
+    for app_tags in i_tags:
         tags_app[app_tags['tag_name']] = Tag(key= app_tags['tag_name'],
                                             value= app_tags['tag_value'],
                                             propagate_at_launch= True,
@@ -371,7 +372,7 @@ def normalize_application_tags(app_original, app_updated):
     predefined_tags = {"app_id": app_original['_id'].__str__(), "env": app_original['env'], "app": app_original['name'],
                        "role": app_original['role'], "Name": "ec2.GHOST_APP_ENV.GHOST_APP_ROLE.GHOST_APP_NAME"}
     app_variables = {"GHOST_APP_ENV": app_original['env'], "GHOST_APP_ROLE": app_original['role'], "GHOST_APP_NAME": app_original['name']}
-    app_tags = app_updated['environment_infos']['instance_tags']
+    app_tags = app_updated['environment_infos']['instance_tags'] if 'instance_tags' in app_updated['environment_infos'] else []
     missing_predefined_tags = [k for k,v in predefined_tags.items() if k not in [i['tag_name'] for i in app_tags]]
     if missing_predefined_tags:
         for missing_tag in missing_predefined_tags:
