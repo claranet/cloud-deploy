@@ -1,3 +1,6 @@
+# -*- coding: utf-8 -*-
+#!/usr/bin/env python
+
 """
 
     Library to easily manage instances in an Elastic Load Balancer.
@@ -8,8 +11,6 @@
         * Retrieve the connection draining value for an ELB.
 
 """
-# -*- coding: utf-8 -*-
-#!/usr/bin/env python
 
 from ghost_log import log
 from .autoscaling import get_autoscaling_group_object
