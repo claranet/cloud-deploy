@@ -250,6 +250,33 @@ def get_app_friendly_name(app):
 def boolify(val):
     """
     Returns a boolean even if 'val' is a string or already a boolean
+
+    >>> boolify(None)
+    False
+
+    >>> boolify(False)
+    False
+
+    >>> boolify('')
+    False
+
+    >>> boolify(u'')
+    False
+
+    >>> boolify('False')
+    False
+
+    >>> boolify('True')
+    True
+
+    >>> boolify('true')
+    True
+
+    >>> boolify('1')
+    True
+
+    >>> boolify(True)
+    True
     """
     if isinstance(val, bool):
         return val
