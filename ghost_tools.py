@@ -246,3 +246,38 @@ def ghost_app_object_copy(app, user):
 
 def get_app_friendly_name(app):
     return "{0}/{1}/{2}".format(app['name'], app['env'], app['role'])
+
+def boolify(val):
+    """
+    Returns a boolean even if 'val' is a string or already a boolean
+
+    >>> boolify(None)
+    False
+
+    >>> boolify(False)
+    False
+
+    >>> boolify('')
+    False
+
+    >>> boolify(u'')
+    False
+
+    >>> boolify('False')
+    False
+
+    >>> boolify('True')
+    True
+
+    >>> boolify('true')
+    True
+
+    >>> boolify('1')
+    True
+
+    >>> boolify(True)
+    True
+    """
+    if isinstance(val, bool):
+        return val
+    return val in ['True', 'true', '1']

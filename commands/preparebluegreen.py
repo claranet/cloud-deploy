@@ -4,7 +4,7 @@ from fabric.colors import green as _green, yellow as _yellow, red as _red
 from ghost_log import log
 from ghost_aws import check_autoscale_exists, update_auto_scale
 from ghost_aws import create_launch_config, generate_userdata
-from ghost_tools import GCallException, get_aws_connection_data, get_app_friendly_name, get_app_module_name_list
+from ghost_tools import GCallException, get_aws_connection_data, get_app_friendly_name, get_app_module_name_list, boolify
 from settings import cloud_connections, DEFAULT_PROVIDER
 from libs.blue_green import get_blue_green_apps, check_app_manifest, get_blue_green_config
 from libs.autoscaling import get_instances_from_autoscaling, get_autoscaling_group_object
@@ -71,6 +71,7 @@ class Preparebluegreen(object):
         """Execute all checks and preparations."""
         log(_green("STATE: Started"), self._log_file)
         copy_ami_option = self._job['options'][0] if 'options' in self._job and len(self._job['options']) > 0 else get_blue_green_config(self._config, 'preparebluegreen', 'copy_ami', False)
+        copy_ami_option = boolify(copy_ami_option)
 
         app_region = self._app['region']
         as_conn = self._cloud_connection.get_connection(app_region, ["ec2", "autoscale"])
