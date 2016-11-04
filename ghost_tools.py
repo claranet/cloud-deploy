@@ -120,6 +120,13 @@ def gcall(args, cmd_description, log_fd, dry_run=False, env=None):
         if (ret != 0):
             raise GCallException("ERROR: %s" % cmd_description)
 
+def get_app_colored_env(app):
+    color = app['blue_green'].get('color', None) if app.get('blue_green') else None
+    if color:
+        return '{env}-{color}'.format(color=color, env=app['env'])
+    else:
+        return app['env']
+
 def get_rq_name_from_app(app):
     """
     Returns an RQ name for a given ghost app.
@@ -147,9 +154,9 @@ def get_rq_name_from_app(app):
     'default:*:*'
     """
     rq_worker_strategy = config.get('rq_worker_strategy', 'one_worker_per_app')
-    env=app['env']
-    name=app['name']
-    role=app['role']
+    env = get_app_colored_env(app)
+    name = app['name']
+    role = app['role']
 
     if rq_worker_strategy == 'one_worker_per_env':
         name = role = '*'
