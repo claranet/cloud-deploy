@@ -115,7 +115,8 @@ def rollback_app_manifest(app, config, old_manifest, log_file):
     """
     key, key_path, bucket = _get_app_manifest_from_s3(app, config, log_file)
 
-    key.set_contents_from_string(old_manifest)
+    if old_manifest:
+        key.set_contents_from_string(old_manifest)
     key.close()
 
 def update_app_manifest(app, config, module, package, log_file):
