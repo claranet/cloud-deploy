@@ -6,6 +6,7 @@ mongo_host: localhost
 ses_settings:
     aws_access_key: XXXXXXXXXXXXXXXXXX
     aws_secret_key: XXXXXXXXXXXXXXXXXX
+    mail_from: no-reply@morea.fr
     region: eu-west-1
 bucket_s3: ghost-eu-west-1-***REMOVED***
 bucket_region: eu-west-1
