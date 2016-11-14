@@ -35,7 +35,7 @@ mongodump
 
 # Copy configuration
 cp $SCRIPTPATH/../*.yml .
-cp $SCRIPTPATH/../.ssh/config ./ssh_config
+cp -f $SCRIPTPATH/../.ssh/config ./ssh_config
 
 # Copy jobs' logs
 mkdir logs
