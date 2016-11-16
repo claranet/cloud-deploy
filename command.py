@@ -4,6 +4,7 @@ import sys
 import traceback
 import yaml
 
+from redis import Redis
 from rq import get_current_job, Connection
 from pymongo import MongoClient
 from bson.objectid import ObjectId
@@ -11,7 +12,7 @@ from bson.objectid import ObjectId
 from ghost_log import log
 
 from notification import Notification
-from settings import MONGO_DBNAME
+from settings import MONGO_DBNAME, MONGO_HOST, MONGO_PORT, REDIS_HOST
 
 LOG_ROOT='/var/log/ghost'
 ROOT_PATH=os.path.dirname(os.path.realpath(__file__))
@@ -63,7 +64,7 @@ class Command:
 
 
     def _connect_db(self):
-        self._db = MongoClient()[MONGO_DBNAME]
+        self._db = MongoClient(host=MONGO_HOST, port=MONGO_PORT)[MONGO_DBNAME]
 
 
     def _disconnect_db(self):
@@ -114,7 +115,7 @@ class Command:
 
 
     def execute(self, job_id):
-        with Connection():
+        with Connection(Redis(host=REDIS_HOST)):
             self._worker_job = get_current_job()
         self._connect_db()
         self.job = self._db.jobs.find_one({'_id': ObjectId(job_id)})
