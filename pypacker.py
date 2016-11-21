@@ -11,7 +11,7 @@ from libs.git_helper import git_wait_lock, git_remap_submodule
 PACKER_JSON_PATH="/tmp/packer/"
 PACKER_LOGDIR="/var/log/ghost/packer"
 SALT_LOCAL_TREE="/tmp/salt/"
-SALT_LOCAL_MIRROR="/ghost/.mirrors/salt-mirror/"
+SALT_LOCAL_MIRROR="/ghost/.mirrors/salt-zabbix-mirror/"
 SALT_FORMULAS_REPO="git@bitbucket.org:morea/morea-salt-formulas.git"
 ZABBIX_REPO="git@bitbucket.org:morea/zabbix.git"
 
@@ -61,9 +61,9 @@ class Packer:
         log("Cloning [{r}] repo with local mirror reference".format(r=salt_formulas_repo), self._log_file)
         git.clone(['--reference', SALT_LOCAL_MIRROR, salt_formulas_repo, '-b', config.get('salt_formulas_branch', 'master'), '--single-branch', SALT_LOCAL_TREE + self.unique + '/'])
         if config.get('salt_formulas_branch'):
-            log("Submodule init and update", self._log_file)
             os.chdir(SALT_LOCAL_TREE + self.unique)
-            git_remap_submodule(SALT_LOCAL_TREE + self.unique, zabbix_repo, SALT_LOCAL_MIRROR)
+            git_remap_submodule(SALT_LOCAL_TREE + self.unique, zabbix_repo, SALT_LOCAL_MIRROR, self._log_file)
+            log("Submodule init and update", self._log_file)
             git.submodule('init')
             git.submodule('update')
 
