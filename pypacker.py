@@ -6,12 +6,12 @@ import json
 import os
 
 from ghost_log import log
-from libs.git_helper import git_wait_lock
+from libs.git_helper import git_wait_lock, git_remap_submodule
 
 PACKER_JSON_PATH="/tmp/packer/"
 PACKER_LOGDIR="/var/log/ghost/packer"
 SALT_LOCAL_TREE="/tmp/salt/"
-SALT_LOCAL_MIRROR="/ghost/.salt-mirror/"
+SALT_LOCAL_MIRROR="/ghost/.mirrors/salt-mirror/"
 SALT_FORMULAS_REPO="git@bitbucket.org:morea/morea-salt-formulas.git"
 ZABBIX_REPO="git@bitbucket.org:morea/zabbix.git"
 
@@ -63,6 +63,7 @@ class Packer:
         if config.get('salt_formulas_branch'):
             log("Submodule init and update", self._log_file)
             os.chdir(SALT_LOCAL_TREE + self.unique)
+            git_remap_submodule(SALT_LOCAL_TREE + self.unique, zabbix_repo, SALT_LOCAL_MIRROR)
             git.submodule('init')
             git.submodule('update')
 
