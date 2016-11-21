@@ -47,7 +47,6 @@ class Packer:
             os.makedirs(SALT_LOCAL_MIRROR)
             os.chdir(SALT_LOCAL_MIRROR)
             git.init(['--bare'])
-            git.config(['--global', 'cache.directory', SALT_LOCAL_MIRROR])
             git.remote(['add', 'salt', salt_formulas_repo])
             git.remote(['add', 'zabbix', zabbix_repo])
 
