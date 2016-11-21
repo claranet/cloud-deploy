@@ -52,6 +52,10 @@ class Packer:
 
         log("Fetching local mirror [{r}] remotes".format(r=SALT_LOCAL_MIRROR), self._log_file)
         os.chdir(SALT_LOCAL_MIRROR)
+        # If an index.lock file exists in the mirror, wait until it disappears before trying to update the mirror
+        while os.path.exists('{m}/index.lock'.format(m=SALT_LOCAL_MIRROR)):
+            log('The git mirror is locked by another process, waiting 5s...', self._log_file)
+            sleep(5000)
         git.fetch(['--all'])
 
         log("Cloning [{r}] repo with local mirror reference".format(r=salt_formulas_repo), self._log_file)
