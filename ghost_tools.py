@@ -6,6 +6,7 @@ from subprocess import call
 import yaml
 import copy
 from sh import git
+from datetime import datetime, timedelta
 
 from jinja2 import Environment, FileSystemLoader
 
@@ -310,3 +311,17 @@ def boolify(val):
     if isinstance(val, bool):
         return val
     return val in ['True', 'true', '1']
+
+def get_running_jobs(_db, app_id_1, app_id_2, current_job):
+    """
+    Get all running jobs for given app Ids
+    """
+    finished_states = ["done", "failed", "aborted", "cancelled"]
+    date_limit = datetime.utcnow() - timedelta(hours=3)
+    jobs = _db.jobs.find({
+        "$or": [{"app_id": app_id_1}, {"app_id": app_id_2}],
+        "_id": {"$ne": current_job},
+        "status": {"$nin": finished_states},
+        "_created": {"$gt": date_limit}
+    })
+    return list(jobs)

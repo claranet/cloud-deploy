@@ -57,7 +57,7 @@ class Preparebluegreen(object):
     def _update_app_autoscale_options(self, app, ref_app, log_file):
         """ Updates the App DB object to set the 'autoscale' attribute.
         """
-        self._worker._db.apps.update({ '_id': app['_id']}, {'$set': {
+        self._db.apps.update({ '_id': app['_id']}, {'$set': {
             'autoscale.min': ref_app['autoscale']['min'],
             'autoscale.max': ref_app['autoscale']['max'],
             'autoscale.current': ref_app['autoscale']['current']
@@ -77,7 +77,7 @@ class Preparebluegreen(object):
         as_conn3 = self._cloud_connection.get_connection(app_region, ['autoscaling'], boto_version='boto3')
 
         online_app, offline_app = get_blue_green_apps(self._app,
-                                                      self._worker._db.apps,
+                                                      self._db.apps,
                                                       self._log_file)
         as_group, as_group_processes_to_suspend = get_autoscaling_group_and_processes_to_suspend(as_conn, offline_app, self._log_file)
         suspend_autoscaling_group_processes(as_conn, as_group, as_group_processes_to_suspend, self._log_file)
