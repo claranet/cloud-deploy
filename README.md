@@ -24,6 +24,7 @@ Running unit tests directly (dependencies should be provided by the system or an
 
     $ export AWS_ACCESS_KEY_ID=AKIAI*******
     $ export AWS_SECRET_ACCESS_KEY=********************
+    $ docker-compose build
     $ docker-compose up
 
 ## Sur instance EC2:
