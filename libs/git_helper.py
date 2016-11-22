@@ -19,13 +19,13 @@ def git_wait_lock(mirror_path, log_file):
         log('The git mirror is locked by another process, waiting 5s...', log_file)
         sleep(5000)
 
-def git_remap_submodule(git_local_repo, submodule_repo, summodule_mirror, log_file):
+def git_remap_submodule(git_local_repo, submodule_repo, submodule_mirror, log_file):
     """
     Edits the '.gitmodules' file in order to replace the remote git by a local bare mirror
     """
-    log('Updating submodule config: now using "{mirror}" for "{repo}" repo'.format(repo=submodule_repo, mirror=summodule_mirror), log_file)
+    log('Updating submodule config: now using "{mirror}" for "{repo}" repo'.format(repo=submodule_repo, mirror=submodule_mirror), log_file)
     with open(git_local_repo + '/.gitmodules', 'r') as submodule_config:
         filedata = submodule_config.read()
-    filedata = filedata.replace(submodule_repo, summodule_mirror)
+    filedata = filedata.replace(submodule_repo, submodule_mirror)
     with open(git_local_repo + '/.gitmodules', 'w') as submodule_config:
         submodule_config.write(filedata)
