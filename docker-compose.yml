@@ -1,60 +1,71 @@
 # docker-compose.yml
-queue:
-  image: redis      
-  expose:
-   - '6379'
+version: '2'
 
-backend_data:
-  image: busybox
-  command: tail -f /dev/null
+services:
+  queue:
+    image: redis
+    ports:
+     - '6379'
+    networks:
+      - dbs
 
-backend:
-  image: mongo
-  volumes_from:
-    - backend_data
-  expose:
-    - '27017'
+  backend:
+    image: mongo
+    ports:
+      - '27017'
+    networks:
+      - dbs
 
-worker:
-  build: .
-  working_dir: /mnt
-  volumes:
-    - .:/mnt
-  links:
-    - queue
-    - backend
-  command: python run_rqworkers.py
-  environment:
-    - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
-    - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+  worker:
+    build: .
+    working_dir: /usr/local/share/ghost
+    volumes:
+      - .:/usr/local/share/ghost
+      - log:/var/log/ghost
+    networks:
+      - dbs
+    command: python run_rqworkers.py
+    environment:
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
 
-api:
-  build: .
-  working_dir: /mnt
-  volumes:
-    - .:/mnt
-  ports:
-    - '5000:5000'
-  expose:
-    - '5000'
-  links:
-    - queue
-    - backend
-  command: python run.py
-  environment:
-    - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
-    - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+  api:
+    build: .
+    working_dir: /usr/local/share/ghost
+    volumes:
+      - .:/usr/local/share/ghost
+      - log:/var/log/ghost
+    ports:
+      - '5000:5000'
+    networks:
+      - dbs
+      - front
+    command: python run.py
+    environment:
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
 
-web-ui:
-  build: .
-  working_dir: /mnt
-  volumes:
-    - .:/mnt
-  ports:
-    - '5001:5001'
-  links:
-    - api
-  command: python run_web_ui.py
-  environment:
-    - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
-    - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+  web-ui:
+    build: .
+    working_dir: /usr/local/share/ghost
+    volumes:
+      - .:/usr/local/share/ghost
+      - log:/var/log/ghost
+    ports:
+      - '5001:5001'
+    networks:
+      - front
+    command: python run_web_ui.py
+    environment:
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+
+networks:
+  dbs:
+    driver: bridge
+  front:
+    driver: bridge
+
+volumes:
+  log:
+    driver: local
