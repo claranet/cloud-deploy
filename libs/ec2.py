@@ -83,5 +83,8 @@ def destroy_ec2_instances(cloud_connection, app, log_file):
     instances = []
     for r in running_instances:
         instances.append(r['id'])
-    log(instances, log_file)
-    conn.terminate_instances(instance_ids=instances)
+    if len(instances) > 0:
+        log(instances, log_file)
+        conn.terminate_instances(instance_ids=instances)
+    else:
+        log('No instances to destroy found', log_file)
