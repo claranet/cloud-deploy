@@ -149,6 +149,7 @@ def create_ws(app):
         if data and data.get('log_id'):
             log_id = data.get('log_id')
             last_pos = data.get('last_pos', 0)
+            # FIXME: this is a vulnerability as a malicious user may pass '../' in log_id to read other files on the filesystem
             filename = LOG_ROOT + '/' + log_id + '.txt'
 
             # Spawn the follow loop in another thread to end this request and avoid CLOSED_WAIT connections leaking
