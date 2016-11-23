@@ -4,7 +4,7 @@ from fabric.colors import green as _green, yellow as _yellow, red as _red
 from ghost_log import log
 from ghost_aws import check_autoscale_exists, update_auto_scale, get_autoscaling_group_and_processes_to_suspend, suspend_autoscaling_group_processes, resume_autoscaling_group_processes
 from ghost_aws import create_launch_config, generate_userdata
-from ghost_tools import GCallException, get_aws_connection_data, get_app_friendly_name, get_app_module_name_list, boolify
+from ghost_tools import GCallException, get_aws_connection_data, get_app_friendly_name, get_app_module_name_list, boolify, get_running_jobs
 from settings import cloud_connections, DEFAULT_PROVIDER
 from libs.blue_green import get_blue_green_apps, check_app_manifest, get_blue_green_config
 from libs.autoscaling import get_instances_from_autoscaling, get_autoscaling_group_object
@@ -79,6 +79,7 @@ class Preparebluegreen(object):
         online_app, offline_app = get_blue_green_apps(self._app,
                                                       self._db.apps,
                                                       self._log_file)
+
         as_group, as_group_processes_to_suspend = get_autoscaling_group_and_processes_to_suspend(as_conn, offline_app, self._log_file)
         suspend_autoscaling_group_processes(as_conn, as_group, as_group_processes_to_suspend, self._log_file)
 
@@ -86,6 +87,13 @@ class Preparebluegreen(object):
             # check if app is online
             if not online_app:
                 self._worker.update_status("aborted", message=self._get_notification_message_aborted(self._app, "Blue/green is not enabled on this app or not well configured"))
+                return
+
+            running_jobs = get_running_jobs(self._db, online_app['_id'], offline_app['_id'], self._job['_id'])
+            if len(running_jobs):
+                for rjob in running_jobs:
+                    log("Another job is running and should be finished before processing this current one: Job({id})/Command({cmd})/AppId({app})".format(id=rjob['_id'], cmd=rjob['command'], app=rjob['app_id']), self._log_file)
+                self._worker.update_status("aborted", message=self._get_notification_message_aborted(self._app, "Please wait until the end of the current jobs before triggering a Blue/green operation"))
                 return
 
             # Check if app has up to date AMI

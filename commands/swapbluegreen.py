@@ -2,7 +2,7 @@ from fabric.colors import green as _green, yellow as _yellow, red as _red
 
 import time
 from ghost_log import log
-from ghost_tools import get_aws_connection_data, get_app_friendly_name, GCallException
+from ghost_tools import get_aws_connection_data, get_app_friendly_name, GCallException, get_running_jobs
 from settings import cloud_connections, DEFAULT_PROVIDER
 
 from ghost_aws import check_autoscale_exists, get_autoscaling_group_and_processes_to_suspend, suspend_autoscaling_group_processes, resume_autoscaling_group_processes
@@ -199,6 +199,14 @@ class Swapbluegreen():
         if not online_app:
             self._worker.update_status("aborted", message=self._get_notification_message_aborted(self._app, "Blue/green is not enabled on this app or not well configured"))
             return
+
+        running_jobs = get_running_jobs(self._db, online_app['_id'], to_deploy_app['_id'], self._job['_id'])
+        if len(running_jobs):
+            for rjob in running_jobs:
+                log("Another job is running and should be finished before processing this current one: Job({id})/Command({cmd})/AppId({app})".format(id=rjob['_id'], cmd=rjob['command'], app=rjob['app_id']), self._log_file)
+            self._worker.update_status("aborted", message=self._get_notification_message_aborted(self._app, "Please wait until the end of the current jobs before triggering a Blue/green operation"))
+            return
+
         try:
             # Check AMI
             if 'ami' not in to_deploy_app:
