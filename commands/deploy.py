@@ -92,11 +92,14 @@ class Deploy():
         deploy_module_on_hosts(self._cloud_connection, module, fabric_execution_strategy, self._app, self._config, self._log_file, safe_deployment_strategy)
 
     def _purge_s3_package(self, path, bucket, module, pkg_name, jobs_kept=42):
+        """
+        Purge N old packages deployment for the current module from the current app
+        """
         try:
-            # Purge old packages from S3
+            # Get all packages in S3 related to the current module
             keys_list = [i.name.split("/")[-1] for i in bucket.list(path[+1:])]
 
-            # Get manifest and extract package name
+            # Get app manifest and extract package name
             manifest_key_path = '{path}/MANIFEST'.format(path=get_path_from_app_with_color(self._app))
             manifest_key = bucket.get_key(manifest_key_path)
             manifest = manifest_key.get_contents_as_string()
@@ -105,9 +108,11 @@ class Deploy():
                 manifest_module_name = manifest_module_infos[0]
                 manifest_module_pkg_name = manifest_module_infos[1]
                 if manifest_module_name == module:
+                    # Remove the current production package from the purge list
                     keys_list.remove(manifest_module_pkg_name)
                     break
 
+            # Remove the current deployment package juste generated from the purge list
             keys_list.remove(pkg_name)
 
             if len(keys_list) > jobs_kept:
