@@ -2,7 +2,7 @@
 from fabric.colors import green as _green, yellow as _yellow, red as _red
 
 from ghost_log import log
-from ghost_aws import check_autoscale_exists, update_auto_scale
+from ghost_aws import check_autoscale_exists, update_auto_scale, get_autoscaling_group_and_processes_to_suspend, suspend_autoscaling_group_processes, resume_autoscaling_group_processes
 from ghost_aws import create_launch_config, generate_userdata
 from ghost_tools import GCallException, get_aws_connection_data, get_app_friendly_name, get_app_module_name_list, boolify
 from settings import cloud_connections, DEFAULT_PROVIDER
@@ -80,6 +80,8 @@ class Preparebluegreen(object):
         online_app, offline_app = get_blue_green_apps(self._app,
                                                       self._worker._db.apps,
                                                       self._log_file)
+        as_group, as_group_processes_to_suspend = get_autoscaling_group_and_processes_to_suspend(as_conn, offline_app, self._log_file)
+        suspend_autoscaling_group_processes(as_conn, as_group, as_group_processes_to_suspend, self._log_file)
 
         try:
             # check if app is online
@@ -163,3 +165,5 @@ class Preparebluegreen(object):
             self._worker.update_status("done", message=self._get_notification_message_done(offline_app, temp_elb_name, new_elb_dns))
         except GCallException as e:
             self._worker.update_status("failed", message=self._get_notification_message_failed(online_app, offline_app, e))
+        finally:
+            resume_autoscaling_group_processes(as_conn, as_group, as_group_processes_to_suspend, self._log_file)
