@@ -99,12 +99,13 @@ class Deploy():
             # Get manifest and extract package name
             manifest_key_path = '{path}/MANIFEST'.format(bucket_s3=self._config['bucket_s3'], path=self._get_path_from_app())
             manifest_key = bucket.get_key(manifest_key_path)
-            manifest_key.get_contents_to_filename('keep_pkg_manifest')
-            manifest = open('keep_pkg_manifest')
-            for pkgs in manifest:
-                manifest_pkg_name = pkgs.split(":")[1]
-                if manifest_pkg_name != pkg_name:
-                    continue
+            tmp_file_path = '/tmp/keep_pkg_manifest_{jid}'.format(jid=self._job['_id'])
+            manifest_key.get_contents_to_filename(tmp_file_path)
+            with open(tmp_file_path) as manifest:
+                for pkgs in manifest:
+                    manifest_pkg_name = pkgs.split(":")[1]
+                    if manifest_pkg_name != pkg_name:
+                        continue
 
             keys_list.remove(manifest_pkg_name)
 
