@@ -17,7 +17,9 @@ services:
       - dbs
 
   worker:
-    build: .
+    build: 
+      context: .
+    image: ghost
     working_dir: /usr/local/share/ghost
     volumes:
       - .:/usr/local/share/ghost
@@ -30,7 +32,9 @@ services:
       - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
 
   api:
-    build: .
+    build: 
+      context: .
+    image: ghost
     working_dir: /usr/local/share/ghost
     volumes:
       - .:/usr/local/share/ghost
@@ -46,7 +50,9 @@ services:
       - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
 
   web-ui:
-    build: .
+    build:
+      context: .
+    image: ghost
     working_dir: /usr/local/share/ghost
     volumes:
       - .:/usr/local/share/ghost
