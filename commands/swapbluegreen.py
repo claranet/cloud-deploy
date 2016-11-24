@@ -231,6 +231,14 @@ class Swapbluegreen():
             elb_conn = self._cloud_connection.get_connection(app_region, ["ec2", "elb"])
 
             elb_instances = get_elb_instance_status_autoscaling_group(elb_conn, to_deploy_app['autoscale']['name'], as_conn)
+            if len(elb_instances) == 0:
+                self._worker.update_status("aborted", message=self._get_notification_message_aborted(to_deploy_app, "The offline application [%s] doesn't have a valid Load Balancer associated.'" % to_deploy_app['_id']))
+                return
+            for e in elb_instances.values():
+                if len(e.values()) == 0:
+                    self._worker.update_status("aborted", message=self._get_notification_message_aborted(to_deploy_app, "An ELB of the offline application [%s] has no instances associated.'" % to_deploy_app['_id']))
+                    return
+
             if len([i for i in elb_instances.values() if 'outofservice' in i.values()]):
                 raise GCallException('Cannot continue because one or more instances are in the out of service state in the temp ELB')
             else:
