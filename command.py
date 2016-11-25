@@ -4,6 +4,7 @@ import sys
 import traceback
 import yaml
 
+from redis import Redis
 from rq import get_current_job, Connection
 from pymongo import MongoClient
 from bson.objectid import ObjectId
@@ -11,11 +12,11 @@ from bson.objectid import ObjectId
 from ghost_log import log
 
 from notification import Notification
-from settings import MONGO_DBNAME
+from settings import MONGO_DBNAME, MONGO_HOST, MONGO_PORT, REDIS_HOST
 
 LOG_ROOT='/var/log/ghost'
 ROOT_PATH=os.path.dirname(os.path.realpath(__file__))
-MAIL_LOG_FROM='no-reply@morea.fr'
+MAIL_LOG_FROM_DEFAULT='no-reply@morea.fr'
 
 def format_notif(app, job):
     """
@@ -63,7 +64,7 @@ class Command:
 
 
     def _connect_db(self):
-        self._db = MongoClient()[MONGO_DBNAME]
+        self._db = MongoClient(host=MONGO_HOST, port=MONGO_PORT)[MONGO_DBNAME]
 
 
     def _disconnect_db(self):
@@ -109,12 +110,12 @@ class Command:
             os.system('gzip -k '+log)
             log = log+'.gz'
         for mail in self.app['log_notifications']:
-            notif.send_mail(From=MAIL_LOG_FROM, To=mail, subject=subject, body=body, attachments=[log])
+            notif.send_mail(From=ses_settings.get('mail_from', MAIL_LOG_FROM_DEFAULT), To=mail, subject=subject, body=body, attachments=[log])
             pass
 
 
     def execute(self, job_id):
-        with Connection():
+        with Connection(Redis(host=REDIS_HOST)):
             self._worker_job = get_current_job()
         self._connect_db()
         self.job = self._db.jobs.find_one({'_id': ObjectId(job_id)})

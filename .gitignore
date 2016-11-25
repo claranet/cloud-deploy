@@ -40,3 +40,4 @@ venv-ghost
 .vscode/
 vendor/
 venv/
+.idea/
