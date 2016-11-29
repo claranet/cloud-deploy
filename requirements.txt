@@ -19,7 +19,8 @@ colorama==0.3.7           # via awscli
 docutils==0.12            # via awscli, botocore
 dominate==2.2.0           # via flask-bootstrap
 ecdsa==0.13               # via paramiko
-Eve==0.6.3
+eve-swagger==0.0.5
+Eve==0.6.3                # via eve-swagger
 events==0.2.1             # via eve
 Fabric==1.11.1
 first==2.0.1              # via pip-tools
@@ -29,7 +30,7 @@ flask-pymongo==0.4.1      # via eve
 Flask-SocketIO==2.2
 Flask-WTF==0.12
 Flask==0.10.1             # via eve, flask-bootstrap, flask-login, flask-pymongo, flask-socketio, flask-wtf, rq-dashboard
-futures==3.0.5            # via boto3, s3transfer
+futures==3.0.5            # via s3transfer
 gevent-websocket==0.9.5
 gevent==1.1.1
 greenlet==0.4.9           # via gevent
@@ -55,7 +56,7 @@ requests==2.9.1
 rq-dashboard==0.3.6
 rq==0.5.6
 rsa==3.4.2                # via awscli
-s3transfer==0.1.8         # via awscli
+s3transfer==0.1.8         # via awscli, boto3
 setproctitle==1.1.9
 sh==1.11
 simplejson==3.8.2         # via eve
