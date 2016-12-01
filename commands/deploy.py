@@ -112,7 +112,7 @@ class Deploy():
                     keys_list.remove(manifest_module_pkg_name)
                     break
 
-            # Remove the current deployment package juste generated from the purge list
+            # Remove the current deployment package just generated from the purge list
             keys_list.remove(pkg_name)
 
             if len(keys_list) > deployment_package_retention:
@@ -153,8 +153,9 @@ class Deploy():
 
         gcall("rm -f {0}".format(pkg_path), "Deleting local package: %s" % pkg_name, self._log_file)
 
-        deployment_package_retention = self._config.get('deployment_package_retention', None)
-        if deployment_package_retention:
+        deployment_package_retention_config = self._config.get('deployment_package_retention', None)
+        if deployment_package_retention_config and self._app['env'] in deployment_package_retention_config:
+            deployment_package_retention = deployment_package_retention_config.get(self._app['env'], 42)
             self._purge_s3_package(path, bucket, module, pkg_name, deployment_package_retention)
 
         return pkg_name

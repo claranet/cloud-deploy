@@ -138,4 +138,7 @@ slack_configs:
 
 # Specify how many Package we should keep per module in S3 Ghost bucket
 # Unlimited by default if not specified
-deployment_package_retention: 42
+# It's possible to specify a value per app env
+deployment_package_retention:
+    prod: 42
+    dev: 3
