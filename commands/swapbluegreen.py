@@ -9,7 +9,7 @@ from ghost_aws import check_autoscale_exists, get_autoscaling_group_and_processe
 from libs.elb import deregister_all_instances_from_elb, register_all_instances_to_elb, register_elb_into_autoscale
 from libs.elb import get_elb_instance_status_autoscaling_group, get_elb_instance_status, get_connection_draining_value, get_elb_dns_name
 from libs.elb import get_elb_by_name, elb_configure_health_check, deregister_instance_from_elb
-from libs.blue_green import get_blue_green_apps, check_app_manifest, get_blue_green_config
+from libs.blue_green import get_blue_green_apps, check_app_manifest, get_blue_green_config, abort_if_other_bluegreen_job
 
 COMMAND_DESCRIPTION = "Swap the Blue/Green env"
 
@@ -201,10 +201,7 @@ class Swapbluegreen():
             return
 
         running_jobs = get_running_jobs(self._db, online_app['_id'], to_deploy_app['_id'], self._job['_id'])
-        if len(running_jobs):
-            for rjob in running_jobs:
-                log("Another job is running and should be finished before processing this current one: Job({id})/Command({cmd})/AppId({app})".format(id=rjob['_id'], cmd=rjob['command'], app=rjob['app_id']), self._log_file)
-            self._worker.update_status("aborted", message=self._get_notification_message_aborted(self._app, "Please wait until the end of the current jobs before triggering a Blue/green operation"))
+        if abort_if_other_bluegreen_job(running_jobs, self._worker, self._get_notification_message_aborted(self._app, "Please wait until the end of the current jobs before triggering a Blue/green operation"), self._log_file):
             return
 
         try:

@@ -6,7 +6,7 @@ from ghost_aws import check_autoscale_exists, update_auto_scale, get_autoscaling
 from ghost_aws import create_launch_config, generate_userdata
 from ghost_tools import GCallException, get_aws_connection_data, get_app_friendly_name, get_app_module_name_list, boolify, get_running_jobs
 from settings import cloud_connections, DEFAULT_PROVIDER
-from libs.blue_green import get_blue_green_apps, check_app_manifest, get_blue_green_config
+from libs.blue_green import get_blue_green_apps, check_app_manifest, get_blue_green_config, abort_if_other_bluegreen_job
 from libs.autoscaling import get_instances_from_autoscaling, get_autoscaling_group_object
 from libs.deploy import get_path_from_app_with_color
 from libs.elb import get_elb_from_autoscale, copy_elb, register_elb_into_autoscale
@@ -90,10 +90,7 @@ class Preparebluegreen(object):
                 return
 
             running_jobs = get_running_jobs(self._db, online_app['_id'], offline_app['_id'], self._job['_id'])
-            if len(running_jobs):
-                for rjob in running_jobs:
-                    log("Another job is running and should be finished before processing this current one: Job({id})/Command({cmd})/AppId({app})".format(id=rjob['_id'], cmd=rjob['command'], app=rjob['app_id']), self._log_file)
-                self._worker.update_status("aborted", message=self._get_notification_message_aborted(self._app, "Please wait until the end of the current jobs before triggering a Blue/green operation"))
+            if abort_if_other_bluegreen_job(running_jobs, self._worker, self._get_notification_message_aborted(self._app, "Please wait until the end of the current jobs before triggering a Blue/green operation"), self._log_file):
                 return
 
             # Check if app has up to date AMI
