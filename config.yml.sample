@@ -136,4 +136,6 @@ slack_configs:
 #        bot_name: 'Ghost-config-2'
 #        message_prefix: 'Ghost'
 
-jobs_kept: 42
+# Specify how many Package we should keep per module in S3 Ghost bucket
+# Unlimited by default if not specified
+deployment_package_retention: 42

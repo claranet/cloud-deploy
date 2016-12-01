@@ -91,7 +91,7 @@ class Deploy():
     def _deploy_module(self, module, fabric_execution_strategy, safe_deployment_strategy):
         deploy_module_on_hosts(self._cloud_connection, module, fabric_execution_strategy, self._app, self._config, self._log_file, safe_deployment_strategy)
 
-    def _purge_s3_package(self, path, bucket, module, pkg_name, jobs_kept=42):
+    def _purge_s3_package(self, path, bucket, module, pkg_name, deployment_package_retention=42):
         """
         Purge N old packages deployment for the current module from the current app
         """
@@ -115,12 +115,12 @@ class Deploy():
             # Remove the current deployment package juste generated from the purge list
             keys_list.remove(pkg_name)
 
-            if len(keys_list) > jobs_kept:
+            if len(keys_list) > deployment_package_retention:
                 log("Packages count: %s" % str(len(keys_list)), self._log_file)
-                log("Packages count to keep: %s" % str(jobs_kept), self._log_file)
-                keys_to_keep = sorted(keys_list)[(len(keys_list)-jobs_kept):]
+                log("Packages count to keep: %s" % str(deployment_package_retention), self._log_file)
+                keys_to_keep = sorted(keys_list)[(len(keys_list)-deployment_package_retention):]
                 keys_list.sort()
-                del keys_list[(len(keys_list)-jobs_kept):]
+                del keys_list[(len(keys_list)-deployment_package_retention):]
                 log("Packages count to purge: %s" % str(len(keys_list)), self._log_file)
                 for obj in keys_list:
                     key_path_to_purge = '{path}/{obj}'.format(path=path, obj=obj)
@@ -153,9 +153,9 @@ class Deploy():
 
         gcall("rm -f {0}".format(pkg_path), "Deleting local package: %s" % pkg_name, self._log_file)
 
-        jobs_kept = self._config.get('jobs_kept', None)
-        if jobs_kept:
-            self._purge_s3_package(path, bucket, module, pkg_name, jobs_kept)
+        deployment_package_retention = self._config.get('deployment_package_retention', None)
+        if deployment_package_retention:
+            self._purge_s3_package(path, bucket, module, pkg_name, deployment_package_retention)
 
         return pkg_name
 
