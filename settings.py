@@ -23,8 +23,12 @@ SWAGGER_INFO = {
 }
 
 # CORS settings for Swagger UI
-X_DOMAINS = '*'
-X_HEADERS = 'Authorization'
+X_DOMAINS = [
+  'http://api.ghost.morea.fr',
+  'https://api.ghost.morea.fr',
+  'http://editor.swagger.io',
+]
+X_HEADERS = ['Authorization', 'Content-Type', 'If-Match']
 
 API_NAME = 'GHOST API'
 
