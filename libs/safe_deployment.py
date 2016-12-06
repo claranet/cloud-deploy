@@ -1,8 +1,11 @@
+# -*- coding: utf-8 -*-
+#!/usr/bin/env python
+
 """
 
     The Safe Deployment library aims to create a sweet way to deploy on EC2 instances.
     The process is:
-        * Check that every instances in the Load Balancer(Haproxy or ELB) are in service and are enough to perform the safe deployment.
+        * Check that every instances in the Load Balancer(Haproxy or ELB or ALB) are in service and are enough to perform the safe deployment.
         * Split the instances list according the deployment type choosen(1by1-1/3-25%-50%).
         * Before begin to deploy on the instances group, remove them from their Load Balancer(Haproxy or ELB)
         * Wait a moment(depends on the connection draining value for the ELB and/or the custom value defines in Ghost)
@@ -17,6 +20,7 @@
     https://bitbucket.org/mattboret/hapi
 
 """
+
 import time
 import haproxy
 
@@ -26,6 +30,7 @@ from ghost_tools import log
 from .deploy import launch_deploy
 from .ec2 import find_ec2_running_instances
 from .elb import get_elb_instance_status_autoscaling_group, get_connection_draining_value, register_instance_from_elb, deregister_instance_from_elb
+from .alb import get_alb_target_status_autoscaling_group, get_alb_deregistration_delay_value, register_instance_from_alb, deregister_instance_from_alb
 
 class SafeDeployment():
     """ Class which will manage the safe deployment process """
@@ -143,6 +148,40 @@ class SafeDeployment():
             log('Instances: {0} have been deployed and are registered in their ELB' .format(str([host['private_ip_address'] for host in instances_list])), self.log_file)
             return True
 
+    def alb_safe_deployment(self, instances_list):
+        """ Manage the safe deployment process for the Application Load Balancer.
+
+            :param  instances_list  list: Instances on which to deploy(list of dict. ex: [{'id':XXX, 'private_ip_address':XXXX}...]).
+            :return                True if operation successed or raise an Exception.
+        """
+        if not self.as_name:
+            raise GCallException('Cannot continue because there is no AuoScaling Group configured')
+
+        app_region = self.app['region']
+
+        as_conn = self.cloud_connection.get_connection(app_region, ['autoscaling'], boto_version='boto3')
+        alb_conn = self.cloud_connection.get_connection(app_region, ['elbv2'], boto_version='boto3')
+
+        alb_targets = get_alb_target_status_autoscaling_group(alb_conn, self.as_name, as_conn)
+        if not len(alb_targets):
+            raise GCallException('Cannot continue because there is no ALB configured in the AutoScaling Group')
+        elif len([i for i in alb_targets.values() if 'unhealthy' in i.values()]):
+            raise GCallException('Cannot continue because one or more instances are in the unhealthy state')
+        else:
+            deregister_instance_from_alb(alb_conn, alb_targets.keys(), [{'Id': host['id']} for host in instances_list], self.log_file)
+            wait_before_deploy = int(get_alb_deregistration_delay_value(alb_conn, alb_targets.keys())) + int(self.safe_infos['wait_before_deploy'])
+            log('Waiting {0}s: The deregistation delay time plus the custom value set for wait_before_deploy' .format(wait_before_deploy), self.log_file)
+            time.sleep(wait_before_deploy)
+            launch_deploy(self.app, self.module, [host['private_ip_address'] for host in instances_list], self.fab_exec_strategy, self.log_file)
+            log('Waiting {0}s: The value set for wait_after_deploy' .format(self.safe_infos['wait_after_deploy']), self.log_file)
+            time.sleep(int(self.safe_infos['wait_after_deploy']))
+            register_instance_from_alb(alb_conn, alb_targets.keys(), [{'Id': host['id']} for host in instances_list], self.log_file)
+            while len([i for i in get_alb_target_status_autoscaling_group(alb_conn, self.as_name, as_conn).values() if 'unhealthy' in i.values()]):
+                log('Waiting 10s because the instance is unhealthy in the ALB', self.log_file)
+                time.sleep(10)
+            log('Instances: {0} have been deployed and are registered in their ALB' .format(str([host['private_ip_address'] for host in instances_list])), self.log_file)
+            return True
+
     def haproxy_configuration_validation(self, hapi, ha_urls, haproxy_backend):
         """ Check that every Haproxy have the same instances UP in their backend.
 
@@ -203,6 +242,8 @@ class SafeDeployment():
         for host_group in self.split_hosts_list(safe_strategy):
             if self.safe_infos['load_balancer_type'] == 'elb':
                 self.elb_safe_deployment(host_group)
+            elif self.safe_infos['load_balancer_type'] == 'alb':
+                self.alb_safe_deployment(host_group)
             else:
                 self.haproxy_safe_deployment(host_group)
         return True
