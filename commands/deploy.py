@@ -13,6 +13,7 @@ from ghost_tools import get_aws_connection_data
 from ghost_log import log
 from ghost_aws import deploy_module_on_hosts
 from settings import cloud_connections, DEFAULT_PROVIDER
+from libs.git_helper import git_wait_lock
 from libs.deploy import execute_module_script_on_ghost
 from libs.deploy import get_path_from_app_with_color, get_buildpack_clone_path_from_module, update_app_manifest, rollback_app_manifest
 
@@ -263,10 +264,7 @@ class Deploy():
                   'Create local git mirror for remote {r}'.format(r=git_repo),
                   self._log_file)
 
-        # If an index.lock file exists in the mirror, wait until it disappears before trying to update the mirror
-        while os.path.exists('{m}/index.lock'.format(m=mirror_path)):
-            log('The git mirror is locked by another process, waiting 5s...', self._log_file)
-            sleep(5000)
+        git_wait_lock(mirror_path, self._log_file)
 
         # Update existing git mirror
         os.chdir(mirror_path)
