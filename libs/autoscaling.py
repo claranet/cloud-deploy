@@ -42,14 +42,15 @@ def flush_instances_update_autoscale(as_conn, cloud_connection, app, log_file):
     Updates the AutoScale group with min 0, max 0, desired 0
     Trigger a destroy all instances
 
-    :param  as_conn  string: The boto2 Autoscaling Group connection.
+    :param  as_conn  string: The boto3 Autoscaling Group connection.
     :param  cloud_connection: The app Cloud Connection object
     :param  app: The Ghost application
     :param  log_file: Log file path
     """
-    as_group = as_conn.get_all_groups(names=[app['autoscale']['name']])[0]
-    setattr(as_group, 'desired_capacity', 0)
-    setattr(as_group, 'min_size', 0)
-    setattr(as_group, 'max_size', 0)
-    as_group.update()
+    as_conn.update_auto_scaling_group(
+        AutoScalingGroupName=app['autoscale']['name'],
+        MinSize=0,
+        MaxSize=0,
+        DesiredCapacity=0
+    )
     destroy_ec2_instances(cloud_connection, app, log_file)

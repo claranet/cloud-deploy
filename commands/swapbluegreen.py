@@ -118,22 +118,21 @@ class Swapbluegreen():
         :return tuple (Main ELB name, Main ELB dns)
         """
         app_region = self._app['region']
-        as_conn = self._cloud_connection.get_connection(app_region, ["ec2", "autoscale"])
         as_conn3 = self._cloud_connection.get_connection(app_region, ['autoscaling'], boto_version='boto3')
         elb_conn = self._cloud_connection.get_connection(app_region, ["ec2", "elb"])
         elb_conn3 = self._cloud_connection.get_connection(app_region, ['elb'], boto_version='boto3')
 
         # Retrieve autoscaling infos, if any
-        as_group_old, as_group_old_processes_to_suspend = get_autoscaling_group_and_processes_to_suspend(as_conn, online_app, log_file)
-        as_group_new, as_group_new_processes_to_suspend = get_autoscaling_group_and_processes_to_suspend(as_conn, to_deploy_app, log_file)
+        as_group_old, as_group_old_processes_to_suspend = get_autoscaling_group_and_processes_to_suspend(as_conn3, online_app, log_file)
+        as_group_new, as_group_new_processes_to_suspend = get_autoscaling_group_and_processes_to_suspend(as_conn3, to_deploy_app, log_file)
         # Retrieve ELB instances
-        elb_online_instances = get_elb_instance_status_autoscaling_group(elb_conn, online_app['autoscale']['name'], as_conn)
-        elb_tempwarm_instances = get_elb_instance_status_autoscaling_group(elb_conn, to_deploy_app['autoscale']['name'], as_conn)
+        elb_online_instances = get_elb_instance_status_autoscaling_group(elb_conn, online_app['autoscale']['name'], as_conn3)
+        elb_tempwarm_instances = get_elb_instance_status_autoscaling_group(elb_conn, to_deploy_app['autoscale']['name'], as_conn3)
 
         try:
             # Suspend autoscaling groups
-            suspend_autoscaling_group_processes(as_conn, as_group_old, as_group_old_processes_to_suspend, log_file)
-            suspend_autoscaling_group_processes(as_conn, as_group_new, as_group_new_processes_to_suspend, log_file)
+            suspend_autoscaling_group_processes(as_conn3, as_group_old, as_group_old_processes_to_suspend, log_file)
+            suspend_autoscaling_group_processes(as_conn3, as_group_new, as_group_new_processes_to_suspend, log_file)
 
             # Retrieve online ELB object
             elb_online = get_elb_by_name(elb_conn3, elb_online_instances.keys()[0])
@@ -188,8 +187,8 @@ class Swapbluegreen():
             online_elb_name = elb_online_instances.keys()[0]
             return str(online_elb_name), get_elb_dns_name(elb_conn, online_elb_name)
         finally:
-            resume_autoscaling_group_processes(as_conn, as_group_old, as_group_old_processes_to_suspend, log_file)
-            resume_autoscaling_group_processes(as_conn, as_group_new, as_group_new_processes_to_suspend, log_file)
+            resume_autoscaling_group_processes(as_conn3, as_group_old, as_group_old_processes_to_suspend, log_file)
+            resume_autoscaling_group_processes(as_conn3, as_group_new, as_group_new_processes_to_suspend, log_file)
 
     def execute(self):
         log(_green("STATE: Started"), self._log_file)
@@ -227,10 +226,10 @@ class Swapbluegreen():
             # Check if we're ready to swap. If an instance is out of service
             # into the ELB pool raise an exception
             app_region = self._app['region']
-            as_conn = self._cloud_connection.get_connection(app_region, ["ec2", "autoscale"])
+            as_conn3 = self._cloud_connection.get_connection(app_region, ['autoscaling'], boto_version='boto3')
             elb_conn = self._cloud_connection.get_connection(app_region, ["ec2", "elb"])
 
-            elb_instances = get_elb_instance_status_autoscaling_group(elb_conn, to_deploy_app['autoscale']['name'], as_conn)
+            elb_instances = get_elb_instance_status_autoscaling_group(elb_conn, to_deploy_app['autoscale']['name'], as_conn3)
             if len(elb_instances) == 0:
                 self._worker.update_status("aborted", message=self._get_notification_message_aborted(to_deploy_app, "The offline application [%s] doesn't have a valid Load Balancer associated.'" % to_deploy_app['_id']))
                 return

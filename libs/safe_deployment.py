@@ -120,7 +120,7 @@ class SafeDeployment():
 
         app_region = self.app['region']
 
-        as_conn = self.cloud_connection.get_connection(app_region, ["ec2", "autoscale"])
+        as_conn = self.cloud_connection.get_connection(app_region, ['autoscaling'], boto_version='boto3')
         elb_conn = self.cloud_connection.get_connection(app_region, ["ec2", "elb"])
 
         elb_instances = get_elb_instance_status_autoscaling_group(elb_conn, self.as_name, as_conn)
