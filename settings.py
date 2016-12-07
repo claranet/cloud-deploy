@@ -17,7 +17,7 @@ SWAGGER_INFO = {
         'url': 'http://www.claranet.fr/'
     },
     'license': {
-        'name': 'proprietary',
+        'name': 'TBD',
         'url': 'https://bitbucket.org/morea/ghost/blob/master/LICENSE',
     }
 }
