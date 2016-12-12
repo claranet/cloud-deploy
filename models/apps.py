@@ -37,6 +37,7 @@ apps_schema = {
     },
     'region': {'type': 'string'},
     'instance_type': {'type': 'string'},
+    'instance_monitoring' : {'type': 'boolean', 'required': False},
     'lifecycle_hooks': {
         'type': 'dict',
         'schema': {

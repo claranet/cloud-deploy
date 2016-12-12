@@ -124,6 +124,7 @@ def create_launch_config(cloud_connection, app, userdata, ami_id):
         bdm = create_block_device(cloud_connection, app['region'], app['environment_infos']['root_block_device'])
     else:
         bdm = create_block_device(cloud_connection, app['region'])
+    instance_monitoring=app.get('instance_monitoring', False)
     launch_config = cloud_connection.launch_service(
         ["ec2", "autoscale", "LaunchConfiguration"],
         connection=conn_as,
@@ -132,7 +133,7 @@ def create_launch_config(cloud_connection, app, userdata, ami_id):
         security_groups=app['environment_infos']['security_groups'],
         user_data=userdata, instance_type=app['instance_type'], kernel_id=None,
         ramdisk_id=None, block_device_mappings=[bdm],
-        instance_monitoring=False, spot_price=None,
+        instance_monitoring=instance_monitoring, spot_price=None,
         instance_profile_name=app['environment_infos']['instance_profile'], ebs_optimized=False,
         associate_public_ip_address=True, volume_type=None,
         delete_on_termination=True, iops=None,
