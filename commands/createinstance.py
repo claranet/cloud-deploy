@@ -71,11 +71,24 @@ class Createinstance():
                 #Getting instance metadata
                 instance = reservation.instances[0]
                 if instance.id:
-                    if 'instance_tags' in self._app['environment_infos']:
-                        for app_tags in self._app['environment_infos']['instance_tags']:
-                            conn.create_tags([instance.id], {app_tags['tag_name']: app_tags['tag_value']})
+                    # Tagging
+                    tag_ec2_name = False
+                    for ghost_tag_key, ghost_tag_val in {'app': 'name', 'app_id': '_id', 'env': 'env', 'role': 'role'}.iteritems():
+                        log("Tagging instance [{id}] with '{tk}':'{tv}'".format(id=instance.id, tk=ghost_tag_key, tv=ghost_tag_val), self._log_file)
+                        conn.create_tags([instance.id], {ghost_tag_key: str(self._app[ghost_tag_val])})
                     if self._color:
-                        conn.create_tags([instance.id], {"color":self._color})
+                        log("Tagging instance [{id}] with '{tk}':'{tv}'".format(id=instance.id, tk='color', tv=self._color), self._log_file)
+                        conn.create_tags([instance.id], {"color": self._color})
+                    if 'instance_tags' in self._app['environment_infos']:
+                        for app_tag in self._app['environment_infos']['instance_tags']:
+                            log("Tagging instance [{id}] with '{tk}':'{tv}'".format(id=instance.id, tk=app_tag['tag_name'], tv=app_tag['tag_value']), self._log_file)
+                            conn.create_tags([instance.id], {app_tag['tag_name']: app_tag['tag_value']})
+                            if app_tag['tag_name'] == 'Name':
+                                tag_ec2_name = True
+                    if not tag_ec2_name:
+                        ec2_name = "ec2.{0}.{1}.{2}".format(self._app['env'], self._app['role'], self._app['name'])
+                        log("Tagging instance [{id}] with '{tk}':'{tv}'".format(id=instance.id, tk='Name', tv=ec2_name), self._log_file)
+                        conn.create_tags([instance.id], {'Name': ec2_name})
 
                     #Check instance state
                     while instance.state == u'pending':
@@ -83,7 +96,9 @@ class Createinstance():
                         time.sleep(10)
                         instance.update()
 
+                    log(" CONF: Private IP: %s" % instance.private_ip_address, self._log_file)
                     log(" CONF: Public IP: %s" % instance.ip_address, self._log_file)
+                    log(" CONF: Public DNS: %s" % instance.public_dns_name, self._log_file)
                     self._worker.update_status("done", message="Creating Instance OK: [{0}]\n\nPublic IP: {1}".format(self._app['name'], str(instance.ip_address)))
                     log(_green("STATE: Instance state: %s" % instance.state), self._log_file)
                 else:
