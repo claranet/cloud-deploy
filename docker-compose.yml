@@ -17,7 +17,7 @@ services:
       - dbs
 
   worker:
-    build: 
+    build:
       context: .
     image: ghost
     working_dir: /usr/local/share/ghost
@@ -32,7 +32,7 @@ services:
       - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
 
   api:
-    build: 
+    build:
       context: .
     image: ghost
     working_dir: /usr/local/share/ghost
@@ -65,6 +65,16 @@ services:
     environment:
       - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
       - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+
+  nginx:
+    image: nginx:latest
+    volumes:
+      - .:/usr/local/share/ghost
+      - ./nginx-ghost.conf:/etc/nginx/conf.d/default.conf
+    ports:
+      - '80:80'
+    networks:
+      - front
 
 networks:
   dbs:
