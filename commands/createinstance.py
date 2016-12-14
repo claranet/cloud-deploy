@@ -74,7 +74,7 @@ class Createinstance():
                     # Tagging
                     tag_ec2_name = False
                     for ghost_tag_key, ghost_tag_val in {'app': 'name', 'app_id': '_id', 'env': 'env', 'role': 'role'}.iteritems():
-                        log("Tagging instance [{id}] with '{tk}':'{tv}'".format(id=instance.id, tk=ghost_tag_key, tv=ghost_tag_val), self._log_file)
+                        log("Tagging instance [{id}] with '{tk}':'{tv}'".format(id=instance.id, tk=ghost_tag_key, tv=str(self._app[ghost_tag_val])), self._log_file)
                         conn.create_tags([instance.id], {ghost_tag_key: str(self._app[ghost_tag_val])})
                     if self._color:
                         log("Tagging instance [{id}] with '{tk}':'{tv}'".format(id=instance.id, tk='color', tv=self._color), self._log_file)
