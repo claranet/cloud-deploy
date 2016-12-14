@@ -394,9 +394,9 @@ def normalize_application_tags(app_original, app_updated):
     custom_tags = app_updated['environment_infos']['instance_tags'] if 'instance_tags' in app_updated['environment_infos'] else []
 
     if 'Name' not in [i['tag_name'] for i in custom_tags]:
-        app_tags.append({'tag_name': 'Name', 'tag_editable': True, 'tag_value': default_tag_name_value})
+        app_tags.append({u'tag_name': 'Name', 'tag_editable': True, u'tag_value': default_tag_name_value})
 
     for tag in custom_tags:
         if tag['tag_name'] not in reserved_ghost_tags:
-            app_tags.append({'tag_name': tag['tag_name'], 'tag_editable': True, 'tag_value': tag['tag_value']})
+            app_tags.append({u'tag_name': tag['tag_name'], 'tag_editable': True, u'tag_value': tag['tag_value']})
     return app_tags
