@@ -4,7 +4,31 @@ from models import deployments
 from models import job_enqueueings
 from aws_connection import AWSConnection
 
-from ghost_tools import config
+from ghost_tools import config, CURRENT_REVISION_NAME
+
+# required. See http://swagger.io/specification/#infoObject for details.
+SWAGGER_INFO = {
+    'title': 'Claranet Ghost',
+    'version': CURRENT_REVISION_NAME,
+    'description': 'The Ghost API by Morea, Claranet Cloud Practice',
+    'termsOfService': 'Copyright (C) Claranet - All Rights Reserved',
+    'contact': {
+        'name': 'Morea, Claranet Cloud Practice',
+        'url': 'http://www.claranet.fr/'
+    },
+    'license': {
+        'name': 'TBD',
+        'url': 'https://bitbucket.org/morea/ghost/blob/master/LICENSE',
+    }
+}
+
+# CORS settings for Swagger UI
+X_DOMAINS = [
+  'http://api.ghost.morea.fr',
+  'https://api.ghost.morea.fr',
+  'http://editor.swagger.io',
+]
+X_HEADERS = ['Authorization', 'Content-Type', 'If-Match']
 
 API_NAME = 'GHOST API'
 

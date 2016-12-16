@@ -4,7 +4,8 @@ from flask import abort, request
 from flask_bootstrap import Bootstrap
 
 from eve import Eve
-from eve_docs import eve_docs
+from eve_swagger import swagger
+
 from auth import BCryptAuth
 from bson.objectid import ObjectId
 import json
@@ -264,7 +265,9 @@ ghost = Eve(auth=BCryptAuth, settings=eve_settings)
 Bootstrap(ghost)
 ghost.config.from_object(rq_dashboard.default_settings)
 ghost.register_blueprint(rq_dashboard.blueprint, url_prefix='/rq')
-ghost.register_blueprint(eve_docs, url_prefix='/docs/api')
+ghost.register_blueprint(swagger, url_prefix='/docs/api')
+# Map /docs/api to eve_swagger as it is hardcoded to <url_prefix>/api-docs (cf. https://github.com/nicolaiarocci/eve-swagger/issues/33)
+ghost.add_url_rule('/docs/api', 'eve_swagger.index')
 
 # Register eve hooks
 ghost.on_fetched_item_apps += post_fetched_app
