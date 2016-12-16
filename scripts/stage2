@@ -21,6 +21,12 @@ S3_REGION={{ bucket_region }}
 TS=$(date +%Y%m%d_%H%M%S)
 LOGFILE=$(echo $TS"_deploy.txt")
 
+COLOR_CLR='\033[0m'
+
+COLOR_RED='\033[00;31m'
+COLOR_GREEN='\033[00;32m'
+COLOR_YELLOW='\033[00;33m'
+
 INSTANCE_ID=$(curl http://169.254.169.254/latest/meta-data/instance-id)
 EC2_AVAIL_ZONE=$(curl -s http://169.254.169.254/latest/meta-data/placement/availability-zone)
 EC2_REGION="`echo \"$EC2_AVAIL_ZONE\" | sed -e 's:\([0-9][0-9]*\)[a-z]*\$:\\1:'`"
@@ -164,6 +170,7 @@ function deploy_module() {
         GHOST_MODULE_REPO=$GHOST_MODULE_REPO GHOST_MODULE_REV=$GHOST_MODULE_REV GHOST_MODULE_COMMIT=$GHOST_MODULE_COMMIT GHOST_MODULE_COMMIT_MESSAGE=$GHOST_MODULE_COMMIT_MESSAGE GHOST_MODULE_USER=$GHOST_MODULE_USER GHOST_APP=$APP GHOST_ENV=$ENV GHOST_ENV_COLOR=$COLOR GHOST_ROLE=$ROLE GHOST_MODULE_NAME=$MODULE_NAME GHOST_MODULE_PATH=$TARGET ./predeploy 2>&1 | tee -a /tmp/$LOGFILE
         local status=${PIPESTATUS[0]}
         if [ $status -ne 0 ]; then
+            echo -e "${COLOR_RED}[${MODULE_NAME}:${GHOST_MODULE_REV}] Predeploy script exited with error code ${status} ${COLOR_CLR}"
             purge_latest_failed_deploy $MODULE_NAME $UUID
             exit_deployment -12
         fi
@@ -187,6 +194,7 @@ function deploy_module() {
         GHOST_MODULE_REPO=$GHOST_MODULE_REPO GHOST_MODULE_REV=$GHOST_MODULE_REV GHOST_MODULE_COMMIT=$GHOST_MODULE_COMMIT GHOST_MODULE_COMMIT_MESSAGE=$GHOST_MODULE_COMMIT_MESSAGE GHOST_MODULE_USER=$GHOST_MODULE_USER GHOST_APP=$APP GHOST_ENV=$ENV GHOST_ENV_COLOR=$COLOR GHOST_ROLE=$ROLE GHOST_MODULE_NAME=$MODULE_NAME GHOST_MODULE_PATH=$TARGET ./postdeploy 2>&1 | tee -a /tmp/$LOGFILE
         local status=${PIPESTATUS[0]}
         if [ $status -ne 0 ]; then
+            echo -e "${COLOR_RED}[${MODULE_NAME}:${GHOST_MODULE_REV}] Postdeploy script exited with error code ${status} ${COLOR_CLR}"
             purge_latest_failed_deploy $MODULE_NAME $UUID
             exit_deployment -13
         fi
