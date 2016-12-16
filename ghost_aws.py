@@ -251,6 +251,15 @@ def get_app_tags(app, log_file=None):
         :param  app  dict The application object
         :log_file   obj Log file objet
         :return  dict  Every tags defined for this Ghost Application
+
+        >>> app_original = {'_id': 1111, 'env': 'prod', 'name': 'app1', 'role': 'webfront', 'autoscale': {'name': 'asg-mod1'}, 'environment_infos': {'instance_tags':[]}}
+        >>> len(get_app_tags(app_original)) == 4
+        True
+
+        >>> app_original = {'_id': 1111, 'env': 'prod', 'name': 'app1', 'role': 'webfront', 'autoscale': {'name': 'asg-mod2'}, 'environment_infos': {'instance_tags':[{'tag_editable': True, 'tag_name': 'Name', 'tag_value': 'Prod.Server1'}]}}
+        >>> len(get_app_tags(app_original)) == 5
+        True
+
     """
     tags_app = {}
     for ghost_tag_key, ghost_tag_val in {'app': 'name', 'app_id': '_id', 'env': 'env', 'role': 'role'}.iteritems():
@@ -278,7 +287,8 @@ def get_app_tags(app, log_file=None):
             'ResourceId': app['autoscale']['name'],
             'ResourceType': 'auto-scaling-group'
         }
-    log("[{0}] will be updated with: {1}".format(app['autoscale']['name'], ", ".join(tags_app.keys())), log_file)
+    if log_file:
+        log("[{0}] will be updated with: {1}".format(app['autoscale']['name'], ", ".join(tags_app.keys())), log_file)
     return tags_app
 
 def create_block_device(cloud_connection, region, rbd={}):
@@ -321,16 +331,12 @@ def normalize_application_tags(app_original, app_updated):
 
         >>> from copy import deepcopy
         >>> from pprint import pprint
-        >>> app_original = {'_id': 1111, 'env': 'prod', 'name': 'app1', 'role': 'webfront', 'modules': [{'name': 'mod1', 'git_repo': 'git@github.com/test/mod1'}, {'name': 'mod2', 'git_repo': 'git@github.com/test/mod2'}], 'environment_infos': {'instance_tags':[{'tag_editable': True, 'tag_name': 'Name', 'tag_value': 'ec2.GHOST_APP_ENV.GHOST_APP_ROLE.GHOST_APP_NAME'}]}}
+        >>> app_original = {'_id': 1111, 'env': 'prod', 'name': 'app1', 'role': 'webfront', 'modules': [{'name': 'mod1', 'git_repo': 'git@github.com/test/mod1'}, {'name': 'mod2', 'git_repo': 'git@github.com/test/mod2'}], 'environment_infos': {'instance_tags':[]}}
         >>> app_updated = deepcopy(app_original)
         >>> pprint(sorted(normalize_application_tags(app_original, app_updated), key=lambda d: d['tag_name']))
         [{'tag_editable': True,
           'tag_name': 'Name',
-          'tag_value': 'ec2.prod.webfront.app1'},
-         {'tag_editable': False, 'tag_name': 'app', 'tag_value': 'app1'},
-         {'tag_editable': False, 'tag_name': 'app_id', 'tag_value': '1111'},
-         {'tag_editable': False, 'tag_name': 'env', 'tag_value': 'prod'},
-         {'tag_editable': False, 'tag_name': 'role', 'tag_value': 'webfront'}]
+          'tag_value': 'ec2.prod.webfront.app1'}]
 
         Test with a custom Tag Name
 
@@ -338,25 +344,13 @@ def normalize_application_tags(app_original, app_updated):
         >>> app_updated = deepcopy(app_original)
         >>> app_updated['environment_infos']['instance_tags'] = [{'tag_editable': True, 'tag_name': 'Name', 'tag_value': 'Prod.Server1'}]
         >>> pprint(sorted(normalize_application_tags(app_original, app_updated), key=lambda d: d['tag_name']))
-        [{'tag_editable': True, 'tag_name': 'Name', 'tag_value': 'Prod.Server1'},
-         {'tag_editable': False, 'tag_name': 'app', 'tag_value': 'app1'},
-         {'tag_editable': False, 'tag_name': 'app_id', 'tag_value': '1111'},
-         {'tag_editable': False, 'tag_name': 'env', 'tag_value': 'prod'},
-         {'tag_editable': False, 'tag_name': 'role', 'tag_value': 'webfront'}]
-
+        [{'tag_editable': True, 'tag_name': 'Name', 'tag_value': 'Prod.Server1'}]
 
         Test with a custom Tag Name build with variables
 
-        >>> app_original = {'_id': 1111, 'env': 'prod', 'name': 'app1', 'role': 'webfront', 'modules': [{'name': 'mod1', 'git_repo': 'git@github.com/test/mod1'}, {'name': 'mod2', 'git_repo': 'git@github.com/test/mod2'}], 'environment_infos': {'instance_tags':[]}}
-        >>> app_updated = {'_id': 1111, 'env': 'prod', 'name': 'app1', 'role': 'webfront', 'modules': [{'name': 'mod1', 'git_repo': 'git@github.com/test/mod1'}, {'name': 'mod2', 'git_repo': 'git@github.com/test/mod2'}], 'environment_infos': {'instance_tags':[{'tag_editable': True, 'tag_name': 'Name', 'tag_value': 'GHOST_APP_ENV.GHOST_APP_ROLE.Server1'}]}}
+        >>> app_original = {'_id': 1111, 'env': 'prod', 'name': 'app1', 'role': 'webfront', 'modules': [{'name': 'mod1', 'git_repo': 'git@github.com/test/mod1'}, {'name': 'mod2', 'git_repo': 'git@github.com/test/mod2'}], 'environment_infos': {'instance_tags':[{'tag_editable': True, 'tag_name': 'Name', 'tag_value': 'Prod.Server1'}]}}
         >>> pprint(sorted(normalize_application_tags(app_original, app_updated), key=lambda d: d['tag_name']))
-        [{'tag_editable': True,
-          'tag_name': 'Name',
-          'tag_value': 'prod.webfront.Server1'},
-         {'tag_editable': False, 'tag_name': 'app', 'tag_value': 'app1'},
-         {'tag_editable': False, 'tag_name': 'app_id', 'tag_value': '1111'},
-         {'tag_editable': False, 'tag_name': 'env', 'tag_value': 'prod'},
-         {'tag_editable': False, 'tag_name': 'role', 'tag_value': 'webfront'}]
+        [{'tag_editable': True, 'tag_name': 'Name', 'tag_value': 'Prod.Server1'}]
 
         Test with a custom tag
 
@@ -366,12 +360,7 @@ def normalize_application_tags(app_original, app_updated):
         [{'tag_editable': True,
           'tag_name': 'Name',
           'tag_value': 'ec2.prod.webfront.app1'},
-         {'tag_editable': False, 'tag_name': 'app', 'tag_value': 'app1'},
-         {'tag_editable': False, 'tag_name': 'app_id', 'tag_value': '1111'},
-         {'tag_editable': True, 'tag_name': 'billing', 'tag_value': 'account1'},
-         {'tag_editable': False, 'tag_name': 'env', 'tag_value': 'prod'},
-         {'tag_editable': False, 'tag_name': 'role', 'tag_value': 'webfront'}]
-
+         {'tag_editable': True, 'tag_name': 'billing', 'tag_value': 'account1'}]
 
         Test with a custom tag updated
 
@@ -381,11 +370,8 @@ def normalize_application_tags(app_original, app_updated):
         [{'tag_editable': True,
           'tag_name': 'Name',
           'tag_value': 'ec2.prod.webfront.app1'},
-         {'tag_editable': False, 'tag_name': 'app', 'tag_value': 'app1'},
-         {'tag_editable': False, 'tag_name': 'app_id', 'tag_value': '1111'},
-         {'tag_editable': True, 'tag_name': 'billing', 'tag_value': 'account2'},
-         {'tag_editable': False, 'tag_name': 'env', 'tag_value': 'prod'},
-         {'tag_editable': False, 'tag_name': 'role', 'tag_value': 'webfront'}]
+         {'tag_editable': True, 'tag_name': 'billing', 'tag_value': 'account2'}]
+
     """
     app_tags = []
     reserved_ghost_tags = ['app', 'app_id', 'env', 'role', 'color']
@@ -394,9 +380,9 @@ def normalize_application_tags(app_original, app_updated):
     custom_tags = app_updated['environment_infos']['instance_tags'] if 'instance_tags' in app_updated['environment_infos'] else []
 
     if 'Name' not in [i['tag_name'] for i in custom_tags]:
-        app_tags.append({u'tag_name': 'Name', 'tag_editable': True, u'tag_value': default_tag_name_value})
+        app_tags.append({'tag_name': 'Name', 'tag_editable': True, 'tag_value': default_tag_name_value})
 
     for tag in custom_tags:
         if tag['tag_name'] not in reserved_ghost_tags:
-            app_tags.append({u'tag_name': tag['tag_name'], 'tag_editable': True, u'tag_value': tag['tag_value']})
+            app_tags.append({'tag_name': tag['tag_name'], 'tag_editable': True, 'tag_value': tag['tag_value']})
     return app_tags
