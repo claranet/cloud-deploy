@@ -321,7 +321,7 @@ def create_block_device(cloud_connection, region, rbd={}):
 
 def normalize_application_tags(app_original, app_updated):
     """ Simple function to normalize application tags when application is created or updated.
-        It aims to ensure that requiered tags are always well defined.
+        It aims to ensure that required tags are always well defined.
 
         :param  app_original  string: The ghost "app" object before modification.
         :param  app_updated   string: The ghost "app" object with the new modifications.
