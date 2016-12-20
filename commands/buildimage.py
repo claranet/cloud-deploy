@@ -10,6 +10,7 @@ from ghost_aws import create_launch_config, generate_userdata, check_autoscale_e
 from ghost_tools import get_aws_connection_data, b64decode_utf8
 from settings import cloud_connections, DEFAULT_PROVIDER
 from libs.blue_green import get_blue_green_from_app
+from libs.deploy import touch_app_manifest
 
 COMMAND_DESCRIPTION = "Build Image"
 
@@ -259,6 +260,8 @@ class Buildimage():
         pack = Packer(json_packer, self._config, self._log_file, self._job['_id'])
         ami_id = pack.build_image(self._format_salt_top_from_app_features(), self._format_salt_pillar_from_app_features(), self._get_buildimage_hooks())
         if ami_id is not "ERROR":
+            touch_app_manifest(self._app, self._config, self._log_file)
+
             log("Update app in MongoDB to update AMI: {0}".format(ami_id), self._log_file)
             self._update_app_ami(ami_id)
             if (self._purge_old_images()):
