@@ -13,6 +13,7 @@ from ghost_tools import get_aws_connection_data
 from ghost_log import log
 from ghost_aws import deploy_module_on_hosts
 from settings import cloud_connections, DEFAULT_PROVIDER
+from libs.git_helper import git_wait_lock
 from libs.deploy import execute_module_script_on_ghost
 from libs.deploy import get_path_from_app_with_color, get_buildpack_clone_path_from_module, update_app_manifest, rollback_app_manifest
 
@@ -224,12 +225,13 @@ class Deploy():
         >>> Deploy(worker=worker())._is_commit_hash(current_git_hash)
         True
 
-        A valid abbreviated hash must be at least 4 characters long:
+        The length of a valid abbreviated hash depends on the current repository:
 
-        >>> Deploy(worker=worker())._is_commit_hash(current_git_hash[:4])
+        >>> shortest_hash = git('--no-pager', 'rev-parse', '--short', 'HEAD', _tty_out=False).strip()
+        >>> Deploy(worker=worker())._is_commit_hash(current_git_hash[:len(shortest_hash)])
         True
 
-        Shorter substrings won't match:
+        Very short substrings won't match:
 
         >>> Deploy(worker=worker())._is_commit_hash(current_git_hash[:3])
         False
@@ -263,10 +265,7 @@ class Deploy():
                   'Create local git mirror for remote {r}'.format(r=git_repo),
                   self._log_file)
 
-        # If an index.lock file exists in the mirror, wait until it disappears before trying to update the mirror
-        while os.path.exists('{m}/index.lock'.format(m=mirror_path)):
-            log('The git mirror is locked by another process, waiting 5s...', self._log_file)
-            sleep(5000)
+        git_wait_lock(mirror_path, self._log_file)
 
         # Update existing git mirror
         os.chdir(mirror_path)

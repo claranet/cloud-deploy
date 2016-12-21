@@ -5,6 +5,7 @@ import os
 from subprocess import call
 import yaml
 import copy
+from sh import git
 
 from jinja2 import Environment, FileSystemLoader
 
@@ -14,6 +15,27 @@ ROOT_PATH = os.path.dirname(os.path.realpath(__file__))
 
 with open(os.path.dirname(os.path.realpath(__file__)) + '/config.yml', 'r') as conf_file:
     config = yaml.load(conf_file)
+
+try:
+    CURRENT_REVISION_NAME=git('symbolic-ref', '-q', '--short', 'HEAD', _tty_out=False).strip()
+except:
+    try:
+        CURRENT_REVISION_NAME=git('describe', '--tags', '--exact-match', _tty_out=False).strip()
+    except:
+        CURRENT_REVISION_NAME=git('--no-pager', 'rev-parse', '--short', 'HEAD', _tty_out=False).strip()
+
+try:
+    CURRENT_REVISION = dict(
+        current_revision=git('--no-pager', 'rev-parse', '--short', 'HEAD', _tty_out=False).strip(),
+        current_revision_date=git('log', '-1', '--format=%cD', _tty_out=False).strip(),
+        current_revision_name=CURRENT_REVISION_NAME.strip()
+    )
+except:
+    CURRENT_REVISION = dict(
+        current_revision='unknown',
+        current_revision_date='unknown',
+        current_revision_name='unknown'
+    )
 
 def get_aws_connection_data(assumed_account_id, assumed_role_name, assumed_region_name=""):
     """

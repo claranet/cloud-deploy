@@ -109,6 +109,18 @@ def _get_app_manifest_from_s3(app, config, log_file):
 
     return key, key_path, bucket
 
+def touch_app_manifest(app, config, log_file):
+    """
+    Creates an empty app MANIFEST if it does not already exist
+    """
+    key, key_path, bucket = _get_app_manifest_from_s3(app, config, log_file)
+
+    if key is None:
+        log("No MANIFEST existed for this app, created an empty one at {} to allow instance bootstrapping".format(key_path), log_file)
+        key = bucket.new_key(key_path)
+        key.set_contents_from_string("")
+        key.close()
+
 def rollback_app_manifest(app, config, old_manifest, log_file):
     """
     Restores app manifest data to its previous state
@@ -366,5 +378,3 @@ def launch_deploy(app, module, hosts_list, fabric_execution_strategy, log_file):
             hosts_error.append(host)
     if len(hosts_error):
         raise GCallException("Deploy error on: %s" % (", ".join(hosts_error)))
-
-

@@ -4,13 +4,14 @@
 #
 #    pip-compile --output-file requirements.txt requirements.in
 #
+-e git+git://github.com/nicolaiarocci/eve-swagger.git@6e976ef47dc40b9ec6aff87b7656f56c2ac9b014#egg=eve-swagger
 argparse==1.4.0
 arrow==0.7.0              # via rq-dashboard
 awscli==1.11.5
 bcrypt==2.0.0
 blinker==1.4
 boto3==1.4.1
-boto==2.42.0
+boto==2.45.0
 botocore==1.4.62          # via awscli, boto3, s3transfer
 cerberus==0.9.2           # via eve
 cffi==1.5.2               # via bcrypt
@@ -29,7 +30,7 @@ flask-pymongo==0.4.1      # via eve
 Flask-SocketIO==2.2
 Flask-WTF==0.12
 Flask==0.10.1             # via eve, flask-bootstrap, flask-login, flask-pymongo, flask-socketio, flask-wtf, rq-dashboard
-futures==3.0.5            # via boto3, s3transfer
+futures==3.0.5            # via s3transfer
 gevent-websocket==0.9.5
 gevent==1.1.1
 greenlet==0.4.9           # via gevent
@@ -40,7 +41,7 @@ jmespath==0.9.0           # via boto3, botocore
 markupsafe==0.23          # via eve, jinja2
 paramiko==1.16.0          # via fabric
 pip-tools==1.7.0
-pluggy==0.3.1             # via tox
+pluggy==0.4.0             # via tox
 py==1.4.31                # via tox
 pyasn1==0.1.9             # via rsa
 pycparser==2.14           # via cffi
@@ -55,14 +56,14 @@ requests==2.9.1
 rq-dashboard==0.3.6
 rq==0.5.6
 rsa==3.4.2                # via awscli
-s3transfer==0.1.8         # via awscli
+s3transfer==0.1.8         # via awscli, boto3
 setproctitle==1.1.9
 sh==1.11
 simplejson==3.8.2         # via eve
 six==1.10.0
 subprocess32==3.2.7
-tox==2.3.1
-virtualenv==15.0.2        # via tox
+tox==2.5.0
+virtualenv==15.1.0        # via tox
 visitor==0.1.2            # via flask-bootstrap
 Werkzeug==0.11.3          # via eve, flask, flask-wtf
 WTForms==2.1              # via flask-wtf

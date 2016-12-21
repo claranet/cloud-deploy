@@ -2,12 +2,13 @@
 # Everything you directly use in your source code should be a top-level dependency recorded here.
 # Don't pin them unless you want them pinned, of course.
 argparse
-awscli                    # needed in some buildpacks but dependent on botocore which is a transitive dependency of boto3 and upgraded 
+awscli                    # needed in some buildpacks but dependent on botocore which is a transitive dependency of boto3 and upgraded
 bcrypt
 blinker                   # needed at runtime for flask events
 boto
 boto3
 click
+-e git://github.com/nicolaiarocci/eve-swagger.git@6e976ef47dc40b9ec6aff87b7656f56c2ac9b014#egg=eve-swagger # Use this release until next eve-swagger release (cf. https://github.com/nicolaiarocci/eve-swagger/pull/34)
 Eve
 Fabric
 Flask

@@ -1,3 +1,6 @@
+# -*- coding: utf-8 -*-
+#!/usr/bin/env python
+
 """
 
     Library to easily manage instances in an Elastic Load Balancer.
@@ -8,10 +11,9 @@
         * Retrieve the connection draining value for an ELB.
 
 """
-# -*- coding: utf-8 -*-
-#!/usr/bin/env python
 
 from ghost_log import log
+from .autoscaling import get_autoscaling_group_object
 from boto.ec2.elb.listelement import ListElement
 
 def elb_configure_health_check(elb_conn3, elb_name, target, interval, timeout, unhealthy_threshold, healthy_threshold):
@@ -92,7 +94,8 @@ def get_elb_from_autoscale(as_name, as_conn):
     """
     if not as_name: # prevent to get all ASG and use first one...
         return []
-    return as_conn.get_all_groups(names=[as_name])[0].load_balancers
+    asg = get_autoscaling_group_object(as_conn, as_name)
+    return asg['LoadBalancerNames'] if asg else []
 
 def get_elb_dns_name(elb_conn, elb_name):
     """ Return the DNS name for the passed ELB

@@ -4,7 +4,8 @@ from flask import abort, request
 from flask_bootstrap import Bootstrap
 
 from eve import Eve
-from eve_docs import eve_docs
+from eve_swagger import swagger
+
 from auth import BCryptAuth
 from bson.objectid import ObjectId
 import json
@@ -167,6 +168,7 @@ def pre_insert_app(items):
     name = app.get('name')
     role = app.get('role')
     env = app.get('env')
+    app['environment_infos']['instance_tags'] = normalize_application_tags(app, app)
     blue_green = app.get('blue_green', None)
     # We can now insert a new app with a different color
     if blue_green and blue_green.get('color', None):
@@ -181,8 +183,6 @@ def pre_insert_app(items):
 
 def post_insert_app(items):
     app = items[0]
-    instance_tags = normalize_application_tags(app, app)
-    get_apps_db().update_one({ '_id': app['_id']}, {'$set': {'environment_infos.instance_tags': instance_tags }})
     if ghost_api_bluegreen_is_enabled(app):
         if not ghost_api_enable_green_app(get_apps_db(), app, request.authorization.username):
             abort(422)
@@ -264,7 +264,9 @@ ghost = Eve(auth=BCryptAuth, settings=eve_settings)
 Bootstrap(ghost)
 ghost.config.from_object(rq_dashboard.default_settings)
 ghost.register_blueprint(rq_dashboard.blueprint, url_prefix='/rq')
-ghost.register_blueprint(eve_docs, url_prefix='/docs/api')
+ghost.register_blueprint(swagger, url_prefix='/docs/api')
+# Map /docs/api to eve_swagger as it is hardcoded to <url_prefix>/api-docs (cf. https://github.com/nicolaiarocci/eve-swagger/issues/33)
+ghost.add_url_rule('/docs/api', 'eve_swagger.index')
 
 # Register eve hooks
 ghost.on_fetched_item_apps += post_fetched_app
