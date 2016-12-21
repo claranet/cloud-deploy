@@ -334,8 +334,7 @@ def normalize_application_tags(app_original, app_updated):
         >>> app_original = {'_id': 1111, 'env': 'prod', 'name': 'app1', 'role': 'webfront', 'modules': [{'name': 'mod1', 'git_repo': 'git@github.com/test/mod1'}, {'name': 'mod2', 'git_repo': 'git@github.com/test/mod2'}], 'environment_infos': {'instance_tags':[]}}
         >>> app_updated = deepcopy(app_original)
         >>> pprint(sorted(normalize_application_tags(app_original, app_updated), key=lambda d: d['tag_name']))
-        [{'tag_name': 'Name',
-          'tag_value': 'ec2.prod.webfront.app1'}]
+        [{'tag_name': 'Name', 'tag_value': 'ec2.prod.webfront.app1'}]
 
         Test with a custom Tag Name
 
@@ -356,8 +355,7 @@ def normalize_application_tags(app_original, app_updated):
         >>> app_original = {'_id': 1111, 'env': 'prod', 'name': 'app1', 'role': 'webfront', 'modules': [{'name': 'mod1', 'git_repo': 'git@github.com/test/mod1'}, {'name': 'mod2', 'git_repo': 'git@github.com/test/mod2'}], 'environment_infos': {'instance_tags':[]}}
         >>> app_updated = {'_id': 1111, 'env': 'prod', 'name': 'app1', 'role': 'webfront', 'modules': [{'name': 'mod1', 'git_repo': 'git@github.com/test/mod1'}, {'name': 'mod2', 'git_repo': 'git@github.com/test/mod2'}], 'environment_infos': {'instance_tags':[{'tag_name': 'billing', 'tag_value': 'account1'}]}}
         >>> pprint(sorted(normalize_application_tags(app_original, app_updated), key=lambda d: d['tag_name']))
-        [{'tag_name': 'Name',
-          'tag_value': 'ec2.prod.webfront.app1'},
+        [{'tag_name': 'Name', 'tag_value': 'ec2.prod.webfront.app1'},
          {'tag_name': 'billing', 'tag_value': 'account1'}]
 
         Test with a custom tag updated
@@ -365,8 +363,7 @@ def normalize_application_tags(app_original, app_updated):
         >>> app_original = {'_id': 1111, 'env': 'prod', 'name': 'app1', 'role': 'webfront', 'modules': [{'name': 'mod1', 'git_repo': 'git@github.com/test/mod1'}, {'name': 'mod2', 'git_repo': 'git@github.com/test/mod2'}], 'environment_infos': {'instance_tags':[{'tag_name': 'billing', 'tag_value': 'account1'}]}}
         >>> app_updated = {'_id': 1111, 'env': 'prod', 'name': 'app1', 'role': 'webfront', 'modules': [{'name': 'mod1', 'git_repo': 'git@github.com/test/mod1'}, {'name': 'mod2', 'git_repo': 'git@github.com/test/mod2'}], 'environment_infos': {'instance_tags':[{'tag_name': 'billing', 'tag_value': 'account2'}]}}
         >>> pprint(sorted(normalize_application_tags(app_original, app_updated), key=lambda d: d['tag_name']))
-        [{'tag_name': 'Name',
-          'tag_value': 'ec2.prod.webfront.app1'},
+        [{'tag_name': 'Name', 'tag_value': 'ec2.prod.webfront.app1'},
          {'tag_name': 'billing', 'tag_value': 'account2'}]
 
     """
