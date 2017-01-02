@@ -112,23 +112,12 @@ class Packer:
             'tags': self.packer_config['tags']
         }]
 
-        if self.packer_config['skip_salt_bootstrap'] in ['true', '1', 'y', 'yes', 'True']:
-            pre_salt_script = [ "echo 'salt bootstrap skipped'" ]
-        else:
-            pre_salt_script = [
-                "sudo DEBIAN_FRONTEND=noninteractive apt-get --assume-yes -o Dpkg::Options::='--force-confdef' -o Dpkg::Options::='--force-confold' update",
-                "sudo DEBIAN_FRONTEND=noninteractive apt-get --assume-yes -o Dpkg::Options::='--force-confdef' -o Dpkg::Options::='--force-confold' install curl"
-            ]
         formatted_env_vars = self.packer_config['ghost_env_vars'] + ['%s=%s' % (envvar['var_key'], envvar['var_value']) for envvar in self.packer_config['custom_env_vars']]
         provisioners = [
         {
             'type': 'shell',
             'environment_vars': formatted_env_vars,
             'script': hooks['pre_buildimage']
-        },
-        {
-            'type': 'shell',
-            'inline': pre_salt_script
         },
         {
             'type': 'salt-masterless',
