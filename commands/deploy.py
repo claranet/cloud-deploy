@@ -103,7 +103,7 @@ class Deploy():
             manifest_key_path = '{path}/MANIFEST'.format(path=get_path_from_app_with_color(self._app))
             manifest_key = bucket.get_key(manifest_key_path)
             manifest = manifest_key.get_contents_as_string()
-            for pkgs in manifest:
+            for pkgs in manifest.splitlines():
                 manifest_module_infos = pkgs.split(":")
                 manifest_module_name = manifest_module_infos[0]
                 manifest_module_pkg_name = manifest_module_infos[1]
