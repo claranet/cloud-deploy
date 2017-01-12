@@ -59,7 +59,7 @@ rq==0.5.6
 rsa==3.4.2                # via awscli
 s3transfer==0.1.8         # via awscli, boto3
 setproctitle==1.1.9
-sh==1.11
+sh==1.12.9
 simplejson==3.8.2         # via eve
 six==1.10.0
 subprocess32==3.2.7

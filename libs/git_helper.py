@@ -35,10 +35,9 @@ def git_ls_remote_branches_tags(git_repo, log_file=None):
     """
     revs = []
     try:
-        output = git("ls-remote", git_repo).strip()
-        for line in output.splitlines():
-            refs = line.split("\t")
-            if refs[1].endswith('^{}'): # ignore github releases
+        for line in git("--no-pager", "ls-remote", git_repo, _tty_out=False, _timeout=20, _iter=True):
+            refs = line.strip().split("\t")
+            if refs[1].endswith('{}'): # ignore github releases
                 continue
             if refs[1].startswith('refs/pull'): # ignore PR
                 continue
@@ -48,6 +47,7 @@ def git_ls_remote_branches_tags(git_repo, log_file=None):
             val = refs[1].replace('refs/heads/', 'branch: ').replace('refs/tags/', 'tag: ')
             revs.append( (key, val) )
     except Exception as e:
+        print str(e)
         if log_file:
             log('git_ls_remote_branches_tags("{git}") call failed: {ex}'.format(git=git_repo, ex=str(e)), log_file)
     return revs
