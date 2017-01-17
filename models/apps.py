@@ -194,6 +194,10 @@ apps_schema = {
                            'required': True},
             'ami_name': {'type': 'string',
                          'readonly': True},
+            'container': {'type': 'string',
+                          'regex': '',
+                          'required': False
+                          },
             'subnet_id': {'type': 'string',
                           'regex': '^subnet-[a-z0-9]*$',
                           'required': True}

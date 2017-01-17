@@ -7,6 +7,7 @@ from settings import cloud_connections, DEFAULT_PROVIDER
 from libs.deploy import touch_app_manifest
 from libs.image_builder_aws import AWSImageBuilder
 from libs.provisioner import GalaxyNoMatchingRolesException, GalaxyBadRequirementPathException
+from container import Lxd
 
 COMMAND_DESCRIPTION = "Build Image"
 RELATED_APP_FIELDS = ['features', 'build_infos']
@@ -65,6 +66,13 @@ class Buildimage():
         except (GalaxyNoMatchingRolesException, GalaxyBadRequirementPathException, GCallException) as e:
             self._worker.update_status("aborted", message=str(e))
             return
+
+        container = ""
+        if self._app['build_infos']['container']:
+            log("Generating a new container", self._log_file)
+            container = Lxd(self._app, self._job, self._config, self._log_file)
+            container = container._build_image()
+
         if ami_id is not "ERROR":
             touch_app_manifest(self._app, self._config, self._log_file)
             log("Update app in MongoDB to update AMI: {0}".format(ami_id), self._log_file)
@@ -88,4 +96,6 @@ class Buildimage():
                 self._worker.update_status("done")
         else:
             log("ERROR: ami_id not found. The packer process had maybe fail.", self._log_file)
+            if container:
+                container._clean()
             self._worker.update_status("failed")

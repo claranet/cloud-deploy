@@ -22,6 +22,11 @@ ses_settings:
 bucket_s3: ghost-eu-west-1-***REMOVED***
 bucket_region: eu-west-1
 
+# Activate container for buildpack deployment
+# container_debug: False
+# container_endpoint: https://cloud-images.ubuntu.com/daily
+# container_endpoint: localhost
+
 # Configuration manager options
 features_provisioners:
     salt: # salt by default, might be ansible

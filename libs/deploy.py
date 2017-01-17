@@ -9,6 +9,7 @@ from copy import copy
 import sys
 import os
 import tempfile
+from container import Lxd
 from fabric.api import execute as fab_execute
 from fabfile import deploy, executescript
 from ghost_tools import config
@@ -18,8 +19,7 @@ from ghost_log import log
 from ghost_tools import GCallException, gcall
 from settings import cloud_connections, DEFAULT_PROVIDER
 
-
-def execute_module_script_on_ghost(app, module, script_name, script_friendly_name, clone_path, log_file):
+def execute_module_script_on_ghost(app, module, script_name, script_friendly_name, clone_path, log_file, job, config):
     """ Executes the given script on the Ghost instance
 
         :param app: Ghost application
@@ -42,11 +42,14 @@ def execute_module_script_on_ghost(app, module, script_name, script_friendly_nam
                 f.write(script_source)
 
         script_env = os.environ.copy()
-        script_env.update(get_ghost_env_variables(app, module))
-
-        gcall('bash %s' % script_path, '%s: Execute' % script_friendly_name, log_file, env=script_env)
-        gcall('du -hs .', 'Display current build directory disk usage', log_file)
-        gcall('rm -vf %s' % script_path, '%s: Done, cleaning temporary file' % script_friendly_name, log_file)
+        script_env.update(get_ghost_env_variables(app, module, app.get('blue_green', {}).get('color', ''), None))
+        if script_name is 'build_pack' and app['build_infos']['container']:
+            lxd = Lxd(app, job, config, log_file)
+            lxd = lxd._deploy(script_path,module)
+        else :
+            gcall('bash %s' % script_path, '%s: Execute' % script_friendly_name, log_file, env=script_env)
+            gcall('du -hs .', 'Display current build directory disk usage', log_file)
+            gcall('rm -vf %s' % script_path, '%s: Done, cleaning temporary file' % script_friendly_name, log_file)
 
 
 def get_path_from_app(app):
