@@ -92,10 +92,24 @@ def check_app_manifest(app, config, log_file):
     bucket = conn.get_bucket(config['bucket_s3'])
     key = bucket.get_key(key_path)
     if not key:
+        log("ERROR: MANIFEST [{0}] not found.' ".format(key_path), log_file)
         return False
     manifest = key.get_contents_as_string()
     if sys.version > '3':
         manifest = manifest.decode('utf-8')
-    nb_deployed_modules = len(manifest.strip().split('\n'))
+    deployed_modules = manifest.strip().split('\n')
+
+    nb_deployed_modules = len(deployed_modules)
     nb_app_modules = len(app['modules'])
-    return nb_deployed_modules == nb_app_modules
+    if not nb_deployed_modules == nb_app_modules:
+        log("ERROR: Configured modules in the app [{0}] doesn't match number of deployed modules according to the MANIFEST.' ".format(app['_id']), log_file)
+        return False
+
+    for idx, up_module in enumerate(deployed_modules):
+        mod = up_module.strip().split(':')
+        # Deployed and app modules should be same
+        if not mod[0] == app['modules'][idx]['name']:
+            log("ERROR: Deployed module name ({0}) doesn't match the configured module name ({1}) ".format(mod[0], app['modules'][idx]['name']), log_file)
+            return False
+
+    return True
