@@ -36,19 +36,27 @@ def get_elb_by_name(elb_conn3, elb_name):
     """
         :return the found ELB object
     """
-    elb = elb_conn3.describe_load_balancers(
-        LoadBalancerNames=[elb_name])['LoadBalancerDescriptions'][0]
-    return elb
+    try:
+        elb = elb_conn3.describe_load_balancers(
+            LoadBalancerNames=[elb_name])['LoadBalancerDescriptions'][0]
+        return elb
+    except:
+        return None
 
-def copy_elb(elb_conn3, elb_name, source_elb_name, special_tag):
+def copy_elb(elb_conn3, elb_name, source_elb_name, special_tag, log_file):
     """ Copy an existing ELB, currently copies basic configuration
         (Subnets, SGs, first listener), health check and tags.
 
         :param elb_conn3: boto3 elb client
         :param elb_name string: created ELB name
         :param source_elb_name string: source ELB name
+        :param log_file string: log file
         :return created ELB endpoint
     """
+    dest_elb = get_elb_by_name(elb_conn3, elb_name)
+    if dest_elb:
+        log("  INFO: ELB {0} already available, no copy needed".format(elb_name), log_file)
+        return dest_elb['DNSName']
     source_elb = get_elb_by_name(elb_conn3, source_elb_name)
     source_elb_listener = source_elb['ListenerDescriptions'][0]['Listener']
     source_elb_tags = elb_conn3.describe_tags(
@@ -112,6 +120,7 @@ def destroy_elb(elb_conn3, elb_name, log_file):
 
         :param  elb_conn3:  boto3 connection object to the ELB service.
         :param  elb_name  string: The name of the Elastic Load Balancer.
+        :param  log_file string: log file
     """
     log("  INFO: Destroying ELB {0}".format(elb_name), log_file)
     response = elb_conn3.delete_load_balancer(LoadBalancerName=elb_name)
