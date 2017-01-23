@@ -15,7 +15,7 @@ logging.basicConfig(level=logging.DEBUG, format='%(asctime)s %(levelname)s %(mes
 
 from settings import MONGO_DBNAME, MONGO_HOST, MONGO_PORT, REDIS_HOST
 
-from ghost_tools import config, get_rq_name_from_app, get_app_from_rq_name
+from ghost_tools import config, get_rq_name_from_app, get_app_from_rq_name, get_app_colored_env
 
 def create_rq_queue_and_worker(rqworker_name, ghost_rq_queues, ghost_rq_workers, ghost_redis_connection):
     ghost_rq_queues[rqworker_name] = Queue(name=rqworker_name, connection=ghost_redis_connection, default_timeout=3600)
@@ -106,7 +106,8 @@ def manage_rq_workers():
 
                 if rqworker_app['env'] != '*' and rqworker_app['role'] != '*':
                     for app in apps:
-                        if app['env'] == rqworker_app['env'] and app['name'] == rqworker_app['name'] and app['role'] == rqworker_app['role']:
+                        env = get_app_colored_env(app)
+                        if env == rqworker_app['env'] and app['name'] == rqworker_app['name'] and app['role'] == rqworker_app['role']:
                             found = True
                     if not found:
                         delete_rq_queue_and_worker(rqworker_name, ghost_rq_queues, ghost_rq_workers)

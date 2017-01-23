@@ -113,3 +113,14 @@ def check_app_manifest(app, config, log_file):
             return False
 
     return True
+
+def abort_if_other_bluegreen_job(running_jobs, _worker, _message, _log_file):
+    """
+    Abort the given job if other Blue/Green jobs are running for the current application
+    """
+    if len(running_jobs):
+        for rjob in running_jobs:
+            log("Another job is running and should be finished before processing this current one: Job({id})/Command({cmd})/AppId({app})".format(id=rjob['_id'], cmd=rjob['command'], app=rjob['app_id']), _log_file)
+        _worker.update_status("aborted", message=_message)
+        return True
+    return False
