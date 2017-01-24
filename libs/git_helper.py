@@ -29,3 +29,34 @@ def git_remap_submodule(git_local_repo, submodule_repo, submodule_mirror, log_fi
     filedata = filedata.replace(submodule_repo, submodule_mirror)
     with open(git_local_repo + '/.gitmodules', 'w') as submodule_config:
         submodule_config.write(filedata)
+
+def git_ls_remote_branches_tags(git_repo, log_file=None):
+    """
+    This function trigger the `ls-remote` git command on the remote git repo
+    and retrieve all available branches and tags, sorted by name.
+    """
+    revs = []
+    branches = []
+    tags = []
+    try:
+        for line in git("--no-pager", "ls-remote", git_repo, _tty_out=False, _timeout=20, _iter=True):
+            refs = line.strip().split("\t")
+            if refs[1].endswith('{}'): # ignore github releases
+                continue
+            if refs[1].startswith('refs/pull'): # ignore PR
+                continue
+            if refs[1].startswith('refs/remotes'): # ignore remotes
+                continue
+            key = refs[1].replace('refs/heads/', '').replace('refs/tags/', '')
+            val = refs[1].replace('refs/heads/', 'branch: ').replace('refs/tags/', 'tag: ')
+            if val.startswith('tag'):
+                tags.append( (key, val) )
+            elif val.startswith('branch'):
+                branches.append( (key, val) )
+            else:
+                revs.append( (key, val) )
+    except Exception as e:
+        print str(e)
+        if log_file:
+            log('git_ls_remote_branches_tags("{git}") call failed: {ex}'.format(git=git_repo, ex=str(e)), log_file)
+    return revs + sorted(tags, key=lambda k: k[0], reverse=True) + sorted(branches, key=lambda k: k[0])
