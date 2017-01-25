@@ -60,8 +60,9 @@ class Packer:
 
         log("Cloning [{r}] repo with local mirror reference".format(r=salt_formulas_repo), self._log_file)
         git.clone(['--reference', SALT_LOCAL_MIRROR, salt_formulas_repo, '-b', config.get('salt_formulas_branch', 'master'), '--single-branch', SALT_LOCAL_TREE + self.unique + '/'])
-        if config.get('salt_formulas_branch'):
+        if os.path.exists(SALT_LOCAL_TREE + self.unique + '/.gitmodules'):
             os.chdir(SALT_LOCAL_TREE + self.unique)
+            log("Re-map submodules on local git mirror", self._log_file)
             git_remap_submodule(SALT_LOCAL_TREE + self.unique, zabbix_repo, SALT_LOCAL_MIRROR, self._log_file)
             log("Submodule init and update", self._log_file)
             git.submodule('init')
