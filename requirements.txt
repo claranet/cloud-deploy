@@ -4,7 +4,6 @@
 #
 #    pip-compile --output-file requirements.txt requirements.in
 #
--e git+git://github.com/nicolaiarocci/eve-swagger.git@6e976ef47dc40b9ec6aff87b7656f56c2ac9b014#egg=eve-swagger
 argparse==1.4.0
 arrow==0.7.0              # via rq-dashboard
 awscli==1.11.5
@@ -20,6 +19,7 @@ colorama==0.3.7           # via awscli
 docutils==0.12            # via awscli, botocore
 dominate==2.2.0           # via flask-bootstrap
 ecdsa==0.13               # via paramiko
+eve-swagger==0.0.6
 Eve==0.6.3
 events==0.2.1             # via eve
 Fabric==1.11.1
@@ -42,6 +42,7 @@ markupsafe==0.23          # via eve, jinja2
 paramiko==1.16.0          # via fabric
 pip-tools==1.7.0
 pluggy==0.4.0             # via tox
+psutil==4.3.0
 py==1.4.31                # via tox
 pyasn1==0.1.9             # via rsa
 pycparser==2.14           # via cffi
@@ -58,7 +59,7 @@ rq==0.5.6
 rsa==3.4.2                # via awscli
 s3transfer==0.1.8         # via awscli, boto3
 setproctitle==1.1.9
-sh==1.11
+sh==1.12.9
 simplejson==3.8.2         # via eve
 six==1.10.0
 subprocess32==3.2.7

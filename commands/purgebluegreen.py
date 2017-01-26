@@ -1,13 +1,14 @@
 from fabric.colors import green as _green, yellow as _yellow, red as _red
 
 from ghost_log import log
-from ghost_tools import get_aws_connection_data, get_app_friendly_name, GCallException
+from ghost_tools import get_aws_connection_data, get_app_friendly_name, GCallException, boolify, get_running_jobs
 from settings import cloud_connections, DEFAULT_PROVIDER
 
 from ghost_aws import check_autoscale_exists, get_autoscaling_group_and_processes_to_suspend, suspend_autoscaling_group_processes, resume_autoscaling_group_processes
 from libs.elb import get_elb_instance_status_autoscaling_group, get_elb_from_autoscale, destroy_elb, register_elb_into_autoscale
 from libs.autoscaling import get_instances_from_autoscaling, flush_instances_update_autoscale
-from libs.blue_green import get_blue_green_apps
+from libs.blue_green import get_blue_green_apps, get_blue_green_destroy_temporary_elb_config
+from libs.blue_green import abort_if_other_bluegreen_job
 
 COMMAND_DESCRIPTION = "Purge the Blue/Green env"
 
@@ -57,11 +58,18 @@ class Purgebluegreen():
 
     def execute(self):
         log(_green("STATE: Started"), self._log_file)
+        destroy_temporary_elb_option = self._job['options'][0] if 'options' in self._job and len(self._job['options']) > 0 else get_blue_green_destroy_temporary_elb_config(self._config)
+        destroy_temporary_elb_option = boolify(destroy_temporary_elb_option)
+
         online_app, offline_app = get_blue_green_apps(self._app,
                                                       self._worker._db.apps,
                                                       self._log_file)
         if not offline_app:
             self._worker.update_status("aborted", message=self._get_notification_message_aborted(self._app, "Blue/green is not enabled on this app or not well configured"))
+            return
+
+        running_jobs = get_running_jobs(self._db, online_app['_id'], offline_app['_id'], self._job['_id'])
+        if abort_if_other_bluegreen_job(running_jobs, self._worker, self._get_notification_message_aborted(self._app, "Please wait until the end of the current jobs before triggering a Blue/green operation"), self._log_file):
             return
 
         # Check ASG
@@ -108,10 +116,13 @@ class Purgebluegreen():
             flush_instances_update_autoscale(as_conn3, self._cloud_connection, offline_app, self._log_file)
 
             # Destroy temp ELB
-            if temp_elbs[0].startswith('bgtmp-'):
-                destroy_elb(elb_conn3, temp_elbs[0], self._log_file)
+            if destroy_temporary_elb_option:
+                if temp_elbs[0].startswith('bgtmp-'):
+                    destroy_elb(elb_conn3, temp_elbs[0], self._log_file)
+                else:
+                    log(_yellow(" WARNING: Cannot delete temporary ELB '{0}' because it was not created by Ghost".format(temp_elbs[0])), self._log_file)
             else:
-                log(_yellow(" WARNING: Cannot delete temporary ELB '{0}' because it was not created by Ghost".format(temp_elbs[0])), self._log_file)
+                log(_yellow(" WARNING: Keeping temporary ELB '{0}'".format(temp_elbs[0])), self._log_file)
 
             # Update App Autoscale values, next buildimage or updateautoscaling should not set values different from 0
             self._update_app_autoscale_options(offline_app, self._log_file)

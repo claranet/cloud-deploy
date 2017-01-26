@@ -28,6 +28,9 @@ def get_blue_green_config(config, command, key, default_value):
         return default_value
     return command_section.get(key, default_value)
 
+def get_blue_green_destroy_temporary_elb_config(config):
+    return get_blue_green_config(config, 'purgebluegreen', 'destroy_temporary_elb', True)
+
 def get_blue_green_from_app(app):
     """
     Returns the blue_green object if exists and it's color field if exists
@@ -89,10 +92,35 @@ def check_app_manifest(app, config, log_file):
     bucket = conn.get_bucket(config['bucket_s3'])
     key = bucket.get_key(key_path)
     if not key:
+        log("ERROR: MANIFEST [{0}] not found.' ".format(key_path), log_file)
         return False
     manifest = key.get_contents_as_string()
     if sys.version > '3':
         manifest = manifest.decode('utf-8')
-    nb_deployed_modules = len(manifest.strip().split('\n'))
+    deployed_modules = manifest.strip().split('\n')
+
+    nb_deployed_modules = len(deployed_modules)
     nb_app_modules = len(app['modules'])
-    return nb_deployed_modules == nb_app_modules
+    if not nb_deployed_modules == nb_app_modules:
+        log("ERROR: Configured modules in the app [{0}] doesn't match number of deployed modules according to the MANIFEST.' ".format(app['_id']), log_file)
+        return False
+
+    for idx, up_module in enumerate(deployed_modules):
+        mod = up_module.strip().split(':')
+        # Deployed and app modules should be same
+        if not mod[0] == app['modules'][idx]['name']:
+            log("ERROR: Deployed module name ({0}) doesn't match the configured module name ({1}) ".format(mod[0], app['modules'][idx]['name']), log_file)
+            return False
+
+    return True
+
+def abort_if_other_bluegreen_job(running_jobs, _worker, _message, _log_file):
+    """
+    Abort the given job if other Blue/Green jobs are running for the current application
+    """
+    if len(running_jobs):
+        for rjob in running_jobs:
+            log("Another job is running and should be finished before processing this current one: Job({id})/Command({cmd})/AppId({app})".format(id=rjob['_id'], cmd=rjob['command'], app=rjob['app_id']), _log_file)
+        _worker.update_status("aborted", message=_message)
+        return True
+    return False

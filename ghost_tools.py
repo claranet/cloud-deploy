@@ -6,6 +6,7 @@ from subprocess import call
 import yaml
 import copy
 from sh import git
+from datetime import datetime, timedelta
 
 from jinja2 import Environment, FileSystemLoader
 
@@ -120,6 +121,13 @@ def gcall(args, cmd_description, log_fd, dry_run=False, env=None):
         if (ret != 0):
             raise GCallException("ERROR: %s" % cmd_description)
 
+def get_app_colored_env(app):
+    color = app['blue_green'].get('color', None) if app.get('blue_green') else None
+    if color:
+        return '{env}-{color}'.format(color=color, env=app['env'])
+    else:
+        return app['env']
+
 def get_rq_name_from_app(app):
     """
     Returns an RQ name for a given ghost app.
@@ -147,9 +155,9 @@ def get_rq_name_from_app(app):
     'default:*:*'
     """
     rq_worker_strategy = config.get('rq_worker_strategy', 'one_worker_per_app')
-    env=app['env']
-    name=app['name']
-    role=app['role']
+    env = get_app_colored_env(app)
+    name = app['name']
+    role = app['role']
 
     if rq_worker_strategy == 'one_worker_per_env':
         name = role = '*'
@@ -303,3 +311,17 @@ def boolify(val):
     if isinstance(val, bool):
         return val
     return val in ['True', 'true', '1']
+
+def get_running_jobs(_db, app_id_1, app_id_2, current_job):
+    """
+    Get all running jobs for given app Ids
+    """
+    finished_states = ["done", "failed", "aborted", "cancelled"]
+    date_limit = datetime.utcnow() - timedelta(hours=3)
+    jobs = _db.jobs.find({
+        "$or": [{"app_id": app_id_1}, {"app_id": app_id_2}],
+        "_id": {"$ne": current_job},
+        "status": {"$nin": finished_states},
+        "_created": {"$gt": date_limit}
+    })
+    return list(jobs)

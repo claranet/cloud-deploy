@@ -17,7 +17,7 @@
     This library works with one or more Load Balancers per Autoscaling Group.
 
     For AutoScaling Group with one or more Haproxy as Load Balancer, the safe deployment process works with Hapi only:
-    https://bitbucket.org/mattboret/hapi
+    https://bitbucket.org/morea/ghost.hapi.s4m/src
 
 """
 

@@ -60,8 +60,9 @@ class Packer:
 
         log("Cloning [{r}] repo with local mirror reference".format(r=salt_formulas_repo), self._log_file)
         git.clone(['--reference', SALT_LOCAL_MIRROR, salt_formulas_repo, '-b', config.get('salt_formulas_branch', 'master'), '--single-branch', SALT_LOCAL_TREE + self.unique + '/'])
-        if config.get('salt_formulas_branch'):
+        if os.path.exists(SALT_LOCAL_TREE + self.unique + '/.gitmodules'):
             os.chdir(SALT_LOCAL_TREE + self.unique)
+            log("Re-map submodules on local git mirror", self._log_file)
             git_remap_submodule(SALT_LOCAL_TREE + self.unique, zabbix_repo, SALT_LOCAL_MIRROR, self._log_file)
             log("Submodule init and update", self._log_file)
             git.submodule('init')
@@ -112,23 +113,12 @@ class Packer:
             'tags': self.packer_config['tags']
         }]
 
-        if self.packer_config['skip_salt_bootstrap'] in ['true', '1', 'y', 'yes', 'True']:
-            pre_salt_script = [ "echo 'salt bootstrap skipped'" ]
-        else:
-            pre_salt_script = [
-                "sudo DEBIAN_FRONTEND=noninteractive apt-get --assume-yes -o Dpkg::Options::='--force-confdef' -o Dpkg::Options::='--force-confold' update",
-                "sudo DEBIAN_FRONTEND=noninteractive apt-get --assume-yes -o Dpkg::Options::='--force-confdef' -o Dpkg::Options::='--force-confold' install curl"
-            ]
         formatted_env_vars = self.packer_config['ghost_env_vars'] + ['%s=%s' % (envvar['var_key'], envvar['var_value']) for envvar in self.packer_config['custom_env_vars']]
         provisioners = [
         {
             'type': 'shell',
             'environment_vars': formatted_env_vars,
             'script': hooks['pre_buildimage']
-        },
-        {
-            'type': 'shell',
-            'inline': pre_salt_script
         },
         {
             'type': 'salt-masterless',
