@@ -42,7 +42,10 @@ class Notification():
     def send_slack_notification(self, config, msg, log_file=None):
         try:
             slack_url = config.get('webhooks_endpoint')
-            notif = "{prefix}{msg}".format(prefix=config.get('message_prefix', ''), msg=msg)
+            if config.get('ghost_base_url'):
+                notif = "[<{ghost_url}|{prefix}>]{msg}".format(ghost_url=config['ghost_base_url'], prefix=config.get('message_prefix', 'Ghost'), msg=msg)
+            else:
+                notif = "[{prefix}]{msg}".format(prefix=config.get('message_prefix', 'Ghost'), msg=msg)
             payload = {
                 "channel": config.get('channel', '#ghost-deployments'),
                 "username": config.get('bot_name', 'Ghost-bot'),

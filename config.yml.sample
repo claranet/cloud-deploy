@@ -126,4 +126,5 @@ slack_config:
     channel: '#ghost-deployments'
     bot_icon: ':ghost:'
     bot_name: 'Ghost-bot'
-    message_prefix: '[Ghost Dev]'
+    ghost_base_url: https://demo.ghost.morea.fr
+    message_prefix: 'Ghost demo'
