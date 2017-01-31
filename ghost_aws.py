@@ -243,7 +243,6 @@ def update_auto_scale(cloud_connection, app, launch_config, log_file, update_as_
             AutoScalingGroupName=app['autoscale']['name'],
             MinSize=app['autoscale']['min'],
             MaxSize=app['autoscale']['max'],
-            DesiredCapacity=app['autoscale']['current'],
             AvailabilityZones=az,
             VPCZoneIdentifier=','.join(app['environment_infos']['subnet_ids'])
         )
