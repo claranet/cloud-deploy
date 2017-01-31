@@ -127,7 +127,7 @@ class Command:
         notif = Notification()
         slack_config = self._config.get('slack_config')
         if slack_config:
-            notif.send_slack_notification(slack_config, slack_msg) #, self.log_file) # Log file for debug purpose only 
+            notif.send_slack_notification(slack_config, slack_msg, self.job) #, self.log_file) # Log file for debug purpose only
 
 
     def execute(self, job_id):

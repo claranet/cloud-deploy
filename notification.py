@@ -39,11 +39,15 @@ class Notification():
         result = connection.send_raw_email(msg.as_string(), source=msg['From'], destinations=[msg['To']])
         return(result)
 
-    def send_slack_notification(self, config, msg, log_file=None):
+    def send_slack_notification(self, config, msg, job, log_file=None):
         try:
             slack_url = config.get('webhooks_endpoint')
             if config.get('ghost_base_url'):
-                notif = "[<{ghost_url}|{prefix}>]{msg}".format(ghost_url=config['ghost_base_url'], prefix=config.get('message_prefix', 'Ghost'), msg=msg)
+                notif = "[<{ghost_url}|{prefix}>]{msg} <{ghost_url}/web/jobs/{jobId}|{jobId}>".format(
+                    ghost_url=config['ghost_base_url'],
+                    prefix=config.get('message_prefix', 'Ghost'),
+                    msg=msg,
+                    jobId=str(job['_id']))
             else:
                 notif = "[{prefix}]{msg}".format(prefix=config.get('message_prefix', 'Ghost'), msg=msg)
             payload = {
