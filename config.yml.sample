@@ -121,10 +121,9 @@ blue_green:
         destroy_temporary_elb: true
 
 # Slack notifications
-slack_config:
+slack_configs:
     webhooks_endpoint: https://hooks.slack.com/services/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 # Morea #ghost-deployments webhook
-    channel: '#ghost-deployments'
-    bot_icon: ':ghost:'
-    bot_name: 'Ghost-bot'
     ghost_base_url: https://demo.ghost.morea.fr
-    message_prefix: 'Ghost demo'
+    channel: '#ghost-deployments'
+    bot_name: 'Ghost'
+    message_prefix: 'Ghost job triggered'

@@ -3,6 +3,7 @@ import os
 import sys
 import traceback
 import yaml
+from sh import head, tail
 
 from redis import Redis
 from rq import get_current_job, Connection
@@ -96,8 +97,12 @@ class Command:
         log(message, self.log_file)
         self._db.jobs.update({ '_id': self.job['_id']}, {'$set': {'status': status, 'message': message, '_updated': datetime.now()}})
 
-    def _init_log_file(self):
+    def _get_log_path(self):
         log_path = "{log_path}/{job_id}.txt".format(log_path=LOG_ROOT, job_id=self._worker_job.id)
+        return log_path
+
+    def _init_log_file(self):
+        log_path = self._get_log_path()
 
         # As this method is only supposed to be called in forked rqworker process,
         # it is safe to redirect sys.stdout and sys.stderr to the job's log file.
@@ -124,10 +129,14 @@ class Command:
             pass
 
     def _slack_notification_action(self, slack_msg):
+        log_path = self._get_log_path()
         notif = Notification()
-        slack_config = self._config.get('slack_config')
+        slack_config = self._config.get('slack_configs')
+#        job_log_head = ''.join(head('-n', '10', log_path))
+        job_log_tail = ''.join(tail('-n', '5', log_path))
+        job_log = '[...]\n' + job_log_tail
         if slack_config:
-            notif.send_slack_notification(slack_config, slack_msg, self.job) #, self.log_file) # Log file for debug purpose only
+            notif.send_slack_notification(slack_config, slack_msg, self.app, self.job, job_log) #, self.log_file) # Log file for debug purpose only
 
 
     def execute(self, job_id):

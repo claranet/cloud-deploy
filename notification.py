@@ -39,7 +39,7 @@ class Notification():
         result = connection.send_raw_email(msg.as_string(), source=msg['From'], destinations=[msg['To']])
         return(result)
 
-    def send_slack_notification(self, config, msg, job, log_file=None):
+    def send_slack_notification(self, config, msg, app, job, job_log, log_file=None):
         try:
             slack_url = config.get('webhooks_endpoint')
             if config.get('ghost_base_url'):
@@ -50,11 +50,63 @@ class Notification():
                     jobId=str(job['_id']))
             else:
                 notif = "[{prefix}]{msg}".format(prefix=config.get('message_prefix', 'Ghost'), msg=msg)
+            fields = [
+                {
+                    "title": "Application",
+                    "value": app['name'],
+                    "short": True
+                },
+                {
+                    "title": "Environnement",
+                    "value": app['env'],
+                    "short": True
+                },
+                {
+                    "title": "Role",
+                    "value": app['role'],
+                    "short": True
+                },
+                {
+                    "title": "Command",
+                    "value": job['command'],
+                    "short": True
+                },
+                {
+                    "title": "User",
+                    "value": job['user'],
+                    "short": True
+                },
+                {
+                    "title": "Status",
+                    "value": job['status'],
+                    "short": True
+                },
+                {
+                    "title": "Message",
+                    "value": job['message'],
+                    "short": False
+                },
+                {
+                    "title": "Log extract",
+                    "value": job_log,
+                    "short": False
+                }
+            ]
+
             payload = {
                 "channel": config.get('channel', '#ghost-deployments'),
-                "username": config.get('bot_name', 'Ghost-bot'),
-                "text": notif,
-                "icon_emoji": config.get('bot_icon', ':ghost:')
+                "username": config.get('bot_name', 'Ghost'),
+                "icon_url": config.get('bot_icon', 'https://www.morea.fr/ghost_logo_mini.png'),
+                "attachments": [
+                {
+                    "fallback": notif,
+                    "pretext": config.get('message_prefix', 'Ghost job triggered'),
+                    "color": "danger" if job['status'] == 'failed' else "good",
+                    "fields": fields,
+                    "title": "Job #{jobId} triggered by {user}".format(jobId=str(job['_id']), user=job['user']),
+                    "title_link": "{ghost_url}/web/jobs/{jobId}".format(ghost_url=config['ghost_base_url'], jobId=str(job['_id'])),
+                    "footer": "Created at {created}".format(created=job['_created']),
+                }]
             }
             r = requests.post(slack_url, json.dumps(payload), headers={'content-type': 'application/json'})
             if log_file:
