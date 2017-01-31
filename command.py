@@ -45,7 +45,16 @@ def format_notif(app, job):
                                       user=job['user'],
                                       status=job['status'],
                                       message=job['message'])
-    return title, message
+    slack_tpl = "{emoji} [{app_name}][*{app_env}*][{app_role}] *{command}* job triggered by [*{user}*] is *{status}* (message: {message})"
+    slack_msg = slack_tpl.format(emoji=':warning:' if job['status'] == 'failed' else ':ok_hand:',
+                                 app_name=app['name'],
+                                 app_env=app['env'],
+                                 app_role=app['role'],
+                                 command=job['command'],
+                                 user=job['user'],
+                                 status=job['status'],
+                                 message=job['message'])
+    return title, message, slack_msg
 
 class Command:
     _config = None
@@ -100,10 +109,9 @@ class Command:
         self.log_file.close()
 
 
-    def _mail_log_action(self):
+    def _mail_log_action(self, subject, body):
         ses_settings = self._config['ses_settings']
         notif = Notification(aws_access_key=ses_settings['aws_access_key'], aws_secret_key=ses_settings['aws_secret_key'], region=ses_settings['region'])
-        subject, body = format_notif(self.app, self.job)
         log = "{log_path}/{job_id}.txt".format(log_path=LOG_ROOT, job_id=self._worker_job.id)
         log_stat = os.stat(log)
         if log_stat.st_size > 512000:
@@ -112,6 +120,12 @@ class Command:
         for mail in self.app['log_notifications']:
             notif.send_mail(From=ses_settings.get('mail_from', MAIL_LOG_FROM_DEFAULT), To=mail, subject=subject, body=body, attachments=[log])
             pass
+
+    def _slack_notification_action(self, slack_msg):
+        notif = Notification()
+        slack_config = self._config.get('slack_config')
+        if slack_config:
+            notif.send_slack_notification(slack_config, slack_msg) #, self.log_file) # Log file for debug purpose only 
 
 
     def execute(self, job_id):
@@ -139,7 +153,9 @@ class Command:
             self.update_status("failed", str(message))
             raise
         finally:
+            subject, body, slack_msg = format_notif(self.app, self.job)
+            self._slack_notification_action(slack_msg)
             self._close_log_file()
-            self._mail_log_action()
+            self._mail_log_action(subject, body)
             self._disconnect_db()
 

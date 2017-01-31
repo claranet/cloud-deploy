@@ -2,7 +2,12 @@ from boto import ses
 from email.mime.text import MIMEText
 from email.mime.application import MIMEApplication
 from email.mime.multipart import MIMEMultipart
+
+from ghost_log import log
+
 import ntpath
+import requests
+import json
 
 class Notification():
     _aws_access_key = None
@@ -34,3 +39,19 @@ class Notification():
         result = connection.send_raw_email(msg.as_string(), source=msg['From'], destinations=[msg['To']])
         return(result)
 
+    def send_slack_notification(self, config, msg, log_file=None):
+        try:
+            slack_url = config.get('webhooks_endpoint')
+            notif = "{prefix}{msg}".format(prefix=config.get('message_prefix', ''), msg=msg)
+            payload = {
+                "channel": config.get('channel', '#ghost-deployments'),
+                "username": config.get('bot_name', 'Ghost-bot'),
+                "text": notif,
+                "icon_emoji": config.get('bot_icon', ':ghost:')
+            }
+            r = requests.post(slack_url, json.dumps(payload), headers={'content-type': 'application/json'})
+            if log_file:
+                log("Slack post status : {0} - {1}".format(r.status_code, r.text), log_file)
+        except Exception as e:
+            if log_file:
+                log("Error sending notification to Slack (%s)" % str(e), log_file)

@@ -119,3 +119,11 @@ blue_green:
         healthcheck_healthy_threshold: 2
     purgebluegreen:
         destroy_temporary_elb: true
+
+# Slack notifications
+slack_config:
+    webhooks_endpoint: https://hooks.slack.com/services/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 # Morea #ghost-deployments webhook
+    channel: '#ghost-deployments'
+    bot_icon: ':ghost:'
+    bot_name: 'Ghost-bot'
+    message_prefix: '[Ghost Dev]'
