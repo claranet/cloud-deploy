@@ -122,8 +122,15 @@ blue_green:
 
 # Slack notifications
 slack_configs:
-    webhooks_endpoint: https://hooks.slack.com/services/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 # Morea #ghost-deployments webhook
-    ghost_base_url: https://demo.ghost.morea.fr
-    channel: '#ghost-deployments'
-    bot_name: 'Ghost'
-    message_prefix: 'Ghost job triggered'
+    -
+        webhooks_endpoint: https://hooks.slack.com/services/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 # Morea #ghost-deployments webhook
+        ghost_base_url: https://demo.ghost.morea.fr
+        channel: '#ghost-deployments'
+        bot_name: 'Ghost'
+        message_prefix: 'Ghost job triggered'
+    -
+        webhooks_endpoint: https://hooks.slack.com/services/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 # Morea #ghost-deployments webhook
+        ghost_base_url: https://demo.ghost.morea.fr
+        channel: '#ghost-deployments'
+        bot_name: 'Ghost-config-2'
+        message_prefix: 'Ghost'
