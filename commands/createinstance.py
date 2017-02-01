@@ -33,7 +33,7 @@ class Createinstance():
         blue_green, self._color = get_blue_green_from_app(self._app)
 
     def execute(self):
-        subnet_id = self._job['options'][0] if 'options' in self._job and len(self._job['options']) > 0 else None
+        subnet_id = self._job['options'][0] if 'options' in self._job and len(self._job['options']) > 0 else self._app['environment_infos']['subnet_ids'][0]
         private_ip_address = self._job['options'][1] if 'options' in self._job and len(self._job['options']) > 1 else None
 
         try:
