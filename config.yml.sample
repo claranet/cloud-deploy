@@ -1,3 +1,5 @@
+ghost_base_url: https://demo.ghost.morea.fr
+
 # Need to be set when used with docker-compose (docker link use DNS to map containers)
 api_base_url: http://localhost:5000
 redis_host: localhost
@@ -121,16 +123,15 @@ blue_green:
         destroy_temporary_elb: true
 
 # Slack notifications
+# List of Slack configurations used to notify on Job triggered
 slack_configs:
     -
-        webhooks_endpoint: https://hooks.slack.com/services/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 # Morea #ghost-deployments webhook
-        ghost_base_url: https://demo.ghost.morea.fr
+        webhooks_endpoint: https://hooks.slack.com/services/XX_KEY_XX # Morea #ghost-deployments webhook
         channel: '#ghost-deployments'
         bot_name: 'Ghost'
         message_prefix: 'Ghost job triggered'
-    -
-        webhooks_endpoint: https://hooks.slack.com/services/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 # Morea #ghost-deployments webhook
-        ghost_base_url: https://demo.ghost.morea.fr
-        channel: '#ghost-deployments'
-        bot_name: 'Ghost-config-2'
-        message_prefix: 'Ghost'
+#    -
+#        webhooks_endpoint: https://hooks.slack.com/services/XX_KEY_XX
+#        channel: '#ghost-deployments'
+#        bot_name: 'Ghost-config-2'
+#        message_prefix: 'Ghost'

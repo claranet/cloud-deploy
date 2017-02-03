@@ -132,11 +132,12 @@ class Command:
         log_path = self._get_log_path()
         notif = Notification()
         slack_configs = self._config.get('slack_configs')
-#        job_log_head = ''.join(head('-n', '10', log_path))
+        ghost_base_url = self._config.get('ghost_base_url')
         job_log_tail = ''.join(tail('-n', '5', log_path))
         job_log = '[...]\n' + job_log_tail
         if slack_configs and len(slack_configs):
             for slack_conf in slack_configs:
+                slack_conf['ghost_base_url'] = ghost_base_url
                 notif.send_slack_notification(slack_conf, slack_msg, self.app, self.job, job_log) #, self.log_file) # Log file for debug purpose only
 
 
