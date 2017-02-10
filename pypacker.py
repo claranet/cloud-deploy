@@ -1,17 +1,17 @@
 import sh
 from sh import git
 from subprocess32 import Popen, PIPE
-import yaml
 import json
 import os
 
 from ghost_log import log
 from libs.git_helper import git_wait_lock, git_remap_submodule
+from libs.provisioner_salt import ProvisionerSalt
 
 PACKER_JSON_PATH="/tmp/packer/"
 PACKER_LOGDIR="/var/log/ghost/packer"
-SALT_LOCAL_TREE="/tmp/salt/"
-SALT_LOCAL_MIRROR="/ghost/.mirrors/salt-zabbix-mirror/"
+PROVISIONER_LOCAL_MIRROR="/ghost/.mirrors"
+
 SALT_FORMULAS_REPO="git@bitbucket.org:morea/morea-salt-formulas.git"
 ZABBIX_REPO="git@bitbucket.org:morea/zabbix.git"
 
@@ -27,73 +27,60 @@ class Packer:
         self.unique = str(job_id)
         if not os.path.exists(PACKER_JSON_PATH):
             os.makedirs(PACKER_JSON_PATH)
-        if not os.path.exists(SALT_LOCAL_TREE):
-            os.makedirs(SALT_LOCAL_TREE)
-        os.makedirs(SALT_LOCAL_TREE + self.unique)
 
-        #Use the configured git repository, if any
-        salt_formulas_repo = config.get('salt_formulas_repo', SALT_FORMULAS_REPO)
+        self.provisioner_config = config.get('features_provisioner', {'type': 'salt'})
+        self.provisioner_type = self.provisioner_config.get('type', 'salt')
+        self.provisioner = ProvisionerSalt(self._log_file, self.unique) if self.provisioner_type == 'salt' else None
+
+        self._get_provisioner_repo(config)
+
+    def _get_provisioner_repo(self, config):
+        # Use the configured git repository, if any
+        provisioner_repo = self.provisioner_config.get('git_repo', config.get('salt_formulas_repo', SALT_FORMULAS_REPO))
+        provisioner_rev = self.provisioner_config.get('git_revision', config.get('salt_formulas_branch', 'master'))
+        self.local_repo_path = self.provisioner._get_local_tree_path()
+
+        git_local_mirror = self._get_mirror_path(provisioner_repo)
         zabbix_repo = config.get('zabbix_repo', ZABBIX_REPO)
-        log("Getting Salt Formulas from {r}".format(r=salt_formulas_repo), self._log_file)
+        log("Getting provisioner features from {r}".format(r=provisioner_repo), self._log_file)
         try:
-            output=git("ls-remote", "--exit-code", salt_formulas_repo, config.get('salt_formulas_branch', 'master')).strip()
-            log("salt_formulas_repo checked successfuly with output: " + output, self._log_file)
+            output=git("ls-remote", "--exit-code", provisioner_repo, provisioner_rev).strip()
+            log("Provisioner repository checked successfuly with output: " + output, self._log_file)
         except sh.ErrorReturnCode, e:
-            log("Invalid salt formulas repos. Please check your yaml 'config.yml' file", self._log_file)
+            log("Invalid provisioner repository or invalid credentials. Please check your yaml 'config.yml' file", self._log_file)
             raise
 
-        #Creates the SALT local mirror
-        if not os.path.exists(SALT_LOCAL_MIRROR):
-            log("Creating local mirror [{r}] for the first time".format(r=SALT_LOCAL_MIRROR), self._log_file)
-            os.makedirs(SALT_LOCAL_MIRROR)
-            os.chdir(SALT_LOCAL_MIRROR)
+        # Creates the Provisioner local mirror
+        if not os.path.exists(git_local_mirror):
+            log("Creating local mirror [{r}] for the first time".format(r=git_local_mirror), self._log_file)
+            os.makedirs(git_local_mirror)
+            os.chdir(git_local_mirror)
             git.init(['--bare'])
-            git.remote(['add', 'salt', salt_formulas_repo])
+            git.remote(['add', self.provisioner_type, provisioner_repo])
             git.remote(['add', 'zabbix', zabbix_repo])
 
-        log("Fetching local mirror [{r}] remotes".format(r=SALT_LOCAL_MIRROR), self._log_file)
-        os.chdir(SALT_LOCAL_MIRROR)
+        log("Fetching local mirror [{r}] remotes".format(r=git_local_mirror), self._log_file)
+        os.chdir(git_local_mirror)
 
-        git_wait_lock(SALT_LOCAL_MIRROR, self._log_file)
+        git_wait_lock(git_local_mirror, self._log_file)
 
         git.fetch(['--all'])
 
-        log("Cloning [{r}] repo with local mirror reference".format(r=salt_formulas_repo), self._log_file)
-        git.clone(['--reference', SALT_LOCAL_MIRROR, salt_formulas_repo, '-b', config.get('salt_formulas_branch', 'master'), '--single-branch', SALT_LOCAL_TREE + self.unique + '/'])
-        if os.path.exists(SALT_LOCAL_TREE + self.unique + '/.gitmodules'):
-            os.chdir(SALT_LOCAL_TREE + self.unique)
+        log("Cloning [{r}] repo with local mirror reference".format(r=provisioner_repo), self._log_file)
+        git.clone(['--reference', git_local_mirror, provisioner_repo, '-b', provisioner_rev, '--single-branch', self.local_repo_path + '/'])
+        if os.path.exists(self.local_repo_path + '/.gitmodules'):
+            os.chdir(self.local_repo_path)
             log("Re-map submodules on local git mirror", self._log_file)
-            git_remap_submodule(SALT_LOCAL_TREE + self.unique, zabbix_repo, SALT_LOCAL_MIRROR, self._log_file)
+            git_remap_submodule(self.local_repo_path, zabbix_repo, git_local_mirror, self._log_file)
             log("Submodule init and update", self._log_file)
             git.submodule('init')
             git.submodule('update')
 
-    def _build_salt_top(self, params):
-        self.salt_path = SALT_LOCAL_TREE + self.unique + '/salt'
-        self.salt_top_path = self.salt_path + '/top.sls'
-        stream = file(self.salt_top_path, 'w')
-        log("Writing Salt Top state to: {0}".format(self.salt_top_path), self._log_file)
-        #The common sls file is optional
-        if os.path.exists(self.salt_path + '/common'):
-            data = {'base': {'*': ['common'] + params }}
-        else:
-            data = {'base': {'*': params }}
-        log('state: top.sls: {0}'.format(data), self._log_file)
-        yaml.dump(data, stream, default_flow_style=False)
-
-    def _build_salt_pillar(self, features):
-        self.salt_pillar_path = SALT_LOCAL_TREE + self.unique + '/pillar'
-        self.salt_pillar_top_path = self.salt_pillar_path + '/top.sls'
-        self.salt_pillar_features_path = self.salt_pillar_path + '/features.sls'
-        #Creating top.sls to call features.sls
-        stream_top = file(self.salt_pillar_top_path, 'w')
-        data_top = {'base': {'*': ['features']}}
-        log('pillar: top.sls: {0}'.format(data_top), self._log_file)
-        yaml.dump(data_top, stream_top, default_flow_style=False)
-        #Creating features.sls file based on ghost app features
-        stream_features = file(self.salt_pillar_features_path, 'w')
-        log('pillar: features.sls: {0}'.format(features), self._log_file)
-        yaml.dump(features, stream_features, default_flow_style=False)
+    def _get_mirror_path(self, git_remote):
+        """
+        Return the local mirror path
+        """
+        return "{base_mirror}/{remote}".format(base_mirror=PROVISIONER_LOCAL_MIRROR, remote=git_remote.replace('@', '_').replace(':', '_'))
 
     def _build_packer_json(self, hooks):
         packer_json = {}
@@ -122,8 +109,8 @@ class Packer:
         },
         {
             'type': 'salt-masterless',
-            'local_state_tree': self.salt_path,
-            'local_pillar_roots': SALT_LOCAL_TREE + self.unique + '/pillar',
+            'local_state_tree': self.local_repo_path + '/salt',
+            'local_pillar_roots': self.local_repo_path + '/pillar',
             'skip_bootstrap': self.packer_config['skip_salt_bootstrap'],
         },
         {
@@ -179,8 +166,9 @@ class Packer:
         return rc, result
 
     def build_image(self, salt_params, features, hooks):
-        self._build_salt_top(salt_params)
-        self._build_salt_pillar(features)
+        if self.provisioner_type == 'salt':
+            self.provisioner._build_salt_top(salt_params)
+            self.provisioner._build_salt_pillar(features)
         self._build_packer_json(hooks)
         ret_code, result = self._run_packer_cmd(
                                         [
