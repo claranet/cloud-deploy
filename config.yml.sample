@@ -27,6 +27,9 @@ features_provisioners:
     salt: # salt by default, might be ansible
         git_repo: git@bitbucket.org:morea/morea-salt-formulas.git # default value if type is 'salt'
         git_revision: master
+#    ansible:
+#        git_repo: git@bitbucket.org:morea/morea-ansible-playbooks
+#        git_revision: master
 
 
 # Endpoints
