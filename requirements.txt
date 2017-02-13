@@ -34,8 +34,10 @@ Flask-WTF==0.14.2
 Flask==0.10.1             # via eve, flask-bootstrap, flask-login, flask-pymongo, flask-socketio, flask-wtf, rq-dashboard
 futures==3.0.5            # via s3transfer
 gevent-websocket==0.9.5
-gevent==1.2.1
-greenlet==0.4.11          # via gevent
+gevent==1.2.1             ; python_version > '2.7.3'
+greenlet==0.4.11          ; python_version > '2.7.3' # via gevent
+gevent==1.1.2             ; python_version < '2.7.4' # last version supporting greenlet 0.4.9
+greenlet==0.4.9           ; python_version < '2.7.4' # via gevent, last version supporting debian wheezy's python 2.7.3 https://github.com/python-greenlet/greenlet/issues/111
 gunicorn==19.6.0
 idna==2.2                 # via cryptography
 ipaddress==1.0.18         # via cryptography
