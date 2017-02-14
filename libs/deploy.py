@@ -145,7 +145,7 @@ def update_app_manifest(app, config, module, package, log_file):
     old_manifest = None
     if not key: # if the 'colored' MANIFEST doesn't' exist, maybe the legacy one exists and we should clone it
         legacy_key_path = get_path_from_app(app) + '/MANIFEST'
-        legacy_key = bucket.get_key(legacy_key_path)
+        legacy_key = bucket.get_key(legacy_key_path[1:])
         if legacy_key:
             key = legacy_key.copy(bucket, key_path)
     if key:
