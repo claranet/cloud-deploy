@@ -2,24 +2,35 @@ import yaml
 import os
 
 from ghost_log import log
+from .provisioner import FeaturesProvisioner
 
-SALT_LOCAL_TREE="/tmp/salt/"
+class FeaturesProvisionerSalt(FeaturesProvisioner):
+    def __init__(self, log_file, unique_id, type, config):
+        FeaturesProvisioner.__init__(self, log_file, unique_id, type, config)
 
-class ProvisionerSalt:
-    def __init__(self, log_file, unique_id):
-        self._log_file = log_file
-        self.unique = unique_id
+    def build_provisioner_features_files(self, params, features):
+        self._build_salt_top(params)
+        self._build_salt_pillar(features)
 
-        if not os.path.exists(SALT_LOCAL_TREE):
-            os.makedirs(SALT_LOCAL_TREE)
+    def build_packer_provisioner_config(self, packer_config):
+        return {
+            'type': 'salt-masterless',
+            'local_state_tree': self.local_tree_path + '/salt',
+            'local_pillar_roots': self.local_tree_path + '/pillar',
+            'skip_bootstrap': packer_config['skip_salt_bootstrap'],
+        }
 
-    def _get_local_tree_path(self):
-        if not os.path.exists(SALT_LOCAL_TREE + self.unique):
-            os.makedirs(SALT_LOCAL_TREE + self.unique)
-        return SALT_LOCAL_TREE + self.unique
+    def build_packer_provisioner_cleanup(self):
+        return {
+            'type': 'shell',
+            'inline': [
+                "sudo rm -rf /srv/salt || echo 'salt: no cleanup salt'",
+                "sudo rm -rf /srv/pillar || echo 'salt: no cleanup pillar'"
+            ]
+        }
 
     def _build_salt_top(self, params):
-        self.salt_path = SALT_LOCAL_TREE + self.unique + '/salt'
+        self.salt_path = self.local_tree_path + '/salt'
         self.salt_top_path = self.salt_path + '/top.sls'
         stream = file(self.salt_top_path, 'w')
         log("Writing Salt Top state to: {0}".format(self.salt_top_path), self._log_file)
@@ -32,7 +43,7 @@ class ProvisionerSalt:
         yaml.dump(data, stream, default_flow_style=False)
 
     def _build_salt_pillar(self, features):
-        self.salt_pillar_path = SALT_LOCAL_TREE + self.unique + '/pillar'
+        self.salt_pillar_path = self.local_tree_path + '/pillar'
         self.salt_pillar_top_path = self.salt_pillar_path + '/top.sls'
         self.salt_pillar_features_path = self.salt_pillar_path + '/features.sls'
         #Creating top.sls to call features.sls

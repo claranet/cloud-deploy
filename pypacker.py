@@ -6,7 +6,7 @@ import os
 
 from ghost_log import log
 from libs.git_helper import git_wait_lock, git_remap_submodule
-from libs.provisioner_salt import ProvisionerSalt
+from libs.provisioner_salt import FeaturesProvisionerSalt
 
 PACKER_JSON_PATH="/tmp/packer/"
 PACKER_LOGDIR="/var/log/ghost/packer"
@@ -28,23 +28,23 @@ class Packer:
         if not os.path.exists(PACKER_JSON_PATH):
             os.makedirs(PACKER_JSON_PATH)
 
-        self.provisioner_config = config.get('features_provisioner', {'type': 'salt'})
-        self.provisioner_type = self.provisioner_config.get('type', 'salt')
-        self.provisioner = ProvisionerSalt(self._log_file, self.unique) if self.provisioner_type == 'salt' else None
+        provisioner_config = config.get('features_provisioner', {'type': 'salt'})
+        provisioner_type = provisioner_config.get('type', 'salt')
+        self.provisioner = FeaturesProvisionerSalt(self._log_file, self.unique, provisioner_type, provisioner_config) if provisioner_type == 'salt' else None
 
         self._get_provisioner_repo(config)
 
     def _get_provisioner_repo(self, config):
         # Use the configured git repository, if any
-        provisioner_repo = self.provisioner_config.get('git_repo', config.get('salt_formulas_repo', SALT_FORMULAS_REPO))
-        provisioner_rev = self.provisioner_config.get('git_revision', config.get('salt_formulas_branch', 'master'))
-        self.local_repo_path = self.provisioner._get_local_tree_path()
+        provisioner_git_repo = self.provisioner.config.get('git_repo', config.get('salt_formulas_repo', SALT_FORMULAS_REPO))
+        provisioner_git_revision = self.provisioner.config.get('git_revision', config.get('salt_formulas_branch', 'master'))
+        self.local_repo_path = self.provisioner.local_tree_path
 
-        git_local_mirror = self._get_mirror_path(provisioner_repo)
+        git_local_mirror = self._get_mirror_path(provisioner_git_repo)
         zabbix_repo = config.get('zabbix_repo', ZABBIX_REPO)
-        log("Getting provisioner features from {r}".format(r=provisioner_repo), self._log_file)
+        log("Getting provisioner features from {r}".format(r=provisioner_git_repo), self._log_file)
         try:
-            output=git("ls-remote", "--exit-code", provisioner_repo, provisioner_rev).strip()
+            output=git("ls-remote", "--exit-code", provisioner_git_repo, provisioner_git_revision).strip()
             log("Provisioner repository checked successfuly with output: " + output, self._log_file)
         except sh.ErrorReturnCode, e:
             log("Invalid provisioner repository or invalid credentials. Please check your yaml 'config.yml' file", self._log_file)
@@ -56,7 +56,7 @@ class Packer:
             os.makedirs(git_local_mirror)
             os.chdir(git_local_mirror)
             git.init(['--bare'])
-            git.remote(['add', self.provisioner_type, provisioner_repo])
+            git.remote(['add', self.provisioner.type, provisioner_git_repo])
             git.remote(['add', 'zabbix', zabbix_repo])
 
         log("Fetching local mirror [{r}] remotes".format(r=git_local_mirror), self._log_file)
@@ -66,8 +66,8 @@ class Packer:
 
         git.fetch(['--all'])
 
-        log("Cloning [{r}] repo with local mirror reference".format(r=provisioner_repo), self._log_file)
-        git.clone(['--reference', git_local_mirror, provisioner_repo, '-b', provisioner_rev, '--single-branch', self.local_repo_path + '/'])
+        log("Cloning [{r}] repo with local mirror reference".format(r=provisioner_git_repo), self._log_file)
+        git.clone(['--reference', git_local_mirror, provisioner_git_repo, '-b', provisioner_git_revision, '--single-branch', self.local_repo_path + '/'])
         if os.path.exists(self.local_repo_path + '/.gitmodules'):
             os.chdir(self.local_repo_path)
             log("Re-map submodules on local git mirror", self._log_file)
@@ -102,26 +102,19 @@ class Packer:
 
         formatted_env_vars = self.packer_config['ghost_env_vars'] + ['%s=%s' % (envvar['var_key'], envvar['var_value']) for envvar in self.packer_config['custom_env_vars']]
         provisioners = [
-        {
-            'type': 'shell',
-            'environment_vars': formatted_env_vars,
-            'script': hooks['pre_buildimage']
-        },
-        {
-            'type': 'salt-masterless',
-            'local_state_tree': self.local_repo_path + '/salt',
-            'local_pillar_roots': self.local_repo_path + '/pillar',
-            'skip_bootstrap': self.packer_config['skip_salt_bootstrap'],
-        },
-        {
-            'type': 'shell',
-            'environment_vars': formatted_env_vars,
-            'script': hooks['post_buildimage']
-        },
-        {
-            'type': 'shell',
-            'inline': ["sudo rm -rf /srv/salt || echo 'salt: no cleanup salt'", "sudo rm -rf /srv/pillar || echo 'salt: no cleanup pillar'"]
-        }]
+            {
+                'type': 'shell',
+                'environment_vars': formatted_env_vars,
+                'script': hooks['pre_buildimage']
+            },
+            self.provisioner.build_packer_provisioner_config(self.packer_config),
+            {
+                'type': 'shell',
+                'environment_vars': formatted_env_vars,
+                'script': hooks['post_buildimage']
+            },
+            self.provisioner.build_packer_provisioner_cleanup(),
+        ]
 
         packer_json['builders'] = builders
         packer_json['provisioners'] = provisioners
@@ -165,10 +158,8 @@ class Packer:
         rc = process.poll()
         return rc, result
 
-    def build_image(self, salt_params, features, hooks):
-        if self.provisioner_type == 'salt':
-            self.provisioner._build_salt_top(salt_params)
-            self.provisioner._build_salt_pillar(features)
+    def build_image(self, provisioner_params, features, hooks):
+        self.provisioner.build_provisioner_features_files(provisioner_params, features)
         self._build_packer_json(hooks)
         ret_code, result = self._run_packer_cmd(
                                         [
