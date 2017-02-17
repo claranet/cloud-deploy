@@ -3,10 +3,11 @@ import re
 import time
 import io
 import os
+import traceback
 
 from pypacker import Packer
 from ghost_log import log
-from ghost_aws import create_launch_config, generate_userdata, check_autoscale_exists, purge_launch_configuration, update_auto_scale
+from ghost_aws import create_userdata_launchconfig_update_asg
 from ghost_tools import get_aws_connection_data, b64decode_utf8
 from settings import cloud_connections, DEFAULT_PROVIDER
 from libs.blue_green import get_blue_green_from_app
@@ -269,28 +270,13 @@ class Buildimage():
             else:
                 log("Purge old AMIs failed", self._log_file)
             if self._app['autoscale']['name']:
-                if check_autoscale_exists(self._cloud_connection, self._app['autoscale']['name'], self._app['region']):
-                    userdata = None
-                    launch_config = None
-                    userdata = generate_userdata(self._config['bucket_s3'], self._config.get('bucket_region', self._app['region']), self._config['ghost_root_path'])
-                    if userdata:
-                        launch_config = create_launch_config(self._cloud_connection, self._app, userdata, ami_id)
-                        log("Launch configuration [{0}] created.".format(launch_config.name), self._log_file)
-                        if launch_config:
-                            update_auto_scale(self._cloud_connection, self._app, launch_config, self._log_file)
-                            if (purge_launch_configuration(self._cloud_connection, self._app, self._config.get('launch_configuration_retention', 5))):
-                                log("Old launch configurations removed for this app", self._log_file)
-                            else:
-                                log("ERROR: Purge launch configurations failed", self._log_file)
-                            self._worker.update_status("done", message=self._get_notification_message_done(ami_id))
-                        else:
-                            log("ERROR: Cannot update autoscaling group", self._log_file)
-                            self._worker.update_status("failed")
+                try:
+                    if create_userdata_launchconfig_update_asg(ami_id, self._cloud_connection, self._app, self._config, self._log_file):
+                        self._worker.update_status("done", message=self._get_notification_message_done(ami_id))
                     else:
-                        log("ERROR: Cannot generate userdata. The bootstrap.sh file can maybe not be found.", self._log_file)
                         self._worker.update_status("failed")
-                else:
-                    log("ERROR: Autoscaling group [{0}] does not exist".format(self._app['autoscale']['name']), self._log_file)
+                except:
+                    traceback.print_exc(self._log_file)
                     self._worker.update_status("failed")
             else:
                 log("No autoscaling group name was set", self._log_file)
