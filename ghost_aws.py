@@ -109,6 +109,31 @@ def deploy_module_on_hosts(cloud_connection, module, fabric_execution_strategy, 
     finally:
         resume_autoscaling_group_processes(as_conn, as_group, as_group_processes_to_suspend, log_file)
 
+def create_userdata_launchconfig_update_asg(ami_id, cloud_connection, app, config, log_file, update_as_params=False):
+    if check_autoscale_exists(cloud_connection, app['autoscale']['name'], app['region']):
+        launch_config = None
+        userdata = generate_userdata(config['bucket_s3'], config.get('bucket_region', app['region']), config['ghost_root_path'])
+        if userdata:
+            launch_config = create_launch_config(cloud_connection, app, userdata, ami_id)
+            log("Launch configuration [{0}] created.".format(launch_config.name), log_file)
+            if launch_config:
+                update_auto_scale(cloud_connection, app, launch_config, log_file, update_as_params)
+                if (purge_launch_configuration(cloud_connection, app, config.get('launch_configuration_retention', 5))):
+                    log("Old launch configurations removed for this app", log_file)
+                else:
+                    log("ERROR: Purge launch configurations failed", log_file)
+                return True
+            else:
+                log("ERROR: Cannot update autoscaling group", log_file)
+                return False
+        else:
+            log("ERROR: Cannot generate userdata. The bootstrap.sh file can maybe not be found.", log_file)
+            return False
+    else:
+        log("ERROR: Autoscaling group [{0}] does not exist".format(app['autoscale']['name']), log_file)
+        return False
+
+
 def create_launch_config(cloud_connection, app, userdata, ami_id):
     d = time.strftime('%d%m%Y-%H%M%S', time.localtime())
     blue_green, app_color = get_blue_green_from_app(app)
