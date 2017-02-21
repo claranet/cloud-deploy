@@ -20,9 +20,12 @@ gevent
 gevent-websocket
 gunicorn                  # needed at runtime
 Jinja2
+ndg-httpsclient
 pip-tools
 psutil
+pyasn1
 pymongo
+pyopenssl
 PyYAML
 redis
 requests
