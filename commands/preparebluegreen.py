@@ -80,8 +80,8 @@ class Preparebluegreen(object):
                                                       self._db.apps,
                                                       self._log_file)
 
-        as_group, as_group_processes_to_suspend = get_autoscaling_group_and_processes_to_suspend(as_conn, offline_app, self._log_file)
-        suspend_autoscaling_group_processes(as_conn, as_group, as_group_processes_to_suspend, self._log_file)
+        as_group, as_group_processes_to_suspend = get_autoscaling_group_and_processes_to_suspend(as_conn3, offline_app, self._log_file)
+        suspend_autoscaling_group_processes(as_conn3, as_group, as_group_processes_to_suspend, self._log_file)
 
         try:
             # check if app is online
@@ -170,4 +170,4 @@ class Preparebluegreen(object):
         except GCallException as e:
             self._worker.update_status("failed", message=self._get_notification_message_failed(online_app, offline_app, e))
         finally:
-            resume_autoscaling_group_processes(as_conn, as_group, as_group_processes_to_suspend, self._log_file)
+            resume_autoscaling_group_processes(as_conn3, as_group, as_group_processes_to_suspend, self._log_file)
