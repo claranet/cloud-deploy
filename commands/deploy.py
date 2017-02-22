@@ -68,8 +68,11 @@ class Deploy():
         >>> module = {'git_repo': 'git@bitbucket.org:morea/ghost.git'}
         >>> Deploy(worker=worker())._get_mirror_path_from_module(module)
         '/ghost/.mirrors/git@bitbucket.org:morea/ghost.git'
+        >>> module = {'git_repo': ' git@bitbucket.org:morea/spaces.git '}
+        >>> Deploy(worker=worker())._get_mirror_path_from_module(module)
+        '/ghost/.mirrors/git@bitbucket.org:morea/spaces.git'
         """
-        return "/ghost/.mirrors/{remote}".format(remote=module['git_repo'])
+        return "/ghost/.mirrors/{remote}".format(remote=module['git_repo'].strip())
 
     def _get_intermediate_clone_path_from_module(self, module):
         """
@@ -255,7 +258,7 @@ class Deploy():
         now = datetime.datetime.utcnow()
         ts = calendar.timegm(now.timetuple())
 
-        git_repo = module['git_repo']
+        git_repo = module['git_repo'].strip()
         mirror_path = self._get_mirror_path_from_module(module)
         clone_path = get_buildpack_clone_path_from_module(self._app, module)
         revision = self._get_module_revision(module['name'])
@@ -367,7 +370,7 @@ GHOST_MODULE_USER="{user}"
 
 """
         metavars = {
-            "repo": module['git_repo'],
+            "repo": git_repo,
             "rev": revision,
             "commit": commit,
             "commitmsg": commit_message,
