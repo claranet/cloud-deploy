@@ -19,15 +19,17 @@ class Notification():
         self._aws_secret_key = aws_secret_key
         self._region = region
 
-    def send_mail(self, From="", To="", subject="", body="", attachments=[]):
+    def send_mail(self, From="", To="", subject="", body_text="", body_html="", attachments=[]):
         msg = MIMEMultipart()
         msg['Subject'] = subject
         msg['From'] = From
         msg['To'] = To
         msg.preamble = 'Multipart message.\n'
         # the message body
-        part = MIMEText(body)
-        msg.attach(part)
+        # part1 = MIMEText(body_text, 'plain')
+        part2 = MIMEText(body_html, 'html')
+        msg.attach(part2)
+        # msg.attach(part1)
         # the attachment
         for attachment in attachments:
             part = MIMEApplication(open(attachment, 'rb').read())

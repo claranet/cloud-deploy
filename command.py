@@ -19,6 +19,100 @@ LOG_ROOT='/var/log/ghost'
 ROOT_PATH=os.path.dirname(os.path.realpath(__file__))
 MAIL_LOG_FROM_DEFAULT='no-reply@morea.fr'
 
+def format_html_mail_body(app, job):
+    """
+    Returns a formatted HTML mail body content
+    """
+    html_template = """
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<style type="text/css">
+td{{font-family:arial,helvetica,sans-serif;}}
+</style>
+
+<p><span style="font-size:28px"><span style="color:#000; font-family:arial,helvetica,sans-serif">Ghost job triggered by </span><strong>{user}</strong></span></p>
+
+<table border="0" cellpadding="1" cellspacing="1" style="font-family:arial,helvetica,sans-serif; height:231px; width:700px">
+    <tbody>
+        <tr>
+            <td style="background-color:#858585"><span style="font-size:14px"><strong><span style="color:rgb(255, 255, 255)">Status</span></strong></span></td>
+            <td style="background-color:{status_color}"><strong><span style="color:rgb(255, 255, 255)">{status}</span></strong></td>
+        </tr>
+        <tr>
+            <td style="background-color:#858585"><span style="font-size:14px"><strong><span style="color:rgb(255, 255, 255)">Application</span></strong></span></td>
+            <td style="background-color:#d1d6da">{app}</td>
+        </tr>
+        <tr>
+            <td style="background-color:#858585"><span style="font-size:14px"><strong><span style="color:rgb(255, 255, 255)">Environment</span></strong></span></td>
+            <td style="background-color:#d1d6da">{env}</td>
+        </tr>
+        <tr>
+            <td style="background-color:#858585"><span style="font-size:14px"><strong><span style="color:rgb(255, 255, 255)">Role</span></strong></span></td>
+            <td style="background-color:#d1d6da">{role}</td>
+        </tr>
+        <tr>
+            <td style="background-color:#858585"><span style="font-size:14px"><strong><span style="color:rgb(255, 255, 255)">Command</span></strong></span></td>
+            <td style="background-color:#d1d6da">{command}</td>
+        </tr>
+        <tr>
+            <td style="background-color:#858585"><span style="font-size:14px"><strong><span style="color:rgb(255, 255, 255)">Job ID</span></strong></span></td>
+            <td style="background-color:#d1d6da">{jobId}</td>
+        </tr>
+        <tr>
+            <td style="background-color:#858585"><span style="font-size:14px"><strong><span style="color:rgb(255, 255, 255)">Job message</span></strong></span></td>
+            <td style="background-color:#d1d6da"><pre>{message}</pre></td>
+        </tr>
+        <tr>
+            <td style="background-color:#FFFFFF">&nbsp;</td>
+            <td style="background-color:#FFFFFF">&nbsp;</td>
+        </tr>
+        <tr>
+            <td style="background-color:#858585"><strong><span style="font-size:14px"><span style="color:rgb(255, 255, 255)">Date</span></span></strong></td>
+            <td style="background-color:#d1d6da">
+                <table border="0" cellpadding="1" cellspacing="1" style="font-size:14px; height:70px; width:420px">
+                    <tbody>
+                        <tr>
+                            <td><strong>Creation</strong><br>
+                            {creation_date}</td>
+                            <td><strong>End</strong><br>
+                            {end_date}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </td>
+        </tr>
+    </tbody>
+</table>
+
+<table border="0" cellpadding="0" cellspacing="0" style="color:rgb(102, 102, 102); font-family:arial,helvetica,sans-serif; font-size:12px; height:200px; width:700px">
+<br>
+<br>
+</table>
+<p></p>
+<table cellpadding="1" cellspacing="1" style="height:84px; width:700px">
+   <tbody>
+         <tr>
+             <td width="190"><img src="https://portail.fr.clara.net/img/mailer/claranet_mission.png" width="170" height="84"></td>
+             <td width="225"><span style="font-family:arial,helvetica,sans-serif"><span style="font-size:12px; color: #333;">&nbsp;</span></span></td>
+        </tr>
+     </tbody>
+</table>
+    """
+
+    html_body = html_template.format(
+        user = job['user'],
+        status = job['status'],
+        status_color = 'rgb(218, 0, 26)' if job['status'] == 'failed' else '#00A800',
+        app = app['name'],
+        env = app['env'],
+        role = app['role'],
+        command = job['command'],
+        jobId = str(job['_id']),
+        message = job['message'],
+        creation_date = job['_created'],
+        end_date = job['_updated'],
+    )
+    return html_body
+
 def format_notif(app, job):
     """
     Returns a formatted title and message couple
@@ -119,13 +213,14 @@ class Command:
     def _mail_log_action(self, subject, body):
         ses_settings = self._config['ses_settings']
         notif = Notification(aws_access_key=ses_settings['aws_access_key'], aws_secret_key=ses_settings['aws_secret_key'], region=ses_settings['region'])
+        html_body = format_html_mail_body(self.app, self.job)
         log = "{log_path}/{job_id}.txt".format(log_path=LOG_ROOT, job_id=self._worker_job.id)
         log_stat = os.stat(log)
         if log_stat.st_size > 512000:
             os.system('gzip -k '+log)
             log = log+'.gz'
         for mail in self.app['log_notifications']:
-            notif.send_mail(From=ses_settings.get('mail_from', MAIL_LOG_FROM_DEFAULT), To=mail, subject=subject, body=body, attachments=[log])
+            notif.send_mail(From=ses_settings.get('mail_from', MAIL_LOG_FROM_DEFAULT), To=mail, subject=subject, body_text=body, body_html=html_body, attachments=[log])
             pass
 
     def _slack_notification_action(self, slack_msg):
