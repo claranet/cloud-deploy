@@ -61,7 +61,6 @@ class Preparebluegreen(object):
         self._db.apps.update({ '_id': app['_id']}, {'$set': {
             'autoscale.min': ref_app['autoscale']['min'],
             'autoscale.max': ref_app['autoscale']['max'],
-            'autoscale.current': ref_app['autoscale']['current']
         }})
         log(_green("'{0}' autoscale has been update '{1}'".format(app['_id'], app['autoscale']['name'])), log_file)
 
@@ -149,7 +148,6 @@ class Preparebluegreen(object):
             offline_app['autoscale']['min'] = online_app['autoscale']['min']
             offline_app['autoscale']['max'] = online_app['autoscale']['max']
             online_asg_object = get_autoscaling_group_object(as_conn3, online_app['autoscale']['name'])
-            offline_app['autoscale']['current'] = online_asg_object['DesiredCapacity']
             if copy_ami_option:
                 offline_app['ami'] = online_app['ami']
                 offline_app['build_infos']['ami_name'] = online_app['build_infos']['ami_name']
@@ -171,7 +169,7 @@ class Preparebluegreen(object):
             else:
                 update_auto_scale(self._cloud_connection, offline_app, None, self._log_file, update_as_params=True)
 
-            log(_green("Starting [{0}] instance(s) into the AutoScale [{1}]".format(offline_app['autoscale']['current'], offline_app['autoscale']['name'])), self._log_file)
+            log(_green("Starting at least [{0}] instance(s) into the AutoScale [{1}]".format(offline_app['autoscale']['min'], offline_app['autoscale']['name'])), self._log_file)
 
             self._worker.update_status("done", message=self._get_notification_message_done(offline_app, temp_elb_name, new_elb_dns))
         except GCallException as e:
