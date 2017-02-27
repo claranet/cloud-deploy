@@ -1,3 +1,5 @@
+ghost_base_url: https://demo.ghost.morea.fr
+
 # Need to be set when used with docker-compose (docker link use DNS to map containers)
 api_base_url: http://localhost:5000
 redis_host: localhost
@@ -74,6 +76,7 @@ salt_formulas_branch: dev
 ghost_root_path: /usr/local/share/ghost
 max_deploy_history: 1
 salt_formulas_repo: git@bitbucket.org:morea/morea-salt-formulas.git
+zabbix_repo: git@bitbucket.org:morea/zabbix.git
 
 # Use ~/.ssh/config file (allows to map private IPs to public IPs for example)
 use_ssh_config: false
@@ -118,3 +121,17 @@ blue_green:
         healthcheck_healthy_threshold: 2
     purgebluegreen:
         destroy_temporary_elb: true
+
+# Slack notifications
+# List of Slack configurations used to notify on Job triggered
+slack_configs:
+    -
+        webhooks_endpoint: https://hooks.slack.com/services/XX_KEY_XX # Morea #ghost-deployments webhook
+        channel: '#ghost-deployments'
+        bot_name: 'Ghost'
+        message_prefix: 'Ghost job triggered'
+#    -
+#        webhooks_endpoint: https://hooks.slack.com/services/XX_KEY_XX
+#        channel: '#ghost-deployments'
+#        bot_name: 'Ghost-config-2'
+#        message_prefix: 'Ghost'

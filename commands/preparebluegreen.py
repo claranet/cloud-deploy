@@ -1,9 +1,10 @@
 """Classes pertaining to blue/green preparation."""
+import traceback
 from fabric.colors import green as _green, yellow as _yellow, red as _red
 
 from ghost_log import log
 from ghost_aws import check_autoscale_exists, update_auto_scale, get_autoscaling_group_and_processes_to_suspend, suspend_autoscaling_group_processes, resume_autoscaling_group_processes
-from ghost_aws import create_launch_config, generate_userdata
+from ghost_aws import create_userdata_launchconfig_update_asg
 from ghost_tools import GCallException, get_aws_connection_data, get_app_friendly_name, get_app_module_name_list, boolify, get_running_jobs
 from settings import cloud_connections, DEFAULT_PROVIDER
 from libs.blue_green import get_blue_green_apps, check_app_manifest, get_blue_green_config, abort_if_other_bluegreen_job
@@ -60,7 +61,6 @@ class Preparebluegreen(object):
         self._db.apps.update({ '_id': app['_id']}, {'$set': {
             'autoscale.min': ref_app['autoscale']['min'],
             'autoscale.max': ref_app['autoscale']['max'],
-            'autoscale.current': ref_app['autoscale']['current']
         }})
         log(_green("'{0}' autoscale has been update '{1}'".format(app['_id'], app['autoscale']['name'])), log_file)
 
@@ -80,8 +80,8 @@ class Preparebluegreen(object):
                                                       self._db.apps,
                                                       self._log_file)
 
-        as_group, as_group_processes_to_suspend = get_autoscaling_group_and_processes_to_suspend(as_conn, offline_app, self._log_file)
-        suspend_autoscaling_group_processes(as_conn, as_group, as_group_processes_to_suspend, self._log_file)
+        as_group, as_group_processes_to_suspend = get_autoscaling_group_and_processes_to_suspend(as_conn3, offline_app, self._log_file)
+        suspend_autoscaling_group_processes(as_conn3, as_group, as_group_processes_to_suspend, self._log_file)
 
         try:
             # check if app is online
@@ -148,7 +148,6 @@ class Preparebluegreen(object):
             offline_app['autoscale']['min'] = online_app['autoscale']['min']
             offline_app['autoscale']['max'] = online_app['autoscale']['max']
             online_asg_object = get_autoscaling_group_object(as_conn3, online_app['autoscale']['name'])
-            offline_app['autoscale']['current'] = online_asg_object['DesiredCapacity']
             if copy_ami_option:
                 offline_app['ami'] = online_app['ami']
                 offline_app['build_infos']['ami_name'] = online_app['build_infos']['ami_name']
@@ -156,18 +155,24 @@ class Preparebluegreen(object):
                 self._update_app_ami(offline_app)
             # Update AutoScale properties in DB App
             self._update_app_autoscale_options(offline_app, online_app, self._log_file)
-            # Update AutoScale properties and starts instances
-            launch_config = None
-            if copy_ami_option:
-                userdata = generate_userdata(self._config['bucket_s3'], self._config.get('bucket_region', self._app['region']), self._config['ghost_root_path'])
-                if userdata:
-                    launch_config = create_launch_config(self._cloud_connection, offline_app, userdata, offline_app['ami'])
 
-            update_auto_scale(self._cloud_connection, offline_app, launch_config, self._log_file, update_as_params=True)
-            log(_green("Starting [{0}] instance(s) into the AutoScale [{1}]".format(offline_app['autoscale']['current'], offline_app['autoscale']['name'])), self._log_file)
+            # Update AutoScale properties and starts instances
+            if copy_ami_option:
+                try:
+                    if not create_userdata_launchconfig_update_asg(offline_app['ami'], self._cloud_connection, offline_app, self._config, self._log_file, update_as_params=True):
+                        self._worker.update_status("failed", message=self._get_notification_message_failed(online_app, offline_app, ""))
+                        return
+                except:
+                    traceback.print_exc(self._log_file)
+                    self._worker.update_status("failed", message=self._get_notification_message_failed(online_app, offline_app, ""))
+                    return
+            else:
+                update_auto_scale(self._cloud_connection, offline_app, None, self._log_file, update_as_params=True)
+
+            log(_green("Starting at least [{0}] instance(s) into the AutoScale [{1}]".format(offline_app['autoscale']['min'], offline_app['autoscale']['name'])), self._log_file)
 
             self._worker.update_status("done", message=self._get_notification_message_done(offline_app, temp_elb_name, new_elb_dns))
         except GCallException as e:
             self._worker.update_status("failed", message=self._get_notification_message_failed(online_app, offline_app, e))
         finally:
-            resume_autoscaling_group_processes(as_conn, as_group, as_group_processes_to_suspend, self._log_file)
+            resume_autoscaling_group_processes(as_conn3, as_group, as_group_processes_to_suspend, self._log_file)

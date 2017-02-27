@@ -1,4 +1,3 @@
-import env
 import instance_role
 import resources
 import volumes
@@ -12,7 +11,7 @@ apps_schema = {
     },
     'env': {
         'type': 'string',
-        'allowed': env.env,
+        'regex': '^[a-z0-9\-\_]*$',
         'required': True
     },
     'role': {
@@ -159,7 +158,6 @@ apps_schema = {
                     'min': 0},
             'max': {'type': 'integer',
                     'min': 0},
-            'current': {'type': 'integer'},
             'name': {'type': 'string'}
         }
     },
