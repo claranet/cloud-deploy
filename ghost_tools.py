@@ -325,3 +325,31 @@ def get_running_jobs(_db, app_id_1, app_id_2, current_job):
         "_created": {"$gt": date_limit}
     })
     return list(jobs)
+
+def get_module_package_rev_from_manifest(bucket, manifest_key_path, module):
+    """
+    Parse the Ghost manifest, look for the module, return the associated package name
+    """
+    manifest_key = bucket.get_key(manifest_key_path)
+    manifest = manifest_key.get_contents_as_string()
+    for pkgs in manifest.splitlines():
+        manifest_module_infos = pkgs.split(":")
+        manifest_module_name = manifest_module_infos[0]
+        manifest_module_pkg_name = manifest_module_infos[1]
+        if manifest_module_name == module:
+            return manifest_module_pkg_name
+            break
+    return None
+
+def keep_n_recent_elements_from_list(keys_list, nb_elt_to_keep, log_file):
+    """
+    Takes a list of elements in argument, sort it (by name) and returns a slice of this list with oldest elements.
+    """
+    log("List contains %s element(s)" % str(len(keys_list)), log_file)
+    log("%s most recent element(s) must be kept" % str(nb_elt_to_keep), log_file)
+
+    keys_list.sort()
+    del keys_list[(len(keys_list)-nb_elt_to_keep):]
+
+    log("List now contains %s element(s)" % str(len(keys_list)), log_file)
+    return keys_list

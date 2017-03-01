@@ -10,6 +10,7 @@ from time import sleep
 from ghost_tools import b64decode_utf8
 from ghost_tools import GCallException, gcall, get_app_module_name_list, clean_local_module_workspace, refresh_stage2
 from ghost_tools import get_aws_connection_data
+from ghost_tools import get_module_package_rev_from_manifest, keep_n_recent_elements_from_list
 from ghost_log import log
 from ghost_aws import deploy_module_on_hosts
 from settings import cloud_connections, DEFAULT_PROVIDER
@@ -101,27 +102,16 @@ class Deploy():
 
             # Get app manifest and extract package name
             manifest_key_path = '{path}/MANIFEST'.format(path=get_path_from_app_with_color(self._app))
-            manifest_key = bucket.get_key(manifest_key_path)
-            manifest = manifest_key.get_contents_as_string()
-            for pkgs in manifest.splitlines():
-                manifest_module_infos = pkgs.split(":")
-                manifest_module_name = manifest_module_infos[0]
-                manifest_module_pkg_name = manifest_module_infos[1]
-                if manifest_module_name == module:
-                    # Remove the current production package from the purge list
-                    keys_list.remove(manifest_module_pkg_name)
-                    break
+            manifest_module_pkg_name = get_module_package_rev_from_manifest(bucket, manifest_key_path, module)
+
+            # Remove the current production/used package from the purge list
+            keys_list.remove(manifest_module_pkg_name)
 
             # Remove the current deployment package just generated from the purge list
             keys_list.remove(pkg_name)
 
             if len(keys_list) > deployment_package_retention:
-                log("Packages count: %s" % str(len(keys_list)), self._log_file)
-                log("Packages count to keep: %s" % str(deployment_package_retention), self._log_file)
-                keys_to_keep = sorted(keys_list)[(len(keys_list)-deployment_package_retention):]
-                keys_list.sort()
-                del keys_list[(len(keys_list)-deployment_package_retention):]
-                log("Packages count to purge: %s" % str(len(keys_list)), self._log_file)
+                keys_list = keep_n_recent_elements_from_list(keys_list, deployment_package_retention, self._log_file)
                 for obj in keys_list:
                     key_path_to_purge = '{path}/{obj}'.format(path=path, obj=obj)
                     try:
