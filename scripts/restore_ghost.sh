@@ -16,9 +16,14 @@ exec > >(tee -i $LOG_FILE)
 exec 2>&1
 
 # Args check
-if [ $# -ne 2 ]; then
-    echo "Usage: ./$0 {s3_ghost_bucket} {s3_bucket_region}"
-    echo "Example: ./$0 's3.support.ghost-packages.eu-west-1' 'eu-west-1'"
+if [ $# -lt 2 ] || [ $# -gt 3 ]; then
+    echo "Invalid args."
+    echo "Usage: $0 {s3_ghost_bucket} {s3_bucket_region} [backup_file_name]"
+    echo
+    echo "[backup_file_name] is optional, if not specified the script will retrieve the latest backup (more recent) from S3"
+    echo
+    echo "Example: $0 's3.support.ghost-packages.eu-west-1' 'eu-west-1'"
+    echo "Example: $0 's3.support.ghost-packages.eu-west-1' 'eu-west-1' 'ghost-backup-2016-01-19_13_19.tar.gz'"
     exit 1
 fi
 
@@ -28,14 +33,19 @@ S3_REGION=$2
 RESTORE=/tmp/restore_ghost
 GHOST_HOME=/usr/local/share/ghost
 
-# Check and get lastest backup from S3 bucket
-LATEST_BACKUP_INFOS=$(/usr/local/bin/aws s3 ls s3://$S3/backup/ --region $S3_REGION | tail -n1)
-if [ -z "$LATEST_BACKUP_INFOS" ]; then
-    echo "No backup found in s3://$S3/backup/. Please verify arguments"
-    exit 2
+if [ -z "$3" ]; then
+    # Check and get lastest backup from S3 bucket
+    LATEST_BACKUP_INFOS=$(/usr/local/bin/aws s3 ls s3://$S3/backup/ --region $S3_REGION | tail -n1)
+    if [ -z "$LATEST_BACKUP_INFOS" ]; then
+        echo "No backup found in s3://$S3/backup/. Please verify arguments"
+        exit 2
+    fi
+    echo "Backup found: $LATEST_BACKUP_INFOS"
+    LATEST_BACKUP=$(echo $LATEST_BACKUP_INFOS | tr -s ' ' | cut -d' ' -f4)
+else
+    LATEST_BACKUP=$3
+    echo "Backup filename specified, trying to restore: $LATEST_BACKUP"
 fi
-echo "Backup found: $LATEST_BACKUP_INFOS"
-LATEST_BACKUP=$(echo $LATEST_BACKUP_INFOS | tr -s ' ' | cut -d' ' -f4)
 
 # Create restore dir
 mkdir -pv $RESTORE
