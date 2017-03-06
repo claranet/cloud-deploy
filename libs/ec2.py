@@ -53,16 +53,31 @@ def find_ec2_running_instances(cloud_connection, ghost_app, ghost_env, ghost_rol
         :param  region  string: The AWS region where the instances are located.
         :return list of dict(ex: [{'id': instance_idXXX, 'private_ip_address': XXX_XXX_XXX_XXX},{...}])
     """
+    return find_ec2_instances(cloud_connection, ghost_app, ghost_env, ghost_role, region, "running", ghost_color)
+
+def find_ec2_instances(cloud_connection, ghost_app, ghost_env, ghost_role, region, ec2_state_filter=None, ghost_color=None):
+    """ Return a list of dict info for the found instances.
+
+        :param  ghost_app  string: The value for the instance tag "app".
+        :param  ghost_env  string: The value for the instance tag "env".
+        :param  ghost_role  string: The value for the instance tag "role".
+        :param  ghost_color  string: The value for the instance tag "color".
+        :param  region  string: The AWS region where the instances are located.
+        :param  ec2_state_filter string: If we need to filter on an EC2 state
+        :return list of dict(ex: [{'id': instance_idXXX, 'private_ip_address': XXX_XXX_XXX_XXX},{...}])
+    """
     conn_as = cloud_connection.get_connection(region, ['autoscaling'], boto_version='boto3')
     conn = cloud_connection.get_connection(region, ["ec2"])
-    # Retrieve running instances
+    # Retrieve instances
+    instance_filters = {"tag:env": ghost_env, "tag:role": ghost_role, "tag:app": ghost_app}
     if ghost_color:
-        running_instance_filters = {"tag:env": ghost_env, "tag:role": ghost_role, "tag:app": ghost_app, "tag:color": ghost_color, "instance-state-name": "running"}
-    else:
-        running_instance_filters = {"tag:env": ghost_env, "tag:role": ghost_role, "tag:app": ghost_app, "instance-state-name": "running"}
-    running_instances = conn.get_only_instances(filters=running_instance_filters)
+        instance_filters["tag:color"] = ghost_color
+    if ec2_state_filter:
+        instance_filters["instance-state-name"] = ec2_state_filter
+
+    found_instances = conn.get_only_instances(filters=instance_filters)
     hosts = []
-    for instance in running_instances:
+    for instance in found_instances:
         # Instances in autoscale "Terminating:*" states are still "running" but no longer in the Load Balancer
         autoscale_instances = conn_as.describe_auto_scaling_instances(InstanceIds=[instance.id])['AutoScalingInstances']
         if not autoscale_instances or not autoscale_instances[0]['LifecycleState'] in ['Terminating', 'Terminating:Wait', 'Terminating:Proceed']:
@@ -78,7 +93,7 @@ def destroy_ec2_instances(cloud_connection, app, log_file):
     """
     conn = cloud_connection.get_connection(app['region'], ["ec2"])
     app_blue_green, app_color = get_blue_green_from_app(app)
-    running_instances = find_ec2_running_instances(cloud_connection, app['name'], app['env'], app['role'], app['region'], app_color)
+    running_instances = find_ec2_instances(cloud_connection, app['name'], app['env'], app['role'], app['region'], app_color)
     #Terminating instances
     instances = []
     for r in running_instances:
