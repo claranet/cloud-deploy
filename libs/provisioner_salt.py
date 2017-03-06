@@ -5,8 +5,8 @@ from ghost_log import log
 from .provisioner import FeaturesProvisioner
 
 class FeaturesProvisionerSalt(FeaturesProvisioner):
-    def __init__(self, log_file, unique_id, type, config):
-        FeaturesProvisioner.__init__(self, log_file, unique_id, type, config)
+    def __init__(self, log_file, unique_id, config, global_config):
+        FeaturesProvisioner.__init__(self, log_file, unique_id, config, global_config)
 
     def build_provisioner_features_files(self, params, features):
         self._build_salt_top(params)
@@ -15,8 +15,8 @@ class FeaturesProvisionerSalt(FeaturesProvisioner):
     def build_packer_provisioner_config(self, packer_config):
         return {
             'type': 'salt-masterless',
-            'local_state_tree': self.local_tree_path + '/salt',
-            'local_pillar_roots': self.local_tree_path + '/pillar',
+            'local_state_tree': self.local_repo_path + '/salt',
+            'local_pillar_roots': self.local_repo_path + '/pillar',
             'skip_bootstrap': packer_config['skip_salt_bootstrap'],
         }
 
@@ -30,7 +30,7 @@ class FeaturesProvisionerSalt(FeaturesProvisioner):
         }
 
     def _build_salt_top(self, params):
-        self.salt_path = self.local_tree_path + '/salt'
+        self.salt_path = self.local_repo_path + '/salt'
         self.salt_top_path = self.salt_path + '/top.sls'
         stream = file(self.salt_top_path, 'w')
         log("Writing Salt Top state to: {0}".format(self.salt_top_path), self._log_file)
@@ -43,7 +43,7 @@ class FeaturesProvisionerSalt(FeaturesProvisioner):
         yaml.dump(data, stream, default_flow_style=False)
 
     def _build_salt_pillar(self, features):
-        self.salt_pillar_path = self.local_tree_path + '/pillar'
+        self.salt_pillar_path = self.local_repo_path + '/pillar'
         self.salt_pillar_top_path = self.salt_pillar_path + '/top.sls'
         self.salt_pillar_features_path = self.salt_pillar_path + '/features.sls'
         #Creating top.sls to call features.sls
@@ -55,4 +55,3 @@ class FeaturesProvisionerSalt(FeaturesProvisioner):
         stream_features = file(self.salt_pillar_features_path, 'w')
         log('pillar: features.sls: {0}'.format(features), self._log_file)
         yaml.dump(features, stream_features, default_flow_style=False)
-

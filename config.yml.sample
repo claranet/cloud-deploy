@@ -76,10 +76,10 @@ ghost_root_path: /usr/local/share/ghost
 max_deploy_history: 1
 
 # Configuration manager options
-features_provisioner:
-    type: salt # salt by default, might be ansible
-    git_repo: git@bitbucket.org:morea/morea-salt-formulas.git # default value if type is 'salt'
-    git_revision: master
+features_provisioners:
+    salt: # salt by default, might be ansible
+        git_repo: git@bitbucket.org:morea/morea-salt-formulas.git # default value if type is 'salt'
+        git_revision: master
 
 zabbix_repo: git@bitbucket.org:morea/zabbix.git
 

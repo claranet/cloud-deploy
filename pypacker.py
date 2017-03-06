@@ -1,19 +1,13 @@
 import sh
-from sh import git
 from subprocess32 import Popen, PIPE
 import json
 import os
 
 from ghost_log import log
-from libs.git_helper import git_wait_lock, git_remap_submodule
 from libs.provisioner_salt import FeaturesProvisionerSalt
 
 PACKER_JSON_PATH="/tmp/packer/"
 PACKER_LOGDIR="/var/log/ghost/packer"
-PROVISIONER_LOCAL_MIRROR="/ghost/.mirrors"
-
-SALT_FORMULAS_REPO="git@bitbucket.org:morea/morea-salt-formulas.git"
-ZABBIX_REPO="git@bitbucket.org:morea/zabbix.git"
 
 class Packer:
     def __init__(self, packer_config, config, log_file, job_id):
@@ -28,59 +22,15 @@ class Packer:
         if not os.path.exists(PACKER_JSON_PATH):
             os.makedirs(PACKER_JSON_PATH)
 
-        provisioner_config = config.get('features_provisioner', {'type': 'salt'})
-        provisioner_type = provisioner_config.get('type', 'salt')
-        self.provisioner = FeaturesProvisionerSalt(self._log_file, self.unique, provisioner_type, provisioner_config) if provisioner_type == 'salt' else None
+        provisioners_config = config.get('features_provisioners', {
+            "git_repo": "git@bitbucket.org:morea/morea-salt-formulas.git",
+            "git_revision": "master",
+        })
 
-        self._get_provisioner_repo(config)
-
-    def _get_provisioner_repo(self, config):
-        # Use the configured git repository, if any
-        provisioner_git_repo = self.provisioner.config.get('git_repo', config.get('salt_formulas_repo', SALT_FORMULAS_REPO))
-        provisioner_git_revision = self.provisioner.config.get('git_revision', config.get('salt_formulas_branch', 'master'))
-        self.local_repo_path = self.provisioner.local_tree_path
-
-        git_local_mirror = self._get_mirror_path(provisioner_git_repo)
-        zabbix_repo = config.get('zabbix_repo', ZABBIX_REPO)
-        log("Getting provisioner features from {r}".format(r=provisioner_git_repo), self._log_file)
-        try:
-            output=git("ls-remote", "--exit-code", provisioner_git_repo, provisioner_git_revision).strip()
-            log("Provisioner repository checked successfuly with output: " + output, self._log_file)
-        except sh.ErrorReturnCode, e:
-            log("Invalid provisioner repository or invalid credentials. Please check your yaml 'config.yml' file", self._log_file)
-            raise
-
-        # Creates the Provisioner local mirror
-        if not os.path.exists(git_local_mirror):
-            log("Creating local mirror [{r}] for the first time".format(r=git_local_mirror), self._log_file)
-            os.makedirs(git_local_mirror)
-            os.chdir(git_local_mirror)
-            git.init(['--bare'])
-            git.remote(['add', self.provisioner.type, provisioner_git_repo])
-            git.remote(['add', 'zabbix', zabbix_repo])
-
-        log("Fetching local mirror [{r}] remotes".format(r=git_local_mirror), self._log_file)
-        os.chdir(git_local_mirror)
-
-        git_wait_lock(git_local_mirror, self._log_file)
-
-        git.fetch(['--all'])
-
-        log("Cloning [{r}] repo with local mirror reference".format(r=provisioner_git_repo), self._log_file)
-        git.clone(['--reference', git_local_mirror, provisioner_git_repo, '-b', provisioner_git_revision, '--single-branch', self.local_repo_path + '/'])
-        if os.path.exists(self.local_repo_path + '/.gitmodules'):
-            os.chdir(self.local_repo_path)
-            log("Re-map submodules on local git mirror", self._log_file)
-            git_remap_submodule(self.local_repo_path, zabbix_repo, git_local_mirror, self._log_file)
-            log("Submodule init and update", self._log_file)
-            git.submodule('init')
-            git.submodule('update')
-
-    def _get_mirror_path(self, git_remote):
-        """
-        Return the local mirror path
-        """
-        return "{base_mirror}/{remote}".format(base_mirror=PROVISIONER_LOCAL_MIRROR, remote=git_remote.replace('@', '_').replace(':', '_'))
+        self.provisioners = []
+        for key, provisioner_config in provisioners_config.iteritems():
+            if key == 'salt':
+                self.provisioners.append(FeaturesProvisionerSalt(self._log_file, self.unique, provisioner_config, config))
 
     def _build_packer_json(self, hooks):
         packer_json = {}
@@ -101,20 +51,23 @@ class Packer:
         }]
 
         formatted_env_vars = self.packer_config['ghost_env_vars'] + ['%s=%s' % (envvar['var_key'], envvar['var_value']) for envvar in self.packer_config['custom_env_vars']]
-        provisioners = [
-            {
-                'type': 'shell',
-                'environment_vars': formatted_env_vars,
-                'script': hooks['pre_buildimage']
-            },
-            self.provisioner.build_packer_provisioner_config(self.packer_config),
-            {
-                'type': 'shell',
-                'environment_vars': formatted_env_vars,
-                'script': hooks['post_buildimage']
-            },
-            self.provisioner.build_packer_provisioner_cleanup(),
-        ]
+        provisioners = [{
+            'type': 'shell',
+            'environment_vars': formatted_env_vars,
+            'script': hooks['pre_buildimage']
+        }]
+
+        for provisioner in self.provisioners:
+            provisioners.append(provisioner.build_packer_provisioner_config(self.packer_config))
+
+        provisioners.append({
+            'type': 'shell',
+            'environment_vars': formatted_env_vars,
+            'script': hooks['post_buildimage']
+        })
+
+        for provisioner in self.provisioners:
+            provisioners.append(provisioner.build_packer_provisioner_cleanup())
 
         packer_json['builders'] = builders
         packer_json['provisioners'] = provisioners
@@ -159,7 +112,9 @@ class Packer:
         return rc, result
 
     def build_image(self, provisioner_params, features, hooks):
-        self.provisioner.build_provisioner_features_files(provisioner_params, features)
+        for provisioner in self.provisioners:
+            provisioner.build_provisioner_features_files(provisioner_params, features)
+
         self._build_packer_json(hooks)
         ret_code, result = self._run_packer_cmd(
                                         [
