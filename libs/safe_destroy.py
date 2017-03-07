@@ -12,7 +12,7 @@ from ghost_aws import suspend_autoscaling_group_processes, resume_autoscaling_gr
 from .blue_green import get_blue_green_from_app
 from .safe_deployment import SafeDeployment
 from .ec2 import find_ec2_running_instances, destroy_specific_ec2_instances
-from .autoscaling import get_autoscaling_group_object, update_auto_scaling_group_attributes
+from .autoscaling import get_autoscaling_group_object, update_auto_scaling_group_attributes, check_autoscale_instances_lifecycle_state
 from .elb import get_elb_instance_status_autoscaling_group, get_connection_draining_value, register_instance_from_elb, deregister_instance_from_elb
 
 class SafeDestroy(SafeDeployment):
@@ -55,6 +55,8 @@ class SafeDestroy(SafeDeployment):
                 raise GCallException('Cannot continue because there is no ELB configured in the AutoScaling Group')
             elif len([i for i in elb_instances.values() if 'outofservice' in i.values()]):
                 raise GCallException('Cannot continue because one or more instances are in the out of service state')
+            elif not check_autoscale_instances_lifecycle_state(asg_infos['Instances']):
+                raise GCallException('Cannot continue because one or more instances are not in InService Lifecycle state')
             else:
                 group_size = len(instances_list)
                 log('Suspending "Terminate" process in the AutoScale and provisioning %s instance(s)' % group_size, self.log_file)
@@ -70,6 +72,10 @@ class SafeDestroy(SafeDeployment):
                 asg_updated_infos = get_autoscaling_group_object(as_conn, self.as_name)
                 while len(asg_updated_infos['Instances']) < asg_updated_infos['DesiredCapacity']:
                     log('Waiting 30s because the instances are not provisioned in the AutoScale', self.log_file)
+                    time.sleep(30)
+                    asg_updated_infos = get_autoscaling_group_object(as_conn, self.as_name)
+                while not check_autoscale_instances_lifecycle_state(asg_updated_infos['Instances']):
+                    log('Waiting 30s because the instances are not in InService state in the AutoScale', self.log_file)
                     time.sleep(30)
                     asg_updated_infos = get_autoscaling_group_object(as_conn, self.as_name)
 

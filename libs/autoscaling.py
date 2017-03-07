@@ -62,3 +62,16 @@ def update_auto_scaling_group_attributes(as_conn, as_name, as_min, as_max, as_de
         MaxSize=as_max,
         DesiredCapacity=as_desired,
     )
+
+def check_autoscale_instances_lifecycle_state(instances, i_state='InService'):
+    """
+    Verify is every instances are in the right Lifecycle state `i_state`
+
+    :param  instances array: list of instances to proceed, retrieved after a get_autoscaling_group_object() call
+    :param i_state string: the Lifecycle state to check
+    :return True if all instances are in the given lifecycle state
+    """
+    for instance in instances:
+        if not instance['LifecycleState'] == i_state:
+            return False
+    return True
