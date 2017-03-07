@@ -1,5 +1,5 @@
-# -*- coding: utf-8 -*-
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
 
 """
 
@@ -42,7 +42,7 @@ class SafeDeployment():
             :param  hosts_list:   list: Dictionnaries instances infos(id and private IP).
             :param  log_file:     object for logging
             :param  safe_infos:   dict: The safe deployment parameters.
-            :param  lb_infos:     list: ELB names or Haproxy IPs.
+            :param  lb_infos:     list: ELB names, ALB names or Haproxy IPs.
             :param  fabric_exec_strategy  string: Deployment strategy(serial or parrallel).
             :param  as_name:      string: The name of the Autoscaling Group.
         """
@@ -117,11 +117,11 @@ class SafeDeployment():
     def elb_safe_deployment(self, instances_list):
         """ Manage the safe deployment process for the ELB.
 
-            :param  instances_list  list: Instances on which to deploy(list of dict. ex: [{'id':XXX, 'private_ip_address':XXXX}...]).
+            :param  instances_list  list: Instances on which to deploy (list of dict. ex: [{'id':XXX, 'private_ip_address':XXXX}...]).
             :return                True if operation successed or raise an Exception.
         """
         if not self.as_name:
-            raise GCallException('Cannot continue because there is no AuoScaling Group configured')
+            raise GCallException('Cannot continue because there is no AutoScaling Group configured')
 
         app_region = self.app['region']
 

@@ -47,10 +47,18 @@ def flush_instances_update_autoscale(as_conn, cloud_connection, app, log_file):
     :param  app: The Ghost application
     :param  log_file: Log file path
     """
-    as_conn.update_auto_scaling_group(
-        AutoScalingGroupName=app['autoscale']['name'],
-        MinSize=0,
-        MaxSize=0,
-        DesiredCapacity=0
-    )
+    update_auto_scaling_group_attributes(as_conn, app['autoscale']['name'], 0, 0, 0)
     destroy_ec2_instances(cloud_connection, app, log_file)
+
+def update_auto_scaling_group_attributes(as_conn, as_name, as_min, as_max, as_desired):
+    """
+    Updates the AutoScale group attributes with given parameters
+
+    :param  as_conn  string: The boto3 Autoscaling Group connection.
+    """
+    as_conn.update_auto_scaling_group(
+        AutoScalingGroupName=as_name,
+        MinSize=as_min,
+        MaxSize=as_max,
+        DesiredCapacity=as_desired,
+    )

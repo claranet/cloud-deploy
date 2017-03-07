@@ -95,13 +95,23 @@ def destroy_ec2_instances(cloud_connection, app, log_file):
         :param  app  string: The ghost "app" object.
         :param  log_file: Logging path
     """
-    conn = cloud_connection.get_connection(app['region'], ["ec2"])
     app_blue_green, app_color = get_blue_green_from_app(app)
     running_instances = find_ec2_instances(cloud_connection, app['name'], app['env'], app['role'], app['region'], app_color)
     #Terminating instances
     instances = []
     for r in running_instances:
         instances.append(r['id'])
+    destroy_specific_ec2_instances(cloud_connection, app, instances, log_file)
+
+def destroy_specific_ec2_instances(cloud_connection, app, instances, log_file):
+    """ Destroy EC2 instances given in parameter
+
+        :param  cloud_connection: The app Cloud Connection object
+        :param  app  string: The ghost "app" object.
+        :param  instances list: List of instances to terminate (ids)
+        :param  log_file: Logging path
+    """
+    conn = cloud_connection.get_connection(app['region'], ["ec2"])
     if len(instances) > 0:
         log(instances, log_file)
         conn.terminate_instances(instance_ids=instances)
