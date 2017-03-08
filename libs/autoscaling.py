@@ -50,7 +50,7 @@ def flush_instances_update_autoscale(as_conn, cloud_connection, app, log_file):
     update_auto_scaling_group_attributes(as_conn, app['autoscale']['name'], 0, 0, 0)
     destroy_ec2_instances(cloud_connection, app, log_file)
 
-def update_auto_scaling_group_attributes(as_conn, as_name, as_min, as_max, as_desired):
+def update_auto_scaling_group_attributes(as_conn, as_name, as_min, as_max, as_desired, termination_policies=None):
     """
     Updates the AutoScale group attributes with given parameters
 
@@ -62,6 +62,11 @@ def update_auto_scaling_group_attributes(as_conn, as_name, as_min, as_max, as_de
         MaxSize=as_max,
         DesiredCapacity=as_desired,
     )
+    if termination_policies:
+        as_conn.update_auto_scaling_group(
+            AutoScalingGroupName=as_name,
+            TerminationPolicies=termination_policies
+        )
 
 def check_autoscale_instances_lifecycle_state(instances, i_state='InService'):
     """

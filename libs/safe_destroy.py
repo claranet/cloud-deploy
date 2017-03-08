@@ -5,6 +5,7 @@
 """
 
 import time
+from fabric.colors import green as _green, yellow as _yellow, red as _red
 
 from ghost_tools import GCallException, log
 from ghost_aws import suspend_autoscaling_group_processes, resume_autoscaling_group_processes
@@ -47,6 +48,7 @@ class SafeDestroy(SafeDeployment):
 
         as_conn = self.cloud_connection.get_connection(app_region, ['autoscaling'], boto_version='boto3')
         elb_conn = self.cloud_connection.get_connection(app_region, ["ec2", "elb"])
+        destroy_asg_policy = ['OldestLaunchConfiguration']
 
         try:
             elb_instances = get_elb_instance_status_autoscaling_group(elb_conn, self.as_name, as_conn)
@@ -59,11 +61,13 @@ class SafeDestroy(SafeDeployment):
                 raise GCallException('Cannot continue because one or more instances are not in InService Lifecycle state')
             else:
                 group_size = len(instances_list)
-                log('Suspending "Terminate" process in the AutoScale and provisioning %s instance(s)' % group_size, self.log_file)
+                original_termination_policies = asg_infos['TerminationPolicies']
+
+                log(_green('Suspending "Terminate" process in the AutoScale and provisioning %s instance(s)' % group_size), self.log_file)
                 suspend_autoscaling_group_processes(as_conn, self.as_name, ['Terminate'], self.log_file)
                 update_auto_scaling_group_attributes(as_conn, self.as_name, asg_infos['MinSize'], asg_infos['MaxSize'] + group_size, asg_infos['DesiredCapacity'] + group_size)
 
-                log('Deregister old instances from the Load Balancer (%s)' % str([host['id'] for host in instances_list]), self.log_file)
+                log(_green('Deregister old instances from the Load Balancer (%s)' % str([host['id'] for host in instances_list])), self.log_file)
                 deregister_instance_from_elb(elb_conn, elb_instances.keys(), [host['id'] for host in instances_list], self.log_file)
                 wait_con_draining = int(get_connection_draining_value(elb_conn, elb_instances.keys()))
                 log('Waiting {0}s: The connection draining time'.format(wait_con_draining), self.log_file)
@@ -84,8 +88,8 @@ class SafeDestroy(SafeDeployment):
                     time.sleep(10)
 
                 suspend_autoscaling_group_processes(as_conn, self.as_name, ['Launch', 'Terminate'], self.log_file)
-                log('Restore initial AutoScale attributes and destroy old instances for this group (%s)' % str([host['id'] for host in instances_list]), self.log_file)
-                update_auto_scaling_group_attributes(as_conn, self.as_name, asg_infos['MinSize'], asg_infos['MaxSize'], asg_infos['DesiredCapacity'])
+                log(_green('Restore initial AutoScale attributes and destroy old instances for this group (%s)' % str([host['id'] for host in instances_list])), self.log_file)
+                update_auto_scaling_group_attributes(as_conn, self.as_name, asg_infos['MinSize'], asg_infos['MaxSize'], asg_infos['DesiredCapacity'], destroy_asg_policy)
                 destroy_specific_ec2_instances(self.cloud_connection, self.app, [host['id'] for host in instances_list], self.log_file)
 
                 resume_autoscaling_group_processes(as_conn, self.as_name, ['Terminate'], self.log_file)
@@ -95,7 +99,8 @@ class SafeDestroy(SafeDeployment):
                     time.sleep(20)
                     asg_updated_infos = get_autoscaling_group_object(as_conn, self.as_name)
 
-                log('%s instance(s) have been re-generated and are registered in their ELB' % group_size, self.log_file)
+                update_auto_scaling_group_attributes(as_conn, self.as_name, asg_infos['MinSize'], asg_infos['MaxSize'], asg_infos['DesiredCapacity'], original_termination_policies)
+                log(_green('%s instance(s) have been re-generated and are registered in their ELB' % group_size), self.log_file)
                 return True
         finally:
             resume_autoscaling_group_processes(as_conn, self.as_name, ['Launch', 'Terminate'], self.log_file)
