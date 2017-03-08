@@ -55,6 +55,11 @@ def update_auto_scaling_group_attributes(as_conn, as_name, as_min, as_max, as_de
     Updates the AutoScale group attributes with given parameters
 
     :param  as_conn  string: The boto3 Autoscaling Group connection.
+    :param  as_name  string: Autoscaling Group name to update
+    :param  as_min   string: Minimum of instances in the ASG
+    :param  as_max   string: Maximum of instances in the ASG
+    :param  as_desired string: Desired number of running instances in the ASG
+    :param  termination_policies array of string: List of termination policies to use in the ASG
     """
     as_conn.update_auto_scaling_group(
         AutoScalingGroupName=as_name,
