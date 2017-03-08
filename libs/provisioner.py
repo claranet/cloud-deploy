@@ -10,9 +10,9 @@ ZABBIX_REPO="git@bitbucket.org:morea/zabbix.git"
 
 
 class FeaturesProvisioner:
-    def __init__(self, log_file, unique_id, config, global_config):
+    def __init__(self, log_file, name, unique_id, config, global_config):
         self._log_file = log_file
-        self.name = 'salt'
+        self.name = name
         self.unique = unique_id
         self.config = config
         self.global_config = global_config

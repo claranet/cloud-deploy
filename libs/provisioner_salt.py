@@ -6,7 +6,7 @@ from .provisioner import FeaturesProvisioner
 
 class FeaturesProvisionerSalt(FeaturesProvisioner):
     def __init__(self, log_file, unique_id, config, global_config):
-        FeaturesProvisioner.__init__(self, log_file, unique_id, config, global_config)
+        FeaturesProvisioner.__init__(self, 'salt', log_file, unique_id, config, global_config)
 
     def build_provisioner_features_files(self, params, features):
         self._build_salt_top(params)
