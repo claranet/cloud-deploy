@@ -71,22 +71,30 @@ class SafeDestroy(SafeDeployment):
 
                 asg_updated_infos = get_autoscaling_group_object(as_conn, self.as_name)
                 while len(asg_updated_infos['Instances']) < asg_updated_infos['DesiredCapacity']:
-                    log('Waiting 30s because the instances are not provisioned in the AutoScale', self.log_file)
+                    log('Waiting 30s because the instance(s) are not provisioned in the AutoScale', self.log_file)
                     time.sleep(30)
                     asg_updated_infos = get_autoscaling_group_object(as_conn, self.as_name)
                 while not check_autoscale_instances_lifecycle_state(asg_updated_infos['Instances']):
-                    log('Waiting 30s because the instances are not in InService state in the AutoScale', self.log_file)
+                    log('Waiting 30s because the instance(s) are not in InService state in the AutoScale', self.log_file)
                     time.sleep(30)
                     asg_updated_infos = get_autoscaling_group_object(as_conn, self.as_name)
+
+                while len([i for i in get_elb_instance_status_autoscaling_group(elb_conn, self.as_name, as_conn).values() if 'outofservice' in i.values()]):
+                    log('Waiting 10s because the instance(s) are not in service in the ELB', self.log_file)
+                    time.sleep(10)
 
                 suspend_autoscaling_group_processes(as_conn, self.as_name, ['Launch', 'Terminate'], self.log_file)
                 log('Restore initial AutoScale attributes and destroy old instances for this group (%s)' % str([host['id'] for host in instances_list]), self.log_file)
                 update_auto_scaling_group_attributes(as_conn, self.as_name, asg_infos['MinSize'], asg_infos['MaxSize'], asg_infos['DesiredCapacity'])
                 destroy_specific_ec2_instances(self.cloud_connection, self.app, [host['id'] for host in instances_list], self.log_file)
 
-                while len([i for i in get_elb_instance_status_autoscaling_group(elb_conn, self.as_name, as_conn).values() if 'outofservice' in i.values()]):
-                    log('Waiting 10s because the instance(s) are not in service in the ELB', self.log_file)
-                    time.sleep(10)
+                resume_autoscaling_group_processes(as_conn, self.as_name, ['Terminate'], self.log_file)
+                asg_updated_infos = get_autoscaling_group_object(as_conn, self.as_name)
+                while len(asg_updated_infos['Instances']) > asg_updated_infos['DesiredCapacity']:
+                    log('Waiting 20s because the old instance(s) are not removed from the AutoScale', self.log_file)
+                    time.sleep(20)
+                    asg_updated_infos = get_autoscaling_group_object(as_conn, self.as_name)
+
                 log('%s instance(s) have been re-generated and are registered in their ELB' % group_size, self.log_file)
                 return True
         finally:
