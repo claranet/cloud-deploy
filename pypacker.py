@@ -23,8 +23,10 @@ class Packer:
             os.makedirs(PACKER_JSON_PATH)
 
         provisioners_config = config.get('features_provisioners', {
-            "git_repo": "git@bitbucket.org:morea/morea-salt-formulas.git",
-            "git_revision": "master",
+            'salt': {
+                'git_repo': config.get('salt_formulas_repo', 'git@bitbucket.org:morea/morea-salt-formulas.git'),
+                'git_revision': config.get('salt_formulas_branch', 'master'),
+            }
         })
 
         self.provisioners = []
