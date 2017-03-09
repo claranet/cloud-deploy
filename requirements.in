@@ -36,6 +36,7 @@ sh
 six
 subprocess32
 tox
+uwsgi
 Werkzeug
 WTForms
 yapf
