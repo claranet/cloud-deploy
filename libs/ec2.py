@@ -7,6 +7,8 @@
 #!/usr/bin/env python
 
 from ghost_log import log
+from ghost_aws import create_block_device, generate_userdata
+from ghost_tools import GCallException
 from .blue_green import get_blue_green_from_app
 
 def find_ec2_pending_instances(cloud_connection, ghost_app, ghost_env, ghost_role, region, as_group, ghost_color=None):
@@ -102,3 +104,90 @@ def get_ec2_instance_status(cloud_connection, aws_region, instance_id):
         MaxResults=1,
     )['InstanceStatuses'][0]
     return ec2_status
+
+def create_ec2_instance(cloud_connection, app, app_color, config, private_ip_address, subnet_id, log_file):
+    """ Creates an EC2 instance and return its ID.
+
+        :param  cloud_connection: The app Cloud Connection object
+        :param  app: Ghost app document
+        :param  app_color: Color value if BlueGreen application type
+        :param  config: Ghost config settings
+        :param  private_ip_address: Private IP address to use when creating the instance
+        :param  subnet_id: Subnet to use when creating the instance
+        :param  log_file: Logging file
+
+        :return the EC2 instance object with all its details
+    """
+
+    log(_yellow(" INFO: Creating User-Data"), log_file)
+    ghost_root_path = config.get('ghost_root_path', '/usr/local/share/ghost/')
+    userdata = generate_userdata(config['bucket_s3'], config.get('bucket_region', app['region']), ghost_root_path)
+
+    log(_yellow(" INFO: Creating EC2 instance"), log_file)
+    if app['ami']:
+        log(" CONF: AMI: {0}".format(app['ami']), log_file)
+        log(" CONF: Region: {0}".format(app['region']), log_file)
+
+        conn = cloud_connection.get_connection(app['region'], ["ec2"])
+        image = app['ami']
+        interface = cloud_connection.launch_service(
+                ["ec2", "networkinterface", "NetworkInterfaceSpecification"],
+                subnet_id=subnet_id,
+                groups=app['environment_infos']['security_groups'],
+                associate_public_ip_address=True, private_ip_address=private_ip_address
+                )
+        interfaces = cloud_connection.launch_service(
+                ["ec2", "networkinterface", "NetworkInterfaceCollection"],
+                interface
+                )
+        if 'root_block_device' in app['environment_infos']:
+            bdm = create_block_device(cloud_connection, app['region'], app['environment_infos']['root_block_device'])
+        else:
+            bdm = create_block_device(cloud_connection, app['region'], {})
+        reservation = conn.run_instances(image_id=app['ami'], \
+                key_name=app['environment_infos']['key_name'], \
+                network_interfaces=interfaces, \
+                instance_type=app['instance_type'], \
+                instance_profile_name=app['environment_infos']['instance_profile'], \
+                user_data=userdata, block_device_map=bdm)
+
+        #Getting instance metadata
+        instance = reservation.instances[0]
+        if instance.id:
+            # Checking if instance is ready before tagging
+            while not get_ec2_instance_status(cloud_connection, app['region'], instance.id)['InstanceState'] == 'running':
+                log('Instance not running, waiting 10s before tagging.', log_file)
+                time.sleep(10)
+
+            # Tagging
+            for ghost_tag_key, ghost_tag_val in {'app': 'name', 'app_id': '_id', 'env': 'env', 'role': 'role'}.iteritems():
+                log("Tagging instance [{id}] with '{tk}':'{tv}'".format(id=instance.id, tk=ghost_tag_key, tv=str(app[ghost_tag_val])), log_file)
+                conn.create_tags([instance.id], {ghost_tag_key: str(app[ghost_tag_val])})
+            if app_color:
+                log("Tagging instance [{id}] with '{tk}':'{tv}'".format(id=instance.id, tk='color', tv=app_color), log_file)
+                conn.create_tags([instance.id], {"color": app_color})
+
+            tag_ec2_name = False
+            if 'instance_tags' in app['environment_infos']:
+                for app_tag in app['environment_infos']['instance_tags']:
+                    log("Tagging instance [{id}] with '{tk}':'{tv}'".format(id=instance.id, tk=app_tag['tag_name'], tv=app_tag['tag_value']), log_file)
+                    conn.create_tags([instance.id], {app_tag['tag_name']: app_tag['tag_value']})
+                    if app_tag['tag_name'] == 'Name':
+                        tag_ec2_name = True
+            if not tag_ec2_name:
+                ec2_name = "ec2.{0}.{1}.{2}".format(app['env'], app['role'], app['name'])
+                log("Tagging instance [{id}] with '{tk}':'{tv}'".format(id=instance.id, tk='Name', tv=ec2_name), log_file)
+                conn.create_tags([instance.id], {'Name': ec2_name})
+
+            log(" CONF: Private IP: %s" % instance.private_ip_address, log_file)
+            log(" CONF: Public IP: %s" % instance.ip_address, log_file)
+            log(" CONF: Public DNS: %s" % instance.public_dns_name, log_file)
+            return instance
+        else:
+            log(_red("ERROR: Cannot get instance metadata. Please check the AWS Console."), log_file)
+            raise GCallException("ERROR: Cannot get instance metadata. Please check the AWS Console.")
+    else:
+        log(_red("ERROR: No AMI set, please use buildimage before"), log_file)
+        raise GCallException("ERROR: No AMI set, please use buildimage before")
+
+    return None
