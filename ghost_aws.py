@@ -2,11 +2,10 @@ import os
 import time
 import yaml
 
-from jinja2 import Environment, FileSystemLoader
-
 from libs.safe_deployment import SafeDeployment
 from libs.deploy import launch_deploy
 from libs.ec2 import find_ec2_pending_instances, find_ec2_running_instances
+from libs.ec2 import create_block_device, generate_userdata
 from libs.autoscaling import get_autoscaling_group_object
 from libs.blue_green import get_blue_green_from_app
 
@@ -166,17 +165,6 @@ def create_launch_config(cloud_connection, app, userdata, ami_id):
     conn_as.create_launch_configuration(launch_config)
     return launch_config
 
-def generate_userdata(bucket_s3, s3_region, root_ghost_path):
-    jinja_templates_path='%s/scripts' % root_ghost_path
-    if(os.path.exists('%s/stage1' % jinja_templates_path)):
-        loader=FileSystemLoader(jinja_templates_path)
-        jinja_env = Environment(loader=loader)
-        template = jinja_env.get_template('stage1')
-        userdata = template.render(bucket_s3=bucket_s3, bucket_region=s3_region)
-        return userdata
-    else:
-        return ""
-
 def check_autoscale_exists(cloud_connection, as_name, region):
     conn_as = cloud_connection.get_connection(region, ['autoscaling'], boto_version='boto3')
     return get_autoscaling_group_object(conn_as, as_name) is not None
@@ -314,34 +302,6 @@ def get_app_tags(app, log_file=None):
     if log_file:
         log("[{0}] will be updated with: {1}".format(app['autoscale']['name'], ", ".join(tags_app.keys())), log_file)
     return tags_app
-
-def create_block_device(cloud_connection, region, rbd={}):
-    conn = cloud_connection.get_connection(region, ["ec2"])
-    dev_sda1 = cloud_connection.launch_service(
-        ["ec2", "blockdevicemapping", "EBSBlockDeviceType"],
-        connection=conn,
-        delete_on_termination=True
-    )
-    if 'type' in rbd:
-        dev_sda1.volume_type = rbd['type']
-    else:
-        dev_sda1.volume_type = "gp2"
-    if 'size' in rbd:
-        dev_sda1.size = rbd['size']
-    else:
-        rbd['size'] = 10
-        dev_sda1.size = rbd['size']
-    bdm = cloud_connection.launch_service(
-        ["ec2", "blockdevicemapping", "BlockDeviceMapping"],
-        connection=conn
-    )
-    if 'name' in rbd:
-        bdm[rbd['name']] = dev_sda1
-    else:
-        rbd['name'] = "/dev/xvda"
-        bdm[rbd['name']] = dev_sda1
-    return bdm
-
 
 def normalize_application_tags(app_original, app_updated):
     """ Simple function to normalize application tags when application is created or updated.

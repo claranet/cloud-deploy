@@ -1,14 +1,16 @@
-"""
-    Library to retrieve EC2 instance informations depending
-    of their state.
-
-"""
 # -*- coding: utf-8 -*-
-#!/usr/bin/env python
+"""
+    Library to retrieve and manage EC2 instances.
+"""
+
+import os
+import time
+from fabric.colors import green as _green, yellow as _yellow, red as _red
+from jinja2 import Environment, FileSystemLoader
 
 from ghost_log import log
-from ghost_aws import create_block_device, generate_userdata
 from ghost_tools import GCallException
+
 from .blue_green import get_blue_green_from_app
 
 def find_ec2_pending_instances(cloud_connection, ghost_app, ghost_env, ghost_role, region, as_group, ghost_color=None):
@@ -98,12 +100,49 @@ def get_ec2_instance_status(cloud_connection, aws_region, instance_id):
         :param  aws_region  string: The region to use
         :param  instance_id string: Instance ID to check
     """
-    conn = cloud_connection.get_connection(region, ["ec2"], boto_version='boto3')
+    conn = cloud_connection.get_connection(aws_region, ["ec2"], boto_version='boto3')
     ec2_status = conn.describe_instance_status(
         InstanceIds=[instance_id],
-        MaxResults=1,
-    )['InstanceStatuses'][0]
+    )['InstanceStatuses']
     return ec2_status
+
+def create_block_device(cloud_connection, region, rbd={}):
+    conn = cloud_connection.get_connection(region, ["ec2"])
+    dev_sda1 = cloud_connection.launch_service(
+        ["ec2", "blockdevicemapping", "EBSBlockDeviceType"],
+        connection=conn,
+        delete_on_termination=True
+    )
+    if 'type' in rbd:
+        dev_sda1.volume_type = rbd['type']
+    else:
+        dev_sda1.volume_type = "gp2"
+    if 'size' in rbd:
+        dev_sda1.size = rbd['size']
+    else:
+        rbd['size'] = 10
+        dev_sda1.size = rbd['size']
+    bdm = cloud_connection.launch_service(
+        ["ec2", "blockdevicemapping", "BlockDeviceMapping"],
+        connection=conn
+    )
+    if 'name' in rbd:
+        bdm[rbd['name']] = dev_sda1
+    else:
+        rbd['name'] = "/dev/xvda"
+        bdm[rbd['name']] = dev_sda1
+    return bdm
+
+def generate_userdata(bucket_s3, s3_region, root_ghost_path):
+    jinja_templates_path='%s/scripts' % root_ghost_path
+    if(os.path.exists('%s/stage1' % jinja_templates_path)):
+        loader=FileSystemLoader(jinja_templates_path)
+        jinja_env = Environment(loader=loader)
+        template = jinja_env.get_template('stage1')
+        userdata = template.render(bucket_s3=bucket_s3, bucket_region=s3_region)
+        return userdata
+    else:
+        return ""
 
 def create_ec2_instance(cloud_connection, app, app_color, config, private_ip_address, subnet_id, log_file):
     """ Creates an EC2 instance and return its ID.
@@ -155,9 +194,10 @@ def create_ec2_instance(cloud_connection, app, app_color, config, private_ip_add
         instance = reservation.instances[0]
         if instance.id:
             # Checking if instance is ready before tagging
-            while not get_ec2_instance_status(cloud_connection, app['region'], instance.id)['InstanceState'] == 'running':
+            while not instance.state == u'running':
                 log('Instance not running, waiting 10s before tagging.', log_file)
                 time.sleep(10)
+                instance.update()
 
             # Tagging
             for ghost_tag_key, ghost_tag_val in {'app': 'name', 'app_id': '_id', 'env': 'env', 'role': 'role'}.iteritems():
