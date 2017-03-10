@@ -88,3 +88,17 @@ def destroy_ec2_instances(cloud_connection, app, log_file):
         conn.terminate_instances(instance_ids=instances)
     else:
         log('No instances to destroy found', log_file)
+
+def get_ec2_instance_status(cloud_connection, aws_region, instance_id):
+    """ Get EC2 instance status
+
+        :param  cloud_connection: The app Cloud Connection object
+        :param  aws_region  string: The region to use
+        :param  instance_id string: Instance ID to check
+    """
+    conn = cloud_connection.get_connection(region, ["ec2"], boto_version='boto3')
+    ec2_status = conn.describe_instance_status(
+        InstanceIds=[instance_id],
+        MaxResults=1,
+    )['InstanceStatuses'][0]
+    return ec2_status

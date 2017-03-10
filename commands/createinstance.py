@@ -7,6 +7,7 @@ from ghost_log import log
 from ghost_aws import create_block_device, generate_userdata
 from ghost_tools import get_aws_connection_data
 from libs.blue_green import get_blue_green_from_app
+from libs.ec2 import get_ec2_instance_status
 
 COMMAND_DESCRIPTION = "Create a new instance"
 
@@ -71,6 +72,11 @@ class Createinstance():
                 #Getting instance metadata
                 instance = reservation.instances[0]
                 if instance.id:
+                    # Checking if instance is ready before tagging
+                    while not get_ec2_instance_status(self._cloud_connection, self._app['region'], instance.id)['InstanceState'] == 'running':
+                        log('Instance not running, waiting 10s before tagging.', self._log_file)
+                        time.sleep(10)
+
                     # Tagging
                     for ghost_tag_key, ghost_tag_val in {'app': 'name', 'app_id': '_id', 'env': 'env', 'role': 'role'}.iteritems():
                         log("Tagging instance [{id}] with '{tk}':'{tv}'".format(id=instance.id, tk=ghost_tag_key, tv=str(self._app[ghost_tag_val])), self._log_file)
@@ -90,12 +96,6 @@ class Createinstance():
                         ec2_name = "ec2.{0}.{1}.{2}".format(self._app['env'], self._app['role'], self._app['name'])
                         log("Tagging instance [{id}] with '{tk}':'{tv}'".format(id=instance.id, tk='Name', tv=ec2_name), self._log_file)
                         conn.create_tags([instance.id], {'Name': ec2_name})
-
-                    #Check instance state
-                    while instance.state == u'pending':
-                        log(_yellow("STATE: Instance state: %s" % instance.state), self._log_file)
-                        time.sleep(10)
-                        instance.update()
 
                     log(" CONF: Private IP: %s" % instance.private_ip_address, self._log_file)
                     log(" CONF: Public IP: %s" % instance.ip_address, self._log_file)
