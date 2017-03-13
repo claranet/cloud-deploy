@@ -133,10 +133,14 @@ def create_block_device(cloud_connection, region, rbd={}):
         bdm[rbd['name']] = dev_sda1
     return bdm
 
-def generate_userdata(bucket_s3, s3_region, root_ghost_path):
-    jinja_templates_path='%s/scripts' % root_ghost_path
-    if(os.path.exists('%s/stage1' % jinja_templates_path)):
-        loader=FileSystemLoader(jinja_templates_path)
+def generate_userdata(bucket_s3, s3_region, ghost_root_path):
+    """ Generates an EC2 userdata script using the Ghost's "stage1" script.
+
+        :return The formatted stage1 script
+    """
+    jinja_templates_path = '%s/scripts' % ghost_root_path
+    if (os.path.exists('%s/stage1' % jinja_templates_path)):
+        loader = FileSystemLoader(jinja_templates_path)
         jinja_env = Environment(loader=loader)
         template = jinja_env.get_template('stage1')
         userdata = template.render(bucket_s3=bucket_s3, bucket_region=s3_region)
