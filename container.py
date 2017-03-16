@@ -20,15 +20,15 @@ class Lxd:
 
     def _create_containers_config(self):
         config = {}
+        alias = self._app['build_infos']["container"]
         if self._job["command"] == u"buildimage":
-            alias = self._app['build_infos']['container']
             if self._config.get('container_endpoint','localhost') == "localhost":
                 config['source'] = { "type": "image", "alias": alias }
             else:
                 config['source'] = {"type": "image", "protocol":"simplestreams", "mode":"pull" ,"alias": alias, "server" : self._config.get('container_endpoint','https://images.linuxcontainers.org')}
 
         elif self._job["command"] == u"deploy":
-            alias = self._app['build_infos']["container"]
+            config['source'] = { "type": "image", "alias": alias }
 
         config['name'] = self.container_name
         config['ephemeral'] = False

@@ -74,6 +74,12 @@ class Buildimage():
             container = container._build_image()
 
         if ami_id is not "ERROR":
+            container = ""
+                if self._app['build_infos']['container']:
+                    log("Generating a new container", self._log_file)
+                    container = Lxd(self._app, self._job, self._config, self._log_file)
+                    container = container._build_image()
+
             touch_app_manifest(self._app, self._config, self._log_file)
             log("Update app in MongoDB to update AMI: {0}".format(ami_id), self._log_file)
             self._update_app_ami(ami_id, ami_name)
