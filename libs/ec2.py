@@ -101,7 +101,7 @@ def destroy_ec2_instances(cloud_connection, app, log_file):
     instances = []
     for r in running_instances:
         instances.append(r['id'])
-    destroy_specific_ec2_instances(cloud_connection, app, instances, log_file)
+    return destroy_specific_ec2_instances(cloud_connection, app, instances, log_file)
 
 def destroy_specific_ec2_instances(cloud_connection, app, instances, log_file):
     """ Destroy EC2 instances given in parameter
@@ -115,8 +115,10 @@ def destroy_specific_ec2_instances(cloud_connection, app, instances, log_file):
     if len(instances) > 0:
         log(instances, log_file)
         conn.terminate_instances(instance_ids=instances)
+        return len(instances)
     else:
         log('No instances to destroy found', log_file)
+        return 0
 
 def get_ec2_instance_status(cloud_connection, aws_region, instance_id):
     """ Get EC2 instance status

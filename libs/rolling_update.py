@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 """
-    The Safe Destroy library aims to create a sweet way to destroy EC2 instances and let the AutoScale renew them smoothly.
+    The Rolling update library aims to create a sweet way to destroy EC2 instances and let the AutoScale renew them smoothly.
 """
 
 import time
@@ -16,7 +16,7 @@ from .ec2 import find_ec2_running_instances, destroy_specific_ec2_instances
 from .autoscaling import get_autoscaling_group_object, update_auto_scaling_group_attributes, check_autoscale_instances_lifecycle_state
 from .elb import get_elb_instance_status_autoscaling_group, get_connection_draining_value, register_instance_from_elb, deregister_instance_from_elb
 
-class SafeDestroy(SafeDeployment):
+class RollingUpdate(SafeDeployment):
     """ Class which will manage the safe destroy process """
 
     def __init__(self, cloud_connection, app, safe_infos, log_file):
@@ -35,7 +35,7 @@ class SafeDestroy(SafeDeployment):
         running_instances = find_ec2_running_instances(cloud_connection, app_name, app_env, app_role, app_region, ghost_color=app_color)
         SafeDeployment.__init__(self, cloud_connection, app, None, running_instances, log_file, safe_infos, None, as_name)
 
-    def elb_safe_destroy(self, instances_list):
+    def elb_rolling_update(self, instances_list):
         """ Manage the safe destroy process for the ELB.
 
             :param  instances_list  list: Instances on which to destroy (list of dict. ex: [{'id':XXX, 'private_ip_address':XXXX}...]).
@@ -105,15 +105,16 @@ class SafeDestroy(SafeDeployment):
         finally:
             resume_autoscaling_group_processes(as_conn, self.as_name, ['Launch', 'Terminate'], self.log_file)
 
-    def safe_manager(self, safe_strategy):
-        """  Global manager for the safe destroy process.
+    def do_rolling(self, rolling_strategy):
+        """  Main entry point for Rolling Update process.
 
-            :param  safe_strategy string: The type of safe destroy strategy(1by1-1/3-25%-50%)
+            :param  rolling_strategy string: The type of rolling strategy(1by1-1/3-25%-50%)
             :return True if operation succeed otherwise an Exception will be raised.
         """
-        for host_group in self.split_hosts_list(safe_strategy):
+        hosts = self.split_hosts_list(rolling_strategy) if rolling_strategy else self.hosts_list
+        for host_group in hosts:
             if self.safe_infos['load_balancer_type'] == 'elb':
-                self.elb_safe_destroy(host_group)
+                self.elb_rolling_update(host_group)
 #                elif self.safe_infos['load_balancer_type'] == 'alb':
             else:
                 raise GCallException('Load balancer type not supported for Safe destroy')
