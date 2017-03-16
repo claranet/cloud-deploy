@@ -13,6 +13,8 @@ develop-eggs
 dist
 downloads
 eggs
+.eggs/
+Ghost.egg-info/
 .gitconfig
 installed.cfg
 .lesshst
