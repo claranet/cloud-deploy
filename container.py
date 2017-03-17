@@ -25,6 +25,7 @@ class Lxd:
             })
 
         self._provisioners_config = config.get('features_provisioners', {'salt'})
+        self.skip_salt_bootstrap_option = self._job['options'][0] if 'options' in self._job and len(self._job['options']) > 0 else True
 
     def _create_containers_config(self):
         config = {}
@@ -101,7 +102,7 @@ class Lxd:
         self._container_log(update)
         wget = self.container.execute(["apt-get", "-y", "--force-yes", "install", "apt-utils", "wget" , "sudo"])
         self._container_log(wget)
-        if 'salt' in self._provisioners_config:
+        if 'salt' in self._provisioners_config and self.skip_salt_bootstrap_option:
             salt_bootstrap = self.container.execute(["wget", "-O", "bootstrap-salt.sh", "https://bootstrap.saltstack.com"])
             self._container_log(salt_bootstrap)
             salt_bootstrap = self.container.execute(["sh", "bootstrap-salt.sh"])
