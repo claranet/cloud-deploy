@@ -24,6 +24,7 @@ class Lxd:
                     'debug': self._config.get('debug', 'False'),
             })
 
+        self._provisioners_config = config.get('features_provisioners', {'salt'})
 
     def _create_containers_config(self):
         config = {}
@@ -100,10 +101,11 @@ class Lxd:
         self._container_log(update)
         wget = self.container.execute(["apt-get", "-y", "--force-yes", "install", "apt-utils", "wget" , "sudo"])
         self._container_log(wget)
-        salt_bootstrap = self.container.execute(["wget", "-O", "bootstrap-salt.sh", "https://bootstrap.saltstack.com"])
-        self._container_log(salt_bootstrap)
-        salt_bootstrap = self.container.execute(["sh", "bootstrap-salt.sh"])
-        self._container_log(salt_bootstrap)
+        if 'salt' in self._provisioners_config:
+            salt_bootstrap = self.container.execute(["wget", "-O", "bootstrap-salt.sh", "https://bootstrap.saltstack.com"])
+            self._container_log(salt_bootstrap)
+            salt_bootstrap = self.container.execute(["sh", "bootstrap-salt.sh"])
+            self._container_log(salt_bootstrap)
 
     def _lxd_run_salt_call(self):
         log("run salt features install", self._log_file)
@@ -143,7 +145,8 @@ class Lxd:
         self._create_container()
         self._lxd_bootstrap()
         self._lxd_run_hooks_pre()
-        self._lxd_run_salt_call()
+        if 'salt' in self._provisioners_config:
+            self._lxd_run_salt_call()
         self._lxd_run_hooks_post()
         self.container.stop(wait=True)
         return self
