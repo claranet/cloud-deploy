@@ -195,12 +195,11 @@ apps_schema = {
             'ami_name': {'type': 'string',
                          'readonly': True},
             'source_container_image': {'type': 'string',
-                          'regex': '',
-                          'required': False
+                          'regex': '^centos[/][0-9]|debian[/][a-z]*|[0-9]|^$',
+                          'required': True
                           },
             'container_image': {'type': 'string',
-                          'regex': '',
-                          'required': False
+                          'readonly': True
                           },
             'subnet_id': {'type': 'string',
                           'regex': '^subnet-[a-z0-9]*$',
