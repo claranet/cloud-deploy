@@ -64,6 +64,9 @@ class Buildimage():
         self._db.apps.update({'_id': self._app['_id']}, {'$set': {'ami': ami_id, 'build_infos.ami_name': ami_name}})
         self._worker.update_status("done")
 
+    def _update_container_source(self, container):
+        self._db.apps.update({'_id': self._app['_id']},{'$set': {'build_infos.container_image': str(container) }})
+ 
     def execute(self):
         try:
             ami_id, ami_name = self._aws_image_builder.start_builder()
@@ -79,7 +82,7 @@ class Buildimage():
 
         if ami_id is not "ERROR":
             container = ""
-            if self._app['build_infos']['container']:
+            if self._app['build_infos']['source_container_image']:
                 log("Generating a new container", self._log_file)
                 container = Lxd(self._app, self._job, self._config, self._log_file)
                 container = container._build_image()

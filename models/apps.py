@@ -194,7 +194,11 @@ apps_schema = {
                            'required': True},
             'ami_name': {'type': 'string',
                          'readonly': True},
-            'container': {'type': 'string',
+            'source_container_image': {'type': 'string',
+                          'regex': '',
+                          'required': False
+                          },
+            'container_image': {'type': 'string',
                           'regex': '',
                           'required': False
                           },
