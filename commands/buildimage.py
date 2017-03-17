@@ -75,10 +75,16 @@ class Buildimage():
 
         if ami_id is not "ERROR":
             container = ""
-                if self._app['build_infos']['container']:
-                    log("Generating a new container", self._log_file)
-                    container = Lxd(self._app, self._job, self._config, self._log_file)
-                    container = container._build_image()
+            if self._app['build_infos']['container']:
+                log("Generating a new container", self._log_file)
+                container = Lxd(self._app, self._job, self._config, self._log_file)
+                container = container._build_image()
+                if container:
+                    container._publish_container()
+                    self._update_container_source(self._job['_id'])
+                    container._clean_lxd_images()
+                    if not self._config.get('container_debug', 'False'):
+                        container._clean()
 
             touch_app_manifest(self._app, self._config, self._log_file)
             log("Update app in MongoDB to update AMI: {0}".format(ami_id), self._log_file)

@@ -357,7 +357,7 @@ class Deploy():
             gcall('du -hs .', 'Display current build directory disk usage', self._log_file)
 
         # Execute buildpack
-        execute_module_script_on_ghost(self._app, module, 'build_pack', 'Buildpack', clone_path, self._log_file,self._job,self._config)
+        execute_module_script_on_ghost(self._app, module, 'build_pack', 'Buildpack', clone_path, self._log_file, self._job,self._config)
 
         # Store postdeploy script in tarball
         if 'post_deploy' in module:
@@ -417,7 +417,7 @@ GHOST_MODULE_USER="{user}"
 
         if 'after_all_deploy' in module:
             log("After all deploy script found for '{0}'. Executing it.".format(module['name']), self._log_file)
-            execute_module_script_on_ghost(self._app, module, 'after_all_deploy', 'After all deploy', clone_path, self._log_file,None,None)
+            execute_module_script_on_ghost(self._app, module, 'after_all_deploy', 'After all deploy', clone_path, self._log_file, None, None)
 
         now = datetime.datetime.utcnow()
         deployment = {

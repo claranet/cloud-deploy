@@ -45,7 +45,7 @@ def execute_module_script_on_ghost(app, module, script_name, script_friendly_nam
         script_env.update(get_ghost_env_variables(app, module, app.get('blue_green', {}).get('color', ''), None))
         if script_name is 'build_pack' and app['build_infos']['container']:
             lxd = Lxd(app, job, config, log_file)
-            lxd = lxd._deploy(script_path,module)
+            lxd = lxd._deploy(script_path, module)
         else :
             gcall('bash %s' % script_path, '%s: Execute' % script_friendly_name, log_file, env=script_env)
             gcall('du -hs .', 'Display current build directory disk usage', log_file)
