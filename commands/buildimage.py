@@ -39,6 +39,7 @@ class Buildimage():
             **self._connection_data
         )
         self._aws_image_builder = AWSImageBuilder(self._app, self._job, self._db, self._log_file, self._config)
+        self.container_options = self._config['container']
 
     def _get_notification_message_done(self, ami_id):
         """
@@ -83,7 +84,7 @@ class Buildimage():
                     container._publish_container()
                     self._update_container_source(self._job['_id'])
                     container._clean_lxd_images()
-                    if not self._config.get('container_debug', 'False'):
+                    if not self.container_options.get('debug', 'False'):
                         container._clean()
 
             touch_app_manifest(self._app, self._config, self._log_file)

@@ -17,12 +17,13 @@ class Lxd:
                                                                               role=self._app['role'],
                                                                               name=self._app['name'],
                                                                               date=time.strftime("%Y%m%d-%H%M%S"))
+        self.container_options = self._config['container']
 
     def _create_containers_config(self):
         config = {}
         alias = self._app['build_infos']["container"]
         if self._job["command"] == u"buildimage":
-            if self._config.get('container_endpoint','localhost') == "localhost":
+            if self.container_options.get('endpoint', 'localhost') == "localhost":
                 config['source'] = { "type": "image", "alias": alias }
             else:
                 config['source'] = {"type": "image", "protocol":"simplestreams", "mode":"pull" ,"alias": alias, "server" : self._config.get('container_endpoint','https://images.linuxcontainers.org')}
@@ -137,6 +138,6 @@ class Lxd:
         self._create_container()
         self._execute_buildpack(script_path,module)
         self.container.stop(wait=True)
-        if not self._config.get('container_debug','False'):
+        if not self.container_options.get('debug', 'False'):
             self._clean()
         return self
