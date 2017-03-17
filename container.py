@@ -5,6 +5,8 @@ import json
 from ghost_log import log
 from pylxd import Client
 
+PROVISIONER_LOCAL_TREE="/tmp/ghost-features-provisioner"
+
 class Lxd:
     def __init__(self, app, job, config, log_file):
         self._app = app
@@ -17,16 +19,21 @@ class Lxd:
                                                                               role=self._app['role'],
                                                                               name=self._app['name'],
                                                                               date=time.strftime("%Y%m%d-%H%M%S"))
-        self.container_options = self._config['container']
+        self._container_config = self._config.get('container', {
+                    'endpoint': self._config.get('endpoint', 'localhost'),
+                    'debug': self._config.get('debug', 'False'),
+            })
+
 
     def _create_containers_config(self):
         config = {}
         alias = self._app['build_infos']["container"]
         if self._job["command"] == u"buildimage":
-            if self.container_options.get('endpoint', 'localhost') == "localhost":
+
+            if self._container_config['endpoint'] == "localhost":
                 config['source'] = { "type": "image", "alias": alias }
             else:
-                config['source'] = {"type": "image", "protocol":"simplestreams", "mode":"pull" ,"alias": alias, "server" : self._config.get('container_endpoint','https://images.linuxcontainers.org')}
+                config['source'] = {"type": "image", "protocol":"simplestreams", "mode":"pull" ,"alias": alias, "server" : self._container_config['endpoint']}
 
         elif self._job["command"] == u"deploy":
             config['source'] = { "type": "image", "alias": alias }
@@ -41,7 +48,7 @@ class Lxd:
         log("Create container profile ", self._log_file)
 
         if self._job['command'] == u"buildimage":
-            source_formulas = "/tmp/salt/{job_id}".format(job_id=self._job['_id'])
+            source_formulas = "{base}/salt-{job_id}".format(base=PROVISIONER_LOCAL_TREE, job_id=self._job['_id'])
             source_hooks = "/ghost/{app_name}/{env}/{role}".format(app_name=self._app['name'],env=self._app['env'],role=self._app['role'])
             devices= {'formulas': {'path': '/srv', 'source': source_formulas , 'type': 'disk'}, 'hooks': {'path': '/ghost', 'source': source_hooks , 'type': 'disk'}}
 
@@ -138,6 +145,6 @@ class Lxd:
         self._create_container()
         self._execute_buildpack(script_path,module)
         self.container.stop(wait=True)
-        if not self.container_options.get('debug', 'False'):
+        if not self._container_config['debug']:
             self._clean()
         return self
