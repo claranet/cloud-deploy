@@ -94,37 +94,44 @@ class Lxd:
                 image.delete()
 
     def _lxd_bootstrap(self):
-        log("Start Container", self._log_file)
+        log("Bootstrap container", self._log_file)
         update = self.container.execute(["apt-get", "--force-yes", "update"])
-        log(update.stdout, self._log_file)
+        self._container_log(update)
         wget = self.container.execute(["apt-get", "-y", "--force-yes", "install", "apt-utils", "wget" , "sudo"])
-        log(wget.stdout, self._log_file)
-        salt_boostrap = self.container.execute(["wget", "-O", "bootstrap-salt.sh", "https://bootstrap.saltstack.com"])
-        salt_boostrap = self.container.execute(["sh", "bootstrap-salt.sh"])
-        log(salt_boostrap.stdout, self._log_file)
+        self._container_log(wget)
+        salt_bootstrap = self.container.execute(["wget", "-O", "bootstrap-salt.sh", "https://bootstrap.saltstack.com"])
+        self._container_log(salt_bootstrap)
+        salt_bootstrap = self.container.execute(["sh", "bootstrap-salt.sh"])
+        self._container_log(salt_bootstrap)
 
     def _lxd_run_salt_call(self):
         log("run salt features install", self._log_file)
         salt_call = self.container.execute(["salt-call" , "state.highstate", "--local", "-l", "info"])
-        log(salt_call.stdout, self._log_file)
+        self._container_log(salt_call)
 
     def _lxd_run_hooks_pre(self):
         log("run build images pre build", self._log_file)
         prehooks = self.container.execute(["sh" , "/ghost/hook-pre_buildimage"])
-        log(prehooks.stdout, self._log_file)
+        self._container_log(prehooks)
 
     def _lxd_run_hooks_post(self):
         log("run build images post build", self._log_file)
         posthooks = self.container.execute(["sh" , "/ghost/hook-post_buildimage"])
-        log(posthooks.stdout, self._log_file)
+        self._container_log(posthooks)
 
     def _execute_buildpack(self,script_path,module):
         log("run deploy build pack", self._log_file)
         script = os.path.basename(script_path)
         buildpack = self.container.execute(["sed" , "2icd "+module['path'], "-i" ,"{module_path}/{script}".format(module_path=module['path'],script=script)])
+        self._container_log(buildpack)
         buildpack = self.container.execute(["sudo", "-u", "ghost", "sh" , "{module_path}/{script}".format(module_path=module['path'],script=script)])
-        log(buildpack.stderr, self._log_file)
-        log(buildpack.stdout, self._log_file)
+        self._container_log(buildpack)
+
+    def _container_log(self, cmd):
+        if cmd.stdout:
+            log(cmd.stdout, self._log_file)
+        if cmd.stderr:
+            log(cmd.stderr, self._log_file)
 
     def _clean(self):
         self.container.delete()
