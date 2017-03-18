@@ -14,20 +14,26 @@ class Lxd:
         self._log_file = log_file
         self._config = config
         self.client = Client()
-        self.container_name= "lxd-{env}-{region}-{role}-{name}-{date}".format(env=self._app['env'],
+        self.container_name= "lxd-{env}-{region}-{role}-{name}-{job_id}".format(env=self._app['env'],
                                                                               region=self._app['region'],
                                                                               role=self._app['role'],
                                                                               name=self._app['name'],
-                                                                              date=time.strftime("%Y%m%d-%H%M%S"))
-        self._container_config = self._config.get('container', {
-                    'endpoint': self._config.get('endpoint', 'localhost'),
-                    'debug': self._config.get('debug', 'False'),
-            })
-
+                                                                              job_id=self._job['_id'])
+        self._container_config = self._config.get('container', {'endpoint': self._config.get('endpoint', 'localhost'),
+                                                                'debug': self._config.get('debug', 'False'),
+                                                               })
         self._provisioners_config = config.get('features_provisioners', {'salt'})
         self.skip_salt_bootstrap_option = self._job['options'][0] if 'options' in self._job and len(self._job['options']) > 0 else True
 
     def _create_containers_config(self):
+        """ Generate a container configuration according build imge or deployment
+        >>> app = {u'env': u'prod', u'role': u'webfront', u'name': u'AppName', u'region': u'eu-west-1',u'build_infos': { u'container_image': u'58cc276cd4128930c201e52e', u'source_container_image': u'58cc203dd4128930c201e519'}}
+        >>> job = {u'command': u'buildimage', u'_id': '58cd0e7dd4128910e0d747ed'}
+        >>> log_file = None
+        >>> config = {}
+        >>> Lxd(app, job, config, log_file)._create_containers_config()
+        {'source': {'alias': u'58cc203dd4128930c201e519', 'type': 'image'}, 'config': {'security.privileged': 'True'}, 'ephemeral': False, 'name': 'lxd-prod-eu-west-1-webfront-AppName-58cd0e7dd4128910e0d747ed', 'profiles': ['default', 'lxd-prod-eu-west-1-webfront-AppName-58cd0e7dd4128910e0d747ed']}
+        """
         config = {}
         alias = self._app['build_infos']["source_container_image"]
         if self._job["command"] == u"buildimage":
@@ -48,13 +54,19 @@ class Lxd:
         return config
 
     def _create_containers_profile(self,module=None):
-        log("Create container profile ", self._log_file)
-
+        """ Generate Lxc profile to mount provisoner local tree and ghost application according build image or deployment
+        >>> from StringIO import StringIO
+        >>> app = {u'env': u'prod', u'role': u'webfront', u'name': u'AppName', u'region': u'eu-west-1'}
+        >>> job = {u'command': u'buildimage', u'_id': '58cd0e7dd4128910e0d747db'}
+        >>> log_file = StringIO()
+        >>> config = {}
+        >>> Lxd(app, job, config, log_file)._create_containers_profile()
+        """
+        log("Create container profile", self._log_file)
         if self._job['command'] == u"buildimage":
             source_formulas = "{base}/salt-{job_id}".format(base=PROVISIONER_LOCAL_TREE, job_id=self._job['_id'])
             source_hooks = "/ghost/{app_name}/{env}/{role}".format(app_name=self._app['name'],env=self._app['env'],role=self._app['role'])
             devices= {'formulas': {'path': '/srv', 'source': source_formulas , 'type': 'disk'}, 'hooks': {'path': '/ghost', 'source': source_hooks , 'type': 'disk'}}
-
 
         elif self._job['command'] == u"deploy":
             source_module = "/ghost/{app_name}/{env}/{role}/{module_name}".format(app_name=self._app['name'],env=self._app['env'],role=self._app['role'],module_name=module['name'])
@@ -63,21 +75,54 @@ class Lxd:
 
         self.client.profiles.create(self.container_name, devices=devices)
 
-
-    def _delete_containers_profile(self):
-        os.system("lxc profile delete {container_name}".format(container_name=self.container_name))
-
-    def _create_container(self):
+    def _create_container(self,module=None):
+        """ Create a container with his profile and wait 5 seconde until network was up
+        >>> from StringIO import StringIO
+        >>> app = {u'env': u'prod', u'role': u'webfront', u'name': u'AppName', u'region': u'eu-west-1',u'build_infos': { u'source_container_image': u'debian/jessie'}}
+        >>> job = {u'command': u'buildimage', u'_id': '58cd0e7dd4128910e0d747td'}
+        >>> log_file = StringIO()
+        >>> config = {}
+        >>> container = Lxd(app, job, config, log_file)._create_container()
+        """
         log("Create container {container_name}".format(container_name=self.container_name), self._log_file)
+        self._create_containers_profile(module)
         self.container =  self.client.containers.create(self._create_containers_config(),wait=True)
         self.container.start(wait=True)
         time.sleep(5)
+        return self.container
+
+    def _delete_containers_profile(self):
+        """ Delete the container profile
+        >>> from StringIO import StringIO
+        >>> app = {u'env': u'prod', u'role': u'webfront', u'name': u'AppName', u'region': u'eu-west-1'}
+        >>> job = {u'command': u'buildimage', u'_id': '58cd0e7dd4128910e0d747db'}
+        >>> log_file = StringIO()
+        >>> config = {}
+        >>> Lxd(app, job, config, log_file)._delete_containers_profile()
+        """
+        os.system("lxc profile delete {container_name}".format(container_name=self.container_name))
 
     def _publish_container(self):
+        """ Publish container as image on registry local after build image
+        >>> from StringIO import StringIO
+        >>> app = {u'env': u'prod', u'role': u'webfront', u'name': u'AppName', u'region': u'eu-west-1'}
+        >>> job = {u'command': u'buildimage', u'_id': '58cd0e7dd4128910e0d747td'}
+        >>> log_file = StringIO()
+        >>> config = {}
+        >>> Lxd(app, job, config, log_file)._publish_container()
+        """
         log("Publish Container as image", self._log_file)
-        os.system("lxc publish local:{container_name} local: --alias={job_id} description={container_name}".format(job_id=self._job['_id'], container_name=self.container_name))
+        os.system("lxc publish local:{container_name} local: --alias={job_id} description={container_name} --force".format(job_id=self._job['_id'], container_name=self.container_name))
 
     def _clean_lxd_images(self):
+        """ Clean lxd image as aws ami
+        >>> from StringIO import StringIO
+        >>> app = {u'env': u'prod', u'role': u'webfront', u'name': u'AppName', u'region': u'eu-west-1', u'build_infos': { u'source_container_image': u'debian/jessie'}}
+        >>> job = {u'command': u'buildimage', u'_id': '58cd0e7dd4128910e0d747ed'}
+        >>> log_file = StringIO()
+        >>> config = {}
+        >>> Lxd(app, job, config, log_file)._clean_lxd_images()
+        """
         log("Cleanup image", self._log_file)
         retention = self._config.get('ami_retention', 5)
         ami_name_format = "lxd-{env}-{region}-{role}-{name}".format(env=self._app['env'], region=self._app['region'], role=self._app['role'], name=self._app['name'])
@@ -108,10 +153,11 @@ class Lxd:
             salt_bootstrap = self.container.execute(["sh", "bootstrap-salt.sh"])
             self._container_log(salt_bootstrap)
 
-    def _lxd_run_salt_call(self):
-        log("run salt features install", self._log_file)
-        salt_call = self.container.execute(["salt-call" , "state.highstate", "--local", "-l", "info"])
-        self._container_log(salt_call)
+    def _lxd_run_features_install(self):
+        log("run features install", self._log_file)
+        if 'salt' in self._provisioners_config:
+            salt_call = self.container.execute(["salt-call" , "state.highstate", "--local", "-l", "info"])
+            self._container_log(salt_call)
 
     def _lxd_run_hooks_pre(self):
         log("run build images pre build", self._log_file)
@@ -142,19 +188,16 @@ class Lxd:
         self._delete_containers_profile()
 
     def _build_image(self):
-        self._create_containers_profile()
         self._create_container()
         self._lxd_bootstrap()
         self._lxd_run_hooks_pre()
-        if 'salt' in self._provisioners_config:
-            self._lxd_run_salt_call()
+        self._lxd_run_features_install()
         self._lxd_run_hooks_post()
         self.container.stop(wait=True)
         return self
 
     def _deploy(self, script_path, module):
-        self._create_containers_profile(module)
-        self._create_container()
+        self._create_container(module)
         self._execute_buildpack(script_path,module)
         self.container.stop(wait=True)
         if not self._container_config['debug']:

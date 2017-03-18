@@ -28,6 +28,8 @@ def execute_module_script_on_ghost(app, module, script_name, script_friendly_nam
         :param script_friendly_name: string: the friendly name of the script for logs
         :param clone_path: string: working directory of the current module
         :param log_file: string: Log file path
+        :param job: Ghost job
+        :param config: Ghost config
     """
     # Execute script if available
     if script_name in module:

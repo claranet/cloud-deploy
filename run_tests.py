@@ -6,6 +6,7 @@
 
 import doctest
 import importlib
+from pylxd import Client
 
 modules = [
   "command",
@@ -34,6 +35,10 @@ modules = [
   "web_ui.ghost_client",
   "web_ui.websocket"
 ]
+try:
+    if Client(): modules.append("container")
+except:
+    pass
 
 runner = doctest.DocTestRunner(verbose=True)
 finder = doctest.DocTestFinder(verbose=True, exclude_empty=False)
