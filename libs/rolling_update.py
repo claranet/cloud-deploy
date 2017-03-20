@@ -90,7 +90,7 @@ class RollingUpdate(SafeDeployment):
                 suspend_autoscaling_group_processes(as_conn, self.as_name, ['Launch', 'Terminate'], self.log_file)
                 log(_green('Restore initial AutoScale attributes and destroy old instances for this group (%s)' % str([host['id'] for host in instances_list])), self.log_file)
                 update_auto_scaling_group_attributes(as_conn, self.as_name, asg_infos['MinSize'], asg_infos['MaxSize'], asg_infos['DesiredCapacity'], destroy_asg_policy)
-                destroy_specific_ec2_instances(self.cloud_connection, self.app, [host['id'] for host in instances_list], self.log_file)
+                destroy_specific_ec2_instances(self.cloud_connection, self.app, instances_list, self.log_file)
 
                 resume_autoscaling_group_processes(as_conn, self.as_name, ['Terminate'], self.log_file)
                 asg_updated_infos = get_autoscaling_group_object(as_conn, self.as_name)
@@ -102,6 +102,8 @@ class RollingUpdate(SafeDeployment):
                 update_auto_scaling_group_attributes(as_conn, self.as_name, asg_infos['MinSize'], asg_infos['MaxSize'], asg_infos['DesiredCapacity'], original_termination_policies)
                 log(_green('%s instance(s) have been re-generated and are registered in their ELB' % group_size), self.log_file)
                 return True
+        except Exception as e:
+            raise
         finally:
             resume_autoscaling_group_processes(as_conn, self.as_name, ['Launch', 'Terminate'], self.log_file)
 
@@ -111,7 +113,7 @@ class RollingUpdate(SafeDeployment):
             :param  rolling_strategy string: The type of rolling strategy(1by1-1/3-25%-50%)
             :return True if operation succeed otherwise an Exception will be raised.
         """
-        hosts = self.split_hosts_list(rolling_strategy) if rolling_strategy else self.hosts_list
+        hosts = self.split_hosts_list(rolling_strategy) if rolling_strategy else [self.hosts_list]
         for host_group in hosts:
             if self.safe_infos['load_balancer_type'] == 'elb':
                 self.elb_rolling_update(host_group)

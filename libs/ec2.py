@@ -85,40 +85,41 @@ def find_ec2_instances(cloud_connection, ghost_app, ghost_env, ghost_role, regio
         # Instances in autoscale "Terminating:*" states are still "running" but no longer in the Load Balancer
         autoscale_instances = conn_as.describe_auto_scaling_instances(InstanceIds=[instance.id])['AutoScalingInstances']
         if not autoscale_instances or not autoscale_instances[0]['LifecycleState'] in ['Terminating', 'Terminating:Wait', 'Terminating:Proceed']:
-            hosts.append({'id': instance.id, 'private_ip_address': instance.private_ip_address})
+            hosts.append({'id': instance.id, 'private_ip_address': instance.private_ip_address, 'subnet_id': instance.subnet_id})
     return hosts
 
-def destroy_ec2_instances(cloud_connection, app, log_file):
+def destroy_ec2_instances(cloud_connection, app, log_file, ec2_state_filter=None):
     """ Destroy all EC2 instances which matches the `ghost app` tags
 
         :param  cloud_connection: The app Cloud Connection object
         :param  app  string: The ghost "app" object.
         :param  log_file: Logging path
+        :param  ec2_state_filter string: If we need to filter on an EC2 state
     """
     app_blue_green, app_color = get_blue_green_from_app(app)
-    running_instances = find_ec2_instances(cloud_connection, app['name'], app['env'], app['role'], app['region'], app_color)
-    #Terminating instances
-    instances = []
-    for r in running_instances:
-        instances.append(r['id'])
-    return destroy_specific_ec2_instances(cloud_connection, app, instances, log_file)
+    found_instances = find_ec2_instances(cloud_connection, app['name'], app['env'], app['role'], app['region'], ec2_state_filter, app_color)
+    return destroy_specific_ec2_instances(cloud_connection, app, found_instances, log_file)
 
-def destroy_specific_ec2_instances(cloud_connection, app, instances, log_file):
+def destroy_specific_ec2_instances(cloud_connection, app, found_instances, log_file):
     """ Destroy EC2 instances given in parameter
 
         :param  cloud_connection: The app Cloud Connection object
         :param  app  string: The ghost "app" object.
-        :param  instances list: List of instances to terminate (ids)
+        :param  found_instances list: List of instances to terminate (ids)
         :param  log_file: Logging path
     """
+    #Terminating instances
+    instances = []
+    for r in found_instances:
+        instances.append(r['id'])
     conn = cloud_connection.get_connection(app['region'], ["ec2"])
     if len(instances) > 0:
         log(instances, log_file)
         conn.terminate_instances(instance_ids=instances)
-        return len(instances)
+        return len(instances), found_instances
     else:
         log('No instances to destroy found', log_file)
-        return 0
+        return 0, []
 
 def get_ec2_instance_status(cloud_connection, aws_region, instance_id):
     """ Get EC2 instance status
