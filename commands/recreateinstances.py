@@ -1,4 +1,5 @@
 from fabric.colors import green as _green, yellow as _yellow, red as _red
+import time
 
 from settings import cloud_connections, DEFAULT_PROVIDER
 
@@ -6,7 +7,7 @@ from ghost_log import log
 from ghost_tools import get_aws_connection_data, get_app_friendly_name
 from ghost_aws import check_autoscale_exists
 from libs.blue_green import get_blue_green_from_app
-from libs.ec2 import create_ec2_instance, destroy_ec2_instances
+from libs.ec2 import create_ec2_instance, destroy_ec2_instances, test_ec2_instance_status
 from libs.rolling_update import RollingUpdate
 
 COMMAND_DESCRIPTION = "Recreate all the instances, rolling update possible when using an Autoscale"
@@ -43,7 +44,17 @@ class Recreateinstances():
             if not self._app['autoscale']['name'] or not check_autoscale_exists(self._cloud_connection, self._app['autoscale']['name'], self._app['region']):
                 log(_yellow(" INFO: No AutoScale specified, this command will destroy and recreate standalone instances"), self._log_file)
 
-                destroyed_count, destroyed_instances_info = destroy_ec2_instances(self._cloud_connection, self._app, self._log_file, "running")
+                destroyed_instances_info = destroy_ec2_instances(self._cloud_connection, self._app, self._log_file, "running")
+                destroyed_count = len(destroyed_instances_info)
+                if destroyed_count == 0:
+                    self._worker.update_status("aborted", message="Re-create instances aborted, no instances found: [{0}]".format(self._app['name']))
+                    return
+
+                log(_yellow(" INFO: Waiting for instances to be destroyed before re-creating them with the same network parameters."), self._log_file)
+                while not test_ec2_instance_status(self._cloud_connection, self._app['region'], [host['id'] for host in destroyed_instances_info], "terminated"):
+                    log("Waiting 10s", self._log_file)
+                    time.sleep(10)
+
                 x = 0
                 while x < destroyed_count:
                     create_ec2_instance(self._cloud_connection, self._app, self._color, self._config,
