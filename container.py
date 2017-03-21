@@ -1,4 +1,5 @@
 import os
+import sys
 import time
 import yaml
 import json
@@ -6,6 +7,7 @@ from ghost_log import log
 from pylxd import Client
 
 PROVISIONER_LOCAL_TREE="/tmp/ghost-features-provisioner"
+
 
 class Lxd:
     def __init__(self, app, job, config, log_file):
@@ -27,7 +29,7 @@ class Lxd:
 
     def _create_containers_config(self):
         """ Generate a container configuration according build imge or deployment
-        >>> app = {u'env': u'prod', u'role': u'webfront', u'name': u'AppName', u'region': u'eu-west-1',u'build_infos': { u'container_image': u'58cc276cd4128930c201e52e', u'source_container_image': u'58cc203dd4128930c201e519'}}
+        >>> app = {u'env': u'prod', u'role': u'webfront', u'name': u'AppName', u'region': u'eu-west-1', u'build_infos': { u'container_image': u'58cc276cd4128930c201e52e', u'source_container_image': u'58cc203dd4128930c201e519'}}
         >>> job = {u'command': u'buildimage', u'_id': '58cd0e7dd4128910e0d747ed'}
         >>> log_file = None
         >>> config = {}
@@ -41,7 +43,7 @@ class Lxd:
             if self._container_config['endpoint'] == "localhost":
                 config['source'] = { "type": "image", "alias": alias }
             else:
-                config['source'] = {"type": "image", "protocol":"simplestreams", "mode":"pull" ,"alias": alias, "server" : self._container_config['endpoint']}
+                config['source'] = {"type": "image", "protocol":"simplestreams", "mode":"pull", "alias": alias, "server" : self._container_config['endpoint']}
 
         elif self._job["command"] == u"deploy":
             alias = self._app['build_infos']["container_image"]
@@ -51,6 +53,7 @@ class Lxd:
         config['ephemeral'] = False
         config['config'] = { "security.privileged": 'True' }
         config['profiles'] = ["default", self.container_name]
+        dirname, filename = os.path.split(os.path.abspath(__file__))
         return config
 
     def _create_containers_profile(self,module=None):
@@ -75,10 +78,10 @@ class Lxd:
 
         self.client.profiles.create(self.container_name, devices=devices)
 
-    def _create_container(self,module=None):
-        """ Create a container with his profile and wait 5 seconde until network was up
+    def _create_container(self,module=None,time=5):
+        """ Create a container with his profile and set time paramet to wait until network was up (default: 5 sec)
         >>> from StringIO import StringIO
-        >>> app = {u'env': u'prod', u'role': u'webfront', u'name': u'AppName', u'region': u'eu-west-1',u'build_infos': { u'source_container_image': u'debian/jessie'}}
+        >>> app = {u'env': u'prod', u'role': u'webfront', u'name': u'AppName', u'region': u'eu-west-1', u'build_infos': { u'source_container_image': u'debian/jessie'}}
         >>> job = {u'command': u'buildimage', u'_id': '58cd0e7dd4128910e0d747td'}
         >>> log_file = StringIO()
         >>> config = {}
@@ -88,7 +91,7 @@ class Lxd:
         self._create_containers_profile(module)
         self.container =  self.client.containers.create(self._create_containers_config(),wait=True)
         self.container.start(wait=True)
-        time.sleep(5)
+        time.sleep(time)
         return self.container
 
     def _delete_containers_profile(self):
@@ -115,7 +118,7 @@ class Lxd:
         os.system("lxc publish local:{container_name} local: --alias={job_id} description={container_name} --force".format(job_id=self._job['_id'], container_name=self.container_name))
 
     def _clean_lxd_images(self):
-        """ Clean lxd image as aws ami
+        """ Clean lxd image in local registry as aws ami with ami_retention parameter
         >>> from StringIO import StringIO
         >>> app = {u'env': u'prod', u'role': u'webfront', u'name': u'AppName', u'region': u'eu-west-1', u'build_infos': { u'source_container_image': u'debian/jessie'}}
         >>> job = {u'command': u'buildimage', u'_id': '58cd0e7dd4128910e0d747ed'}
