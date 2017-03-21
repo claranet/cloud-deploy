@@ -4,7 +4,7 @@
 import sys
 from ghost_log import log
 from ghost_tools import config
-from .deploy import get_path_from_app_with_color
+from ghost_tools import get_path_from_app_with_color
 from settings import cloud_connections, DEFAULT_PROVIDER
 
 BLUE_GREEN_COMMANDS = ['preparebluegreen', 'swapbluegreen', 'purgebluegreen']

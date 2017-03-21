@@ -17,6 +17,7 @@ from ghost_tools import render_stage2, get_app_module_name_list
 from ghost_tools import b64decode_utf8, get_ghost_env_variables
 from ghost_log import log
 from ghost_tools import GCallException, gcall
+from ghost_tools import get_path_from_app, get_path_from_app_with_color, get_buildpack_clone_path_from_module
 from settings import cloud_connections, DEFAULT_PROVIDER
 
 def execute_module_script_on_ghost(app, module, script_name, script_friendly_name, clone_path, log_file, job, config):

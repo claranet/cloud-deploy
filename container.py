@@ -5,6 +5,7 @@ import yaml
 import json
 from ghost_log import log
 from pylxd import Client
+from ghost_tools import get_buildpack_clone_path_from_module, get_path_from_app_with_color, get_local_repo_path
 
 PROVISIONER_LOCAL_TREE="/tmp/ghost-features-provisioner"
 
@@ -34,7 +35,7 @@ class Lxd:
         >>> log_file = None
         >>> config = {}
         >>> Lxd(app, job, config, log_file)._create_containers_config()
-        {'source': {'alias': u'58cc203dd4128930c201e519', 'type': 'image'}, 'config': {'security.privileged': 'True'}, 'ephemeral': False, 'name': 'lxd-prod-eu-west-1-webfront-AppName-58cd0e7dd4128910e0d747ed', 'profiles': ['default', 'lxd-prod-eu-west-1-webfront-AppName-58cd0e7dd4128910e0d747ed']}
+        {'config': {'security.privileged': 'True'}, 'profiles': ['default', 'lxd-prod-eu-west-1-webfront-AppName-58cd0e7dd4128910e0d747ed'], 'name': 'lxd-prod-eu-west-1-webfront-AppName-58cd0e7dd4128910e0d747ed', 'source': {'alias': u'58cc203dd4128930c201e519', 'type': 'image'}, 'ephemeral': False}
         """
         config = {}
         alias = self._app['build_infos']["source_container_image"]
@@ -67,18 +68,18 @@ class Lxd:
         """
         log("Create container profile", self._log_file)
         if self._job['command'] == u"buildimage":
-            source_formulas = "{base}/salt-{job_id}".format(base=PROVISIONER_LOCAL_TREE, job_id=self._job['_id'])
-            source_hooks = "/ghost/{app_name}/{env}/{role}".format(app_name=self._app['name'],env=self._app['env'],role=self._app['role'])
+            source_formulas = get_local_repo_path(PROVISIONER_LOCAL_TREE, self._app['name'], self._job['_id'])
+            source_hooks = get_path_from_app_with_color(self._app)
             devices= {'formulas': {'path': '/srv', 'source': source_formulas , 'type': 'disk'}, 'hooks': {'path': '/ghost', 'source': source_hooks , 'type': 'disk'}}
 
         elif self._job['command'] == u"deploy":
-            source_module = "/ghost/{app_name}/{env}/{role}/{module_name}".format(app_name=self._app['name'],env=self._app['env'],role=self._app['role'],module_name=module['name'])
+            source_module = get_buildpack_clone_path_from_module(self._app, module)
             module_path = module['path']
             devices={'buildpack': {'path': module_path, 'source': source_module , 'type': 'disk'}}
 
         self.client.profiles.create(self.container_name, devices=devices)
 
-    def _create_container(self,module=None,time=5):
+    def _create_container(self,module=None, wait=5):
         """ Create a container with his profile and set time paramet to wait until network was up (default: 5 sec)
         >>> from StringIO import StringIO
         >>> app = {u'env': u'prod', u'role': u'webfront', u'name': u'AppName', u'region': u'eu-west-1', u'build_infos': { u'source_container_image': u'debian/jessie'}}
@@ -91,7 +92,7 @@ class Lxd:
         self._create_containers_profile(module)
         self.container =  self.client.containers.create(self._create_containers_config(),wait=True)
         self.container.start(wait=True)
-        time.sleep(time)
+        time.sleep(wait)
         return self.container
 
     def _delete_containers_profile(self):

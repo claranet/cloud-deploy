@@ -6,7 +6,8 @@ from settings import cloud_connections, DEFAULT_PROVIDER
 from ghost_log import log
 from libs.host_deployment_manager import HostDeploymentManager
 from libs.deploy import execute_module_script_on_ghost
-from libs.deploy import get_path_from_app_with_color, get_buildpack_clone_path_from_module, update_app_manifest, rollback_app_manifest
+from libs.deploy import update_app_manifest, rollback_app_manifest
+from ghost_tools import get_path_from_app_with_color, get_buildpack_clone_path_from_module
 
 COMMAND_DESCRIPTION = "Re-deploy an old module package"
 RELATED_APP_FIELDS = []

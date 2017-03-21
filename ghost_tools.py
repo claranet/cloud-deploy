@@ -612,3 +612,43 @@ def get_lock_path_from_repo(git_repo):
     '/ghost/.mirrors/.locks/git@bitbucket.org:morea/spaces.git'
     """
     return "/ghost/.mirrors/.locks/{remote}".format(remote=git_repo.strip())
+def get_path_from_app(app):
+    """
+    >>> get_path_from_app({'name': 'AppName', 'env': 'prod', 'role': 'webfront'})
+    '/ghost/AppName/prod/webfront'
+    """
+    return "/ghost/{name}/{env}/{role}".format(name=app['name'], env=app['env'], role=app['role'])
+
+def get_path_from_app_with_color(app):
+    """
+    >>> get_path_from_app_with_color({'name': 'AppName', 'env': 'prod', 'role': 'webfront', 'blue_green': {'color': 'blue'}})
+    '/ghost/AppName/prod/webfront/blue'
+
+    Fallback on legacy behavior if blue/green data is not available
+
+    >>> get_path_from_app_with_color({'name': 'AppName', 'env': 'prod', 'role': 'webfront', 'blue_green': {'color': None}})
+    '/ghost/AppName/prod/webfront'
+
+    >>> get_path_from_app_with_color({'name': 'AppName', 'env': 'prod', 'role': 'webfront', 'blue_green': None})
+    '/ghost/AppName/prod/webfront'
+
+    >>> get_path_from_app_with_color({'name': 'AppName', 'env': 'prod', 'role': 'webfront'})
+    '/ghost/AppName/prod/webfront'
+    """
+    if 'blue_green' in app and app['blue_green'] and 'color' in app['blue_green'] and app['blue_green']['color']:
+        return "/ghost/{name}/{env}/{role}/{color}".format(name=app['name'], env=app['env'],
+                                                           role=app['role'], color=app['blue_green']['color'])
+    else:
+        return get_path_from_app(app)
+
+def get_buildpack_clone_path_from_module(app, module):
+    """
+    >>> app = {'name': 'AppName', 'env': 'prod', 'role': 'webfront'}
+    >>> module = {'name': 'mod1', 'git_repo': 'git@bitbucket.org:morea/ghost.git'}
+    >>> get_buildpack_clone_path_from_module(app, module)
+    '/ghost/AppName/prod/webfront/mod1'
+    """
+    return "{app_path}/{module}".format(app_path=get_path_from_app_with_color(app), module=module['name'])
+
+def get_local_repo_path(base_path, app_name, unique_id ):
+    return "{base}/{name}-{uid}".format(base=base_path, name=app_name, uid=unique_id)
