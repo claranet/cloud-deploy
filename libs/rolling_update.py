@@ -7,16 +7,15 @@
 import time
 from fabric.colors import green as _green, yellow as _yellow, red as _red
 
-from ghost_tools import GCallException, log
+from ghost_tools import GCallException, log, split_hosts_list
 from ghost_aws import suspend_autoscaling_group_processes, resume_autoscaling_group_processes
 
 from .blue_green import get_blue_green_from_app
-from .safe_deployment import SafeDeployment
 from .ec2 import find_ec2_running_instances, destroy_specific_ec2_instances
 from .autoscaling import get_autoscaling_group_object, update_auto_scaling_group_attributes, check_autoscale_instances_lifecycle_state
 from .elb import get_elb_instance_status_autoscaling_group, get_connection_draining_value, register_instance_from_elb, deregister_instance_from_elb
 
-class RollingUpdate(SafeDeployment):
+class RollingUpdate():
     """ Class which will manage the safe destroy process """
 
     def __init__(self, cloud_connection, app, safe_infos, log_file):
@@ -25,15 +24,22 @@ class RollingUpdate(SafeDeployment):
             :param  safe_infos:   dict: The safe deployment parameters.
             :param  log_file:     object for logging
         """
+        self.cloud_connection = cloud_connection
+        self.app = app
+        self.safe_infos = safe_infos
+
+        self.log_file = log_file
+
+        as_name = app['autoscale']['name']
+        self.as_name = as_name
+
         app_name = app['name']
         app_env = app['env']
         app_role = app['role']
         app_region = app['region']
         app_blue_green, app_color = get_blue_green_from_app(app)
-        as_name = app['autoscale']['name']
 
-        running_instances = find_ec2_running_instances(cloud_connection, app_name, app_env, app_role, app_region, ghost_color=app_color)
-        SafeDeployment.__init__(self, cloud_connection, app, None, running_instances, log_file, safe_infos, None, as_name)
+        self.hosts_list = find_ec2_running_instances(cloud_connection, app_name, app_env, app_role, app_region, ghost_color=app_color)
 
     def elb_rolling_update(self, instances_list):
         """ Manage the safe destroy process for the ELB.
@@ -113,11 +119,13 @@ class RollingUpdate(SafeDeployment):
             :param  rolling_strategy string: The type of rolling strategy(1by1-1/3-25%-50%)
             :return True if operation succeed otherwise an Exception will be raised.
         """
-        hosts = self.split_hosts_list(rolling_strategy) if rolling_strategy else [self.hosts_list]
+        hosts = split_hosts_list(self.hosts_list, rolling_strategy) if rolling_strategy else [self.hosts_list]
         for host_group in hosts:
             if self.safe_infos['load_balancer_type'] == 'elb':
                 self.elb_rolling_update(host_group)
-#                elif self.safe_infos['load_balancer_type'] == 'alb':
+#            elif self.safe_infos['load_balancer_type'] == 'alb':
             else:
-                raise GCallException('Load balancer type not supported for Safe destroy')
+                raise GCallException('Load balancer type not supported for Rolling update option')
+            log('Waiting 10s before going on next instance group', self.log_file)
+            time.sleep(10)
         return True

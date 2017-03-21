@@ -70,8 +70,8 @@ class Recreateinstances():
                 else:
                     log(_yellow(" INFO: Destroy all EC2 instances related to app {0} [{1}] and let the AutoScale ({2}) recreate them".format(get_app_friendly_name(self._app), self._app['_id'], self._app['autoscale']['name'])), self._log_file)
 
-                safedestroy = RollingUpdate(self._cloud_connection, self._app, self._app['safe-deployment'], self._log_file)
-                safedestroy.do_rolling(rolling_update_strategy)
+                rollup = RollingUpdate(self._cloud_connection, self._app, self._app['safe-deployment'], self._log_file)
+                rollup.do_rolling(rolling_update_strategy)
 
                 self._worker.update_status("done", message="Re-create instances OK: [{0}]".format(self._app['name']))
                 log(_green("STATE: End"), self._log_file)
@@ -79,4 +79,3 @@ class Recreateinstances():
         except Exception as e:
             self._worker.update_status("failed", message="Re-create instances Failed: [{0}]\n{1}".format(self._app['name'], str(e)))
             log(_red("STATE: END"), self._log_file)
-            raise

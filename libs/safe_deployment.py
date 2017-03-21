@@ -24,7 +24,7 @@ import time
 import haproxy
 
 from ghost_tools import GCallException
-from ghost_tools import log
+from ghost_tools import log, split_hosts_list
 
 from .deploy import launch_deploy
 from .ec2 import find_ec2_running_instances
@@ -53,65 +53,6 @@ class SafeDeployment():
         self.fab_exec_strategy = fabric_exec_strategy
         self.safe_infos = safe_infos
         self.as_name = as_name
-
-    def split_hosts_list(self, split_type):
-        """
-        Return a list of multiple hosts list for the safe deployment.
-
-            :param split_type:     string:  The way to split the hosts list(1by1-1/3-25%-50%).
-            :return                list:    Multiple hosts list or raise an Exception is the safe
-                                            deployment process cannot be perform.
-
-        >>> from io import StringIO
-        >>> sd = SafeDeployment(None, None, None, None, StringIO(), None, None, None)
-
-        >>> sd.hosts_list = ['host1', 'host2']
-        >>> sd.split_hosts_list('50%')
-        [['host1'], ['host2']]
-        >>> sd.split_hosts_list('1by1')
-        [['host1'], ['host2']]
-
-        >>> sd.hosts_list = ['host1', 'host2', 'host3']
-        >>> sd.split_hosts_list('50%')
-        [['host1', 'host3'], ['host2']]
-        >>> sd.split_hosts_list('1/3')
-        [['host1'], ['host2'], ['host3']]
-        >>> sd.split_hosts_list('1by1')
-        [['host1'], ['host2'], ['host3']]
-
-        >>> sd.hosts_list = ['host1', 'host2', 'host3', 'host4']
-        >>> sd.split_hosts_list('50%')
-        [['host1', 'host3'], ['host2', 'host4']]
-        >>> sd.split_hosts_list('1/3')
-        [['host1', 'host4'], ['host2'], ['host3']]
-        >>> sd.split_hosts_list('25%')
-        [['host1'], ['host2'], ['host3'], ['host4']]
-        >>> sd.split_hosts_list('1by1')
-        [['host1'], ['host2'], ['host3'], ['host4']]
-
-        >>> sd.hosts_list = ['host1', 'host2', 'host3', 'host4', 'host5']
-        >>> sd.split_hosts_list('50%')
-        [['host1', 'host3', 'host5'], ['host2', 'host4']]
-        >>> sd.split_hosts_list('1/3')
-        [['host1', 'host4'], ['host2', 'host5'], ['host3']]
-        >>> sd.split_hosts_list('25%')
-        [['host1', 'host5'], ['host2'], ['host3'], ['host4']]
-        >>> sd.split_hosts_list('1by1')
-        [['host1'], ['host2'], ['host3'], ['host4'], ['host5']]
-        """
-        if split_type == '1by1' and len(self.hosts_list) > 1:
-            return [self.hosts_list[i:i + 1] for i in range(0, len(self.hosts_list), 1)]
-        elif split_type == '1/3' and len(self.hosts_list) > 2:
-            chunk = 3
-        elif split_type == '25%' and len(self.hosts_list) > 3:
-            chunk = 4
-        elif split_type == '50%' and len(self.hosts_list) >= 2:
-            chunk = 2
-        else:
-            log("Not enough instances to perform safe deployment. Number of instances: \
-                {0} for safe deployment type: {1}" .format(str(len(self.hosts_list)), str(split_type)), self.log_file)
-            raise GCallException("Cannot continue, not enought instances to perform the safe deployment")
-        return [self.hosts_list[i::chunk] for i in range(chunk)]
 
     def elb_safe_deployment(self, instances_list):
         """ Manage the safe deployment process for the ELB.
@@ -238,7 +179,7 @@ class SafeDeployment():
             :param  safe_strategy string: The type of safe deployment strategy(1by1-1/3-25%-50%)
             :return True if operation succeed otherwise an Exception will be raised.
         """
-        for host_group in self.split_hosts_list(safe_strategy):
+        for host_group in split_hosts_list(self.hosts_list, safe_strategy):
             if self.safe_infos['load_balancer_type'] == 'elb':
                 self.elb_safe_deployment(host_group)
             elif self.safe_infos['load_balancer_type'] == 'alb':
