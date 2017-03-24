@@ -140,3 +140,10 @@ slack_configs:
 #        channel: '#ghost-deployments'
 #        bot_name: 'Ghost-config-2'
 #        message_prefix: 'Ghost'
+
+# Specify how many Package we should keep per module in S3 Ghost bucket
+# Unlimited by default if not specified
+# It's possible to specify a value per app env
+deployment_package_retention:
+    prod: 42
+    dev: 3
