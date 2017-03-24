@@ -63,6 +63,9 @@ def copy_elb(elb_conn3, elb_name, source_elb_name, special_tag, log_file):
         LoadBalancerNames=[source_elb_name]
     )['TagDescriptions'][0]['Tags']
     source_elb_tags.append(special_tag)
+    source_elb_attributes = elb_conn3.describe_load_balancer_attributes(
+        LoadBalancerName=source_elb_name
+    )['LoadBalancerAttributes']
     dest_elb_listener = {
         'Protocol': source_elb_listener['Protocol'],
         'LoadBalancerPort': source_elb_listener['LoadBalancerPort'],
@@ -74,7 +77,7 @@ def copy_elb(elb_conn3, elb_name, source_elb_name, special_tag, log_file):
     if 'SSLCertificateId' in source_elb_listener:
         dest_elb_listener['SSLCertificateId'] = source_elb_listener['SSLCertificateId']
 
-    # create ELB
+    # Create ELB
     response = elb_conn3.create_load_balancer(
         LoadBalancerName=elb_name,
         Listeners=[dest_elb_listener],
@@ -88,6 +91,12 @@ def copy_elb(elb_conn3, elb_name, source_elb_name, special_tag, log_file):
     elb_conn3.configure_health_check(
         LoadBalancerName=elb_name,
         HealthCheck=source_elb['HealthCheck']
+    )
+
+    # Update ELB attributes
+    elb_conn3.modify_load_balancer_attributes(
+        LoadBalancerName=elb_name,
+        LoadBalancerAttributes=source_elb_attributes
     )
 
     return response['DNSName']
