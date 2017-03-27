@@ -86,7 +86,7 @@ class Buildimage():
             if self._app['build_infos']['source_container_image']:
                 log("Generating a new container", self._log_file)
                 container = Lxd(self._app, self._job, self._config, self._log_file)
-                container = container._build_image()
+                container = container.build_image()
                 if container:
                     container._publish_container()
                     log("Update app in MongoDB to container source", self._log_file)

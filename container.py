@@ -17,7 +17,7 @@ class Lxd:
         self._log_file = log_file
         self._config = config
         self.client = Client()
-        self.container_name= "lxd-{env}-{region}-{role}-{name}-{job_id}".format(env=self._app['env'],
+        self._container_name = "lxd-{env}-{region}-{role}-{name}-{job_id}".format(env=self._app['env'],
                                                                               region=self._app['region'],
                                                                               role=self._app['role'],
                                                                               name=self._app['name'],
@@ -29,7 +29,7 @@ class Lxd:
         self.skip_salt_bootstrap_option = self._job['options'][0] if 'options' in self._job and len(self._job['options']) > 0 else True
 
     def _create_containers_config(self):
-        """ Generate a container configuration according build imge or deployment
+        """ Generate a container configuration according build image or deployment
         >>> app = {u'env': u'prod', u'role': u'webfront', u'name': u'AppName', u'region': u'eu-west-1', u'build_infos': { u'container_image': u'58cc276cd4128930c201e52e', u'source_container_image': u'58cc203dd4128930c201e519'}}
         >>> job = {u'command': u'buildimage', u'_id': '58cd0e7dd4128910e0d747ed'}
         >>> log_file = None
@@ -50,10 +50,10 @@ class Lxd:
             alias = self._app['build_infos']["container_image"]
             config['source'] = { "type": "image", "alias": alias }
 
-        config['name'] = self.container_name
+        config['name'] = self._container_name
         config['ephemeral'] = False
         config['config'] = { "security.privileged": 'True' }
-        config['profiles'] = ["default", self.container_name]
+        config['profiles'] = ["default", self._container_name]
         dirname, filename = os.path.split(os.path.abspath(__file__))
         return config
 
@@ -77,7 +77,7 @@ class Lxd:
             module_path = module['path']
             devices={'buildpack': {'path': module_path, 'source': source_module , 'type': 'disk'}}
 
-        self.client.profiles.create(self.container_name, devices=devices)
+        self.client.profiles.create(self._container_name, devices=devices)
 
     def _create_container(self,module=None, wait=5):
         """ Create a container with his profile and set time paramet to wait until network was up (default: 5 sec)
@@ -88,7 +88,7 @@ class Lxd:
         >>> config = {}
         >>> container = Lxd(app, job, config, log_file)._create_container()
         """
-        log("Create container {container_name}".format(container_name=self.container_name), self._log_file)
+        log("Create container {container_name}".format(container_name=self._container_name), self._log_file)
         self._create_containers_profile(module)
         self.container =  self.client.containers.create(self._create_containers_config(),wait=True)
         self.container.start(wait=True)
@@ -104,7 +104,7 @@ class Lxd:
         >>> config = {}
         >>> Lxd(app, job, config, log_file)._delete_containers_profile()
         """
-        os.system("lxc profile delete {container_name}".format(container_name=self.container_name))
+        os.system("lxc profile delete {container_name}".format(container_name=self._container_name))
 
     def _publish_container(self):
         """ Publish container as image on registry local after build image
@@ -116,7 +116,7 @@ class Lxd:
         >>> Lxd(app, job, config, log_file)._publish_container()
         """
         log("Publish Container as image", self._log_file)
-        os.system("lxc publish local:{container_name} local: --alias={job_id} description={container_name} --force".format(job_id=self._job['_id'], container_name=self.container_name))
+        os.system("lxc publish local:{container_name} local: --alias={job_id} description={container_name} --force".format(job_id=self._job['_id'], container_name=self._container_name))
 
     def _clean_lxd_images(self):
         """ Clean lxd image in local registry as aws ami with ami_retention parameter
@@ -191,7 +191,7 @@ class Lxd:
         self.container.delete()
         self._delete_containers_profile()
 
-    def _build_image(self):
+    def build_image(self):
         self._create_container()
         self._lxd_bootstrap()
         self._lxd_run_hooks_pre()
@@ -200,7 +200,7 @@ class Lxd:
         self.container.stop(wait=True)
         return self
 
-    def _deploy(self, script_path, module):
+    def deploy(self, script_path, module):
         self._create_container(module)
         self._execute_buildpack(script_path,module)
         self.container.stop(wait=True)
