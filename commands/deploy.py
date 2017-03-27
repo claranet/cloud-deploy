@@ -357,7 +357,7 @@ class Deploy():
             gcall('du -hs .', 'Display current build directory disk usage', self._log_file)
 
         # Execute buildpack
-        execute_module_script_on_ghost(self._app, module, 'build_pack', 'Buildpack', clone_path, self._log_file, self._job,self._config)
+        execute_module_script_on_ghost(self._app, module, 'build_pack', 'Buildpack', clone_path, self._log_file, self._job, self._config)
 
         # Store postdeploy script in tarball
         if 'post_deploy' in module:

@@ -39,10 +39,11 @@ class Buildimage():
             **self._connection_data
         )
         self._aws_image_builder = AWSImageBuilder(self._app, self._job, self._db, self._log_file, self._config)
-        self._container_config = self._config.get('container', {
-            'endpoint': self._config.get('endpoint', 'localhost'),
-            'debug': self._config.get('debug', 'False'),
-        })
+        if self._config:
+            self._container_config = self._config.get('container', {
+                'endpoint': self._config.get('endpoint', 'localhost'),
+                'debug': self._config.get('debug', 'False'),
+            })
 
     def _get_notification_message_done(self, ami_id):
         """
@@ -88,6 +89,7 @@ class Buildimage():
                 container = container._build_image()
                 if container:
                     container._publish_container()
+                    log("Update app in MongoDB to container source", self._log_file)
                     self._update_container_source(self._job['_id'])
                     container._clean_lxd_images()
                     if not self._container_config['debug']:
