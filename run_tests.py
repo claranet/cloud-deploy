@@ -6,7 +6,7 @@
 
 import doctest
 import importlib
-from pylxd import Client
+from pylxd import Client as lxd_client
 
 modules = [
   "command",
@@ -35,8 +35,9 @@ modules = [
   "web_ui.ghost_client",
   "web_ui.websocket"
 ]
+
 try:
-    if Client(): modules.append("container")
+    if lxd_client(): modules.append("container")
 except:
     pass
 
