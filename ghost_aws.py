@@ -93,11 +93,11 @@ def deploy_module_on_hosts(cloud_connection, module, fabric_execution_strategy, 
             time.sleep(10)
         running_instances = find_ec2_running_instances(cloud_connection, app_name, app_env, app_role, app_region, ghost_color=app_color)
         if running_instances:
-            hosts_list = [host['private_ip_address'] for host in running_instances]
             if safe_deployment_strategy:
                 safedeploy = SafeDeployment(cloud_connection, app, module, running_instances, log_file, app['safe-deployment'], fabric_execution_strategy, as_group)
                 safedeploy.safe_manager(safe_deployment_strategy)
             else:
+                hosts_list = [host['private_ip_address'] for host in running_instances]
                 launch_deploy(app, module, hosts_list, fabric_execution_strategy, log_file)
         else:
             raise GCallException("No instance found in region {region} with tags app:{app}, env:{env}, role:{role}{color}".format(region=app_region,

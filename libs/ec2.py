@@ -85,41 +85,74 @@ def find_ec2_instances(cloud_connection, ghost_app, ghost_env, ghost_role, regio
         # Instances in autoscale "Terminating:*" states are still "running" but no longer in the Load Balancer
         autoscale_instances = conn_as.describe_auto_scaling_instances(InstanceIds=[instance.id])['AutoScalingInstances']
         if not autoscale_instances or not autoscale_instances[0]['LifecycleState'] in ['Terminating', 'Terminating:Wait', 'Terminating:Proceed']:
-            hosts.append({'id': instance.id, 'private_ip_address': instance.private_ip_address})
+            hosts.append({'id': instance.id, 'private_ip_address': instance.private_ip_address, 'subnet_id': instance.subnet_id})
     return hosts
 
-def destroy_ec2_instances(cloud_connection, app, log_file):
+def destroy_ec2_instances(cloud_connection, app, log_file, ec2_state_filter=None):
     """ Destroy all EC2 instances which matches the `ghost app` tags
 
         :param  cloud_connection: The app Cloud Connection object
         :param  app  string: The ghost "app" object.
         :param  log_file: Logging path
+        :param  ec2_state_filter string: If we need to filter on an EC2 state
+        :return destroyed instance informations
     """
-    conn = cloud_connection.get_connection(app['region'], ["ec2"])
     app_blue_green, app_color = get_blue_green_from_app(app)
-    running_instances = find_ec2_instances(cloud_connection, app['name'], app['env'], app['role'], app['region'], app_color)
+    found_instances = find_ec2_instances(cloud_connection, app['name'], app['env'], app['role'], app['region'], ec2_state_filter, app_color)
+    return destroy_specific_ec2_instances(cloud_connection, app, found_instances, log_file)
+
+def destroy_specific_ec2_instances(cloud_connection, app, found_instances, log_file):
+    """ Destroy EC2 instances given in parameter
+
+        :param  cloud_connection: The app Cloud Connection object
+        :param  app  string: The ghost "app" object.
+        :param  found_instances list: List of instances to terminate (ids)
+        :param  log_file: Logging path
+        :return destroyed instance informations
+    """
     #Terminating instances
     instances = []
-    for r in running_instances:
+    for r in found_instances:
         instances.append(r['id'])
+    conn = cloud_connection.get_connection(app['region'], ["ec2"])
     if len(instances) > 0:
         log(instances, log_file)
         conn.terminate_instances(instance_ids=instances)
+        return found_instances
     else:
         log('No instances to destroy found', log_file)
+        return []
 
-def get_ec2_instance_status(cloud_connection, aws_region, instance_id):
+def get_ec2_instance_status(cloud_connection, aws_region, instance_ids):
     """ Get EC2 instance status
 
         :param  cloud_connection: The app Cloud Connection object
         :param  aws_region  string: The region to use
-        :param  instance_id string: Instance ID to check
+        :param  instance_ids array[] string: Instances IDs to check
     """
     conn = cloud_connection.get_connection(aws_region, ["ec2"], boto_version='boto3')
     ec2_status = conn.describe_instance_status(
-        InstanceIds=[instance_id],
+        InstanceIds=instance_ids,
     )['InstanceStatuses']
     return ec2_status
+
+def test_ec2_instance_status(cloud_connection, aws_region, instance_ids, instance_state):
+    """ Get EC2 instance status
+
+        :param  cloud_connection: The app Cloud Connection object
+        :param  aws_region  string: The region to use
+        :param  instance_ids array[] string: Instances IDs to check
+        :param  instance_state string: Instance to check
+        :return True if every instances are in the instance_state provided.
+    """
+    conn = cloud_connection.get_connection(aws_region, ["ec2"], boto_version='boto3')
+    ec2_statuses = conn.describe_instances(
+        InstanceIds=instance_ids
+    )["Reservations"][0]["Instances"]
+    for instance in ec2_statuses:
+        if not instance['State']['Name'] == instance_state:
+            return False
+    return True
 
 def create_block_device(cloud_connection, region, rbd={}):
     conn = cloud_connection.get_connection(region, ["ec2"])

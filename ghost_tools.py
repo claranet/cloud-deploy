@@ -434,3 +434,63 @@ def keep_n_recent_elements_from_list(keys_list, nb_elt_to_keep, log_file=None):
     if log_file:
         log("List now contains %s element(s)" % str(len(keys_list)), log_file)
     return keys_list
+
+def split_hosts_list(hosts_list, split_type):
+    """
+    Return a list of multiple hosts list for the safe deployment.
+
+        :param hosts_list      list: Dictionnaries instances infos(id and private IP).
+        :param split_type:     string:  The way to split the hosts list(1by1-1/3-25%-50%).
+        :return                list:    Multiple hosts list or raise an Exception is the safe
+                                        deployment process cannot be perform.
+
+    >>> from io import StringIO
+
+    >>> hosts_list = ['host1', 'host2']
+    >>> split_hosts_list(hosts_list, '50%')
+    [['host1'], ['host2']]
+    >>> split_hosts_list(hosts_list, '1by1')
+    [['host1'], ['host2']]
+
+    >>> hosts_list = ['host1', 'host2', 'host3']
+    >>> split_hosts_list(hosts_list, '50%')
+    [['host1', 'host3'], ['host2']]
+    >>> split_hosts_list(hosts_list, '1/3')
+    [['host1'], ['host2'], ['host3']]
+    >>> split_hosts_list(hosts_list, '1by1')
+    [['host1'], ['host2'], ['host3']]
+
+    >>> hosts_list = ['host1', 'host2', 'host3', 'host4']
+    >>> split_hosts_list(hosts_list, '50%')
+    [['host1', 'host3'], ['host2', 'host4']]
+    >>> split_hosts_list(hosts_list, '1/3')
+    [['host1', 'host4'], ['host2'], ['host3']]
+    >>> split_hosts_list(hosts_list, '25%')
+    [['host1'], ['host2'], ['host3'], ['host4']]
+    >>> split_hosts_list(hosts_list, '1by1')
+    [['host1'], ['host2'], ['host3'], ['host4']]
+
+    >>> hosts_list = ['host1', 'host2', 'host3', 'host4', 'host5']
+    >>> split_hosts_list(hosts_list, '50%')
+    [['host1', 'host3', 'host5'], ['host2', 'host4']]
+    >>> split_hosts_list(hosts_list, '1/3')
+    [['host1', 'host4'], ['host2', 'host5'], ['host3']]
+    >>> split_hosts_list(hosts_list, '25%')
+    [['host1', 'host5'], ['host2'], ['host3'], ['host4']]
+    >>> split_hosts_list(hosts_list, '1by1')
+    [['host1'], ['host2'], ['host3'], ['host4'], ['host5']]
+    """
+
+    if split_type == '1by1' and len(hosts_list) > 1:
+        return [hosts_list[i:i + 1] for i in range(0, len(hosts_list), 1)]
+    elif split_type == '1/3' and len(hosts_list) > 2:
+        chunk = 3
+    elif split_type == '25%' and len(hosts_list) > 3:
+        chunk = 4
+    elif split_type == '50%' and len(hosts_list) >= 2:
+        chunk = 2
+    else:
+        log("Not enough instances to perform safe deployment. Number of instances: \
+            {0} for safe deployment type: {1}" .format(str(len(hosts_list)), str(split_type)), self.log_file)
+        raise GCallException("Cannot continue, not enought instances to perform the safe deployment")
+    return [hosts_list[i::chunk] for i in range(chunk)]

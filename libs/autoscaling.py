@@ -47,10 +47,41 @@ def flush_instances_update_autoscale(as_conn, cloud_connection, app, log_file):
     :param  app: The Ghost application
     :param  log_file: Log file path
     """
-    as_conn.update_auto_scaling_group(
-        AutoScalingGroupName=app['autoscale']['name'],
-        MinSize=0,
-        MaxSize=0,
-        DesiredCapacity=0
-    )
+    update_auto_scaling_group_attributes(as_conn, app['autoscale']['name'], 0, 0, 0)
     destroy_ec2_instances(cloud_connection, app, log_file)
+
+def update_auto_scaling_group_attributes(as_conn, as_name, as_min, as_max, as_desired, termination_policies=None):
+    """
+    Updates the AutoScale group attributes with given parameters
+
+    :param  as_conn  string: The boto3 Autoscaling Group connection.
+    :param  as_name  string: Autoscaling Group name to update
+    :param  as_min   string: Minimum of instances in the ASG
+    :param  as_max   string: Maximum of instances in the ASG
+    :param  as_desired string: Desired number of running instances in the ASG
+    :param  termination_policies array of string: List of termination policies to use in the ASG
+    """
+    as_conn.update_auto_scaling_group(
+        AutoScalingGroupName=as_name,
+        MinSize=as_min,
+        MaxSize=as_max,
+        DesiredCapacity=as_desired,
+    )
+    if termination_policies:
+        as_conn.update_auto_scaling_group(
+            AutoScalingGroupName=as_name,
+            TerminationPolicies=termination_policies
+        )
+
+def check_autoscale_instances_lifecycle_state(instances, i_state='InService'):
+    """
+    Verify is every instances are in the right Lifecycle state `i_state`
+
+    :param  instances array: list of instances to proceed, retrieved after a get_autoscaling_group_object() call
+    :param i_state string: the Lifecycle state to check
+    :return True if all instances are in the given lifecycle state
+    """
+    for instance in instances:
+        if not instance['LifecycleState'] == i_state:
+            return False
+    return True
