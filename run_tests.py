@@ -15,6 +15,8 @@ modules = [
   "ghost_blueprints",
   "ghost_tools",
   "ghost_aws",
+  "libs.aws_image_builder",
+  "libs.image_builder",
   "libs.blue_green",
   "libs.deploy",
   "libs.safe_deployment",
