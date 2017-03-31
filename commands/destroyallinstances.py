@@ -29,19 +29,19 @@ class Destroyallinstances():
                 **self._connection_data
                 )
 
-    def _destroy_server(self):
+    def _destroy_instances(self):
         log(_green("STATE: Started"), self._log_file)
-        log(_yellow(" INFO: Destroy all EC2 instances related to app {0} [{1}]".format(get_app_friendly_name(self._app), self._app['_id'])), self._log_file)
         log(" CONF: Region: {0}".format(self._app['region']), self._log_file)
+
         try:
+            log(_yellow(" INFO: Destroy all EC2 instances related to app {0} [{1}]".format(get_app_friendly_name(self._app), self._app['_id'])), self._log_file)
             destroy_ec2_instances(self._cloud_connection, self._app, self._log_file)
 
             self._worker.update_status("done", message="Instance deletion OK: [{0}]".format(self._app['name']))
             log(_green("STATE: End"), self._log_file)
-        except IOError as e:
-            log(_red("I/O error({0}): {1}".format(e.errno, e.strerror)), self._log_file)
-            self._worker.update_status("failed", message="Creating Instance Failed: [{0}]\n{1}".format(self._app['name'], str(e)))
-            log(_red("STATE: END"), self._log_file)
+        except Exception as e:
+            self._worker.update_status("failed", message="Destroy all instances Failed: [{0}]\n{1}".format(self._app['name'], str(e)))
+            log(_red("STATE: End"), self._log_file)
 
     def execute(self):
-        self._destroy_server()
+        self._destroy_instances()

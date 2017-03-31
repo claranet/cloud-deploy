@@ -72,10 +72,15 @@ bucket_region: eu-west-1
 
 key_path: /home/admin/key/client_morea.pem
 
-salt_formulas_branch: dev
 ghost_root_path: /usr/local/share/ghost
 max_deploy_history: 1
-salt_formulas_repo: git@bitbucket.org:morea/morea-salt-formulas.git
+
+# Configuration manager options
+features_provisioners:
+    salt: # salt by default, might be ansible
+        git_repo: git@bitbucket.org:morea/morea-salt-formulas.git # default value if type is 'salt'
+        git_revision: master
+
 zabbix_repo: git@bitbucket.org:morea/zabbix.git
 
 # Use ~/.ssh/config file (allows to map private IPs to public IPs for example)
@@ -135,3 +140,10 @@ slack_configs:
 #        channel: '#ghost-deployments'
 #        bot_name: 'Ghost-config-2'
 #        message_prefix: 'Ghost'
+
+# Specify how many Package we should keep per module in S3 Ghost bucket
+# Unlimited by default if not specified
+# It's possible to specify a value per app env
+deployment_package_retention:
+    prod: 42
+    dev: 3

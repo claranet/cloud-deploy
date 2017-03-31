@@ -191,6 +191,60 @@ def clean_local_module_workspace(app_path, all_app_modules_list, log_file):
 def get_app_module_name_list(modules):
     """
     Returns the list of module name from a Ghost App
+
+    >>> modules = [{
+    ...    "name" : "symfony2",
+    ...    "post_deploy" : "Y29tcG9zZXIgaW5zdGFsbCAtLW5vLWludGVyYWN0aW9u",
+    ...    "pre_deploy" : "ZXhpdCAx",
+    ...    "scope" : "code",
+    ...    "initialized" : False,
+    ...    "path" : "/var/www",
+    ...    "git_repo" : "https://github.com/symfony/symfony-demo"
+    ... }]
+    >>> get_app_module_name_list(modules)
+    ['symfony2']
+
+    >>> modules = [{
+    ...    "initialized" : False,
+    ...    "path" : "/var/www",
+    ...    "git_repo" : "https://github.com/symfony/symfony-demo"
+    ... }]
+    >>> get_app_module_name_list(modules)
+    []
+
+    >>> modules = [{
+    ...    "name" : "mod1",
+    ...    "initialized" : False,
+    ...    "path" : "/var/www",
+    ...    "git_repo" : "https://github.com/symfony/symfony-demo"
+    ...  },{
+    ...    "name" : "mod-name2",
+    ...    "initialized" : False,
+    ...    "path" : "/var/www",
+    ...    "git_repo" : "https://github.com/symfony/symfony-demo"
+    ... }]
+    >>> get_app_module_name_list(modules)
+    ['mod1', 'mod-name2']
+
+    >>> modules = [{
+    ...    "name" : "mod1",
+    ...    "initialized" : False,
+    ...    "path" : "/var/www",
+    ...    "git_repo" : "https://github.com/symfony/symfony-demo"
+    ...  },{
+    ...    "noname" : "mod-name2",
+    ...    "initialized" : False,
+    ...    "path" : "/var/www",
+    ...    "git_repo" : "https://github.com/symfony/symfony-demo"
+    ...  },{
+    ...    "name" : "mod3",
+    ...    "initialized" : False,
+    ...    "path" : "/var/www",
+    ...    "git_repo" : "https://github.com/symfony/symfony-demo"
+    ... }]
+    >>> get_app_module_name_list(modules)
+    ['mod1', 'mod3']
+
     """
     return [app_module['name'] for app_module in modules if 'name' in app_module]
 
@@ -275,6 +329,12 @@ def ghost_app_object_copy(app, user):
     return copy_app
 
 def get_app_friendly_name(app):
+    """
+    >>> my_app = {'_id': 1111, 'env': 'prod', 'name': 'app1', 'role': 'webfront', 'autoscale': {'name': 'asg-mod1'}, 'environment_infos': {'instance_tags':[]}}
+    >>> get_app_friendly_name(my_app)
+    'app1/prod/webfront'
+
+    """
     return "{0}/{1}/{2}".format(app['name'], app['env'], app['role'])
 
 def boolify(val):
@@ -325,3 +385,112 @@ def get_running_jobs(_db, app_id_1, app_id_2, current_job):
         "_created": {"$gt": date_limit}
     })
     return list(jobs)
+
+def get_module_package_rev_from_manifest(bucket, manifest_key_path, module):
+    """
+    Parse the Ghost manifest, look for the module, return the associated package name
+    """
+    manifest_key = bucket.get_key(manifest_key_path)
+    manifest = manifest_key.get_contents_as_string()
+    for pkgs in manifest.splitlines():
+        manifest_module_infos = pkgs.split(":")
+        manifest_module_name = manifest_module_infos[0]
+        manifest_module_pkg_name = manifest_module_infos[1]
+        if manifest_module_name == module:
+            return manifest_module_pkg_name
+            break
+    return None
+
+def keep_n_recent_elements_from_list(keys_list, nb_elt_to_keep, log_file=None):
+    """
+    Takes a list of elements in argument, sort it (by name) and returns a slice of this list with oldest elements.
+
+    >>> keys_list = [u'1485857801_dummy_0d23e96', u'1485857958_dummy_0d23e96', u'1485858044_dummy_0d23e96', u'1485858360_dummy_0d23e96', u'1485858501_dummy_0d23e96', u'1485878943_dummy_0d23e96', u'1485879061_dummy_0d23e96', u'1485879482_dummy_0d23e96', u'1485880106_dummy_0d23e96', u'1485880663_dummy_0d23e96', u'1485880937_dummy_0d23e96', u'1485881507_dummy_0d23e96', u'1485881708_dummy_0d23e96', u'1485881904_dummy_0d23e96', u'1485882291_dummy_0d23e96', u'1485882416_dummy_0d23e96', u'1485882573_dummy_0d23e96', u'1485882712_dummy_0d23e96', u'1485883002_dummy_0d23e96', u'1485883123_dummy_0d23e96', u'1485964701_dummy_0d23e96', u'1486052064_dummy_0d23e96', u'1486052325_dummy_0d23e96', u'1486052517_dummy_0d23e96', u'1486053100_dummy_0d23e96', u'1486053277_dummy_0d23e96', u'1486120220_dummy_0d23e96', u'1486120350_dummy_0d23e96', u'1486481186_dummy_0d23e96']
+    >>> keep_n_recent_elements_from_list(keys_list, 1)
+    [u'1485857801_dummy_0d23e96', u'1485857958_dummy_0d23e96', u'1485858044_dummy_0d23e96', u'1485858360_dummy_0d23e96', u'1485858501_dummy_0d23e96', u'1485878943_dummy_0d23e96', u'1485879061_dummy_0d23e96', u'1485879482_dummy_0d23e96', u'1485880106_dummy_0d23e96', u'1485880663_dummy_0d23e96', u'1485880937_dummy_0d23e96', u'1485881507_dummy_0d23e96', u'1485881708_dummy_0d23e96', u'1485881904_dummy_0d23e96', u'1485882291_dummy_0d23e96', u'1485882416_dummy_0d23e96', u'1485882573_dummy_0d23e96', u'1485882712_dummy_0d23e96', u'1485883002_dummy_0d23e96', u'1485883123_dummy_0d23e96', u'1485964701_dummy_0d23e96', u'1486052064_dummy_0d23e96', u'1486052325_dummy_0d23e96', u'1486052517_dummy_0d23e96', u'1486053100_dummy_0d23e96', u'1486053277_dummy_0d23e96', u'1486120220_dummy_0d23e96', u'1486120350_dummy_0d23e96']
+
+    >>> keys_list = [u'1485857801_dummy_0d23e96', u'1485857958_dummy_0d23e96', u'1485858044_dummy_0d23e96', u'1485858360_dummy_0d23e96', u'1485858501_dummy_0d23e96', u'1485878943_dummy_0d23e96', u'1485879061_dummy_0d23e96', u'1485879482_dummy_0d23e96', u'1485880106_dummy_0d23e96', u'1485880663_dummy_0d23e96', u'1485880937_dummy_0d23e96', u'1485881507_dummy_0d23e96', u'1485881708_dummy_0d23e96', u'1485881904_dummy_0d23e96', u'1485882291_dummy_0d23e96', u'1485882416_dummy_0d23e96', u'1485882573_dummy_0d23e96', u'1485882712_dummy_0d23e96', u'1485883002_dummy_0d23e96', u'1485883123_dummy_0d23e96', u'1485964701_dummy_0d23e96', u'1486052064_dummy_0d23e96', u'1486052325_dummy_0d23e96', u'1486052517_dummy_0d23e96', u'1486053100_dummy_0d23e96', u'1486053277_dummy_0d23e96', u'1486120220_dummy_0d23e96', u'1486120350_dummy_0d23e96', u'1486481186_dummy_0d23e96']
+    >>> keep_n_recent_elements_from_list(keys_list, 60)
+    []
+
+    >>> keys_list = [u'1485857801_dummy_0d23e96', u'1485857958_dummy_0d23e96', u'1485858044_dummy_0d23e96', u'1485858360_dummy_0d23e96', u'1485858501_dummy_0d23e96', u'1485878943_dummy_0d23e96', u'1485879061_dummy_0d23e96', u'1485879482_dummy_0d23e96', u'1485880106_dummy_0d23e96', u'1485880663_dummy_0d23e96', u'1485880937_dummy_0d23e96', u'1485881507_dummy_0d23e96', u'1485881708_dummy_0d23e96', u'1485881904_dummy_0d23e96', u'1485882291_dummy_0d23e96', u'1485882416_dummy_0d23e96', u'1485882573_dummy_0d23e96', u'1485882712_dummy_0d23e96', u'1485883002_dummy_0d23e96', u'1485883123_dummy_0d23e96', u'1485964701_dummy_0d23e96', u'1486052064_dummy_0d23e96', u'1486052325_dummy_0d23e96', u'1486052517_dummy_0d23e96', u'1486053100_dummy_0d23e96', u'1486053277_dummy_0d23e96', u'1486120220_dummy_0d23e96', u'1486120350_dummy_0d23e96', u'1486481186_dummy_0d23e96']
+    >>> keep_n_recent_elements_from_list(keys_list, 10)
+    [u'1485857801_dummy_0d23e96', u'1485857958_dummy_0d23e96', u'1485858044_dummy_0d23e96', u'1485858360_dummy_0d23e96', u'1485858501_dummy_0d23e96', u'1485878943_dummy_0d23e96', u'1485879061_dummy_0d23e96', u'1485879482_dummy_0d23e96', u'1485880106_dummy_0d23e96', u'1485880663_dummy_0d23e96', u'1485880937_dummy_0d23e96', u'1485881507_dummy_0d23e96', u'1485881708_dummy_0d23e96', u'1485881904_dummy_0d23e96', u'1485882291_dummy_0d23e96', u'1485882416_dummy_0d23e96', u'1485882573_dummy_0d23e96', u'1485882712_dummy_0d23e96', u'1485883002_dummy_0d23e96']
+
+    >>> keep_n_recent_elements_from_list([1,2,3,4,5,6,7,8,9,10], 8)
+    [1, 2]
+
+    >>> keep_n_recent_elements_from_list([10,9,8,2,3,4,5,6,7,1], 8)
+    [1, 2]
+
+    """
+    if log_file:
+        log("List contains %s element(s)" % str(len(keys_list)), log_file)
+        log("%s most recent element(s) must be kept" % str(nb_elt_to_keep), log_file)
+
+    keys_list.sort()
+    del keys_list[(len(keys_list)-nb_elt_to_keep):]
+
+    if log_file:
+        log("List now contains %s element(s)" % str(len(keys_list)), log_file)
+    return keys_list
+
+def split_hosts_list(hosts_list, split_type):
+    """
+    Return a list of multiple hosts list for the safe deployment.
+
+        :param hosts_list      list: Dictionnaries instances infos(id and private IP).
+        :param split_type:     string:  The way to split the hosts list(1by1-1/3-25%-50%).
+        :return                list:    Multiple hosts list or raise an Exception is the safe
+                                        deployment process cannot be perform.
+
+    >>> from io import StringIO
+
+    >>> hosts_list = ['host1', 'host2']
+    >>> split_hosts_list(hosts_list, '50%')
+    [['host1'], ['host2']]
+    >>> split_hosts_list(hosts_list, '1by1')
+    [['host1'], ['host2']]
+
+    >>> hosts_list = ['host1', 'host2', 'host3']
+    >>> split_hosts_list(hosts_list, '50%')
+    [['host1', 'host3'], ['host2']]
+    >>> split_hosts_list(hosts_list, '1/3')
+    [['host1'], ['host2'], ['host3']]
+    >>> split_hosts_list(hosts_list, '1by1')
+    [['host1'], ['host2'], ['host3']]
+
+    >>> hosts_list = ['host1', 'host2', 'host3', 'host4']
+    >>> split_hosts_list(hosts_list, '50%')
+    [['host1', 'host3'], ['host2', 'host4']]
+    >>> split_hosts_list(hosts_list, '1/3')
+    [['host1', 'host4'], ['host2'], ['host3']]
+    >>> split_hosts_list(hosts_list, '25%')
+    [['host1'], ['host2'], ['host3'], ['host4']]
+    >>> split_hosts_list(hosts_list, '1by1')
+    [['host1'], ['host2'], ['host3'], ['host4']]
+
+    >>> hosts_list = ['host1', 'host2', 'host3', 'host4', 'host5']
+    >>> split_hosts_list(hosts_list, '50%')
+    [['host1', 'host3', 'host5'], ['host2', 'host4']]
+    >>> split_hosts_list(hosts_list, '1/3')
+    [['host1', 'host4'], ['host2', 'host5'], ['host3']]
+    >>> split_hosts_list(hosts_list, '25%')
+    [['host1', 'host5'], ['host2'], ['host3'], ['host4']]
+    >>> split_hosts_list(hosts_list, '1by1')
+    [['host1'], ['host2'], ['host3'], ['host4'], ['host5']]
+    """
+
+    if split_type == '1by1' and len(hosts_list) > 1:
+        return [hosts_list[i:i + 1] for i in range(0, len(hosts_list), 1)]
+    elif split_type == '1/3' and len(hosts_list) > 2:
+        chunk = 3
+    elif split_type == '25%' and len(hosts_list) > 3:
+        chunk = 4
+    elif split_type == '50%' and len(hosts_list) >= 2:
+        chunk = 2
+    else:
+        log("Not enough instances to perform safe deployment. Number of instances: \
+            {0} for safe deployment type: {1}" .format(str(len(hosts_list)), str(split_type)), self.log_file)
+        raise GCallException("Cannot continue, not enought instances to perform the safe deployment")
+    return [hosts_list[i::chunk] for i in range(chunk)]

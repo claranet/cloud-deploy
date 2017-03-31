@@ -1,8 +1,13 @@
+try:
+    import bcrypt
+    import yaml
+    from eve.auth import BasicAuth
+except ImportError as e:
+    print "Needed pip modules not found. Please make sure your virtualenv is activated and pip requirements well installed."
+    raise
+
 import argparse
-import bcrypt
 import os
-import yaml
-from eve.auth import BasicAuth
 
 ACCOUNTS_FILE = 'accounts.yml'
 

@@ -10,6 +10,7 @@ from time import sleep
 from ghost_tools import b64decode_utf8
 from ghost_tools import GCallException, gcall, get_app_module_name_list, clean_local_module_workspace, refresh_stage2
 from ghost_tools import get_aws_connection_data
+from ghost_tools import get_module_package_rev_from_manifest, keep_n_recent_elements_from_list
 from ghost_log import log
 from ghost_aws import deploy_module_on_hosts
 from settings import cloud_connections, DEFAULT_PROVIDER
@@ -91,6 +92,36 @@ class Deploy():
     def _deploy_module(self, module, fabric_execution_strategy, safe_deployment_strategy):
         deploy_module_on_hosts(self._cloud_connection, module, fabric_execution_strategy, self._app, self._config, self._log_file, safe_deployment_strategy)
 
+    def _purge_s3_package(self, path, bucket, module, pkg_name, deployment_package_retention=42):
+        """
+        Purge N old packages deployment for the current module from the current app
+        """
+        try:
+            # Get all packages in S3 related to the current module
+            keys_list = [i.name.split("/")[-1] for i in bucket.list(path[+1:])]
+
+            # Get app manifest and extract package name
+            manifest_key_path = '{path}/MANIFEST'.format(path=get_path_from_app_with_color(self._app))
+            manifest_module_pkg_name = get_module_package_rev_from_manifest(bucket, manifest_key_path, module)
+
+            # Remove the current production/used package from the purge list
+            keys_list.remove(manifest_module_pkg_name)
+
+            # Remove the current deployment package just generated from the purge list
+            keys_list.remove(pkg_name)
+
+            if len(keys_list) > deployment_package_retention:
+                keys_list = keep_n_recent_elements_from_list(keys_list, deployment_package_retention, self._log_file)
+                for obj in keys_list:
+                    key_path_to_purge = '{path}/{obj}'.format(path=path, obj=obj)
+                    try:
+                        bucket.get_key(key_path_to_purge).delete()
+                        log("Packages Purge: Deleted S3 Object: %s" % key_path_to_purge, self._log_file)
+                    except:
+                        log("Packages Purge: Delete FAILED for S3 Object: %s" % key_path_to_purge, self._log_file)
+        except Exception, e:
+            log("Packages Purge: Global exception | " + str(e), self._log_file)
+
     def _package_module(self, module, ts, commit):
         path = get_buildpack_clone_path_from_module(self._app, module)
         os.chdir(path)
@@ -104,13 +135,19 @@ class Deploy():
         cloud_connection = cloud_connections.get(self._app.get('provider', DEFAULT_PROVIDER))(self._log_file)
         conn = cloud_connection.get_connection(self._config.get('bucket_region', self._app['region']), ["s3"])
         bucket = conn.get_bucket(self._config['bucket_s3'])
-        key_path = '{path}/{pkg_name}'.format(bucket_s3=self._config['bucket_s3'], path=path, pkg_name=pkg_name)
+        key_path = '{path}/{pkg_name}'.format(path=path, pkg_name=pkg_name)
         key = bucket.get_key(path)
         if not key:
             key = bucket.new_key(key_path)
         key.set_contents_from_filename(pkg_path)
 
         gcall("rm -f {0}".format(pkg_path), "Deleting local package: %s" % pkg_name, self._log_file)
+
+        deployment_package_retention_config = self._config.get('deployment_package_retention', None)
+        if deployment_package_retention_config and self._app['env'] in deployment_package_retention_config:
+            deployment_package_retention = deployment_package_retention_config.get(self._app['env'], 42)
+            self._purge_s3_package(path, bucket, module, pkg_name, deployment_package_retention)
+
         return pkg_name
 
     def _get_module_revision(self, module_name):
