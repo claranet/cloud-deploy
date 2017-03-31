@@ -87,12 +87,12 @@ zabbix_repo: git@bitbucket.org:morea/zabbix.git
 # Use ~/.ssh/config file (allows to map private IPs to public IPs for example)
 use_ssh_config: false
 
-# Select an RQ worker strategy:
+# Select an RQ worker strategy: (defaults to "one_worker_per_app")
 # * one_worker_per_app: each app will have its own dedicated RQ queue and worker to process jobs (all parallel)
 # * one_worker_per_env: app in the same env will share a dedicated RQ queue and worker (per env parallel)
 # * one_worker_for_all : a single RQ queue and worker will process all jobs (all serial)
 rq_worker_strategy: one_worker_per_app
-# RQ Worker Job Timeout in seconds
+# RQ Worker Job Timeout in seconds (defaults to 3600)
 rq_worker_job_timeout: 3600
 
 # Deploy to target instances in serial (fabric's default) or in parallel
