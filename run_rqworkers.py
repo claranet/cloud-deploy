@@ -13,12 +13,12 @@ from pymongo import MongoClient
 import logging
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s %(levelname)s %(message)s')
 
-from settings import MONGO_DBNAME, MONGO_HOST, MONGO_PORT, REDIS_HOST
+from settings import MONGO_DBNAME, MONGO_HOST, MONGO_PORT, REDIS_HOST, RQ_JOB_TIMEOUT
 
 from ghost_tools import config, get_rq_name_from_app, get_app_from_rq_name, get_app_colored_env
 
 def create_rq_queue_and_worker(rqworker_name, ghost_rq_queues, ghost_rq_workers, ghost_redis_connection):
-    ghost_rq_queues[rqworker_name] = Queue(name=rqworker_name, connection=ghost_redis_connection, default_timeout=3600)
+    ghost_rq_queues[rqworker_name] = Queue(name=rqworker_name, connection=ghost_redis_connection, default_timeout=RQ_JOB_TIMEOUT)
     worker = Worker(name=rqworker_name, queues=[ghost_rq_queues[rqworker_name]], connection=ghost_redis_connection)
 
     def start_worker(worker, rqworker_name):

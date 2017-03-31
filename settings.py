@@ -43,6 +43,9 @@ MONGO_PORT = 27017
 MONGO_DBNAME = 'apitest'
 MONGO_QUERY_BLACKLIST = ['$where']
 
+# RQ Workers params
+RQ_JOB_TIMEOUT = config.get('rq_worker_job_timeout', 3600)
+
 REDIS_HOST = config.get('redis_host', 'localhost')
 
 # Enable reads (GET) and inserts (POST) for resources/collections
