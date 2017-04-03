@@ -136,7 +136,7 @@ slack_configs:
     -
         webhooks_endpoint: https://hooks.slack.com/services/XX_KEY_XX # Morea #ghost-deployments webhook
         channel: '#ghost-deployments'
-        bot_name: 'Ghost'
+        bot_name: 'Claranet Cloud Deploy'
         message_prefix: 'Ghost job triggered'
 #    -
 #        webhooks_endpoint: https://hooks.slack.com/services/XX_KEY_XX

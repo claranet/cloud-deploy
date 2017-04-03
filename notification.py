@@ -97,7 +97,7 @@ class Notification():
 
             payload = {
                 "channel": config.get('channel', '#ghost-deployments'),
-                "username": config.get('bot_name', 'Ghost'),
+                "username": config.get('bot_name', 'Claranet Cloud Deploy'),
                 "icon_url": config.get('bot_icon', 'https://www.morea.fr/ghost_logo_mini.png'),
                 "attachments": [
                 {
