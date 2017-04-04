@@ -3,6 +3,7 @@ import os
 import io
 
 from ghost_log import log
+from ghost_tools import b64decode_utf8
 
 from .blue_green import get_blue_green_from_app
 

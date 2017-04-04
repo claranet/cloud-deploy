@@ -1,7 +1,9 @@
-import yaml
 import os
+import re
+import yaml
 
 from ghost_log import log
+
 from .provisioner import FeaturesProvisioner
 
 class FeaturesProvisionerSalt(FeaturesProvisioner):
@@ -9,8 +11,8 @@ class FeaturesProvisionerSalt(FeaturesProvisioner):
         FeaturesProvisioner.__init__(self, log_file, 'salt', unique_id, config, global_config)
 
     def build_provisioner_features_files(self, params, features):
-        self._build_salt_top(params)
-        self._build_salt_pillar(features)
+        self._build_salt_top(features)
+        self._build_salt_pillar(params)
 
     def build_packer_provisioner_config(self, packer_config):
         return {

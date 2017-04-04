@@ -1,7 +1,7 @@
 import json
 
 from pypacker import Packer
-from ghost_tools import get_aws_connection_data, b64decode_utf8
+from ghost_tools import get_aws_connection_data
 from settings import cloud_connections, DEFAULT_PROVIDER
 from ghost_log import log
 

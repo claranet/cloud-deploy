@@ -1,12 +1,11 @@
 import json
-import re
 import io
 import os
 import traceback
 
 from ghost_log import log
 from ghost_aws import create_userdata_launchconfig_update_asg
-from ghost_tools import get_aws_connection_data, b64decode_utf8
+from ghost_tools import get_aws_connection_data
 from settings import cloud_connections, DEFAULT_PROVIDER
 from libs.deploy import touch_app_manifest
 from libs.image_builder_aws import AWSImageBuilder
