@@ -208,7 +208,7 @@ apps_schema = {
                               'root_block_device':
                               {'type': 'dict',
                                'schema': {
-                                   'size': {'type': 'integer'},
+                                   'size': {'type': 'integer', 'min': 20},
                                    'name': {'type': 'string',
                                             'regex': '^/[a-z0-9]+/[a-z0-9]+$'}
                                }},
