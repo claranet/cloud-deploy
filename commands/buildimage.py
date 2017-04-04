@@ -57,12 +57,12 @@ class Buildimage():
         self._worker.update_status("done")
 
     def execute(self):
-        ami_id, ami_name = self._aws_image_builder._start_packer()
+        ami_id, ami_name = self._aws_image_builder.start_builder()
         if ami_id is not "ERROR":
             touch_app_manifest(self._app, self._config, self._log_file)
             log("Update app in MongoDB to update AMI: {0}".format(ami_id), self._log_file)
             self._update_app_ami(ami_id, ami_name)
-            if (self._aws_image_builder._purge_old_images()):
+            if (self._aws_image_builder.purge_old_images()):
                 log("Old AMIs removed for this app", self._log_file)
             else:
                 log("Purge old AMIs failed", self._log_file)

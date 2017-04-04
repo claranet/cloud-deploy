@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 import json
 
 from pypacker import Packer
@@ -8,7 +10,9 @@ from ghost_log import log
 from .image_builder import ImageBuilder
 
 class AWSImageBuilder(ImageBuilder):
-
+    """
+    This class is designed to Build an AWS AMI using Packer
+    """
     def __init__(self, app, job, db, log_file, config):
         ImageBuilder.__init__(self, app, job, db, log_file, config)
         self._connection_data = get_aws_connection_data(
@@ -20,17 +24,6 @@ class AWSImageBuilder(ImageBuilder):
                 self._log_file,
                 **self._connection_data
                 )
-
-    def _start_packer(self):
-        skip_salt_bootstrap_option = self._job['options'][0] if 'options' in self._job and len(self._job['options']) > 0 else True
-        json_packer = self._format_packer_from_app(skip_salt_bootstrap_option)
-        json_packer_for_log = json.loads(json_packer)
-        del json_packer_for_log['credentials']
-        log("Generating a new AMI", self._log_file)
-        log("Packer options : %s" %json.dumps(json_packer_for_log, sort_keys=True, indent=4, separators=(',', ': ')), self._log_file)
-        pack = Packer(json_packer, self._config, self._log_file, self._job['_id'])
-        ami_id = pack.build_image(self._app['features'], self._get_buildimage_hooks())
-        return ami_id, self._ami_name
 
     def _format_ghost_env_vars(self):
         ghost_vars = []
@@ -75,7 +68,18 @@ class AWSImageBuilder(ImageBuilder):
 
         return json.dumps(datas, sort_keys=True, indent=4, separators=(',', ': '))
 
-    def _purge_old_images(self):
+    def start_builder(self):
+        skip_salt_bootstrap_option = self._job['options'][0] if 'options' in self._job and len(self._job['options']) > 0 else True
+        json_packer = self._format_packer_from_app(skip_salt_bootstrap_option)
+        json_packer_for_log = json.loads(json_packer)
+        del json_packer_for_log['credentials']
+        log("Generating a new AMI", self._log_file)
+        log("Packer options : %s" %json.dumps(json_packer_for_log, sort_keys=True, indent=4, separators=(',', ': ')), self._log_file)
+        pack = Packer(json_packer, self._config, self._log_file, self._job['_id'])
+        ami_id = pack.build_image(self._app['features'], self._get_buildimage_hooks())
+        return ami_id, self._ami_name
+
+    def purge_old_images(self):
         conn = self._cloud_connection.get_connection(self._app['region'], ["ec2"])
         retention = self._config.get('ami_retention', 5)
         filtered_images = []

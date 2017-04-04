@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 import time
 import os
 import io
@@ -11,6 +13,10 @@ AMI_BASE_FMT = "ami.{env}.{region}.{role}.{name}.{color}"
 AMI_FMT = AMI_BASE_FMT + "{date}"
 
 class ImageBuilder:
+    """
+    This class is the generic interface used by Buildimage command
+    in order to create the desired Image
+    """
     def __init__(self, app, job, db, log_file, config):
 
         self._app = app
@@ -68,7 +74,16 @@ class ImageBuilder:
         return hook_file_path
 
     def _get_buildimage_hooks(self):
+        """
+        Create and return a dictionary will all hooks available for Build Image process
+        """
         hooks = {}
         hooks['pre_buildimage'] = self._generate_buildimage_hook('pre_buildimage')
         hooks['post_buildimage'] = self._generate_buildimage_hook('post_buildimage')
         return hooks
+
+    def start_builder(self):
+        raise NotImplementedError
+
+    def purge_old_images(self):
+        raise NotImplementedError
