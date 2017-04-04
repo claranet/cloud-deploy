@@ -9,7 +9,7 @@ from ghost_aws import create_userdata_launchconfig_update_asg
 from ghost_tools import get_aws_connection_data, b64decode_utf8
 from settings import cloud_connections, DEFAULT_PROVIDER
 from libs.deploy import touch_app_manifest
-from libs.aws_image_builder import AWSImageBuilder
+from libs.image_builder_aws import AWSImageBuilder
 
 COMMAND_DESCRIPTION = "Build Image"
 

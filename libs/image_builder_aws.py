@@ -29,7 +29,7 @@ class AWSImageBuilder(ImageBuilder):
         log("Generating a new AMI", self._log_file)
         log("Packer options : %s" %json.dumps(json_packer_for_log, sort_keys=True, indent=4, separators=(',', ': ')), self._log_file)
         pack = Packer(json_packer, self._config, self._log_file, self._job['_id'])
-        ami_id = pack.build_image(self._format_salt_top_from_app_features(), self._format_salt_pillar_from_app_features(), self._get_buildimage_hooks())
+        ami_id = pack.build_image(self._app['features'], self._get_buildimage_hooks())
         return ami_id, self._ami_name
 
     def _format_ghost_env_vars(self):

@@ -113,8 +113,10 @@ class Packer:
         rc = process.poll()
         return rc, result
 
-    def build_image(self, provisioner_params, features, hooks):
+    def build_image(self, features_infos, hooks):
         for provisioner in self.provisioners:
+            provisioner_params = provisioner.format_provisioner_params(features_infos)
+            features = provisioner.format_provisioner_features(features_infos)
             provisioner.build_provisioner_features_files(provisioner_params, features)
 
         self._build_packer_json(hooks)

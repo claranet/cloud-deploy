@@ -84,3 +84,9 @@ class FeaturesProvisioner:
 
     def build_packer_provisioner_cleanup(self):
         raise NotImplementedError
+
+    def format_provisioner_features(self, features):
+        raise NotImplementedError
+
+    def format_provisioner_params(self, features):
+        raise NotImplementedError

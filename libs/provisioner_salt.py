@@ -55,3 +55,48 @@ class FeaturesProvisionerSalt(FeaturesProvisioner):
         stream_features = file(self.salt_pillar_features_path, 'w')
         log('pillar: features.sls: {0}'.format(features), self._log_file)
         yaml.dump(features, stream_features, default_flow_style=False)
+
+    def format_provisioner_features(self, features):
+        """ Generates the formula dictionnary object with all required features
+
+        >>> features = [{'name': 'pkg', 'version': 'git_vim'}, {'name': 'pkg', 'version': 'package=lsof'}, {'name': 'pkg', 'version': 'package=curl'}]
+        >>> FeaturesProvisionerSalt(None, None, None, None).format_provisioner_features(features)
+        ['pkg']
+
+        """
+        top = []
+        for i in features:
+            if re.search('^(php|php5)-(.*)',i['name']):
+                continue
+            if re.search('^zabbix-(.*)',i['name']):
+                continue
+            if re.search('^gem-(.*)',i['name']):
+                continue
+            if not i['name'].encode('utf-8') in top:
+                top.append(i['name'].encode('utf-8'))
+        return top
+
+    def format_provisioner_params(self, features):
+        """ Generates the pillar dictionnary object with all required features and their options
+
+        >>> features = [{'name': 'pkg', 'version': 'git_vim'}, {'name': 'pkg', 'version': 'package=lsof'}, {'name': 'pkg', 'version': 'package=curl'}]
+        >>> import pprint
+        >>> pprint.pprint(FeaturesProvisionerSalt(None, None, None, None).format_provisioner_params(features).items())
+        [('pkg', {'package': ['lsof', 'curl'], 'version': 'git_vim'})]
+
+        """
+        pillar = {}
+        for ft in features:
+            values = ft.get('version', '').split('=', 1) # Split only one time
+            feature_name = ft['name'].encode('utf-8')
+            if not feature_name in pillar:
+                pillar[feature_name] = {}
+            if len(values) == 2:
+                ft_param_key = values[0].encode('utf-8')
+                ft_param_val = values[1].encode('utf-8')
+                if not ft_param_key in pillar[feature_name]:
+                    pillar[feature_name][ft_param_key] = []
+                pillar[feature_name][ft_param_key].append(ft_param_val)
+            else:
+                pillar[feature_name]['version'] = ft.get('version', '').encode('utf-8')
+        return pillar
