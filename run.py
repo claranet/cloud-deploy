@@ -14,7 +14,7 @@ from redis import Redis
 from rq import Queue, cancel_job
 import rq_dashboard
 
-from settings import __dict__ as eve_settings, REDIS_HOST
+from settings import __dict__ as eve_settings, REDIS_HOST, RQ_JOB_TIMEOUT
 from command import Command
 from models.apps import apps
 from models.jobs import jobs, CANCELLABLE_JOB_STATUSES, DELETABLE_JOB_STATUSES
@@ -239,7 +239,7 @@ def post_insert_job(items):
     app = get_apps_db().find_one({'_id': ObjectId(app_id)})
 
     # Place job in app's queue
-    rq_job = Queue(name=get_rq_name_from_app(app), connection=ghost.ghost_redis_connection, default_timeout=3600).enqueue(Command().execute, job_id, job_id=job_id)
+    rq_job = Queue(name=get_rq_name_from_app(app), connection=ghost.ghost_redis_connection, default_timeout=RQ_JOB_TIMEOUT).enqueue(Command().execute, job_id, job_id=job_id)
     assert rq_job.id == job_id
 
 def pre_delete_job(item):
