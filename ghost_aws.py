@@ -9,7 +9,7 @@ from libs.ec2 import create_block_device, generate_userdata
 from libs.autoscaling import get_autoscaling_group_object
 from libs.blue_green import get_blue_green_from_app
 
-from ghost_tools import GCallException
+from ghost_tools import GCallException, boolify
 from ghost_log import log
 
 ROOT_PATH = os.path.dirname(os.path.realpath(__file__))
@@ -233,6 +233,18 @@ def update_auto_scale(cloud_connection, app, launch_config, log_file, update_as_
             MaxSize=app['autoscale']['max'],
             AvailabilityZones=az,
             VPCZoneIdentifier=','.join(app['environment_infos']['subnet_ids'])
+        )
+    asg_metrics = ["GroupMinSize", "GroupMaxSize", "GroupDesiredCapacity", "GroupInServiceInstances", "GroupPendingInstances", "GroupStandbyInstances", "GroupTerminatingInstances", "GroupTotalInstances"]
+    if boolify(app['autoscale'].get('enable_metrics', False)):
+        log("Enabling Autoscaling group [{0}] metrics ({1}).".format(app['autoscale']['name'], asg_metrics), log_file)
+        as_conn.enable_metrics_collection(
+            AutoScalingGroupName=app['autoscale']['name'],
+            Granularity='1Minute',
+        )
+    else:
+        log("Disabling Autoscaling group [{0}] metrics ({1}).".format(app['autoscale']['name'], asg_metrics), log_file)
+        as_conn.disable_metrics_collection(
+            AutoScalingGroupName=app['autoscale']['name'],
         )
     log("Autoscaling group [{0}] updated.".format(app['autoscale']['name']), log_file)
     if update_as_params:
