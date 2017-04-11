@@ -235,7 +235,7 @@ def update_auto_scale(cloud_connection, app, launch_config, log_file, update_as_
             VPCZoneIdentifier=','.join(app['environment_infos']['subnet_ids'])
         )
     asg_metrics = ["GroupMinSize", "GroupMaxSize", "GroupDesiredCapacity", "GroupInServiceInstances", "GroupPendingInstances", "GroupStandbyInstances", "GroupTerminatingInstances", "GroupTotalInstances"]
-    if boolify(app['autoscale'].get('enable_metrics', False)):
+    if boolify(app['autoscale'].get('enable_metrics', True)):
         log("Enabling Autoscaling group [{0}] metrics ({1}).".format(app['autoscale']['name'], asg_metrics), log_file)
         as_conn.enable_metrics_collection(
             AutoScalingGroupName=app['autoscale']['name'],
