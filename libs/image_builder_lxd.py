@@ -22,7 +22,7 @@ class LXDImageBuilder(ImageBuilder):
         self._client = LXDClient()
         self._container_name = self._ami_name.replace('.', '-')
         self._container_config = self._config.get('container', {'endpoint': self._config.get('endpoint', 'localhost'),
-                                                                'debug': self._config.get('debug', 'False'),
+                                                                'debug': self._config.get('debug', False),
                                                                 })
         self._provisioners_config = self._config.get('features_provisioners', {'salt'})
         self.skip_salt_bootstrap_option = self._job['options'][0] if 'options' in self._job and len(self._job['options']) > 0 else True
@@ -115,6 +115,7 @@ class LXDImageBuilder(ImageBuilder):
         >>> Lxd(app, job, config, log_file)._publish_container()
         """
         log("Publish Container as image", self._log_file)
+        self._clean_lxd_images()
         os.system("lxc publish local:{container_name} local: --alias={job_id} description={container_name} --force".format(job_id=self._job['_id'], container_name=self._container_name))
 
     def _clean_lxd_images(self):
@@ -197,7 +198,6 @@ class LXDImageBuilder(ImageBuilder):
         self._lxd_run_features_install()
         self._lxd_run_hooks_post()
         self.container.stop(wait=True)
-        self._clean_lxd_images()
         if not self._container_config['debug']:
             self._clean()
         return self
