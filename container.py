@@ -4,7 +4,7 @@ import time
 import yaml
 import json
 from ghost_log import log
-from pylxd import Client
+from pylxd import Client as lxd_client
 from ghost_tools import get_buildpack_clone_path_from_module, get_path_from_app_with_color, get_local_repo_path
 
 PROVISIONER_LOCAL_TREE="/tmp/ghost-features-provisioner"
@@ -16,7 +16,7 @@ class Lxd:
         self._job = job
         self._log_file = log_file
         self._config = config
-        self.client = Client()
+        self.client = lxd_client()
         self._container_name = "lxd-{env}-{region}-{role}-{name}-{job_id}".format(env=self._app['env'],
                                                                               region=self._app['region'],
                                                                               role=self._app['role'],
