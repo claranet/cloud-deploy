@@ -33,7 +33,7 @@ class FeaturesProvisioner:
         if not os.path.exists(PROVISIONER_LOCAL_TREE):
             os.makedirs(PROVISIONER_LOCAL_TREE)
 
-        self.local_repo_path = self.get_local_repo_path(PROVISIONER_LOCAL_TREE, self.name['name'], self.unique)
+        self.local_repo_path = get_local_repo_path(PROVISIONER_LOCAL_TREE, self.name, self.unique)
         if not os.path.exists(self.local_repo_path):
             os.makedirs(self.local_repo_path)
 

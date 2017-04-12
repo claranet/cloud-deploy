@@ -650,5 +650,5 @@ def get_buildpack_clone_path_from_module(app, module):
     """
     return "{app_path}/{module}".format(app_path=get_path_from_app_with_color(app), module=module['name'])
 
-def get_local_repo_path(base_path, app_name, unique_id ):
+def get_local_repo_path(base_path, app_name, unique_id):
     return "{base}/{name}-{uid}".format(base=base_path, name=app_name, uid=unique_id)
