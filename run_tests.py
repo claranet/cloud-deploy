@@ -6,7 +6,7 @@
 
 import doctest
 import importlib
-from pylxd import Client as lxd_client
+from pylxd import Client as LXDClient
 
 modules = [
   "command",
@@ -37,7 +37,7 @@ modules = [
 ]
 
 try:
-    if lxd_client(): modules.append("container")
+    if LXDClient(): modules.append("container")
 except:
     pass
 

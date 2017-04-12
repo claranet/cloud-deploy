@@ -8,7 +8,7 @@ import json
 import time
 
 from ghost_log import log
-from pylxd import Client as lxd_client
+from pylxd import Client as LXDClient
 from ghost_tools import get_buildpack_clone_path_from_module, get_path_from_app_with_color, get_local_repo_path
 from .image_builder import ImageBuilder
 
@@ -19,7 +19,7 @@ class LXDImageBuilder(ImageBuilder):
     def __init__(self, app, job, db, log_file, config):
         ImageBuilder.__init__(self, app, job, db, log_file, config)
 
-        self._client = lxd_client()
+        self._client = LXDClient()
         self._container_name = self._ami_name.replace('.', '-')
         self._container_config = self._config.get('container', {'endpoint': self._config.get('endpoint', 'localhost'),
                                                                 'debug': self._config.get('debug', 'False'),

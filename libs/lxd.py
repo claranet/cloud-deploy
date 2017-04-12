@@ -1,10 +1,10 @@
-from pylxd import Client
+from pylxd import Client as LXDClient
 
 def list_lxd_images():
     """
     Retrieve images on local registry
     """
-    lxd = Client()
+    lxd = LXDClient()
     images = lxd.images.all()
     image_list = {}
     image_list[''] = 'Not use container'
