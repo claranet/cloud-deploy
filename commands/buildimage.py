@@ -7,7 +7,7 @@ from settings import cloud_connections, DEFAULT_PROVIDER
 from libs.deploy import touch_app_manifest
 from libs.image_builder_aws import AWSImageBuilder
 from libs.provisioner import GalaxyNoMatchingRolesException, GalaxyBadRequirementPathException
-from container import Lxd
+from libs.image_builder_lxd import LXDImageBuilder
 
 COMMAND_DESCRIPTION = "Build Image"
 RELATED_APP_FIELDS = ['features', 'build_infos']
@@ -39,11 +39,6 @@ class Buildimage():
             **self._connection_data
         )
         self._aws_image_builder = AWSImageBuilder(self._app, self._job, self._db, self._log_file, self._config)
-        if self._config:
-            self._container_config = self._config.get('container', {
-                'endpoint': self._config.get('endpoint', 'localhost'),
-                'debug': self._config.get('debug', 'False'),
-            })
 
     def _get_notification_message_done(self, ami_id):
         """
@@ -67,7 +62,7 @@ class Buildimage():
 
     def _update_container_source(self, container):
         self._db.apps.update({'_id': self._app['_id']},{'$set': {'build_infos.container_image': str(container) }})
- 
+
     def execute(self):
         try:
             ami_id, ami_name = self._aws_image_builder.start_builder()
@@ -75,25 +70,15 @@ class Buildimage():
             self._worker.update_status("aborted", message=str(e))
             return
 
-        container = ""
-        if self._app['build_infos']['container']:
-            log("Generating a new container", self._log_file)
-            container = Lxd(self._app, self._job, self._config, self._log_file)
-            container = container._build_image()
-
         if ami_id is not "ERROR":
-            container = ""
+            lxd_image_builder = None
             if self._app['build_infos']['source_container_image']:
                 log("Generating a new container", self._log_file)
-                container = Lxd(self._app, self._job, self._config, self._log_file)
-                container = container.build_image()
-                if container:
-                    container._publish_container()
+                lxd_image_builder = LXDImageBuilder(self._app, self._job, self._db, self._log_file, self._config)
+                lxd_image_builder = lxd_image_builder.build_image()
+                if lxd_image_builder:
                     log("Update app in MongoDB to container source", self._log_file)
                     self._update_container_source(self._job['_id'])
-                    container._clean_lxd_images()
-                    if not self._container_config['debug']:
-                        container._clean()
 
             touch_app_manifest(self._app, self._config, self._log_file)
             log("Update app in MongoDB to update AMI: {0}".format(ami_id), self._log_file)

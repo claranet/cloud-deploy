@@ -9,7 +9,7 @@ from copy import copy
 import sys
 import os
 import tempfile
-from container import Lxd
+from libs.image_builder_lxd import LXDImageBuilder
 from fabric.api import execute as fab_execute
 from fabfile import deploy, executescript
 from ghost_tools import config
@@ -47,12 +47,12 @@ def execute_module_script_on_ghost(app, module, script_name, script_friendly_nam
         script_env = os.environ.copy()
         script_env.update(get_ghost_env_variables(app, module, app.get('blue_green', {}).get('color', ''), None))
         if script_name is 'build_pack' and app['build_infos']['container']:
-            container = Lxd(app, job, config, log_file)
+            container = LXDImageBuilder(app, job, None, log_file, config)
             container = container.deploy(script_path, module)
-        else :
-            gcall('bash %s' % script_path, '%s: Execute' % script_friendly_name, log_file, env=script_env)
-            gcall('du -hs .', 'Display current build directory disk usage', log_file)
-            gcall('rm -vf %s' % script_path, '%s: Done, cleaning temporary file' % script_friendly_name, log_file)
+
+        gcall('bash %s' % script_path, '%s: Execute' % script_friendly_name, log_file, env=script_env)
+        gcall('du -hs .', 'Display current build directory disk usage', log_file)
+        gcall('rm -vf %s' % script_path, '%s: Done, cleaning temporary file' % script_friendly_name, log_file)
 
 
 def get_path_from_app(app):

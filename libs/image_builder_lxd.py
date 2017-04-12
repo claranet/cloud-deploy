@@ -1,31 +1,30 @@
+# -*- coding: utf-8 -*-
+
 import os
 import sys
-import time
+import io
 import yaml
 import json
+import time
+
 from ghost_log import log
 from pylxd import Client as lxd_client
 from ghost_tools import get_buildpack_clone_path_from_module, get_path_from_app_with_color, get_local_repo_path
+from .image_builder import ImageBuilder
+
 
 PROVISIONER_LOCAL_TREE="/tmp/ghost-features-provisioner"
 
+class LXDImageBuilder(ImageBuilder):
+    def __init__(self, app, job, db, log_file, config):
+        ImageBuilder.__init__(self, app, job, db, log_file, config)
 
-class Lxd:
-    def __init__(self, app, job, config, log_file):
-        self._app = app
-        self._job = job
-        self._log_file = log_file
-        self._config = config
-        self.client = lxd_client()
-        self._container_name = "lxd-{env}-{region}-{role}-{name}-{job_id}".format(env=self._app['env'],
-                                                                              region=self._app['region'],
-                                                                              role=self._app['role'],
-                                                                              name=self._app['name'],
-                                                                              job_id=self._job['_id'])
+        self._client = lxd_client()
+        self._container_name = self._ami_name.replace('.', '-')
         self._container_config = self._config.get('container', {'endpoint': self._config.get('endpoint', 'localhost'),
                                                                 'debug': self._config.get('debug', 'False'),
-                                                               })
-        self._provisioners_config = config.get('features_provisioners', {'salt'})
+                                                                })
+        self._provisioners_config = self._config.get('features_provisioners', {'salt'})
         self.skip_salt_bootstrap_option = self._job['options'][0] if 'options' in self._job and len(self._job['options']) > 0 else True
 
     def _create_containers_config(self):
@@ -68,7 +67,7 @@ class Lxd:
         """
         log("Create container profile", self._log_file)
         if self._job['command'] == u"buildimage":
-            source_formulas = get_local_repo_path(PROVISIONER_LOCAL_TREE, self._app['name'], self._job['_id'])
+            source_formulas = get_local_repo_path(PROVISIONER_LOCAL_TREE, 'salt', self._job['_id'])
             source_hooks = get_path_from_app_with_color(self._app)
             devices= {'formulas': {'path': '/srv', 'source': source_formulas , 'type': 'disk'}, 'hooks': {'path': '/ghost', 'source': source_hooks , 'type': 'disk'}}
 
@@ -77,7 +76,7 @@ class Lxd:
             module_path = module['path']
             devices={'buildpack': {'path': module_path, 'source': source_module , 'type': 'disk'}}
 
-        self.client.profiles.create(self._container_name, devices=devices)
+        self._client.profiles.create(self._container_name, devices=devices)
 
     def _create_container(self,module=None, wait=5):
         """ Create a container with his profile and set time paramet to wait until network was up (default: 5 sec)
@@ -90,7 +89,7 @@ class Lxd:
         """
         log("Create container {container_name}".format(container_name=self._container_name), self._log_file)
         self._create_containers_profile(module)
-        self.container =  self.client.containers.create(self._create_containers_config(),wait=True)
+        self.container =  self._client.containers.create(self._create_containers_config(),wait=True)
         self.container.start(wait=True)
         time.sleep(wait)
         return self.container
@@ -131,7 +130,7 @@ class Lxd:
         retention = self._config.get('ami_retention', 5)
         ami_name_format = "lxd-{env}-{region}-{role}-{name}".format(env=self._app['env'], region=self._app['region'], role=self._app['role'], name=self._app['name'])
         filtered_images = []
-        images = self.client.images.all()
+        images = self._client.images.all()
         for image in images:
             filtered_images.append(image)
 
@@ -198,6 +197,9 @@ class Lxd:
         self._lxd_run_features_install()
         self._lxd_run_hooks_post()
         self.container.stop(wait=True)
+        self._clean_lxd_images()
+        if not self._container_config['debug']:
+            self._clean()
         return self
 
     def deploy(self, script_path, module):
