@@ -24,7 +24,8 @@ class FeaturesProvisioner:
         if not os.path.exists(self.local_repo_path):
             os.makedirs(self.local_repo_path)
 
-        self._get_provisioner_repo()
+        if config:
+            self._get_provisioner_repo()
 
     def _get_local_repo_path(self):
         return "{base}/{name}-{uid}".format(base=PROVISIONER_LOCAL_TREE, name=self.name, uid=self.unique)
@@ -83,4 +84,10 @@ class FeaturesProvisioner:
         raise NotImplementedError
 
     def build_packer_provisioner_cleanup(self):
+        raise NotImplementedError
+
+    def format_provisioner_features(self, features):
+        raise NotImplementedError
+
+    def format_provisioner_params(self, features):
         raise NotImplementedError
