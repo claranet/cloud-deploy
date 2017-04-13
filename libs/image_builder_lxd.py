@@ -116,7 +116,8 @@ class LXDImageBuilder(ImageBuilder):
         """
         log("Publish Container as image", self._log_file)
         self._clean_lxd_images()
-        os.system("lxc publish local:{container_name} local: --alias={job_id} description={container_name} --force".format(job_id=self._job['_id'], container_name=self._container_name))
+        os.system("lxc publish {container_name} local: --alias={job_id} description={container_name} --force".format(job_id=self._job['_id'], container_name=self._container_name))
+
 
     def _clean_lxd_images(self):
         """ Clean lxd image in local registry as aws ami with ami_retention parameter
@@ -197,7 +198,8 @@ class LXDImageBuilder(ImageBuilder):
         self._lxd_run_hooks_pre()
         self._lxd_run_features_install()
         self._lxd_run_hooks_post()
-        self.container.stop(wait=True)
+        self.container.stop(wait=False)
+        self._publish_container()
         if not self._container_config['debug']:
             self._clean()
         return self

@@ -77,7 +77,6 @@ class Buildimage():
                 lxd_image_builder = LXDImageBuilder(self._app, self._job, self._db, self._log_file, self._config)
                 lxd_image_builder = lxd_image_builder.build_image()
                 if lxd_image_builder:
-                    lxd_image_builder._publish_container()
                     log("Update app in MongoDB to container source", self._log_file)
                     self._update_container_source(self._job['_id'])
 
