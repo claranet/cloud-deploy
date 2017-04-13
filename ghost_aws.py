@@ -376,3 +376,11 @@ def normalize_application_tags(app_original, app_updated):
         if tag['tag_name'] not in reserved_ghost_tags:
             app_tags.append({'tag_name': tag['tag_name'], 'tag_value': tag['tag_value']})
     return app_tags
+
+def push_file_to_s3(cloud_connection, bucket_name, region, bucket_key_path, file_path):
+    conn = cloud_connection.get_connection(region, ["s3"])
+    bucket = conn.get_bucket(bucket_name)
+
+    key = bucket.new_key(bucket_key_path)
+    key.set_contents_from_filename(file_path)
+    key.close()
