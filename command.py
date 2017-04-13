@@ -91,7 +91,7 @@ td{{font-family:arial,helvetica,sans-serif;}}
 <table cellpadding="1" cellspacing="1" style="height:84px; width:700px">
    <tbody>
          <tr>
-             <td width="300"><img src="http://www.cloudeploy.io/ghost/mail_footer_image.png" width="300" height="127"></td>
+             <td width="300"><img src="https://www.cloudeploy.io/ghost/mail_footer_image.png" width="300" height="127"></td>
              <td width="115"><span style="font-family:arial,helvetica,sans-serif"><span style="font-size:12px; color: #333;">&nbsp;</span></span></td>
         </tr>
      </tbody>
