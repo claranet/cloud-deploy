@@ -1,19 +1,45 @@
+# ********************************************** #
+# Claranet Cloud Deploy - sample Configuratation #
+# ********************************************** #
+
+# Mandatory parameters
+# ====================
+
+# Local Ghost path
+ghost_root_path: /usr/local/share/ghost
+
+# Web Ghost URL
 ghost_base_url: https://demo.ghost.morea.fr
 
-# Need to be set when used with docker-compose (docker link use DNS to map containers)
-api_base_url: http://localhost:5000
-redis_host: localhost
-mongo_host: localhost
-
+# AWS SES credentials used to send mail notifications
 ses_settings:
     aws_access_key: XXXXXXXXXXXXXXXXXX
     aws_secret_key: XXXXXXXXXXXXXXXXXX
     mail_from: no-reply@morea.fr
     region: eu-west-1
 
+# AWS S3 bucket used to store all Ghost produced artefacts
 bucket_s3: ghost-eu-west-1-***REMOVED***
 bucket_region: eu-west-1
 
+# Configuration manager options
+features_provisioners:
+    salt: # salt by default, might be ansible
+        git_repo: git@bitbucket.org:morea/morea-salt-formulas.git # default value if type is 'salt'
+        git_revision: master
+
+
+# Endpoints
+# =========
+
+# Need to be set when used with docker-compose (docker link use DNS to map containers)
+api_base_url: http://localhost:5000
+redis_host: localhost
+mongo_host: localhost
+
+# SSH Keys parameters
+# ===================
+#
 # Depending on the desired use case, set the `key_path` to one of the following:
 #
 # * a single key path if all EC2 instances in all regions use the same key
@@ -73,49 +99,64 @@ bucket_region: eu-west-1
 
 key_path: /home/admin/key/client_morea.pem
 
-ghost_root_path: /usr/local/share/ghost
-max_deploy_history: 1
 
-# Configuration manager options
-features_provisioners:
-    salt: # salt by default, might be ansible
-        git_repo: git@bitbucket.org:morea/morea-salt-formulas.git # default value if type is 'salt'
-        git_revision: master
+# Optional parameters
+# ===================
 
-zabbix_repo: git@bitbucket.org:morea/zabbix.git
+# Maximum number of deployment to keep per module on running EC2 instances
+# Optional, default:
+#max_deploy_history: 3
+
+# Zabbix configuration repository
+# Optional, default:
+#zabbix_repo: git@bitbucket.org:morea/zabbix.git
 
 # Use ~/.ssh/config file (allows to map private IPs to public IPs for example)
-use_ssh_config: false
+# Optional, default:
+#use_ssh_config: false
 
 # Select an RQ worker strategy: (defaults to "one_worker_per_app")
-# * one_worker_per_app: each app will have its own dedicated RQ queue and worker to process jobs (all parallel)
-# * one_worker_per_env: app in the same env will share a dedicated RQ queue and worker (per env parallel)
-# * one_worker_for_all : a single RQ queue and worker will process all jobs (all serial)
-rq_worker_strategy: one_worker_per_app
-# RQ Worker Job Timeout in seconds (defaults to 3600)
-rq_worker_job_timeout: 3600
+# - one_worker_per_app: each app will have its own dedicated RQ queue and worker to process jobs (all parallel)
+# - one_worker_per_env: app in the same env will share a dedicated RQ queue and worker (per env parallel)
+# - one_worker_for_all : a single RQ queue and worker will process all jobs (all serial)
+# Optional, default:
+#rq_worker_strategy: one_worker_per_app
+
+# RQ Worker Job Timeout in seconds
+# Optional, default:
+#rq_worker_job_timeout: 3600
 
 # Deploy to target instances in serial (fabric's default) or in parallel
-fabric_execution_strategy: serial
+# Optional, default:
+#fabric_execution_strategy: serial
 
 # Pagination for Eve
-eve_pagination_default: 23
+# Optional, default:
+#eve_pagination_default: 23
 
 # Packer should install or not the Salt Minion when baking an Image
-skip_salt_bootstrap: True
+# Optional, default:
+#skip_salt_bootstrap: True
 
 # LaunchConfiguration retention history per AutoScaling Group
-launch_configuration_retention: 5
+# Optional, default:
+#launch_configuration_retention: 5
 
 # Images (AMI) retention history per app
-ami_retention: 5
+# Optional, default:
+#ami_retention: 5
 
 # Also display AMIs from the following AWS accounts:
+# Optional, default:
+#display_amis_from_aws_accounts: []
 display_amis_from_aws_accounts:
-  - '379101102735' # Debian global
+  - '379101102735' # Debian Global
   - '673060587306' # Debian China
 
-# Blue/Green options
+# Blue/Green deployment options
+# Optional, default:
+#blue_green:
+#    enabled: false
 blue_green:
     enabled: false
     preparebluegreen:
@@ -132,6 +173,8 @@ blue_green:
 
 # Slack notifications
 # List of Slack configurations used to notify on Job triggered
+# Optional, default:
+#slack_configs: []
 slack_configs:
     -
         webhooks_endpoint: https://hooks.slack.com/services/XX_KEY_XX # Morea #ghost-deployments webhook
@@ -147,6 +190,8 @@ slack_configs:
 # Specify how many Package we should keep per module in S3 Ghost bucket
 # Unlimited by default if not specified
 # It's possible to specify a value per app env
+# Optional, default:
+#deployment_package_retention: {}
 deployment_package_retention:
     prod: 42
     dev: 3
