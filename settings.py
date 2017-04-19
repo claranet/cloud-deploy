@@ -8,9 +8,9 @@ from ghost_tools import config, CURRENT_REVISION_NAME
 
 # required. See http://swagger.io/specification/#infoObject for details.
 SWAGGER_INFO = {
-    'title': 'Claranet Ghost',
+    'title': 'Claranet Cloud Deploy (Ghost)',
     'version': CURRENT_REVISION_NAME,
-    'description': 'The Ghost API by Morea, Claranet Cloud Practice',
+    'description': 'The Claranet Cloud Deploy (Ghost) API by Morea, Claranet Cloud Practice',
     'termsOfService': 'Copyright (C) Claranet - All Rights Reserved',
     'contact': {
         'name': 'Morea, Claranet Cloud Practice',
