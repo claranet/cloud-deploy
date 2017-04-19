@@ -3,6 +3,11 @@ from flask_socketio import SocketIO
 import gevent
 import re
 from xml.sax.saxutils import escape
+import os.path
+
+from settings import cloud_connections, DEFAULT_PROVIDER
+from ghost_tools import config, get_job_log_remote_path
+from ghost_aws import download_file_from_s3
 
 LOG_ROOT='/var/log/ghost'
 
@@ -151,6 +156,13 @@ def create_ws(app):
             last_pos = data.get('last_pos', 0)
             # FIXME: this is a vulnerability as a malicious user may pass '../' in log_id to read other files on the filesystem
             filename = LOG_ROOT + '/' + log_id + '.txt'
+            if not os.path.isfile(filename):
+                cloud_connection = cloud_connections.get(DEFAULT_PROVIDER)(None)
+                bucket_name = config['bucket_s3']
+                region = config.get('bucket_region', 'eu-west-1')
+
+                remote_log_path = get_job_log_remote_path(log_id)
+                download_file_from_s3(cloud_connection, bucket_name, region, remote_log_path, filename)
 
             # Spawn the follow loop in another thread to end this request and avoid CLOSED_WAIT connections leaking
             gevent.spawn(follow, filename, last_pos, request.sid)
