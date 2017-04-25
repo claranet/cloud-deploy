@@ -1,4 +1,5 @@
 import os
+import os.path
 import time
 import yaml
 
@@ -376,3 +377,27 @@ def normalize_application_tags(app_original, app_updated):
         if tag['tag_name'] not in reserved_ghost_tags:
             app_tags.append({'tag_name': tag['tag_name'], 'tag_value': tag['tag_value']})
     return app_tags
+
+def push_file_to_s3(cloud_connection, bucket_name, region, bucket_key_path, file_path):
+    """
+    Takes a file (path) in argument and uploads it to a S3 bucket on the given path.
+    """
+    conn = cloud_connection.get_connection(region, ["s3"])
+    bucket = conn.get_bucket(bucket_name)
+
+    key = bucket.new_key(bucket_key_path)
+    key.set_contents_from_filename(file_path)
+    key.close()
+
+def download_file_from_s3(cloud_connection, bucket_name, region, bucket_key_path, file_path):
+    try:
+        conn = cloud_connection.get_connection(region, ["s3"])
+        bucket = conn.get_bucket(bucket_name)
+
+        key = bucket.get_key(bucket_key_path)
+        key.get_contents_to_filename(file_path)
+        key.close(True)
+    except:
+        # An error occured, so the downloaded file might be corrupted, deleting it.
+        if os.path.exist(file_path):
+            os.remove(file_path)
