@@ -184,9 +184,9 @@ class LXDImageBuilder(ImageBuilder):
 
     def _container_log(self, cmd):
         if cmd.stdout:
-            log(cmd.stdout, self._log_file)
+            log(cmd.stdout.encode('utf-8'), self._log_file)
         if cmd.stderr:
-            log(cmd.stderr, self._log_file)
+            log(cmd.stderr.encode('utf-8'), self._log_file)
 
     def _clean(self):
         self.container.delete()
