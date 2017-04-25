@@ -9,7 +9,7 @@ import time
 
 from ghost_log import log
 from pylxd import Client as LXDClient
-from ghost_tools import get_buildpack_clone_path_from_module, get_path_from_app_with_color, get_local_repo_path
+from ghost_tools import get_buildpack_clone_path_from_module, get_path_from_app_with_color, get_local_repo_path, gcall
 from .image_builder import ImageBuilder
 
 
@@ -103,7 +103,7 @@ class LXDImageBuilder(ImageBuilder):
         >>> config = {}
         >>> Lxd(app, job, config, log_file)._delete_containers_profile()
         """
-        os.system("lxc profile delete {container_name}".format(container_name=self._container_name))
+        gcall("lxc profile delete {container_name}".format(container_name=self._container_name), "Delete container profile", self._log_file)
 
     def _publish_container(self):
         """ Publish container as image on registry local after build image
@@ -114,10 +114,8 @@ class LXDImageBuilder(ImageBuilder):
         >>> config = {}
         >>> Lxd(app, job, config, log_file)._publish_container()
         """
-        log("Publish Container as image", self._log_file)
         self._clean_lxd_images()
-        os.system("lxc publish {container_name} local: --alias={job_id} description={container_name} --force".format(job_id=self._job['_id'], container_name=self._container_name))
-
+        gcall("lxc publish {container_name} local: --alias={job_id} description={container_name} --force".format(job_id=self._job['_id'], container_name=self._container_name), "Publish Container as image", self._log_file)
 
     def _clean_lxd_images(self):
         """ Clean lxd image in local registry as aws ami with ami_retention parameter
@@ -189,7 +187,7 @@ class LXDImageBuilder(ImageBuilder):
             log(cmd.stderr.encode('utf-8'), self._log_file)
 
     def _clean(self):
-        self.container.delete()
+        self.container.delete(wait=True)
         self._delete_containers_profile()
 
     def build_image(self):
@@ -198,7 +196,7 @@ class LXDImageBuilder(ImageBuilder):
         self._lxd_run_hooks_pre()
         self._lxd_run_features_install()
         self._lxd_run_hooks_post()
-        self.container.stop(wait=False)
+        self.container.stop(wait=True)
         self._publish_container()
         if not self._container_config['debug']:
             self._clean()
