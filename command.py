@@ -11,8 +11,11 @@ from pymongo import MongoClient
 from bson.objectid import ObjectId
 
 from ghost_log import log
+from ghost_tools import get_job_log_remote_path
+from ghost_aws import push_file_to_s3
 
 from notification import Notification
+from settings import cloud_connections, DEFAULT_PROVIDER
 from settings import MONGO_DBNAME, MONGO_HOST, MONGO_PORT, REDIS_HOST
 
 LOG_ROOT='/var/log/ghost'
@@ -91,8 +94,8 @@ td{{font-family:arial,helvetica,sans-serif;}}
 <table cellpadding="1" cellspacing="1" style="height:84px; width:700px">
    <tbody>
          <tr>
-             <td width="190"><img src="https://portail.fr.clara.net/img/mailer/claranet_mission.png" width="170" height="84"></td>
-             <td width="225"><span style="font-family:arial,helvetica,sans-serif"><span style="font-size:12px; color: #333;">&nbsp;</span></span></td>
+             <td width="300"><img src="https://www.cloudeploy.io/ghost/mail_footer_image.png" width="300" height="127"></td>
+             <td width="115"><span style="font-family:arial,helvetica,sans-serif"><span style="font-size:12px; color: #333;">&nbsp;</span></span></td>
         </tr>
      </tbody>
 </table>
@@ -209,12 +212,19 @@ class Command:
     def _close_log_file(self):
         self.log_file.close()
 
+    def _push_log_to_s3(self):
+        cloud_connection = cloud_connections.get(self.app.get('provider', DEFAULT_PROVIDER))(None)
+        log_path = self._get_log_path()
+        bucket = self._config['bucket_s3']
+        region = self._config.get('bucket_region', self.app['region'])
+        key_path = get_job_log_remote_path(self._worker_job.id)
+        push_file_to_s3(cloud_connection, bucket, region, key_path, log_path)
 
     def _mail_log_action(self, subject, body):
         ses_settings = self._config['ses_settings']
         notif = Notification(aws_access_key=ses_settings['aws_access_key'], aws_secret_key=ses_settings['aws_secret_key'], region=ses_settings['region'])
         html_body = format_html_mail_body(self.app, self.job)
-        log = "{log_path}/{job_id}.txt".format(log_path=LOG_ROOT, job_id=self._worker_job.id)
+        log = self._get_log_path()
         log_stat = os.stat(log)
         if log_stat.st_size > 512000:
             os.system('gzip -c {log} > {log}.gz'.format(log=log))
@@ -265,5 +275,5 @@ class Command:
             self._slack_notification_action(slack_msg)
             self._close_log_file()
             self._mail_log_action(subject, body)
+            self._push_log_to_s3()
             self._disconnect_db()
-

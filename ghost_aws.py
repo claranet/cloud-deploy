@@ -1,4 +1,5 @@
 import os
+import os.path
 import time
 import yaml
 
@@ -9,7 +10,7 @@ from libs.ec2 import create_block_device, generate_userdata
 from libs.autoscaling import get_autoscaling_group_object
 from libs.blue_green import get_blue_green_from_app
 
-from ghost_tools import GCallException
+from ghost_tools import GCallException, boolify
 from ghost_log import log
 
 ROOT_PATH = os.path.dirname(os.path.realpath(__file__))
@@ -234,6 +235,18 @@ def update_auto_scale(cloud_connection, app, launch_config, log_file, update_as_
             AvailabilityZones=az,
             VPCZoneIdentifier=','.join(app['environment_infos']['subnet_ids'])
         )
+    asg_metrics = ["GroupMinSize", "GroupMaxSize", "GroupDesiredCapacity", "GroupInServiceInstances", "GroupPendingInstances", "GroupStandbyInstances", "GroupTerminatingInstances", "GroupTotalInstances"]
+    if boolify(app['autoscale'].get('enable_metrics', True)):
+        log("Enabling Autoscaling group [{0}] metrics ({1}).".format(app['autoscale']['name'], asg_metrics), log_file)
+        as_conn.enable_metrics_collection(
+            AutoScalingGroupName=app['autoscale']['name'],
+            Granularity='1Minute',
+        )
+    else:
+        log("Disabling Autoscaling group [{0}] metrics ({1}).".format(app['autoscale']['name'], asg_metrics), log_file)
+        as_conn.disable_metrics_collection(
+            AutoScalingGroupName=app['autoscale']['name'],
+        )
     log("Autoscaling group [{0}] updated.".format(app['autoscale']['name']), log_file)
     if update_as_params:
         app_tags = get_app_tags(app, log_file)
@@ -364,3 +377,27 @@ def normalize_application_tags(app_original, app_updated):
         if tag['tag_name'] not in reserved_ghost_tags:
             app_tags.append({'tag_name': tag['tag_name'], 'tag_value': tag['tag_value']})
     return app_tags
+
+def push_file_to_s3(cloud_connection, bucket_name, region, bucket_key_path, file_path):
+    """
+    Takes a file (path) in argument and uploads it to a S3 bucket on the given path.
+    """
+    conn = cloud_connection.get_connection(region, ["s3"])
+    bucket = conn.get_bucket(bucket_name)
+
+    key = bucket.new_key(bucket_key_path)
+    key.set_contents_from_filename(file_path)
+    key.close()
+
+def download_file_from_s3(cloud_connection, bucket_name, region, bucket_key_path, file_path):
+    try:
+        conn = cloud_connection.get_connection(region, ["s3"])
+        bucket = conn.get_bucket(bucket_name)
+
+        key = bucket.get_key(bucket_key_path)
+        key.get_contents_to_filename(file_path)
+        key.close(True)
+    except:
+        # An error occured, so the downloaded file might be corrupted, deleting it.
+        if os.path.exist(file_path):
+            os.remove(file_path)

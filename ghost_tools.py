@@ -494,3 +494,6 @@ def split_hosts_list(hosts_list, split_type):
             {0} for safe deployment type: {1}" .format(str(len(hosts_list)), str(split_type)), self.log_file)
         raise GCallException("Cannot continue, not enought instances to perform the safe deployment")
     return [hosts_list[i::chunk] for i in range(chunk)]
+
+def get_job_log_remote_path(worker_job_id):
+    return "{log_dir}/{job_id}.txt".format(log_dir="log/job/", job_id=worker_job_id)

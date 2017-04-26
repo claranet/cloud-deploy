@@ -8,9 +8,9 @@ from ghost_tools import config, CURRENT_REVISION_NAME
 
 # required. See http://swagger.io/specification/#infoObject for details.
 SWAGGER_INFO = {
-    'title': 'Claranet Ghost',
+    'title': 'Claranet Cloud Deploy (Ghost)',
     'version': CURRENT_REVISION_NAME,
-    'description': 'The Ghost API by Morea, Claranet Cloud Practice',
+    'description': 'The Claranet Cloud Deploy (Ghost) API by Morea, Claranet Cloud Practice',
     'termsOfService': 'Copyright (C) Claranet - All Rights Reserved',
     'contact': {
         'name': 'Morea, Claranet Cloud Practice',
@@ -42,6 +42,9 @@ MONGO_PORT = 27017
 #MONGO_PASSWORD = 'user'
 MONGO_DBNAME = 'apitest'
 MONGO_QUERY_BLACKLIST = ['$where']
+
+# RQ Workers params
+RQ_JOB_TIMEOUT = config.get('rq_worker_job_timeout', 3600)
 
 REDIS_HOST = config.get('redis_host', 'localhost')
 

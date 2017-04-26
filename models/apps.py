@@ -154,10 +154,9 @@ apps_schema = {
     'autoscale': {
         'type': 'dict',
         'schema': {
-            'min': {'type': 'integer',
-                    'min': 0},
-            'max': {'type': 'integer',
-                    'min': 0},
+            'min': {'type': 'integer', 'min': 0},
+            'max': {'type': 'integer', 'min': 0},
+            'enable_metrics': {'type': 'boolean', 'required': False},
             'name': {'type': 'string'}
         }
     },
@@ -208,7 +207,7 @@ apps_schema = {
                               'root_block_device':
                               {'type': 'dict',
                                'schema': {
-                                   'size': {'type': 'integer'},
+                                   'size': {'type': 'integer', 'min': 20},
                                    'name': {'type': 'string',
                                             'regex': '^/[a-z0-9]+/[a-z0-9]+$'}
                                }},
