@@ -3,8 +3,10 @@ from subprocess32 import Popen, PIPE
 import json
 import os
 
+from ghost_tools import GCallException
 from ghost_log import log
 from libs.provisioner_salt import FeaturesProvisionerSalt
+from libs.provisioner_ansible import FeaturesProvisionerAnsible
 
 PACKER_JSON_PATH="/tmp/packer/"
 PACKER_LOGDIR="/var/log/ghost/packer"
@@ -33,6 +35,11 @@ class Packer:
         for key, provisioner_config in provisioners_config.iteritems():
             if key == 'salt':
                 self.provisioners.append(FeaturesProvisionerSalt(self._log_file, self.unique, provisioner_config, config))
+            elif key == 'ansible':
+                self.provisioners.append(FeaturesProvisionerAnsible(self._log_file, self.unique, provisioner_config, config))
+            else:
+                log("Invalid provisioner type. Please check your yaml 'config.yml' file", self._log_file)
+                raise GCallException("Invalid features provisioner type")
 
     def _build_packer_json(self, hooks):
         packer_json = {}
