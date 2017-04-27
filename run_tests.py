@@ -36,11 +36,6 @@ modules = [
   "web_ui.websocket"
 ]
 
-try:
-    if LXDClient(): modules.append("container")
-except:
-    pass
-
 runner = doctest.DocTestRunner(verbose=True)
 finder = doctest.DocTestFinder(verbose=True, exclude_empty=False)
 

@@ -29,12 +29,6 @@ class LXDImageBuilder(ImageBuilder):
 
     def _create_containers_config(self):
         """ Generate a container configuration according build image or deployment
-        >>> app = {u'env': u'prod', u'role': u'webfront', u'name': u'AppName', u'region': u'eu-west-1', u'build_infos': { u'container_image': u'58cc276cd4128930c201e52e', u'source_container_image': u'58cc203dd4128930c201e519'}}
-        >>> job = {u'command': u'buildimage', u'_id': '58cd0e7dd4128910e0d747ed'}
-        >>> log_file = None
-        >>> config = {}
-        >>> Lxd(app, job, config, log_file)._create_containers_config()
-        {'config': {'security.privileged': 'True'}, 'profiles': ['default', 'lxd-prod-eu-west-1-webfront-AppName-58cd0e7dd4128910e0d747ed'], 'name': 'lxd-prod-eu-west-1-webfront-AppName-58cd0e7dd4128910e0d747ed', 'source': {'alias': u'58cc203dd4128930c201e519', 'type': 'image'}, 'ephemeral': False}
         """
         config = {}
         alias = self._app['build_infos']["source_container_image"]
@@ -58,12 +52,6 @@ class LXDImageBuilder(ImageBuilder):
 
     def _create_containers_profile(self,module=None):
         """ Generate Lxc profile to mount provisoner local tree and ghost application according build image or deployment
-        >>> from StringIO import StringIO
-        >>> app = {u'env': u'prod', u'role': u'webfront', u'name': u'AppName', u'region': u'eu-west-1'}
-        >>> job = {u'command': u'buildimage', u'_id': '58cd0e7dd4128910e0d747db'}
-        >>> log_file = StringIO()
-        >>> config = {}
-        >>> Lxd(app, job, config, log_file)._create_containers_profile()
         """
         log("Create container profile", self._log_file)
         if self._job['command'] == u"buildimage":
@@ -80,12 +68,6 @@ class LXDImageBuilder(ImageBuilder):
 
     def _create_container(self,module=None, wait=5):
         """ Create a container with his profile and set time paramet to wait until network was up (default: 5 sec)
-        >>> from StringIO import StringIO
-        >>> app = {u'env': u'prod', u'role': u'webfront', u'name': u'AppName', u'region': u'eu-west-1', u'build_infos': { u'source_container_image': u'debian/jessie'}}
-        >>> job = {u'command': u'buildimage', u'_id': '58cd0e7dd4128910e0d747td'}
-        >>> log_file = StringIO()
-        >>> config = {}
-        >>> container = Lxd(app, job, config, log_file)._create_container()
         """
         log("Create container {container_name}".format(container_name=self._container_name), self._log_file)
         self._create_containers_profile(module)
@@ -96,35 +78,17 @@ class LXDImageBuilder(ImageBuilder):
 
     def _delete_containers_profile(self):
         """ Delete the container profile
-        >>> from StringIO import StringIO
-        >>> app = {u'env': u'prod', u'role': u'webfront', u'name': u'AppName', u'region': u'eu-west-1'}
-        >>> job = {u'command': u'buildimage', u'_id': '58cd0e7dd4128910e0d747db'}
-        >>> log_file = StringIO()
-        >>> config = {}
-        >>> Lxd(app, job, config, log_file)._delete_containers_profile()
         """
         gcall("lxc profile delete {container_name}".format(container_name=self._container_name), "Delete container profile", self._log_file)
 
     def _publish_container(self):
         """ Publish container as image on registry local after build image
-        >>> from StringIO import StringIO
-        >>> app = {u'env': u'prod', u'role': u'webfront', u'name': u'AppName', u'region': u'eu-west-1'}
-        >>> job = {u'command': u'buildimage', u'_id': '58cd0e7dd4128910e0d747td'}
-        >>> log_file = StringIO()
-        >>> config = {}
-        >>> Lxd(app, job, config, log_file)._publish_container()
         """
         self._clean_lxd_images()
         gcall("lxc publish {container_name} local: --alias={job_id} description={container_name} --force".format(job_id=self._job['_id'], container_name=self._container_name), "Publish Container as image", self._log_file)
 
     def _clean_lxd_images(self):
         """ Clean lxd image in local registry as aws ami with ami_retention parameter
-        >>> from StringIO import StringIO
-        >>> app = {u'env': u'prod', u'role': u'webfront', u'name': u'AppName', u'region': u'eu-west-1', u'build_infos': { u'source_container_image': u'debian/jessie'}}
-        >>> job = {u'command': u'buildimage', u'_id': '58cd0e7dd4128910e0d747ed'}
-        >>> log_file = StringIO()
-        >>> config = {}
-        >>> Lxd(app, job, config, log_file)._clean_lxd_images()
         """
         log("Cleanup image", self._log_file)
         retention = self._config.get('ami_retention', 5)
