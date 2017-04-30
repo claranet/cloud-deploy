@@ -30,6 +30,8 @@ services:
     environment:
       - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
       - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - REDIS_HOST=queue
+      - MONGO_HOST=backend
 
   api:
     build:
@@ -48,6 +50,8 @@ services:
     environment:
       - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
       - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - REDIS_HOST=queue
+      - MONGO_HOST=backend
 
   web-ui:
     build:
@@ -58,13 +62,14 @@ services:
       - .:/usr/local/share/ghost
       - log:/var/log/ghost
     ports:
-      - '5001:5001'
+      - '5002:5002'
     networks:
       - front
     command: python run_web_ui.py
     environment:
       - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
       - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - API_BASE_URL=http://api:5000
 
   nginx:
     image: nginx:latest
