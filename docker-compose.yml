@@ -62,7 +62,7 @@ services:
       - .:/usr/local/share/ghost
       - log:/var/log/ghost
     ports:
-      - '5002:5002'
+      - '5001:5001'
     networks:
       - front
     command: python run_web_ui.py
