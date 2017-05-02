@@ -20,7 +20,7 @@ from models.apps import apps
 from models.jobs import jobs, CANCELLABLE_JOB_STATUSES, DELETABLE_JOB_STATUSES
 from models.deployments import deployments
 
-from ghost_tools import get_rq_name_from_app
+from ghost_tools import get_rq_name_from_app, get_available_provisioners_from_config
 from ghost_blueprints import commands_blueprint
 from ghost_api import ghost_api_bluegreen_is_enabled, ghost_api_enable_green_app, ghost_api_delete_alter_ego_app, ghost_api_clean_bluegreen_app
 from libs.blue_green import BLUE_GREEN_COMMANDS, get_blue_green_from_app, ghost_has_blue_green_enabled
@@ -117,6 +117,14 @@ def pre_update_app(updates, original):
                             break
                     # Module found, can exit loop
                     break
+    # Check Feature provisioner
+    if 'features' in updates:
+        provisioners_available = get_available_provisioners_from_config()
+        for ft in updates['features']:
+            if 'provisioner' in ft and not ft['provisioner'] in provisioners_available:
+                print('Provisioner "{p}" setted for feature "{f}" is not available or not compatible.'.format(p=ft['provisioner'], f=ft['name']))
+                abort(422)
+
     updates['environment_infos']['instance_tags'] = normalize_application_tags(original, updates)
     # Blue/green disabled ?
     try:
@@ -170,6 +178,14 @@ def pre_insert_app(items):
     role = app.get('role')
     env = app.get('env')
     app['environment_infos']['instance_tags'] = normalize_application_tags(app, app)
+    # Check Feature provisioner
+    if 'features' in app:
+        provisioners_available = get_available_provisioners_from_config()
+        for ft in app['features']:
+            if 'provisioner' in ft and not ft['provisioner'] in provisioners_available:
+                print('Provisioner "{p}" setted for feature "{f}" is not available or not compatible.'.format(p=ft['provisioner'], f=ft['name']))
+                abort(422)
+
     blue_green = app.get('blue_green', None)
     # We can now insert a new app with a different color
     if blue_green and blue_green.get('color', None):

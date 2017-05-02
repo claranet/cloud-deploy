@@ -77,6 +77,11 @@ apps_schema = {
                     'type': 'string',
                     'regex': '^[a-zA-Z0-9\.\-\_\/:~\+=]*$',
                     'required': False
+                },
+                'provisioner': {
+                    'type': 'string',
+                    'regex': '^[a-zA-Z0-9]*$',
+                    'required': False
                 }
             }
         }
