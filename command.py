@@ -3,6 +3,8 @@ import os
 import sys
 import traceback
 import yaml
+import gzip
+import shutil
 from sh import head, tail
 
 from redis import Redis
@@ -227,8 +229,9 @@ class Command:
         log = self._get_log_path()
         log_stat = os.stat(log)
         if log_stat.st_size > 512000:
-            os.system('gzip -c {log} > {log}.gz'.format(log=log))
-            log = log+'.gz'
+            with open(log, 'rb') as f_in, gzip.open(log+'.gz', 'wb') as f_out:
+                shutil.copyfileobj(f_in, f_out)
+                log = log+'.gz'
         for mail in self.app['log_notifications']:
             notif.send_mail(From=ses_settings.get('mail_from', MAIL_LOG_FROM_DEFAULT), To=mail, subject=subject, body_text=body, body_html=html_body, attachments=[log])
             pass
