@@ -237,7 +237,7 @@ class Command:
                 notif.send_mail(From=ses_settings.get('mail_from', MAIL_LOG_FROM_DEFAULT), To=mail, subject=subject, body_text=body, body_html=html_body, attachments=[log])
                 pass
         except:
-            logging.error("An exception occurred: {}".format(sys.exc_value))
+            logging.exception("An exception occurred when try to send the Job mail notification.")
             traceback.print_exc()
 
     def _slack_notification_action(self, slack_msg):
