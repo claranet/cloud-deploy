@@ -3,8 +3,7 @@ import os
 import sys
 import traceback
 import yaml
-import gzip
-import shutil
+import ntpath
 import traceback
 import logging
 from sh import head, tail
@@ -228,13 +227,12 @@ class Command:
         ses_settings = self._config['ses_settings']
         notif = Notification(aws_access_key=ses_settings['aws_access_key'], aws_secret_key=ses_settings['aws_secret_key'], region=ses_settings['region'])
         html_body = format_html_mail_body(self.app, self.job)
-        log = self._get_log_path()
-        log_stat = os.stat(log)
+        log_path = self._get_log_path()
+        log = {
+            'original_log_path': log_path,
+            'filename': ntpath.basename(log_path),
+        }
         try:
-            if log_stat.st_size > 512000:
-                with open(log, 'rb') as f_in, gzip.open(log+'.gz', 'wb') as f_out:
-                    shutil.copyfileobj(f_in, f_out)
-                    log = log+'.gz'
             for mail in self.app['log_notifications']:
                 notif.send_mail(From=ses_settings.get('mail_from', MAIL_LOG_FROM_DEFAULT), To=mail, subject=subject, body_text=body, body_html=html_body, attachments=[log])
                 pass
