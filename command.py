@@ -5,6 +5,8 @@ import traceback
 import yaml
 import gzip
 import shutil
+import traceback
+import logging
 from sh import head, tail
 
 from redis import Redis
@@ -228,13 +230,17 @@ class Command:
         html_body = format_html_mail_body(self.app, self.job)
         log = self._get_log_path()
         log_stat = os.stat(log)
-        if log_stat.st_size > 512000:
-            with open(log, 'rb') as f_in, gzip.open(log+'.gz', 'wb') as f_out:
-                shutil.copyfileobj(f_in, f_out)
-                log = log+'.gz'
-        for mail in self.app['log_notifications']:
-            notif.send_mail(From=ses_settings.get('mail_from', MAIL_LOG_FROM_DEFAULT), To=mail, subject=subject, body_text=body, body_html=html_body, attachments=[log])
-            pass
+        try:
+            if log_stat.st_size > 512000:
+                with open(log, 'rb') as f_in, gzip.open(log+'.gz', 'wb') as f_out:
+                    shutil.copyfileobj(f_in, f_out)
+                    log = log+'.gz'
+            for mail in self.app['log_notifications']:
+                notif.send_mail(From=ses_settings.get('mail_from', MAIL_LOG_FROM_DEFAULT), To=mail, subject=subject, body_text=body, body_html=html_body, attachments=[log])
+                pass
+        except:
+            logging.error("An exception occurred: {}".format(sys.exc_value))
+            traceback.print_exc()
 
     def _slack_notification_action(self, slack_msg):
         log_path = self._get_log_path()
