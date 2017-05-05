@@ -3,7 +3,6 @@ import os
 import sys
 import traceback
 import yaml
-import ntpath
 import traceback
 import logging
 from sh import head, tail
@@ -230,14 +229,14 @@ class Command:
         log_path = self._get_log_path()
         log = {
             'original_log_path': log_path,
-            'filename': ntpath.basename(log_path),
+            'filename': os.path.basename(log_path),
         }
         try:
             for mail in self.app['log_notifications']:
                 notif.send_mail(From=ses_settings.get('mail_from', MAIL_LOG_FROM_DEFAULT), To=mail, subject=subject, body_text=body, body_html=html_body, attachments=[log])
                 pass
         except:
-            logging.exception("An exception occurred when try to send the Job mail notification.")
+            logging.exception("An exception occurred when trying to send the Job mail notification.")
             traceback.print_exc()
 
     def _slack_notification_action(self, slack_msg):
