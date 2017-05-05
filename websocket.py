@@ -1,3 +1,5 @@
+import os
+
 from flask import request
 from flask_socketio import SocketIO
 import gevent
@@ -100,12 +102,23 @@ def create_ws(app):
 
             # Loop until the WebSocket client has disconnected
             while sid in socketio.server.rooms(sid):
-                # Read all lines from log file, beginning at last_pos
+                readlines = []
                 lines = []
                 new_pos = 0
+                eof = False
+
                 with open(filename) as f:
+                    # Read maximum 1000 lines from log file at a time, beginning at last_pos
                     f.seek(last_pos)
-                    for idx, line in enumerate(f):
+                    readlines = f.readlines(1000)
+                    # Capture new_pos
+                    new_pos = f.tell()
+                    # Check if we already are at end of file
+                    f.seek(0, os.SEEK_END)
+                    eof = f.tell() == new_pos
+
+                    # Decorate lines
+                    for idx, line in enumerate(readlines):
                         for sub_line in line.split("\\n"):
                             clean_line = ansi_to_html(sub_line).replace('\r\n', '\n').replace('\r', '\n').replace('\n', '<br/>').replace('%!(PACKER_COMMA)', '&#44;')
                             if LOG_LINE_REGEX.match(sub_line) is not None:
@@ -113,7 +126,6 @@ def create_ws(app):
                                     % ('</div></div>' if idx > 0 else '', clean_line))
                             else:
                                 lines.append('<samp>%s</samp>' % clean_line)
-                    new_pos = f.tell()
 
                 # Send new data to WebSocket client, if any
                 if new_pos != last_pos:
@@ -126,12 +138,14 @@ def create_ws(app):
                 # Update last_pos for next iteration
                 last_pos = new_pos
 
-                # Wait until the log file is modified or a 60 seconds timeout elapses 
-                try:
-                    with gevent.Timeout(60):
-                        hub.wait(watcher)
-                except gevent.Timeout:
-                    continue
+                # If at end of file, wait until the log file is modified or a timeout elapses
+                if eof:
+                    try:
+                        with gevent.Timeout(60):
+                            hub.wait(watcher)
+                    except gevent.Timeout:
+                        continue
+
         except IOError:
             data = {
                 'html': 'ERROR: failed to read log file.',
