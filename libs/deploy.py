@@ -357,7 +357,7 @@ def _get_fabric_params(app, fabric_execution_strategy, task, log_file):
         setattr(task, 'serial', True)
         setattr(task, 'parallel', False)
 
-    return task, app_ssh_username, key_filename
+    return task, app_ssh_username, key_filename, fabric_execution_strategy
 
 def _handle_fabric_errors(result, message):
     hosts_error = []
@@ -371,15 +371,15 @@ def launch_deploy(app, module, hosts_list, fabric_execution_strategy, log_file):
     """ Launch fabric tasks on remote hosts.
 
         :param  app:          dict: Ghost object which describe the application parameters.
-        :param  fabric_execution_strategy  string: Deployment strategy(serial or parallel).
         :param  module:       dict: Ghost object which describe the module parameters.
         :param  hosts_list:   list: Instances private IP.
+        :param  fabric_execution_strategy  string: Deployment strategy(serial or parallel).
         :param  log_file:     object for logging.
     """
     # Clone the deploy task function to avoid modifying the original shared instance
     task = copy(deploy)
 
-    task, app_ssh_username, key_filename = _get_fabric_params(app, fabric_execution_strategy, task, log_file)
+    task, app_ssh_username, key_filename, fabric_execution_strategy = _get_fabric_params(app, fabric_execution_strategy, task, log_file)
 
     bucket_region = config.get('bucket_region', app_region)
     stage2 = render_stage2(config, bucket_region)
@@ -393,15 +393,16 @@ def launch_exec_script(app, script, context_path, hosts_list, fabric_execution_s
     """ Launch fabric tasks on remote hosts.
 
         :param  app:          dict: Ghost object which describe the application parameters.
-        :param  fabric_execution_strategy  string: Deployment strategy(serial or parallel).
-        :param  module:       dict: Ghost object which describe the module parameters.
+        :param  script:       string: Shell script to execute.
+        :param  context_path: string: Directory to launch the script from.
         :param  hosts_list:   list: Instances private IP.
+        :param  fabric_execution_strategy  string: Deployment strategy(serial or parallel).
         :param  log_file:     object for logging.
     """
     # Clone the exec_script task function to avoid modifying the original shared instance
     task = copy(exec_script)
 
-    task, app_ssh_username, key_filename = _get_fabric_params(app, fabric_execution_strategy, task, log_file)
+    task, app_ssh_username, key_filename, fabric_execution_strategy = _get_fabric_params(app, fabric_execution_strategy, task, log_file)
 
     log("Updating current instances in {}: {}".format(fabric_execution_strategy, hosts_list), log_file)
     result = fab_execute(task, app_ssh_username, key_filename, context_path, script, log_file, hosts=hosts_list)

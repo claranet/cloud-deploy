@@ -7,6 +7,7 @@ from ghost_tools import get_aws_connection_data
 from ghost_tools import b64decode_utf8
 from libs.blue_green import get_blue_green_from_app
 from libs.ec2 import find_ec2_running_instances
+from libs.deploy import launch_exec_script
 
 COMMAND_DESCRIPTION = "Execute a script/commands on every instance"
 
@@ -89,7 +90,8 @@ class Executescript():
     def _exec_script(self, script, module_context, fabric_execution_strategy):
         context_path = self._get_module_path(module_context)
         running_instances = find_ec2_running_instances(self._cloud_connection, self._app['name'], self._app['env'], self._app['role'], self._app['region'], ghost_color=self._color)
-        launch_exec_script(self._app, script, context_path, running_instances, fabric_execution_strategy, self._log_file)
+        hosts_list = [host['private_ip_address'] for host in running_instances]
+        launch_exec_script(self._app, script, context_path, hosts_list, fabric_execution_strategy, self._log_file)
 
     def execute(self):
         script = self._job['options'][0] if 'options' in self._job and len(self._job['options']) > 0 else None
@@ -99,7 +101,7 @@ class Executescript():
         try:
             log(_green("STATE: Started"), self._log_file)
             try:
-                if not script:
+                if not script or not script.strip():
                     return self._abort("No valid script provided")
                 script_data = b64decode_utf8(script)
             except:
