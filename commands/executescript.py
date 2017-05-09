@@ -19,7 +19,6 @@ class Executescript():
     def __init__(self, worker):
         self._app = worker.app
         self._job = worker.job
-        self._db = worker._db
         self._config = worker._config
         self._worker = worker
         self._log_file = worker.log_file
