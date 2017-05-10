@@ -14,7 +14,7 @@ import sys
 import os
 import tempfile
 from fabric.api import execute as fab_execute
-from fabfile import deploy, exec_script
+from fabfile import deploy, executescript
 from ghost_tools import config
 from ghost_tools import render_stage2, get_app_module_name_list
 from ghost_tools import b64decode_utf8
@@ -389,7 +389,7 @@ def launch_deploy(app, module, hosts_list, fabric_execution_strategy, log_file):
 
     _handle_fabric_errors(result, "Deploy error")
 
-def launch_exec_script(app, script, context_path, hosts_list, fabric_execution_strategy, log_file):
+def launch_executescript(app, script, context_path, hosts_list, fabric_execution_strategy, log_file):
     """ Launch fabric tasks on remote hosts.
 
         :param  app:          dict: Ghost object which describe the application parameters.
@@ -399,8 +399,8 @@ def launch_exec_script(app, script, context_path, hosts_list, fabric_execution_s
         :param  fabric_execution_strategy  string: Deployment strategy(serial or parallel).
         :param  log_file:     object for logging.
     """
-    # Clone the exec_script task function to avoid modifying the original shared instance
-    task = copy(exec_script)
+    # Clone the executescript task function to avoid modifying the original shared instance
+    task = copy(executescript)
 
     task, app_ssh_username, key_filename, fabric_execution_strategy = _get_fabric_params(app, fabric_execution_strategy, task, log_file)
 

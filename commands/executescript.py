@@ -7,7 +7,7 @@ from ghost_tools import get_aws_connection_data
 from ghost_tools import b64decode_utf8
 from libs.blue_green import get_blue_green_from_app
 from libs.ec2 import find_ec2_running_instances
-from libs.deploy import launch_exec_script
+from libs.deploy import launch_executescript
 
 COMMAND_DESCRIPTION = "Execute a script/commands on every instance"
 
@@ -35,7 +35,6 @@ class Executescript():
 
     def _get_notification_message_done(self):
         """
-        >>> from bson.objectid import ObjectId
         >>> class worker:
         ...   app = {'name': 'app1'}
         ...   job = None
@@ -79,22 +78,22 @@ class Executescript():
 
     def _get_module_path(self, module_name):
         """
-        Get the destination path for the given module, or '/tmp' by default.
+        Get the destination path for the given module, if any, '/tmp' otherwise
         """
         for item in self._app['modules']:
             if 'name' in item and item['name'] == module_name:
                 return item['path']
         return '/tmp'
 
-    def _exec_script(self, script, module_context, fabric_execution_strategy):
-        context_path = self._get_module_path(module_context)
+    def _exec_script(self, script, module_name, fabric_execution_strategy):
+        context_path = self._get_module_path(module_name)
         running_instances = find_ec2_running_instances(self._cloud_connection, self._app['name'], self._app['env'], self._app['role'], self._app['region'], ghost_color=self._color)
         hosts_list = [host['private_ip_address'] for host in running_instances]
-        launch_exec_script(self._app, script, context_path, hosts_list, fabric_execution_strategy, self._log_file)
+        launch_executescript(self._app, script, context_path, hosts_list, fabric_execution_strategy, self._log_file)
 
     def execute(self):
         script = self._job['options'][0] if 'options' in self._job and len(self._job['options']) > 0 else None
-        module_context = self._job['options'][1] if 'options' in self._job and len(self._job['options']) > 1 else None
+        module_name = self._job['options'][1] if 'options' in self._job and len(self._job['options']) > 1 else None
         fabric_execution_strategy = self._job['options'][2] if 'options' in self._job and len(self._job['options']) > 2 else None
 
         try:
@@ -106,7 +105,7 @@ class Executescript():
             except:
                 return self._abort("No valid script provided")
 
-            self._exec_script(script_data, module_context, fabric_execution_strategy)
+            self._exec_script(script_data, module_name, fabric_execution_strategy)
 
             self._worker.update_status("done", message=self._get_notification_message_done())
             log(_green("STATE: End"), self._log_file)

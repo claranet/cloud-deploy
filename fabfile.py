@@ -27,7 +27,7 @@ def deploy(module, ssh_username, key_filename, stage2, log_file):
         return result.return_code
 
 @task
-def exec_script(ssh_username, key_filename, context_path, hot_script, log_file):
+def executescript(ssh_username, key_filename, context_path, hot_script, log_file):
     with settings(show('debug'), warn_only=True, user=ssh_username, key_filename=key_filename):
         sudo('rm -rvf /tmp/ghost-hot-script', stdout=log_file)
         put(StringIO(hot_script), '/tmp/ghost-hot-script')
