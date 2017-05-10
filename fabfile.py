@@ -27,10 +27,11 @@ def deploy(module, ssh_username, key_filename, stage2, log_file):
         return result.return_code
 
 @task
-def executescript(ssh_username, key_filename, context_path, hot_script, log_file):
+def executescript(ssh_username, key_filename, context_path, sudoer_user, jobid, hot_script, log_file):
     with settings(show('debug'), warn_only=True, user=ssh_username, key_filename=key_filename):
-        sudo('rm -rvf /tmp/ghost-hot-script', stdout=log_file)
-        put(StringIO(hot_script), '/tmp/ghost-hot-script')
-        sudo('chmod +x /tmp/ghost-hot-script', stdout=log_file)
-        result = sudo('cd "%s" && /tmp/ghost-hot-script' % context_path, stdout=log_file)
+        working_dir = '/ghost/%s' % jobid
+        sudo('mkdir -p "%s"' % working_dir, stdout=log_file)
+        put(StringIO(hot_script), '%s/ghost-execute-script' % working_dir, use_sudo=True)
+        sudo('chmod +x %s/ghost-execute-script' % working_dir, stdout=log_file)
+        result = sudo('cd "{c}" && {w}/ghost-execute-script'.format(c=context_path, w=working_dir), stdout=log_file, user=sudoer_user)
         return result.return_code

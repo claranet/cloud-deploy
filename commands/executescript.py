@@ -76,20 +76,21 @@ class Executescript():
     def _abort(self, message):
         return self._worker.update_status("aborted", message=self._get_notification_message_aborted(message))
 
-    def _get_module_path(self, module_name):
+    def _get_module_path_and_uid(self, module_name):
         """
         Get the destination path for the given module, if any, '/tmp' otherwise
+        Get the user ID for the given module, if any, "0" (root) otherwise
         """
         for item in self._app['modules']:
             if 'name' in item and item['name'] == module_name:
-                return item['path']
-        return '/tmp'
+                return item['path'], item.get('uid', 0)
+        return '/tmp', 0
 
     def _exec_script(self, script, module_name, fabric_execution_strategy):
-        context_path = self._get_module_path(module_name)
+        context_path, sudoer_uid = self._get_module_path_and_uid(module_name)
         running_instances = find_ec2_running_instances(self._cloud_connection, self._app['name'], self._app['env'], self._app['role'], self._app['region'], ghost_color=self._color)
         hosts_list = [host['private_ip_address'] for host in running_instances]
-        launch_executescript(self._app, script, context_path, hosts_list, fabric_execution_strategy, self._log_file)
+        launch_executescript(self._app, script, context_path, sudoer_uid, self._job['_id'], hosts_list, fabric_execution_strategy, self._log_file)
 
     def execute(self):
         script = self._job['options'][0] if 'options' in self._job and len(self._job['options']) > 0 else None

@@ -381,7 +381,7 @@ def launch_deploy(app, module, hosts_list, fabric_execution_strategy, log_file):
 
     task, app_ssh_username, key_filename, fabric_execution_strategy = _get_fabric_params(app, fabric_execution_strategy, task, log_file)
 
-    bucket_region = config.get('bucket_region', app_region)
+    bucket_region = config.get('bucket_region', app['region'])
     stage2 = render_stage2(config, bucket_region)
 
     log("Updating current instances in {}: {}".format(fabric_execution_strategy, hosts_list), log_file)
@@ -389,12 +389,14 @@ def launch_deploy(app, module, hosts_list, fabric_execution_strategy, log_file):
 
     _handle_fabric_errors(result, "Deploy error")
 
-def launch_executescript(app, script, context_path, hosts_list, fabric_execution_strategy, log_file):
+def launch_executescript(app, script, context_path, sudoer_user, jobid, hosts_list, fabric_execution_strategy, log_file):
     """ Launch fabric tasks on remote hosts.
 
         :param  app:          dict: Ghost object which describe the application parameters.
         :param  script:       string: Shell script to execute.
         :param  context_path: string: Directory to launch the script from.
+        :param  sudoer_user:  int: user UID to exec the script with
+        :param  jobid:        uuid: Job uuid
         :param  hosts_list:   list: Instances private IP.
         :param  fabric_execution_strategy  string: Deployment strategy(serial or parallel).
         :param  log_file:     object for logging.
@@ -405,6 +407,6 @@ def launch_executescript(app, script, context_path, hosts_list, fabric_execution
     task, app_ssh_username, key_filename, fabric_execution_strategy = _get_fabric_params(app, fabric_execution_strategy, task, log_file)
 
     log("Updating current instances in {}: {}".format(fabric_execution_strategy, hosts_list), log_file)
-    result = fab_execute(task, app_ssh_username, key_filename, context_path, script, log_file, hosts=hosts_list)
+    result = fab_execute(task, app_ssh_username, key_filename, context_path, sudoer_user, jobid, script, log_file, hosts=hosts_list)
 
     _handle_fabric_errors(result, "Script execution error")
