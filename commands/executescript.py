@@ -103,6 +103,14 @@ class Executescript():
                 if not script or not script.strip():
                     return self._abort("No valid script provided")
                 script_data = b64decode_utf8(script)
+                allowed_shebang = (
+                    '#!/bin/bash',
+                    '#! /bin/bash',
+                    '#!/bin/sh',
+                    '#! /bin/sh'
+                )
+                if not script_data.startswith(allowed_shebang):
+                    return self._abort("No valid shell script provided (shebang missing)")
             except:
                 return self._abort("No valid script provided")
 
