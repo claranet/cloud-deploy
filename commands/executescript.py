@@ -41,7 +41,7 @@ class Executescript():
         ...   job = None
         ...   log_file = None
         ...   _config = None
-        >>> Executescript(worker=worker())._get_notification_message_done({})
+        >>> Executescript(worker=worker())._get_notification_message_done()
         'Execute script OK for app [app1]'
         """
         return 'Execute script OK for app [{0}]'.format(self._app['name'])
@@ -67,9 +67,9 @@ class Executescript():
         ...   job = None
         ...   log_file = None
         ...   _config = None
-        >>> Executescript(worker=worker())._get_notification_message_failed('No script provided')
+        >>> Executescript(worker=worker())._get_notification_message_aborted('No script provided')
         'Execute script Aborted for app [app1] - No script provided'
-        >>> Executescript(worker=worker())._get_notification_message_failed('Invalid module')
+        >>> Executescript(worker=worker())._get_notification_message_aborted('Invalid module')
         'Execute script Aborted for app [app1] - Invalid module'
         """
         return "Execute script Aborted for app [{0}] - {1}".format(self._app['name'], message)
