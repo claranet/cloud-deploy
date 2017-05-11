@@ -83,14 +83,34 @@ class Executescript():
         """
         for item in self._app['modules']:
             if 'name' in item and item['name'] == module_name:
-                return item['path'], item.get('uid', 0)
-        return '/tmp', 0
+                return item['path'], item.get('uid', 0), item
+        return '/tmp', 0, None
+
+    def _get_ghost_env(self, module):
+        """
+        Generate an environment variable dictionnary for fabric
+        """
+        ghost_env = {}
+        ghost_env['GHOST_APP'] = self._app['name']
+        ghost_env['GHOST_ENV'] = self._app['env']
+        if self._color:
+            ghost_env['GHOST_ENV_COLOR'] = self._color
+        ghost_env['GHOST_ROLE'] = self._app['role']
+        if module:
+            ghost_env['GHOST_MODULE_NAME'] = module['name']
+            ghost_env['GHOST_MODULE_PATH'] = module['path']
+            ghost_env['GHOST_MODULE_REPO'] = module['git_repo'].strip()
+            ghost_env['GHOST_MODULE_USER'] = self._job['user']
+        custom_env_vars = self._app.get('env_vars', None)
+        if custom_env_vars and len(custom_env_vars):
+            ghost_env.update({env_var['var_key'].encode('ascii', 'ignore'): env_var['var_value'].encode('ascii', 'ignore') for env_var in custom_env_vars})
+        return ghost_env
 
     def _exec_script(self, script, module_name, fabric_execution_strategy):
-        context_path, sudoer_uid = self._get_module_path_and_uid(module_name)
+        context_path, sudoer_uid, module = self._get_module_path_and_uid(module_name)
         running_instances = find_ec2_running_instances(self._cloud_connection, self._app['name'], self._app['env'], self._app['role'], self._app['region'], ghost_color=self._color)
         hosts_list = [host['private_ip_address'] for host in running_instances]
-        launch_executescript(self._app, script, context_path, sudoer_uid, self._job['_id'], hosts_list, fabric_execution_strategy, self._log_file)
+        launch_executescript(self._app, script, context_path, sudoer_uid, self._job['_id'], hosts_list, fabric_execution_strategy, self._log_file, self._get_ghost_env(module))
 
     def execute(self):
         script = self._job['options'][0] if 'options' in self._job and len(self._job['options']) > 0 else None

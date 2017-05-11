@@ -389,7 +389,7 @@ def launch_deploy(app, module, hosts_list, fabric_execution_strategy, log_file):
 
     _handle_fabric_errors(result, "Deploy error")
 
-def launch_executescript(app, script, context_path, sudoer_user, jobid, hosts_list, fabric_execution_strategy, log_file):
+def launch_executescript(app, script, context_path, sudoer_user, jobid, hosts_list, fabric_execution_strategy, log_file, ghost_env):
     """ Launch fabric tasks on remote hosts.
 
         :param  app:          dict: Ghost object which describe the application parameters.
@@ -400,6 +400,7 @@ def launch_executescript(app, script, context_path, sudoer_user, jobid, hosts_li
         :param  hosts_list:   list: Instances private IP.
         :param  fabric_execution_strategy  string: Deployment strategy(serial or parallel).
         :param  log_file:     object for logging.
+        :param  ghost_env:    dict: all Ghost env variables
     """
     # Clone the executescript task function to avoid modifying the original shared instance
     task = copy(executescript)
@@ -407,6 +408,6 @@ def launch_executescript(app, script, context_path, sudoer_user, jobid, hosts_li
     task, app_ssh_username, key_filename, fabric_execution_strategy = _get_fabric_params(app, fabric_execution_strategy, task, log_file)
 
     log("Updating current instances in {}: {}".format(fabric_execution_strategy, hosts_list), log_file)
-    result = fab_execute(task, app_ssh_username, key_filename, context_path, sudoer_user, jobid, script, log_file, hosts=hosts_list)
+    result = fab_execute(task, app_ssh_username, key_filename, context_path, sudoer_user, jobid, script, log_file, ghost_env, hosts=hosts_list)
 
     _handle_fabric_errors(result, "Script execution error")
