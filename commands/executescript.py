@@ -3,10 +3,12 @@ from fabric.colors import green as _green, yellow as _yellow, red as _red
 from settings import cloud_connections, DEFAULT_PROVIDER
 
 from ghost_log import log
-from ghost_tools import get_aws_connection_data
+from ghost_tools import get_aws_connection_data, GCallException
 from ghost_tools import b64decode_utf8, get_ghost_env_variables
 from libs.host_deployment_manager import HostDeploymentManager
 from libs.blue_green import get_blue_green_from_app
+from libs.ec2 import get_ec2_instance
+from libs.deploy import launch_executescript
 
 COMMAND_DESCRIPTION = "Execute a script/commands on every instance"
 
@@ -101,13 +103,34 @@ class Executescript():
                                                })
         deploy_manager.deployment(safe_deployment_strategy)
 
+    def _exec_script_single_host(self, script, module_name, single_host_ip):
+        context_path, sudoer_uid, module = self._get_module_path_and_uid(module_name)
+        ghost_env_vars = get_ghost_env_variables(self._app, module, self._color, self._job['user'])
+
+        ec2_obj = get_ec2_instance(self._cloud_connection, self._app['region'], {
+            'private-ip-address': single_host_ip,
+            'vpc-id': self._app['vpc_id'],
+        })
+        if not ec2_obj or ec2_obj.vpc_id!= self._app['vpc_id'] or ec2_obj.private_ip_address != single_host_ip:
+            raise GCallException("Cannot found the single instance with private IP '{ip}' in VPC '{vpc}'".format(ip=single_host_ip, vpc=self._app['vpc_id']))
+        if ec2_obj.tags['app'] != self._app['name'] or ec2_obj.tags['env'] != self._app['env'] or ec2_obj.tags['role'] != self._app['role']:
+            raise GCallException("Cannot execute script on this instance ({ip} - {id}), invalid Ghost tags".format(ip=single_host_ip, id=ec2_obj.id))
+
+        log("EC2 instance found, ready to execute script ({ip} - {id} - {name})".format(ip=single_host_ip, id=ec2_obj.id, name=ec2_obj.tags.get('Name', '')), self._log_file)
+        launch_executescript(self._app, script, context_path, sudoer_uid, self._job['_id'], [single_host_ip], 'serial', self._log_file, ghost_env_vars)
+
     def execute(self):
         script = self._job['options'][0] if 'options' in self._job and len(self._job['options']) > 0 else None
         module_name = self._job['options'][1] if 'options' in self._job and len(self._job['options']) > 1 else None
-        fabric_execution_strategy = self._job['options'][2] if 'options' in self._job and len(
-            self._job['options']) > 2 else None
-        safe_deployment_strategy = self._job['options'][3] if 'options' in self._job and len(
-            self._job['options']) > 3 else None
+        fabric_execution_strategy = self._job['options'][2] if 'options' in self._job and len(self._job['options']) > 2 else None
+        if fabric_execution_strategy and not fabric_execution_strategy in ['serial', 'parallel']:
+            # option[2] is a single Host IP
+            fabric_execution_strategy = None
+            safe_deployment_strategy = None
+            single_host_ip = self._job['options'][2]
+        else:
+            safe_deployment_strategy = self._job['options'][3] if 'options' in self._job and len(self._job['options']) > 3 else None
+            single_host_ip = None
 
         try:
             log(_green("STATE: Started"), self._log_file)
@@ -126,7 +149,12 @@ class Executescript():
             except:
                 return self._abort("No valid script provided")
 
-            self._exec_script(script_data, module_name, fabric_execution_strategy, safe_deployment_strategy)
+            if single_host_ip:
+                log(_yellow("Executing script on a single host: %s" % single_host_ip), self._log_file)
+                self._exec_script_single_host(script_data, module_name, single_host_ip)
+            else:
+                log(_yellow("Executing script on every running instance"), self._log_file)
+                self._exec_script(script_data, module_name, fabric_execution_strategy, safe_deployment_strategy)
 
             self._worker.update_status("done", message=self._get_notification_message_done())
             log(_green("STATE: End"), self._log_file)
