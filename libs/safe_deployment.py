@@ -26,7 +26,7 @@ import haproxy
 from ghost_tools import GCallException
 from ghost_tools import log, split_hosts_list
 
-from .deploy import launch_deploy
+from .deploy import launch_deploy, launch_executescript
 from .ec2 import find_ec2_running_instances
 from .elb import get_elb_instance_status_autoscaling_group, get_connection_draining_value, register_instance_from_elb, deregister_instance_from_elb
 from .alb import get_alb_target_status_autoscaling_group, get_alb_deregistration_delay_value, register_instance_from_alb, deregister_instance_from_alb
@@ -34,7 +34,7 @@ from .alb import get_alb_target_status_autoscaling_group, get_alb_deregistration
 class SafeDeployment():
     """ Class which will manage the safe deployment process """
 
-    def __init__(self, cloud_connection, app, module, hosts_list, log_file, safe_infos, fabric_exec_strategy, as_name):
+    def __init__(self, cloud_connection, app, module, hosts_list, log_file, safe_infos, fabric_exec_strategy, as_name, safe_type=None, execute_script_params=None):
         """
             :param  module        dict: Ghost object wich describe the module parameters.
             :param  app           dict: Ghost object which describe the application parameters.
@@ -44,6 +44,8 @@ class SafeDeployment():
             :param  lb_infos:     list: ELB names, ALB names or Haproxy IPs.
             :param  fabric_exec_strategy  string: Deployment strategy(serial or parrallel).
             :param  as_name:      string: The name of the Autoscaling Group.
+            :param  safe_type:    string: Deploy or Executescript
+            :param execute_script_params dict: All necessary params for `launch_executescript`
         """
         self.cloud_connection = cloud_connection
         self.app = app
@@ -53,6 +55,8 @@ class SafeDeployment():
         self.fab_exec_strategy = fabric_exec_strategy
         self.safe_infos = safe_infos
         self.as_name = as_name
+        self._safe_type = safe_type
+        self._execute_script_params = execute_script_params
 
     def elb_safe_deployment(self, instances_list):
         """ Manage the safe deployment process for the ELB.
@@ -78,7 +82,13 @@ class SafeDeployment():
             wait_before_deploy = int(get_connection_draining_value(elb_conn, elb_instances.keys())) + int(self.safe_infos['wait_before_deploy'])
             log('Waiting {0}s: The connection draining time plus the custom value set for wait_before_deploy' .format(wait_before_deploy), self.log_file)
             time.sleep(wait_before_deploy)
-            launch_deploy(self.app, self.module, [host['private_ip_address'] for host in instances_list], self.fab_exec_strategy, self.log_file)
+            host_list = [host['private_ip_address'] for host in instances_list]
+            if self._safe_type == 'executescript':
+                launch_executescript(self.app,
+                                     self._execute_script_params['script'], self._execute_script_params['context_path'], self._execute_script_params['sudoer_uid'], self._execute_script_params['jobid'],
+                                     host_list, self.fab_exec_strategy, self.log_file, self._execute_script_params['env_vars'])
+            else:
+                launch_deploy(self.app, self.module, host_list, self.fab_exec_strategy, self.log_file)
             log('Waiting {0}s: The value set for wait_after_deploy' .format(self.safe_infos['wait_after_deploy']), self.log_file)
             time.sleep(int(self.safe_infos['wait_after_deploy']))
             register_instance_from_elb(elb_conn, elb_instances.keys(), [host['id'] for host in instances_list], self.log_file)
@@ -112,7 +122,13 @@ class SafeDeployment():
             wait_before_deploy = int(get_alb_deregistration_delay_value(alb_conn, alb_targets.keys())) + int(self.safe_infos['wait_before_deploy'])
             log('Waiting {0}s: The deregistation delay time plus the custom value set for wait_before_deploy' .format(wait_before_deploy), self.log_file)
             time.sleep(wait_before_deploy)
-            launch_deploy(self.app, self.module, [host['private_ip_address'] for host in instances_list], self.fab_exec_strategy, self.log_file)
+            host_list = [host['private_ip_address'] for host in instances_list]
+            if self._safe_type == 'executescript':
+                launch_executescript(self.app,
+                                     self._execute_script_params['script'], self._execute_script_params['context_path'], self._execute_script_params['sudoer_uid'], self._execute_script_params['jobid'],
+                                     host_list, self.fab_exec_strategy, self.log_file, self._execute_script_params['env_vars'])
+            else:
+                launch_deploy(self.app, self.module, host_list, self.fab_exec_strategy, self.log_file)
             log('Waiting {0}s: The value set for wait_after_deploy' .format(self.safe_infos['wait_after_deploy']), self.log_file)
             time.sleep(int(self.safe_infos['wait_after_deploy']))
             register_instance_from_alb(alb_conn, alb_targets.keys(), [{'Id': host['id']} for host in instances_list], self.log_file)
@@ -154,7 +170,13 @@ class SafeDeployment():
                 raise GCallException('Cannot disable some instances: {0} in {1}. Deployment aborted' .format(instances_list, lb_infos))
             log('Waiting {0}s: The value set for wait_before_deploy' .format(self.safe_infos['wait_before_deploy']), self.log_file)
             time.sleep(int(self.safe_infos['wait_before_deploy']))
-            launch_deploy(self.app, self.module, [host['private_ip_address'] for host in instances_list], self.fab_exec_strategy, self.log_file)
+            host_list = [host['private_ip_address'] for host in instances_list]
+            if self._safe_type == 'executescript':
+                launch_executescript(self.app,
+                                     self._execute_script_params['script'], self._execute_script_params['context_path'], self._execute_script_params['sudoer_uid'], self._execute_script_params['jobid'],
+                                     host_list, self.fab_exec_strategy, self.log_file, self._execute_script_params['env_vars'])
+            else:
+                launch_deploy(self.app, self.module, host_list, self.fab_exec_strategy, self.log_file)
             log('Waiting {0}s: The value set for wait_after_deploy' .format(self.safe_infos['wait_after_deploy']), self.log_file)
             time.sleep(int(self.safe_infos['wait_after_deploy']))
             if not hapi.change_instance_state('enableserver', self.safe_infos['ha_backend'], [host['private_ip_address'] for host in instances_list]):
