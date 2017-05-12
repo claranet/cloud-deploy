@@ -17,7 +17,7 @@ from fabric.api import execute as fab_execute
 from fabfile import deploy, executescript
 from ghost_tools import config
 from ghost_tools import render_stage2, get_app_module_name_list
-from ghost_tools import b64decode_utf8
+from ghost_tools import b64decode_utf8, get_ghost_env_variables
 from ghost_log import log
 from ghost_tools import GCallException, gcall
 from settings import cloud_connections, DEFAULT_PROVIDER
@@ -45,18 +45,7 @@ def execute_module_script_on_ghost(app, module, script_name, script_friendly_nam
                 f.write(script_source)
 
         script_env = os.environ.copy()
-        script_env['GHOST_APP'] = app['name']
-        script_env['GHOST_ENV'] = app['env']
-        script_env['GHOST_ROLE'] = app['role']
-        if app.get('blue_green', None):
-            script_env['GHOST_ENV_COLOR'] = app['blue_green'].get('color', '')
-        script_env['GHOST_MODULE_NAME'] = module['name']
-        script_env['GHOST_MODULE_PATH'] = module['path']
-
-        custom_env_vars = app.get('env_vars', None)
-        if custom_env_vars and len(custom_env_vars):
-            for env_var in custom_env_vars:
-                script_env[env_var['var_key']] = env_var['var_value'].encode('utf-8')
+        script_env.update(get_ghost_env_variables(app, module, app.get('blue_green', {}).get('color', ''), None))
 
         gcall('bash %s' % script_path, '%s: Execute' % script_friendly_name, log_file, env=script_env)
         gcall('du -hs .', 'Display current build directory disk usage', log_file)
