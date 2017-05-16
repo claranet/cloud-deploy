@@ -38,6 +38,15 @@ except:
         current_revision_name='unknown'
     )
 
+GHOST_JOB_STATUSES_COLORS = {
+    'failed':    '#F44336',
+    'cancelled': '#333333',
+    'aborted':   '#AAAAAA',
+    'started':   '#03A9F4',
+    'done':      '#4CAF50',
+    'default':   '#415560',
+}
+
 def get_aws_connection_data(assumed_account_id, assumed_role_name, assumed_region_name=""):
     """
     Build a key-value dictionnatiory args for aws cross  connections

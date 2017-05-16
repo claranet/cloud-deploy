@@ -4,6 +4,7 @@ from email.mime.application import MIMEApplication
 from email.mime.multipart import MIMEMultipart
 
 from ghost_log import log
+from ghost_tools import GHOST_JOB_STATUSES_COLORS
 
 import ntpath
 import requests
@@ -103,7 +104,7 @@ class Notification():
                 {
                     "fallback": notif,
                     "pretext": config.get('message_prefix', 'Ghost job triggered'),
-                    "color": "danger" if job['status'] == 'failed' else "good",
+                    "color": GHOST_JOB_STATUSES_COLORS[job['status']],
                     "fields": fields,
                     "title": "Job #{jobId} triggered by {user}".format(jobId=str(job['_id']), user=job['user']),
                     "title_link": "{ghost_url}/web/jobs/{jobId}".format(ghost_url=config['ghost_base_url'], jobId=str(job['_id'])),
