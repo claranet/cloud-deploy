@@ -295,7 +295,7 @@ def ghost_app_object_copy(app, user):
     Returns a clean copy of a Ghost application
     by removing Eve fields and ReadOnly fields
     """
-    copy_app = copy.copy(app)
+    copy_app = copy.deepcopy(app)
     if user:
         copy_app['user'] = user
     if 'modules' in copy_app:
