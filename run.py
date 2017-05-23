@@ -35,6 +35,16 @@ def get_jobs_db():
 def get_deployments_db():
     return ghost.data.driver.db[deployments['datasource']['source']]
 
+def check_app_feature_provisioner(updates):
+    # Check Feature provisioner
+    if 'features' in updates:
+        provisioners_available = get_available_provisioners_from_config()
+        for ft in updates['features']:
+            if 'provisioner' in ft and not ft['provisioner'] in provisioners_available:
+                print('Provisioner "{p}" set for feature "{f}" is not available or not compatible.'.format(p=ft['provisioner'], f=ft['name']))
+                return False
+    return True
+
 def pre_update_app(updates, original):
     """
     eve pre-update event hook to reset modified modules' 'initialized' field.
@@ -117,13 +127,9 @@ def pre_update_app(updates, original):
                             break
                     # Module found, can exit loop
                     break
-    # Check Feature provisioner
-    if 'features' in updates:
-        provisioners_available = get_available_provisioners_from_config()
-        for ft in updates['features']:
-            if 'provisioner' in ft and not ft['provisioner'] in provisioners_available:
-                print('Provisioner "{p}" setted for feature "{f}" is not available or not compatible.'.format(p=ft['provisioner'], f=ft['name']))
-                abort(422)
+
+    if not check_app_feature_provisioner(updates):
+        abort(422)
 
     updates['environment_infos']['instance_tags'] = normalize_application_tags(original, updates)
     # Blue/green disabled ?
@@ -178,13 +184,9 @@ def pre_insert_app(items):
     role = app.get('role')
     env = app.get('env')
     app['environment_infos']['instance_tags'] = normalize_application_tags(app, app)
-    # Check Feature provisioner
-    if 'features' in app:
-        provisioners_available = get_available_provisioners_from_config()
-        for ft in app['features']:
-            if 'provisioner' in ft and not ft['provisioner'] in provisioners_available:
-                print('Provisioner "{p}" setted for feature "{f}" is not available or not compatible.'.format(p=ft['provisioner'], f=ft['name']))
-                abort(422)
+
+    if not check_app_feature_provisioner(app):
+        abort(422)
 
     blue_green = app.get('blue_green', None)
     # We can now insert a new app with a different color
