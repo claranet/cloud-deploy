@@ -1,3 +1,4 @@
+import os
 from models import jobs
 from models import apps
 from models import deployments
@@ -36,7 +37,8 @@ API_NAME = 'GHOST API'
 
 # Please note that MONGO_HOST and MONGO_PORT could very well be left
 # out as they already default to a bare bones local 'mongod' instance.
-MONGO_HOST = config.get('mongo_host', 'localhost')
+# Get env var first (e.g. from docker-compose and the like), then config file, then default
+MONGO_HOST = os.getenv('MONGO_HOST', config.get('mongo_host', 'localhost'))
 MONGO_PORT = 27017
 #MONGO_USERNAME = 'user'
 #MONGO_PASSWORD = 'user'
@@ -46,7 +48,7 @@ MONGO_QUERY_BLACKLIST = ['$where']
 # RQ Workers params
 RQ_JOB_TIMEOUT = config.get('rq_worker_job_timeout', 3600)
 
-REDIS_HOST = config.get('redis_host', 'localhost')
+REDIS_HOST = os.getenv('REDIS_HOST', config.get('redis_host', 'localhost'))
 
 # Enable reads (GET) and inserts (POST) for resources/collections
 # (if you omit this line, the API will default to ['GET'] and provide
@@ -61,7 +63,7 @@ ITEM_METHODS = ['GET', 'PATCH', 'PUT', 'DELETE']
 PAGINATION_DEFAULT = config.get('eve_pagination_default', 23)
 
 # API BASE URL
-API_BASE_URL = config.get('api_base_url', 'http://localhost:5000')
+API_BASE_URL = os.getenv('API_BASE_URL', config.get('api_base_url', 'http://localhost:5000'))
 
 DOMAIN = {
     'job_enqueueings': job_enqueueings.job_enqueueings,
