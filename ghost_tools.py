@@ -444,7 +444,8 @@ def keep_n_recent_elements_from_list(keys_list, nb_elt_to_keep, log_file=None):
         log("List now contains %s element(s)" % str(len(keys_list)), log_file)
     return keys_list
 
-def split_hosts_list(hosts_list, split_type):
+
+def split_hosts_list(hosts_list, split_type, log_file=None):
     """
     Return a list of multiple hosts list for the safe deployment.
 
@@ -500,12 +501,14 @@ def split_hosts_list(hosts_list, split_type):
         chunk = 2
     else:
         log("Not enough instances to perform safe deployment. Number of instances: \
-            {0} for safe deployment type: {1}" .format(str(len(hosts_list)), str(split_type)), self.log_file)
+            {0} for safe deployment type: {1}" .format(str(len(hosts_list)), str(split_type)), log_file)
         raise GCallException("Cannot continue, not enought instances to perform the safe deployment")
     return [hosts_list[i::chunk] for i in range(chunk)]
 
+
 def get_job_log_remote_path(worker_job_id):
     return "{log_dir}/{job_id}.txt".format(log_dir="log/job/", job_id=worker_job_id)
+
 
 def get_provisioners_config():
     provisioners_config = config.get('features_provisioners', {
@@ -515,6 +518,7 @@ def get_provisioners_config():
         }
     })
     return provisioners_config
+
 
 def get_available_provisioners_from_config():
     provisioners_config = get_provisioners_config()

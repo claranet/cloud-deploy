@@ -138,6 +138,7 @@ def ghost_api_delete_alter_ego_app(apps_db, app):
             return apps_db.delete_one({'_id': blue_green.get('alter_ego_id')}).deleted_count == 1
     return True
 
+
 def check_app_feature_provisioner(updates):
     """
     Check if all provisioner choosen per feature is a valid one available in the core configuration
