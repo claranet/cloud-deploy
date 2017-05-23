@@ -1,4 +1,5 @@
 import os
+import sh
 from sh import git
 
 from ghost_log import log
