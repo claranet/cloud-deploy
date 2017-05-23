@@ -20,9 +20,10 @@ from models.apps import apps
 from models.jobs import jobs, CANCELLABLE_JOB_STATUSES, DELETABLE_JOB_STATUSES
 from models.deployments import deployments
 
-from ghost_tools import get_rq_name_from_app, get_available_provisioners_from_config
+from ghost_tools import get_rq_name_from_app
 from ghost_blueprints import commands_blueprint
 from ghost_api import ghost_api_bluegreen_is_enabled, ghost_api_enable_green_app, ghost_api_delete_alter_ego_app, ghost_api_clean_bluegreen_app
+from ghost_api import check_app_feature_provisioner
 from libs.blue_green import BLUE_GREEN_COMMANDS, get_blue_green_from_app, ghost_has_blue_green_enabled
 from ghost_aws import normalize_application_tags
 
@@ -34,16 +35,6 @@ def get_jobs_db():
 
 def get_deployments_db():
     return ghost.data.driver.db[deployments['datasource']['source']]
-
-def check_app_feature_provisioner(updates):
-    # Check Feature provisioner
-    if 'features' in updates:
-        provisioners_available = get_available_provisioners_from_config()
-        for ft in updates['features']:
-            if 'provisioner' in ft and not ft['provisioner'] in provisioners_available:
-                print('Provisioner "{p}" set for feature "{f}" is not available or not compatible.'.format(p=ft['provisioner'], f=ft['name']))
-                return False
-    return True
 
 def pre_update_app(updates, original):
     """
