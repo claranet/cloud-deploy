@@ -263,7 +263,9 @@ def pre_delete_job_enqueueings():
 # Create ghost app, explicitly specifying the settings to avoid errors during doctest execution
 ghost = Eve(auth=BCryptAuth, settings=eve_settings)
 Bootstrap(ghost)
-ghost.config.from_object(rq_dashboard.default_settings)
+rq_settings = rq_dashboard.default_settings.__dict__
+rq_settings.update({"REDIS_HOST": REDIS_HOST})
+ghost.config.from_mapping(rq_settings)
 ghost.register_blueprint(rq_dashboard.blueprint, url_prefix='/rq')
 ghost.register_blueprint(swagger, url_prefix='/docs/api')
 # Map /docs/api to eve_swagger as it is hardcoded to <url_prefix>/api-docs (cf. https://github.com/nicolaiarocci/eve-swagger/issues/33)
