@@ -185,13 +185,14 @@ class Haproxyapi:
                 'deployment', 'data': {'status': action}}
         return self.hapipostrequest(data)
 
-    def switch_backends(self, haproxy_backends=[]):
+    def switch_backends(self, haproxy_backends=None):
         """ Do a switch between two backends.
 
             :param  haproxy_backends: list of two backends to switch(If the list has only one element,
                                     a second will be add with the same name than the first with "_new").
             :return boolean (True if operation succeed on all Haproxy otherwise return False)
         """
+        haproxy_backends = haproxy_backends or []
         if len(haproxy_backends) == 1:
             haproxy_backends.append(str(haproxy_backends[0]) + '_new')
         data = {'backend': haproxy_backends[0], 'action': 'swserver',
