@@ -225,7 +225,8 @@ def create_ec2_instance(cloud_connection, app, app_color, config, private_ip_add
                 ["ec2", "networkinterface", "NetworkInterfaceSpecification"],
                 subnet_id=subnet_id,
                 groups=app['environment_infos']['security_groups'],
-                associate_public_ip_address=True, private_ip_address=private_ip_address
+                associate_public_ip_address=app['environment_infos']['public_ip_address'] if 'public_ip_address' in app['environment_infos'] else True,
+                private_ip_address=private_ip_address
                 )
         interfaces = cloud_connection.launch_service(
                 ["ec2", "networkinterface", "NetworkInterfaceCollection"],
