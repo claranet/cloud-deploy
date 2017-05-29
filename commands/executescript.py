@@ -5,13 +5,11 @@ from settings import cloud_connections, DEFAULT_PROVIDER
 from ghost_log import log
 from ghost_tools import get_aws_connection_data
 from ghost_tools import b64decode_utf8, get_ghost_env_variables
-from ghost_aws import get_autoscaling_group_and_processes_to_suspend, resume_autoscaling_group_processes, suspend_autoscaling_group_processes
-from libs.safe_deployment import SafeDeployment
+from libs.host_deployment_manager import HostDeploymentManager
 from libs.blue_green import get_blue_green_from_app
-from libs.ec2 import find_ec2_running_instances, find_ec2_pending_instances
-from libs.deploy import launch_executescript
 
 COMMAND_DESCRIPTION = "Execute a script/commands on every instance"
+
 
 class Executescript():
     _app = None
@@ -25,14 +23,14 @@ class Executescript():
         self._worker = worker
         self._log_file = worker.log_file
         self._connection_data = get_aws_connection_data(
-                self._app.get('assumed_account_id', ''),
-                self._app.get('assumed_role_name', ''),
-                self._app.get('assumed_region_name', '')
-                )
+            self._app.get('assumed_account_id', ''),
+            self._app.get('assumed_role_name', ''),
+            self._app.get('assumed_region_name', '')
+        )
         self._cloud_connection = cloud_connections.get(self._app.get('provider', DEFAULT_PROVIDER))(
-                self._log_file,
-                **self._connection_data
-                )
+            self._log_file,
+            **self._connection_data
+        )
         blue_green, self._color = get_blue_green_from_app(self._app)
 
     def _get_notification_message_done(self):
@@ -90,50 +88,26 @@ class Executescript():
 
     def _exec_script(self, script, module_name, fabric_execution_strategy, safe_deployment_strategy):
         context_path, sudoer_uid, module = self._get_module_path_and_uid(module_name)
-        running_instances = find_ec2_running_instances(self._cloud_connection, self._app['name'], self._app['env'], self._app['role'], self._app['region'], ghost_color=self._color)
         ghost_env_vars = get_ghost_env_variables(self._app, module, self._color, self._job['user'])
 
-        # Retrieve autoscaling infos, if any
-        as_conn = self._cloud_connection.get_connection(self._app['region'], ['autoscaling'], boto_version='boto3')
-        as_group, as_group_processes_to_suspend = get_autoscaling_group_and_processes_to_suspend(as_conn, self._app, self._log_file)
-        try:
-            # Suspend autoscaling
-            suspend_autoscaling_group_processes(as_conn, as_group, as_group_processes_to_suspend, self._log_file)
-            # Wait for pending instances to become ready
-            while True:
-                pending_instances = find_ec2_pending_instances(self._cloud_connection, self._app['name'], self._app['env'], self._app['role'], self._app['region'], as_group, ghost_color=self._color)
-                if not pending_instances:
-                    break
-                log("INFO: waiting 10s for {} instance(s) to become running before proceeding with deployment: {}".format(len(pending_instances), pending_instances), self._log_file)
-                time.sleep(10)
-            if running_instances:
-                if safe_deployment_strategy:
-                    safedeploy = SafeDeployment(self._cloud_connection, self._app, module, running_instances, self._log_file, self._app['safe-deployment'], fabric_execution_strategy, as_group,
-                                                'executescript', {
-                                                    'script': script,
-                                                    'context_path': context_path,
-                                                    'sudoer_uid': sudoer_uid,
-                                                    'jobid': self._job['_id'],
-                                                    'env_vars': ghost_env_vars,
-                                                })
-                    safedeploy.safe_manager(safe_deployment_strategy)
-                else:
-                    hosts_list = [host['private_ip_address'] for host in running_instances]
-                    launch_executescript(self._app, script, context_path, sudoer_uid, self._job['_id'], hosts_list, fabric_execution_strategy, self._log_file, ghost_env_vars)
-            else:
-                raise GCallException("No instance found in region {region} with tags app:{app}, env:{env}, role:{role}{color}".format(region=self._app['region'],
-                                                                                                                                      app=self._app['name'],
-                                                                                                                                      env=self._app['env'],
-                                                                                                                                      role=self._app['role'],
-                                                                                                                                      color=', color:%s' % self._color if self._color else ''))
-        finally:
-            resume_autoscaling_group_processes(as_conn, as_group, as_group_processes_to_suspend, self._log_file)
+        deploy_manager = HostDeploymentManager(self._cloud_connection, self._app, module, self._log_file,
+                                               self._app['safe-deployment'], fabric_execution_strategy,
+                                               'executescript', {
+                                                   'script': script,
+                                                   'context_path': context_path,
+                                                   'sudoer_uid': sudoer_uid,
+                                                   'jobid': self._job['_id'],
+                                                   'env_vars': ghost_env_vars,
+                                               })
+        deploy_manager.deployment(safe_deployment_strategy)
 
     def execute(self):
         script = self._job['options'][0] if 'options' in self._job and len(self._job['options']) > 0 else None
         module_name = self._job['options'][1] if 'options' in self._job and len(self._job['options']) > 1 else None
-        fabric_execution_strategy = self._job['options'][2] if 'options' in self._job and len(self._job['options']) > 2 else None
-        safe_deployment_strategy = self._job['options'][3] if 'options' in self._job and len(self._job['options']) > 3 else None
+        fabric_execution_strategy = self._job['options'][2] if 'options' in self._job and len(
+            self._job['options']) > 2 else None
+        safe_deployment_strategy = self._job['options'][3] if 'options' in self._job and len(
+            self._job['options']) > 3 else None
 
         try:
             log(_green("STATE: Started"), self._log_file)

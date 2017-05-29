@@ -7,7 +7,7 @@ from ghost_tools import GCallException, gcall, get_app_module_name_list, clean_l
 from ghost_tools import get_aws_connection_data
 from settings import cloud_connections, DEFAULT_PROVIDER
 from ghost_log import log
-from ghost_aws import deploy_module_on_hosts
+from libs.host_deployment_manager import HostDeploymentManager
 from libs.deploy import execute_module_script_on_ghost
 from libs.deploy import get_path_from_app_with_color, get_buildpack_clone_path_from_module, update_app_manifest, rollback_app_manifest
 
@@ -55,7 +55,9 @@ class Redeploy():
         return None, None
 
     def _deploy_module(self, module, fabric_execution_strategy, safe_deployment_strategy):
-        deploy_module_on_hosts(self._cloud_connection, module, fabric_execution_strategy, self._app, self._config, self._log_file, safe_deployment_strategy)
+        deploy_manager = HostDeploymentManager(self._cloud_connection, self._app, module, self._log_file,
+                                               self._app['safe-deployment'], fabric_execution_strategy)
+        deploy_manager.deployment(safe_deployment_strategy)
 
     def _local_extract_package(self, module, package):
         clone_path = get_buildpack_clone_path_from_module(self._app, module)
