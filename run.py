@@ -191,7 +191,7 @@ def post_insert_app(items):
 
 def _post_fetch_app(json_app):
     # Sets default value for `public_ip_address` to have consistent responses
-    if 'public_ip_address' not in json_app['environment_infos']:
+    if 'environment_infos' in json_app and 'public_ip_address' not in json_app['environment_infos']:
         json_app['environment_infos']['public_ip_address'] = True
 
 
