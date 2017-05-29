@@ -13,7 +13,7 @@ from pymongo import MongoClient
 from bson.objectid import ObjectId
 
 from ghost_log import log
-from ghost_tools import get_job_log_remote_path
+from ghost_tools import get_job_log_remote_path, GHOST_JOB_STATUSES_COLORS
 from ghost_aws import push_file_to_s3
 
 from notification import Notification
@@ -106,7 +106,7 @@ td{{font-family:arial,helvetica,sans-serif;}}
     html_body = html_template.format(
         user = job['user'],
         status = job['status'],
-        status_color = 'rgb(218, 0, 26)' if job['status'] == 'failed' else '#00A800',
+        status_color = GHOST_JOB_STATUSES_COLORS[job['status']],
         app = app['name'],
         env = app['env'],
         role = app['role'],
