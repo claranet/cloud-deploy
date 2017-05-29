@@ -5,9 +5,13 @@ from email.mime.multipart import MIMEMultipart
 
 from ghost_log import log
 
-import ntpath
 import requests
 import json
+
+import os
+from gzip import GzipFile
+import shutil
+import StringIO
 
 class Notification():
     _aws_access_key = None
@@ -32,9 +36,21 @@ class Notification():
         # msg.attach(part1)
         # the attachment
         for attachment in attachments:
-            part = MIMEApplication(open(attachment, 'rb').read())
-            part.add_header('Content-Disposition', 'attachment', filename=ntpath.basename(attachment))
-            msg.attach(part)
+            log_path = attachment['original_log_path']
+            with open(log_path, 'rb') as f_in:
+                log_stat = os.stat(log_path)
+                if log_stat.st_size > 512000:
+                    gz_data = StringIO.StringIO()
+                    with GzipFile(fileobj=gz_data, mode='wb', compresslevel=9, filename=attachment['filename']) as gz_out:
+                        shutil.copyfileobj(f_in, gz_out)
+                    part = MIMEApplication(gz_data.getvalue())
+                    part.add_header('Content-Disposition', 'attachment', filename=attachment['filename']+'.gz')
+                    gz_data.close()
+                else:
+                    part = MIMEApplication(f_in.read())
+                    part.add_header('Content-Disposition', 'attachment', filename=attachment['filename'])
+                msg.attach(part)
+
         # connect to SES
         connection = ses.connect_to_region(self._region, aws_access_key_id=self._aws_access_key, aws_secret_access_key=self._aws_secret_key)
         # and send the message
