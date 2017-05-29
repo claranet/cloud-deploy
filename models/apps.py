@@ -204,7 +204,7 @@ apps_schema = {
                                'regex': '^[a-zA-Z0-9\+\=\,\.\@\-\_]{1,64}$'},
                               'key_name': {'type': 'string',
                                            'regex': '^[\x00-\x7F]{1,255}$'},
-                              'public_ip_address': {'type': 'boolean', 'required': False},
+                              'public_ip_address': {'type': 'boolean', 'required': False, 'default':True},
                               'root_block_device':
                               {'type': 'dict',
                                'schema': {

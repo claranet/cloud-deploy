@@ -188,6 +188,18 @@ def post_insert_app(items):
         if not ghost_api_enable_green_app(get_apps_db(), app, request.authorization.username):
             abort(422)
 
+
+def _post_fetch_app(json_app):
+    # Sets default value for `public_ip_address` to have consistent responses
+    if 'public_ip_address' not in json_app['environment_infos']:
+        json_app['environment_infos']['public_ip_address'] = True
+
+
+def post_fetched_apps_list(response):
+    for resource_json in response['_items']:
+        _post_fetch_app(resource_json)
+
+
 def post_fetched_app(response):
     # Do we need to embed each module's last_deployment?
     embedded = json.loads(request.args.get('embedded', '{}'))
@@ -205,6 +217,9 @@ def post_fetched_app(response):
         deployment = get_deployments_db().find_one(query, sort=sort)
         if deployment:
             module['last_deployment'] = deployment if embed_last_deployment else deployment['_id']
+
+    _post_fetch_app(response)
+
 
 def pre_insert_job(items):
     job = items[0]
@@ -270,6 +285,7 @@ ghost.register_blueprint(swagger, url_prefix='/docs/api')
 ghost.add_url_rule('/docs/api', 'eve_swagger.index')
 
 # Register eve hooks
+ghost.on_fetched_resource_apps += post_fetched_apps_list
 ghost.on_fetched_item_apps += post_fetched_app
 ghost.on_update_apps += pre_update_app
 ghost.on_updated_apps += post_update_app
