@@ -361,7 +361,7 @@ def _get_fabric_params(app, fabric_execution_strategy, task, log_file):
 
 def _handle_fabric_errors(result, message):
     hosts_error = []
-    for host, ret_code in result.iteritems():
+    for host, ret_code in result.items():
         if ret_code != 0:
             hosts_error.append(host)
     if len(hosts_error):
