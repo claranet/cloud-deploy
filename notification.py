@@ -24,7 +24,8 @@ class Notification():
         self._aws_secret_key = aws_secret_key
         self._region = region
 
-    def send_mail(self, From="", To="", subject="", body_text="", body_html="", attachments=[]):
+    def send_mail(self, From="", To="", subject="", body_text="", body_html="", attachments=None):
+        attachments = attachments or []
         msg = MIMEMultipart()
         msg['Subject'] = subject
         msg['From'] = From
