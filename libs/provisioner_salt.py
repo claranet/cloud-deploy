@@ -68,7 +68,7 @@ class FeaturesProvisionerSalt(FeaturesProvisioner):
         """
         top = []
         for i in features:
-            if i.get('provisioner', 'salt') != self.name:
+            if i.get('provisioner', self._default_provisioner) != self.name:
                 continue
             if re.search('^(php|php5)-(.*)', i['name']):
                 continue
@@ -91,7 +91,7 @@ class FeaturesProvisionerSalt(FeaturesProvisioner):
         """
         pillar = {}
         for ft in features:
-            if ft.get('provisioner', 'salt') != self.name:
+            if ft.get('provisioner', self._default_provisioner) != self.name:
                 continue
             values = ft.get('version', '').split('=', 1) # Split only one time
             feature_name = ft['name'].encode('utf-8')

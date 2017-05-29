@@ -8,6 +8,7 @@ from libs.git_helper import git_wait_lock, git_remap_submodule
 PROVISIONER_LOCAL_TREE="/tmp/ghost-features-provisioner"
 PROVISIONER_LOCAL_MIRROR="/ghost/.mirrors"
 ZABBIX_REPO="git@bitbucket.org:morea/zabbix.git"
+DEFAULT_PROVISIONER_TYPE="salt"
 
 
 class FeaturesProvisioner:
@@ -17,6 +18,8 @@ class FeaturesProvisioner:
         self.unique = unique_id
         self.config = config
         self.global_config = global_config
+
+        self._default_provisioner = DEFAULT_PROVISIONER_TYPE
 
         if not os.path.exists(PROVISIONER_LOCAL_TREE):
             os.makedirs(PROVISIONER_LOCAL_TREE)
