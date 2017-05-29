@@ -9,8 +9,10 @@ bin
 .config/
 config.yml
 .dbshell
+.env
 develop-eggs
 dist
+docker-compose.override.yml
 downloads
 eggs
 .eggs/
