@@ -3,6 +3,8 @@ import os
 import sys
 import traceback
 import yaml
+import traceback
+import logging
 from sh import head, tail
 
 from redis import Redis
@@ -11,7 +13,7 @@ from pymongo import MongoClient
 from bson.objectid import ObjectId
 
 from ghost_log import log
-from ghost_tools import get_job_log_remote_path
+from ghost_tools import get_job_log_remote_path, GHOST_JOB_STATUSES_COLORS
 from ghost_aws import push_file_to_s3
 
 from notification import Notification
@@ -104,7 +106,7 @@ td{{font-family:arial,helvetica,sans-serif;}}
     html_body = html_template.format(
         user = job['user'],
         status = job['status'],
-        status_color = 'rgb(218, 0, 26)' if job['status'] == 'failed' else '#00A800',
+        status_color = GHOST_JOB_STATUSES_COLORS[job['status']],
         app = app['name'],
         env = app['env'],
         role = app['role'],
@@ -224,14 +226,18 @@ class Command:
         ses_settings = self._config['ses_settings']
         notif = Notification(aws_access_key=ses_settings['aws_access_key'], aws_secret_key=ses_settings['aws_secret_key'], region=ses_settings['region'])
         html_body = format_html_mail_body(self.app, self.job)
-        log = self._get_log_path()
-        log_stat = os.stat(log)
-        if log_stat.st_size > 512000:
-            os.system('gzip -c {log} > {log}.gz'.format(log=log))
-            log = log+'.gz'
-        for mail in self.app['log_notifications']:
-            notif.send_mail(From=ses_settings.get('mail_from', MAIL_LOG_FROM_DEFAULT), To=mail, subject=subject, body_text=body, body_html=html_body, attachments=[log])
-            pass
+        log_path = self._get_log_path()
+        log = {
+            'original_log_path': log_path,
+            'filename': os.path.basename(log_path),
+        }
+        try:
+            for mail in self.app['log_notifications']:
+                notif.send_mail(From=ses_settings.get('mail_from', MAIL_LOG_FROM_DEFAULT), To=mail, subject=subject, body_text=body, body_html=html_body, attachments=[log])
+                pass
+        except:
+            logging.exception("An exception occurred when trying to send the Job mail notification.")
+            traceback.print_exc()
 
     def _slack_notification_action(self, slack_msg):
         log_path = self._get_log_path()

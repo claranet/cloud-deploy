@@ -23,6 +23,7 @@ from models.deployments import deployments
 from ghost_tools import get_rq_name_from_app
 from ghost_blueprints import commands_blueprint
 from ghost_api import ghost_api_bluegreen_is_enabled, ghost_api_enable_green_app, ghost_api_delete_alter_ego_app, ghost_api_clean_bluegreen_app
+from ghost_api import check_app_feature_provisioner
 from libs.blue_green import BLUE_GREEN_COMMANDS, get_blue_green_from_app, ghost_has_blue_green_enabled
 from ghost_aws import normalize_application_tags
 
@@ -117,6 +118,10 @@ def pre_update_app(updates, original):
                             break
                     # Module found, can exit loop
                     break
+
+    if not check_app_feature_provisioner(updates):
+        abort(422)
+
     updates['environment_infos']['instance_tags'] = normalize_application_tags(original, updates)
     # Blue/green disabled ?
     try:
@@ -170,6 +175,10 @@ def pre_insert_app(items):
     role = app.get('role')
     env = app.get('env')
     app['environment_infos']['instance_tags'] = normalize_application_tags(app, app)
+
+    if not check_app_feature_provisioner(app):
+        abort(422)
+
     blue_green = app.get('blue_green', None)
     # We can now insert a new app with a different color
     if blue_green and blue_green.get('color', None):
@@ -263,7 +272,9 @@ def pre_delete_job_enqueueings():
 # Create ghost app, explicitly specifying the settings to avoid errors during doctest execution
 ghost = Eve(auth=BCryptAuth, settings=eve_settings)
 Bootstrap(ghost)
-ghost.config.from_object(rq_dashboard.default_settings)
+rq_settings = rq_dashboard.default_settings.__dict__
+rq_settings.update({"REDIS_HOST": REDIS_HOST})
+ghost.config.from_mapping(rq_settings)
 ghost.register_blueprint(rq_dashboard.blueprint, url_prefix='/rq')
 ghost.register_blueprint(swagger, url_prefix='/docs/api')
 # Map /docs/api to eve_swagger as it is hardcoded to <url_prefix>/api-docs (cf. https://github.com/nicolaiarocci/eve-swagger/issues/33)

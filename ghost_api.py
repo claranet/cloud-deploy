@@ -4,7 +4,7 @@
 # -*- coding: utf-8 -*-
 #!/usr/bin/env python
 
-from ghost_tools import ghost_app_object_copy
+from ghost_tools import ghost_app_object_copy, get_available_provisioners_from_config
 from eve.methods.post import post_internal
 from libs.blue_green import get_blue_green_from_app
 
@@ -84,7 +84,7 @@ def ghost_api_create_green_app(apps_db, app, user):
 
     update_res = apps_db.update_one({ '_id': green_app_db[0]['_id']}, {'$set': { 'blue_green': blue_green }})
     update_res_ami = update_res
-    if 'ami' in app: # Keep baked AMI too on green app
+    if 'ami' in app and 'build_infos' in app and 'ami_name' in app['build_infos']: # Keep baked AMI too on green app
         ami_name = app['build_infos']['ami_name']
         update_res_ami = apps_db.update_one({'_id': green_app_db[0]['_id']}, {'$set': {'ami': app['ami'], 'build_infos.ami_name': ami_name}})
     if update_res.matched_count == 1 and update_res_ami.matched_count == 1:
@@ -136,4 +136,17 @@ def ghost_api_delete_alter_ego_app(apps_db, app):
         if alter_app:
             # delete_internal('apps', ) -- doesn't exists in Eve for now :(
             return apps_db.delete_one({'_id': blue_green.get('alter_ego_id')}).deleted_count == 1
+    return True
+
+
+def check_app_feature_provisioner(updates):
+    """
+    Check if all provisioner choosen per feature is a valid one available in the core configuration
+    """
+    if 'features' in updates:
+        provisioners_available = get_available_provisioners_from_config()
+        for ft in updates['features']:
+            if 'provisioner' in ft and not ft['provisioner'] in provisioners_available:
+                print('Provisioner "{p}" set for feature "{f}" is not available or not compatible.'.format(p=ft['provisioner'], f=ft['name']))
+                return False
     return True
