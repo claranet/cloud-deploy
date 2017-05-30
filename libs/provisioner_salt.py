@@ -68,11 +68,13 @@ class FeaturesProvisionerSalt(FeaturesProvisioner):
         """
         top = []
         for i in features:
-            if re.search('^(php|php5)-(.*)',i['name']):
+            if i.get('provisioner', self._default_provisioner) != self.name:
                 continue
-            if re.search('^zabbix-(.*)',i['name']):
+            if re.search('^(php|php5)-(.*)', i['name']):
                 continue
-            if re.search('^gem-(.*)',i['name']):
+            if re.search('^zabbix-(.*)', i['name']):
+                continue
+            if re.search('^gem-(.*)', i['name']):
                 continue
             if not i['name'].encode('utf-8') in top:
                 top.append(i['name'].encode('utf-8'))
@@ -89,6 +91,8 @@ class FeaturesProvisionerSalt(FeaturesProvisioner):
         """
         pillar = {}
         for ft in features:
+            if ft.get('provisioner', self._default_provisioner) != self.name:
+                continue
             values = ft.get('version', '').split('=', 1) # Split only one time
             feature_name = ft['name'].encode('utf-8')
             if not feature_name in pillar:

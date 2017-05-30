@@ -23,6 +23,7 @@ from models.deployments import deployments
 from ghost_tools import get_rq_name_from_app
 from ghost_blueprints import commands_blueprint
 from ghost_api import ghost_api_bluegreen_is_enabled, ghost_api_enable_green_app, ghost_api_delete_alter_ego_app, ghost_api_clean_bluegreen_app
+from ghost_api import check_app_feature_provisioner
 from libs.blue_green import BLUE_GREEN_COMMANDS, get_blue_green_from_app, ghost_has_blue_green_enabled
 from ghost_aws import normalize_application_tags
 
@@ -117,6 +118,10 @@ def pre_update_app(updates, original):
                             break
                     # Module found, can exit loop
                     break
+
+    if not check_app_feature_provisioner(updates):
+        abort(422)
+
     updates['environment_infos']['instance_tags'] = normalize_application_tags(original, updates)
     # Blue/green disabled ?
     try:
@@ -170,6 +175,10 @@ def pre_insert_app(items):
     role = app.get('role')
     env = app.get('env')
     app['environment_infos']['instance_tags'] = normalize_application_tags(app, app)
+
+    if not check_app_feature_provisioner(app):
+        abort(422)
+
     blue_green = app.get('blue_green', None)
     # We can now insert a new app with a different color
     if blue_green and blue_green.get('color', None):

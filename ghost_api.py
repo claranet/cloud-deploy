@@ -4,7 +4,7 @@
 # -*- coding: utf-8 -*-
 #!/usr/bin/env python
 
-from ghost_tools import ghost_app_object_copy
+from ghost_tools import ghost_app_object_copy, get_available_provisioners_from_config
 from eve.methods.post import post_internal
 from libs.blue_green import get_blue_green_from_app
 
@@ -136,4 +136,17 @@ def ghost_api_delete_alter_ego_app(apps_db, app):
         if alter_app:
             # delete_internal('apps', ) -- doesn't exists in Eve for now :(
             return apps_db.delete_one({'_id': blue_green.get('alter_ego_id')}).deleted_count == 1
+    return True
+
+
+def check_app_feature_provisioner(updates):
+    """
+    Check if all provisioner choosen per feature is a valid one available in the core configuration
+    """
+    if 'features' in updates:
+        provisioners_available = get_available_provisioners_from_config()
+        for ft in updates['features']:
+            if 'provisioner' in ft and not ft['provisioner'] in provisioners_available:
+                print('Provisioner "{p}" set for feature "{f}" is not available or not compatible.'.format(p=ft['provisioner'], f=ft['name']))
+                return False
     return True

@@ -9,6 +9,8 @@ class FeaturesProvisionerAnsible(FeaturesProvisioner):
         FeaturesProvisioner.__init__(self, log_file, 'ansible', unique_id, config, global_config)
 
     def build_provisioner_features_files(self, params, features):
+        #if ft.get('provisioner', 'salt') != self.name:
+        #    continue
         raise NotImplementedError
 
     def build_packer_provisioner_config(self, packer_config):
