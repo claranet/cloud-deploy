@@ -1,5 +1,8 @@
 import collections
+import os
 import sys
+
+import simplejson
 
 LOG_FILE = 'log_file'
 
@@ -97,3 +100,11 @@ def get_test_application(**kwargs):
 
 def mocked_logger(msg, file):
     print(msg)
+
+
+def get_aws_data(data_name):
+    with open(os.path.join(
+            os.path.dirname(os.path.realpath(__file__)),
+            'aws_data',
+            '{}.json'.format(data_name)), 'r') as f:
+        return simplejson.load(f)

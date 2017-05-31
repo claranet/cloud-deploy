@@ -1,6 +1,7 @@
 from mock import mock, MagicMock, call
 
 from commands.preparebluegreen import Preparebluegreen
+from commands.purgebluegreen import Purgebluegreen
 from commands.swapbluegreen import Swapbluegreen
 from tests.helpers import get_test_application, mocked_logger, LOG_FILE
 
@@ -169,3 +170,72 @@ def test_swap_bluegreen_clb(get_blue_green_apps,
         call(connection_mock, {'elb_online': {'instance_blue1': 'inservice'}}, LOG_FILE),
         call(connection_mock, {'elb_temp': {'instance_green1': 'inservice'}}, LOG_FILE)
     ], False)
+
+
+@mock.patch('commands.purgebluegreen.register_elb_into_autoscale')
+@mock.patch('commands.purgebluegreen.flush_instances_update_autoscale')
+@mock.patch('commands.purgebluegreen.destroy_elb')
+@mock.patch('commands.purgebluegreen.suspend_autoscaling_group_processes')
+@mock.patch('commands.purgebluegreen.get_autoscaling_group_and_processes_to_suspend')
+@mock.patch('commands.purgebluegreen.get_elb_from_autoscale', new=lambda name,conn: ['bgtmp-id_green'])
+@mock.patch('commands.purgebluegreen.get_blue_green_destroy_temporary_elb_config', new=lambda a: True)
+@mock.patch('commands.purgebluegreen.cloud_connections')
+@mock.patch('commands.purgebluegreen.get_blue_green_apps')
+@mock.patch('commands.purgebluegreen.check_autoscale_exists', new=lambda a, b, c: True)
+@mock.patch('commands.purgebluegreen.log', new=mocked_logger)
+@mock.patch('libs.elb.log', new=mocked_logger)
+@mock.patch('ghost_tools.log', new=mocked_logger)
+@mock.patch('ghost_aws.log', new=mocked_logger)
+def test_purge_bluegreen(get_blue_green_apps,
+                         cloud_connections,
+                         get_autoscaling_group_and_processes_to_suspend,
+                         suspend_autoscaling_group_processes,
+                         destroy_elb,
+                         flush_instances_update_autoscale,
+                         register_elb_into_autoscale):
+    # Set up mocks and variables
+    green_app = get_test_application(name="test-app-green", _id='id_green', autoscale={'name': 'autoscale-green'})
+    blue_app = get_test_application(name="test-app-blue", _id='id_blue', autoscale={'name': 'autoscale-blue'})
+
+    connection_mock = MagicMock()
+    connection_pool = MagicMock()
+    cloud_connections.get.return_value.return_value = connection_pool
+    connection_pool.get_connection.return_value = connection_mock
+
+    worker = MagicMock()
+    worker.app = green_app
+    worker.log_file = LOG_FILE
+
+    def assert_done(status, message=None):
+        assert status == "done", "Status is {} and not done : {}".format(status, message)
+    worker.update_status = assert_done
+
+    # blue app is online and green app is offline
+    get_blue_green_apps.return_value = (
+        blue_app,
+        green_app
+    )
+
+    get_autoscaling_group_and_processes_to_suspend.return_value = ('autoscale-green', ['suspend_process'])
+
+    # Launching command
+    swap_cmd = Purgebluegreen(worker)
+    swap_cmd.execute()
+
+    # Check that everything has gone as planned
+    assert get_blue_green_apps.called == 1
+
+    get_autoscaling_group_and_processes_to_suspend.assert_called_once_with(
+        connection_mock, green_app, LOG_FILE)
+
+    suspend_autoscaling_group_processes.assert_called_once_with(
+        connection_mock, 'autoscale-green', ['suspend_process'], LOG_FILE)
+
+    flush_instances_update_autoscale.assert_called_once_with(
+        connection_mock, connection_pool, green_app, LOG_FILE)
+
+    register_elb_into_autoscale.assert_called_once_with(
+        'autoscale-green', connection_mock, ['bgtmp-id_green'], None, LOG_FILE)
+
+    destroy_elb.assert_called_once_with(
+        connection_mock, 'bgtmp-id_green', LOG_FILE)
