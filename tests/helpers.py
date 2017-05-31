@@ -1,6 +1,8 @@
 import collections
 import sys
 
+LOG_FILE = 'log_file'
+
 
 def _dict_update_recursive(d, u):
     py2 = sys.version_info[0] < 3
