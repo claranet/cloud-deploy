@@ -1,0 +1,13 @@
+{
+    "TagDescriptions": [
+        {
+            "Tags": [
+                {
+                    "Key": "test-key",
+                    "Value": "test-value"
+                }
+            ],
+            "LoadBalancerName": "test-elb"
+        }
+    ]
+}

@@ -15,6 +15,7 @@
 from ghost_log import log
 from .autoscaling import get_autoscaling_group_object
 
+
 def alb_configure_health_check(alb_conn3, target_group_arn, protocol, port, path, interval, timeout, unhealthy_threshold, healthy_threshold):
     """
         Configures the ALB HealthCheck value
@@ -31,6 +32,7 @@ def alb_configure_health_check(alb_conn3, target_group_arn, protocol, port, path
     )
     return response
 
+
 def get_alb_by_name(alb_conn3, alb_name):
     """
         :return the found ALB object
@@ -40,6 +42,7 @@ def get_alb_by_name(alb_conn3, alb_name):
         PageSize=1
     )['LoadBalancers'][0]
     return alb
+
 
 def get_target_groups_from_autoscale(as_name, as_conn):
     """ Return a list of ALB target groups ARN defined in
@@ -53,6 +56,7 @@ def get_target_groups_from_autoscale(as_name, as_conn):
         return []
     asg = get_autoscaling_group_object(as_conn, as_name)
     return asg['TargetGroupARNs'] if asg else []
+
 
 def get_alb_target_status_autoscaling_group(alb_conn, as_group, conn_as):
     """ Return a dict of instance ids as key and their status as value per alb target group.
@@ -71,6 +75,7 @@ def get_alb_target_status_autoscaling_group(alb_conn, as_group, conn_as):
             as_instance_status[tg_arn][target_id] = "healthy" if target_state.lower() == "healthy" else "unhealthy"
     return as_instance_status
 
+
 def deregister_instance_from_alb(alb_conn, alb_tgs, hosts_id_list, log_file):
     """ Deregistrer one or multiple instances in the ALB pool.
 
@@ -84,13 +89,14 @@ def deregister_instance_from_alb(alb_conn, alb_tgs, hosts_id_list, log_file):
         for alb_tg_arn in alb_tgs:
             if len(alb_conn.deregister_targets(TargetGroupArn=alb_tg_arn, Targets=hosts_id_list)) != len(hosts_id_list):
                 log("Failed to deregister instances {0} in the ALB {1}" .format(str(hosts_id_list), alb_tg_arn), log_file)
-                raise
+                raise Exception()
             else:
                 log("Instances {0} well deregistered in the ALB {1}" .format(str(hosts_id_list), alb_tg_arn), log_file)
         return True
     except Exception as e:
         log("Exception during deregister operation: {0}" .format(str(e)),log_file)
         raise
+
 
 def register_instance_from_alb(alb_conn, alb_tgs, hosts_id_list, log_file):
     """ Deregistrer one or multiple instances in the ALB pool.
@@ -105,13 +111,14 @@ def register_instance_from_alb(alb_conn, alb_tgs, hosts_id_list, log_file):
         for alb_tg_arn in alb_tgs:
             if len(alb_conn.register_targets(TargetGroupArn=alb_tg_arn, Targets=hosts_id_list)) != len(hosts_id_list):
                 log("Failed to register instances {0} in the ALB {1}" .format(str(hosts_id_list), alb_tg_arn), log_file)
-                raise
+                raise Exception()
             else:
                 log("Instances {0} well registered in the ALB {1}" .format(str(hosts_id_list), alb_tg_arn), log_file)
         return True
     except Exception as e:
         log("Exception during deregister operation: {0}" .format(str(e)),log_file)
         raise
+
 
 def get_alb_deregistration_delay_value(alb_conn, alb_tgs):
     """ Return the biggest connection draining value for the list of alb in parameters.
