@@ -61,6 +61,7 @@ ITEM_METHODS = ['GET', 'PATCH', 'PUT', 'DELETE']
 
 # EVE Pagination
 PAGINATION_DEFAULT = config.get('eve_pagination_default', 23)
+PAGINATION_LIMIT = config.get('eve_pagination_limit', 200)
 
 # API BASE URL
 API_BASE_URL = os.getenv('API_BASE_URL', config.get('api_base_url', 'http://localhost:5000'))

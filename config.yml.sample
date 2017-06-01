@@ -137,6 +137,10 @@ key_path: /home/admin/key/client_morea.pem
 # Optional, default:
 #eve_pagination_default: 23
 
+# Pagination Limit for Eve
+# Optional, default:
+#eve_pagination_limit: 200
+
 # Packer should install or not the Salt Minion when baking an Image
 # Optional, default:
 #skip_salt_bootstrap: True
