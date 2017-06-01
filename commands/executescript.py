@@ -122,13 +122,15 @@ class Executescript():
     def execute(self):
         script = self._job['options'][0] if 'options' in self._job and len(self._job['options']) > 0 else None
         module_name = self._job['options'][1] if 'options' in self._job and len(self._job['options']) > 1 else None
-        fabric_execution_strategy = self._job['options'][2] if 'options' in self._job and len(self._job['options']) > 2 else None
-        if fabric_execution_strategy and not fabric_execution_strategy in ['serial', 'parallel']:
-            # option[2] is a single Host IP
+        execution_strategy = self._job['options'][2] if 'options' in self._job and len(self._job['options']) > 2 else None
+        if execution_strategy == 'single':
+            # option[3] is a single Host IP
             fabric_execution_strategy = None
             safe_deployment_strategy = None
-            single_host_ip = self._job['options'][2]
+            single_host_ip = self._job['options'][3] if 'options' in self._job and len(self._job['options']) > 3 else None
         else:
+            # option[2] is fabric type, option[3] might be Safe deploy group param
+            fabric_execution_strategy = execution_strategy
             safe_deployment_strategy = self._job['options'][3] if 'options' in self._job and len(self._job['options']) > 3 else None
             single_host_ip = None
 
