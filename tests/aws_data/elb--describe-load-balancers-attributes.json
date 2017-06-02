@@ -1,0 +1,17 @@
+{
+    "LoadBalancerAttributes": {
+        "AccessLog": {
+            "Enabled": false
+        },
+        "CrossZoneLoadBalancing": {
+            "Enabled": true
+        },
+        "ConnectionDraining": {
+            "Enabled": true,
+            "Timeout": 400
+        },
+        "ConnectionSettings": {
+            "IdleTimeout": 400
+        }
+    }
+}

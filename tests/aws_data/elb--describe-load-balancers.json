@@ -1,0 +1,58 @@
+{
+  "LoadBalancerDescriptions": [
+    {
+      "CanonicalHostedZoneNameID": "Z215JYRZR1TBD5",
+      "Subnets": [
+        "subnet-test"
+      ],
+      "Policies": {
+        "AppCookieStickinessPolicies": [],
+        "LBCookieStickinessPolicies": [],
+        "OtherPolicies": []
+      },
+      "SecurityGroups": [
+        "sg-test"
+      ],
+      "DNSName": "test-elb.amazonaws.com",
+      "AvailabilityZones": [
+        "eu-west-1a"
+      ],
+      "CanonicalHostedZoneName": "test-elb.amazonaws.com",
+      "HealthCheck": {
+        "Interval": 20,
+        "Timeout": 6,
+        "Target": "TCP:80",
+        "UnhealthyThreshold": 4,
+        "HealthyThreshold": 2
+      },
+      "LoadBalancerName": "test-elb",
+      "ListenerDescriptions": [
+        {
+          "PolicyNames": [],
+          "Listener": {
+            "LoadBalancerPort": 80,
+            "Protocol": "HTTP",
+            "InstancePort": 80,
+            "InstanceProtocol": "HTTP"
+          }
+        }
+      ],
+      "Instances": [
+        {
+          "InstanceId": "instance1"
+        },
+        {
+          "InstanceId": "instance2"
+        }
+      ],
+      "CreatedTime": "2017-05-24T10:40:14.470Z",
+      "VPCId": "vpc-test",
+      "SourceSecurityGroup": {
+        "OwnerAlias": "930379479477",
+        "GroupName": "sg.test"
+      },
+      "Scheme": "internet-facing",
+      "BackendServerDescriptions": []
+    }
+  ]
+}

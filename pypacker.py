@@ -3,7 +3,7 @@ from subprocess32 import Popen, PIPE
 import json
 import os
 
-from ghost_tools import GCallException
+from ghost_tools import GCallException, get_provisioners_config
 from ghost_log import log
 from libs.provisioner_salt import FeaturesProvisionerSalt
 from libs.provisioner_ansible import FeaturesProvisionerAnsible
@@ -24,12 +24,7 @@ class Packer:
         if not os.path.exists(PACKER_JSON_PATH):
             os.makedirs(PACKER_JSON_PATH)
 
-        provisioners_config = config.get('features_provisioners', {
-            'salt': {
-                'git_repo': config.get('salt_formulas_repo', 'git@bitbucket.org:morea/morea-salt-formulas.git'),
-                'git_revision': config.get('salt_formulas_branch', 'master'),
-            }
-        })
+        provisioners_config = get_provisioners_config()
 
         self.provisioners = []
         for key, provisioner_config in provisioners_config.iteritems():

@@ -160,7 +160,8 @@ def create_launch_config(cloud_connection, app, userdata, ami_id):
         ramdisk_id=None, block_device_mappings=[bdm],
         instance_monitoring=instance_monitoring, spot_price=None,
         instance_profile_name=app['environment_infos']['instance_profile'], ebs_optimized=False,
-        associate_public_ip_address=True, volume_type=None,
+        associate_public_ip_address=app['environment_infos'].get('public_ip_address', True),
+        volume_type=None,
         delete_on_termination=True, iops=None,
         classic_link_vpc_id=None, classic_link_vpc_security_groups=None)
     conn_as.create_launch_configuration(launch_config)

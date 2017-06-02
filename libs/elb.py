@@ -32,6 +32,7 @@ def elb_configure_health_check(elb_conn3, elb_name, target, interval, timeout, u
     )
     return response
 
+
 def get_elb_by_name(elb_conn3, elb_name):
     """
         :return the found ELB object
@@ -42,6 +43,7 @@ def get_elb_by_name(elb_conn3, elb_name):
         return elb
     except:
         return None
+
 
 def copy_elb(elb_conn3, elb_name, source_elb_name, special_tag, log_file):
     """ Copy an existing ELB, currently copies basic configuration
@@ -101,6 +103,7 @@ def copy_elb(elb_conn3, elb_name, source_elb_name, special_tag, log_file):
 
     return response['DNSName']
 
+
 def get_elb_from_autoscale(as_name, as_conn):
     """ Return a list of ELB names defined in
         the Autoscaling Group in parameter.
@@ -114,6 +117,7 @@ def get_elb_from_autoscale(as_name, as_conn):
     asg = get_autoscaling_group_object(as_conn, as_name)
     return asg['LoadBalancerNames'] if asg else []
 
+
 def get_elb_dns_name(elb_conn, elb_name):
     """ Return the DNS name for the passed ELB
 
@@ -124,6 +128,7 @@ def get_elb_dns_name(elb_conn, elb_name):
     elb = elb_conn.get_all_load_balancers(load_balancer_names=[elb_name])[0]
     return elb.dns_name
 
+
 def destroy_elb(elb_conn3, elb_name, log_file):
     """ Destroy the specified ELB
 
@@ -133,6 +138,7 @@ def destroy_elb(elb_conn3, elb_name, log_file):
     """
     log("  INFO: Destroying ELB {0}".format(elb_name), log_file)
     response = elb_conn3.delete_load_balancer(LoadBalancerName=elb_name)
+
 
 def register_elb_into_autoscale(as_name, as_conn3, elbs_to_deregister, elbs_to_register, log_file):
     """ Modify the AutoScale Group to set the list of ELB to use
@@ -153,6 +159,7 @@ def register_elb_into_autoscale(as_name, as_conn3, elbs_to_deregister, elbs_to_r
         log("Exception during register ELB operation into ASG: {0}" .format(str(e)), log_file)
         raise
 
+
 def get_elb_instance_status_autoscaling_group(elb_conn, as_group, conn_as):
     """ Return a dict of instance ids as key and their status as value per elb.
 
@@ -168,6 +175,7 @@ def get_elb_instance_status_autoscaling_group(elb_conn, as_group, conn_as):
             as_instance_status[elb][instance.instance_id] = "inservice" if instance.state.lower() == "inservice" else "outofservice"
     return as_instance_status
 
+
 def get_elb_instance_status(elb_conn, elb_names):
     """ Return a dict of instance ids as key and their status as value per elb.
 
@@ -182,6 +190,7 @@ def get_elb_instance_status(elb_conn, elb_names):
             as_instance_status[elb][instance.instance_id] = "inservice" if instance.state.lower() == "inservice" else "outofservice"
     return as_instance_status
 
+
 def deregister_instance_from_elb(elb_conn, elb_names, hosts_id_list, log_file):
     """ Deregistrer one or multiple instances in the ELB pool.
 
@@ -195,13 +204,14 @@ def deregister_instance_from_elb(elb_conn, elb_names, hosts_id_list, log_file):
         for elb_name in elb_names:
             if not elb_conn.deregister_instances(elb_name, hosts_id_list).status:
                 log("Failed to deregister instances {0} in the ELB {1}" .format(str(hosts_id_list), elb_name), log_file)
-                raise
+                raise Exception()
             else:
                 log("Instances {0} well deregistered in the ELB {1}" .format(str(hosts_id_list), elb_name), log_file)
         return True
     except Exception as e:
         log("Exception during deregister operation: {0}" .format(str(e)),log_file)
         raise
+
 
 def deregister_all_instances_from_elb(elb_conn, elbs_with_instances, log_file):
     """ Deregistrer one or multiple instances in the ELB pool.
@@ -212,16 +222,19 @@ def deregister_all_instances_from_elb(elb_conn, elbs_with_instances, log_file):
         :return boolean(True if succeed otherwise False)
     """
     try:
-        for elb_name, elb_instances in elbs_with_instances.iteritems():
-            if not elb_conn.deregister_instances(elb_name, elb_instances.keys()).status:
-                log("Failed to deregister instances {0} in the ELB {1}" .format(str(elb_instances.keys()), elb_name), log_file)
-                raise
+        for elb_name, elb_instances in elbs_with_instances.items():
+            # sorted is only used in order to have predictable method calls for test cases
+            instance_names = sorted(elb_instances.keys())
+            if not elb_conn.deregister_instances(elb_name, instance_names).status:
+                log("Failed to deregister instances {0} in the ELB {1}" .format(str(instance_names), elb_name), log_file)
+                raise Exception()
             else:
-                log("Instances {0} well deregistered in the ELB {1}" .format(str(elb_instances.keys()), elb_name), log_file)
+                log("Instances {0} well deregistered in the ELB {1}" .format(str(instance_names), elb_name), log_file)
         return True
     except Exception as e:
         log("Exception during deregister operation: {0}" .format(str(e)),log_file)
         raise
+
 
 def register_instance_from_elb(elb_conn, elb_names, hosts_id_list, log_file):
     """ Registrer one or multiple instances in the ELB pool.
@@ -236,12 +249,13 @@ def register_instance_from_elb(elb_conn, elb_names, hosts_id_list, log_file):
         for elb_name in elb_names:
             if not elb_conn.register_instances(elb_name, hosts_id_list).status:
                 log("Failed to register instances {0} in the ELB {1}" .format(str(hosts_id_list), elb_name), log_file)
-                raise
+                raise Exception()
             else:
                 log("Instances {0} well registered in the ELB {1}" .format(str(hosts_id_list), elb_name), log_file)
     except Exception as e:
         log("Exception during register operation: {0}" .format(str(e)), log_file)
         raise
+
 
 def register_all_instances_to_elb(elb_conn, elb_names, instances, log_file):
     """ Registrer one or multiple instances in the ELB pool.
@@ -254,15 +268,18 @@ def register_all_instances_to_elb(elb_conn, elb_names, instances, log_file):
     """
     try:
         for elb_name in elb_names:
-            for unused_elb_name, elb_instances in instances.iteritems():
-                if not elb_conn.register_instances(elb_name, elb_instances.keys()).status:
-                    log("Failed to register instances {0} in the ELB {1}" .format(str(elb_instances.keys()), elb_name), log_file)
-                    raise
+            for unused_elb_name, elb_instances in instances.items():
+                # sorted is only used in order to have predictable method calls for test cases
+                instance_names = sorted(elb_instances.keys())
+                if not elb_conn.register_instances(elb_name, instance_names).status:
+                    log("Failed to register instances {0} in the ELB {1}" .format(str(instance_names), elb_name), log_file)
+                    raise Exception()
                 else:
-                    log("Instances {0} well registered in the ELB {1}" .format(str(elb_instances.keys()), elb_name), log_file)
+                    log("Instances {0} well registered in the ELB {1}" .format(str(instance_names), elb_name), log_file)
     except Exception as e:
         log("Exception during register operation: {0}" .format(str(e)), log_file)
         raise
+
 
 def get_connection_draining_value(elb_conn, elb_names):
     """ Return the biggest connection draining value for the list of elb in parameters.
