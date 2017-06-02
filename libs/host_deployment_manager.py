@@ -25,6 +25,7 @@ import haproxy
 
 from ghost_tools import GCallException
 from ghost_tools import log, split_hosts_list
+from libs import load_balancing
 
 from ghost_aws import get_autoscaling_group_and_processes_to_suspend
 from ghost_aws import suspend_autoscaling_group_processes, resume_autoscaling_group_processes
@@ -32,8 +33,6 @@ from ghost_aws import suspend_autoscaling_group_processes, resume_autoscaling_gr
 from .blue_green import get_blue_green_from_app
 from .deploy import launch_deploy, launch_executescript
 from .ec2 import find_ec2_pending_instances, find_ec2_running_instances
-from .elb import get_elb_instance_status_autoscaling_group, get_connection_draining_value
-from .elb import register_instance_from_elb, deregister_instance_from_elb
 from .alb import get_alb_target_status_autoscaling_group, get_alb_deregistration_delay_value
 from .alb import register_instance_from_alb, deregister_instance_from_alb
 
@@ -75,18 +74,17 @@ class HostDeploymentManager():
 
         app_region = self._app['region']
 
-        as_conn = self._cloud_connection.get_connection(app_region, ['autoscaling'], boto_version='boto3')
-        elb_conn = self._cloud_connection.get_connection(app_region, ["ec2", "elb"])
+        lb_mgr = load_balancing.get_lb_manager(self._cloud_connection, app_region, load_balancing.LB_TYPE_AWS_CLB)
 
-        elb_instances = get_elb_instance_status_autoscaling_group(elb_conn, self._as_name, as_conn)
+        elb_instances = lb_mgr.get_instance_status_autoscaling_group(self._as_name)
         if not len(elb_instances):
             raise GCallException('Cannot continue because there is no ELB configured in the AutoScaling Group')
         elif len([i for i in elb_instances.values() if 'outofservice' in i.values()]):
             raise GCallException('Cannot continue because one or more instances are in the out of service state')
         else:
-            deregister_instance_from_elb(elb_conn, elb_instances.keys(), [host['id'] for host in instances_list],
-                                         self._log_file)
-            wait_before_deploy = int(get_connection_draining_value(elb_conn, elb_instances.keys())) + int(
+            lb_mgr.deregister_instance_from_elb(elb_instances.keys(), [host['id'] for host in instances_list],
+                                                self._log_file)
+            wait_before_deploy = int(lb_mgr.get_connection_draining_value(elb_instances.keys())) + int(
                 self._safe_infos['wait_before_deploy'])
             log('Waiting {0}s: The connection draining time plus the custom value set for wait_before_deploy'.format(
                 wait_before_deploy), self._log_file)
@@ -98,11 +96,10 @@ class HostDeploymentManager():
             log('Waiting {0}s: The value set for wait_after_deploy'.format(self._safe_infos['wait_after_deploy']),
                 self._log_file)
             time.sleep(int(self._safe_infos['wait_after_deploy']))
-            register_instance_from_elb(elb_conn, elb_instances.keys(), [host['id'] for host in instances_list],
-                                       self._log_file)
-            while len(
-                    [i for i in get_elb_instance_status_autoscaling_group(elb_conn, self._as_name, as_conn).values() if
-                     'outofservice' in i.values()]):
+            lb_mgr.register_instance_from_elb(elb_instances.keys(), [host['id'] for host in instances_list],
+                                              self._log_file)
+            while len([i for i in lb_mgr.get_instance_status_autoscaling_group(self._as_name).values() if
+                       'outofservice' in i.values()]):
                 log('Waiting 10s because the instance is not in service in the ELB', self._log_file)
                 time.sleep(10)
             log('Instances: {0} have been deployed and are registered in their ELB'.format(

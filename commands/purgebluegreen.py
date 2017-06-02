@@ -2,10 +2,10 @@ from fabric.colors import green as _green, yellow as _yellow, red as _red
 
 from ghost_log import log
 from ghost_tools import get_aws_connection_data, get_app_friendly_name, GCallException, boolify, get_running_jobs
+from libs import load_balancing
 from settings import cloud_connections, DEFAULT_PROVIDER
 
 from ghost_aws import check_autoscale_exists, get_autoscaling_group_and_processes_to_suspend, suspend_autoscaling_group_processes, resume_autoscaling_group_processes
-from libs.elb import get_elb_instance_status_autoscaling_group, get_elb_from_autoscale, destroy_elb, register_elb_into_autoscale
 from libs.autoscaling import get_instances_from_autoscaling, flush_instances_update_autoscale
 from libs.blue_green import get_blue_green_apps, get_blue_green_destroy_temporary_elb_config
 from libs.blue_green import abort_if_other_bluegreen_job
@@ -94,13 +94,14 @@ class Purgebluegreen():
         suspend_autoscaling_group_processes(as_conn3, as_group, as_group_processes_to_suspend, self._log_file)
 
         try:
+            lb_mgr = load_balancing.get_lb_manager(
+                self._cloud_connection, self._app['region'], online_app["safe-deployment"]["load_balancer_type"])
+
             # Check if instances are running
             if not get_instances_from_autoscaling(offline_app['autoscale']['name'], as_conn3):
                 log(_yellow(" WARNING: Autoscaling Group [{%s}] of offline app is empty. No running instances to clean detected." % offline_app['autoscale']['name']), self._log_file)
 
-            ec2_conn = self._cloud_connection.get_connection(app_region, ["ec2"])
-            elb_conn3 = self._cloud_connection.get_connection(app_region, ['elb'], boto_version='boto3')
-            temp_elbs = get_elb_from_autoscale(offline_app['autoscale']['name'], as_conn3)
+            temp_elbs = lb_mgr.get_from_autoscale(offline_app['autoscale']['name'])
 
             if len(temp_elbs) != 1:
                 self._worker.update_status("aborted", message=self._get_notification_message_aborted(offline_app, "There are *not* only one (temporary) ELB associated to the ASG '{0}' \nELB found: {1}".format(offline_app['autoscale']['name'], str(temp_elbs))))
@@ -108,7 +109,7 @@ class Purgebluegreen():
 
             # Detach temp ELB from ASG
             log(_green("Detach the current temporary ELB [{0}] from the AutoScale [{1}]".format(temp_elbs, offline_app['autoscale']['name'])), self._log_file)
-            register_elb_into_autoscale(offline_app['autoscale']['name'], as_conn3, temp_elbs, None, self._log_file)
+            lb_mgr.register_into_autoscale(offline_app['autoscale']['name'], temp_elbs, None, self._log_file)
 
             # Update ASG and kill instances
             log("Update AutoScale with `0` on mix, max, desired values.", self._log_file)
@@ -118,7 +119,7 @@ class Purgebluegreen():
             # Destroy temp ELB
             if destroy_temporary_elb_option:
                 if temp_elbs[0].startswith('bgtmp-'):
-                    destroy_elb(elb_conn3, temp_elbs[0], self._log_file)
+                    lb_mgr.destroy(temp_elbs[0], self._log_file)
                 else:
                     log(_yellow(" WARNING: Cannot delete temporary ELB '{0}' because it was not created by Ghost".format(temp_elbs[0])), self._log_file)
             else:
