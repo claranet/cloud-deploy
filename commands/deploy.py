@@ -131,7 +131,7 @@ class Deploy():
         pkg_path = '../{0}'.format(pkg_name)
         uid = module.get('uid', os.geteuid())
         gid = module.get('gid', os.getegid())
-        gcall("tar czf {0} --owner={1} --group={2} .".format(pkg_path, uid, gid), "Creating package: %s" % pkg_name, self._log_file)
+        gcall("tar czf {0} --owner={1} --group={2} --exclude '.git' .".format(pkg_path, uid, gid), "Creating package: %s" % pkg_name, self._log_file)
 
         log("Uploading package: %s" % pkg_name, self._log_file)
         cloud_connection = cloud_connections.get(self._app.get('provider', DEFAULT_PROVIDER))(self._log_file)
