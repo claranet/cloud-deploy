@@ -7,7 +7,7 @@ from sh import git
 import tempfile
 from time import sleep
 
-from ghost_tools import b64decode_utf8
+from ghost_tools import b64decode_utf8, boolify
 from ghost_tools import GCallException, gcall, get_app_module_name_list, clean_local_module_workspace, refresh_stage2
 from ghost_tools import get_aws_connection_data
 from ghost_tools import get_module_package_rev_from_manifest, keep_n_recent_elements_from_list
@@ -131,7 +131,8 @@ class Deploy():
         pkg_path = '../{0}'.format(pkg_name)
         uid = module.get('uid', os.geteuid())
         gid = module.get('gid', os.getegid())
-        gcall("tar czf {0} --owner={1} --group={2} --exclude '.git' .".format(pkg_path, uid, gid), "Creating package: %s" % pkg_name, self._log_file)
+        tar_exclude_git = "--exclude '.git'" if boolify(self._config.get('deployment_package_exclude_git_metadata', True)) else ''
+        gcall("tar czf {0} --owner={1} --group={2} {3} .".format(pkg_path, uid, gid, tar_exclude_git), "Creating package: %s" % pkg_name, self._log_file)
 
         log("Uploading package: %s" % pkg_name, self._log_file)
         cloud_connection = cloud_connections.get(self._app.get('provider', DEFAULT_PROVIDER))(self._log_file)
