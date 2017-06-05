@@ -36,9 +36,19 @@ class LoadBalancersManager(object):
         self.cloud_connection = cloud_connection
         self.region = region
 
-    def configure_health_check(self, elb_name, target, interval, timeout, unhealthy_threshold, healthy_threshold):
+    def configure_health_check(self, elb_name, interval, timeout, unhealthy_threshold, healthy_threshold,
+                               target=None, protocol=None, port=None, path=None):
         """
-            Configures the ELB HealthCheck value
+            Configures the HealthCheck value
+            :param elb_name: string: resource name
+            :param interval: int: health check interval
+            :param timeout: int: health check timeout
+            :param unhealthy_threshold: string:
+            :param healthy_threshold: string:
+            :param target: string
+            :param protocol: string:
+            :param port: int:
+            :param path: string:
         """
         raise NotImplementedError()
 
@@ -160,6 +170,22 @@ class LoadBalancersManager(object):
             :return  int  The value in seconds of the connection draining.
         """
         raise NotImplementedError()
+
+    def get_target_groups_from_autoscale(self, as_name):
+        """ Return a list of ALB target groups ARN defined in
+            the Autoscaling Group in parameter.
+
+            :param  as_name:  string: The Autoscaling Group name.
+            :return  a list of ALB target groups ARN.
+        """
+        raise NotImplementedError()
+
+    def get_target_status_autoscaling_group(self, as_group):
+        """ Return a dict of instance ids as key and their status as value per alb target group.
+
+            :param  as_group: string of the autoscaling group name.
+            :return dict(ex: {'alb_XXX1':{'instance_id':'healthy/unhealthy'}})
+        """
 
 
 class AwsElbManager(LoadBalancersManager):
@@ -366,7 +392,8 @@ class AwsClbManager(AwsElbManager):
         elb_conn = self._get_elb_connection(boto2_compat=True)
         return max([elb_conn.get_all_lb_attributes(elb).connection_draining.timeout for elb in elb_names])
 
-    def configure_health_check(self, elb_name, target, interval, timeout, unhealthy_threshold, healthy_threshold):
+    def configure_health_check(self, elb_name, interval, timeout, unhealthy_threshold, healthy_threshold, target=None,
+                               protocol=None, port=None, path=None):
         elb_conn3 = self._get_elb_connection()
         response = elb_conn3.configure_health_check(
             LoadBalancerName=elb_name,
@@ -382,5 +409,116 @@ class AwsClbManager(AwsElbManager):
 
 
 class AwsAlbManager(AwsElbManager):
-    def get_alb_connection(self):
+    def _get_alb_connection(self):
         return self._get_connection(['alb'])
+
+    def get_dns_name(self, elb_name):
+        pass
+
+    def register_instance_from_elb(self, alb_tgs, hosts_id_list, log_file):
+        try:
+            alb_conn = self._get_alb_connection()
+            for alb_tg_arn in alb_tgs:
+                if len(alb_conn.register_targets(TargetGroupArn=alb_tg_arn, Targets=hosts_id_list)) != len(
+                        hosts_id_list):
+                    log("Failed to register instances {0} in the ALB {1}".format(str(hosts_id_list), alb_tg_arn),
+                        log_file)
+                    raise Exception()
+                else:
+                    log("Instances {0} well registered in the ALB {1}".format(str(hosts_id_list), alb_tg_arn), log_file)
+            return True
+        except Exception as e:
+            log("Exception during deregister operation: {0}".format(str(e)), log_file)
+            raise
+
+    def register_all_instances_to_elb(self, elb_names, instances, log_file):
+        pass
+
+    def destroy(self, elb_name, log_file):
+        pass
+
+    def get_instance_status(self, elb_names):
+        pass
+
+    def register_into_autoscale(self, as_name, elbs_to_deregister, elbs_to_register, log_file):
+        pass
+
+    def get_from_autoscale(self, as_name):
+        pass
+
+    def get_instance_status_autoscaling_group(self, as_group):
+        pass
+
+    def configure_health_check(self, elb_name, interval, timeout, unhealthy_threshold, healthy_threshold, target=None,
+                               protocol=None, port=None, path=None):
+        alb_conn3 = self._get_alb_connection()
+        response = alb_conn3.modify_target_group(
+            TargetGroupArn=target,
+            HealthCheckProtocol=protocol,
+            HealthCheckPort=port,
+            HealthCheckPath=path,
+            HealthCheckIntervalSeconds=interval,
+            HealthCheckTimeoutSeconds=timeout,
+            HealthyThresholdCount=healthy_threshold,
+            UnhealthyThresholdCount=unhealthy_threshold
+        )
+        return response
+
+    def get_by_name(self, elb_name):
+        alb_conn3 = self._get_alb_connection()
+        alb = alb_conn3.describe_load_balancers(
+            Names=[elb_name],
+            PageSize=1
+        )['LoadBalancers'][0]
+        return alb
+
+    def copy(self, elb_name, source_elb_name, special_tag, log_file):
+        pass
+
+    def deregister_all_instances_from_elb(self, elbs_with_instances, log_file):
+        pass
+
+    def get_connection_draining_value(self, elb_names):
+        alb_conn = self._get_alb_connection()
+        values = []
+        for alb_tg in elb_names:
+            attrs = alb_conn.describe_target_group_attributes(TargetGroupArn=alb_tg)['Attributes']
+            for at in attrs:
+                if at['Key'] == 'deregistration_delay.timeout_seconds':
+                    values.append(int(at['Value']))
+        return max(values)
+
+    def deregister_instance_from_elb(self, alb_tgs, hosts_id_list, log_file):
+        try:
+            alb_conn = self._get_alb_connection()
+            for alb_tg_arn in alb_tgs:
+                if len(alb_conn.deregister_targets(TargetGroupArn=alb_tg_arn, Targets=hosts_id_list)) != len(
+                        hosts_id_list):
+                    log("Failed to deregister instances {0} in the ALB {1}".format(str(hosts_id_list), alb_tg_arn),
+                        log_file)
+                    raise Exception()
+                else:
+                    log("Instances {0} well deregistered in the ALB {1}".format(str(hosts_id_list), alb_tg_arn),
+                        log_file)
+            return True
+        except Exception as e:
+            log("Exception during deregister operation: {0}".format(str(e)), log_file)
+            raise
+
+    def get_target_groups_from_autoscale(self, as_name):
+        as_conn = self._get_as_connection()
+        if not as_name:  # prevent to get all ASG and use first one...
+            return []
+        asg = get_autoscaling_group_object(as_conn, as_name)
+        return asg['TargetGroupARNs'] if asg else []
+
+    def get_target_status_autoscaling_group(self, as_group):
+        alb_conn = self._get_alb_connection()
+        as_instance_status = {}
+        for tg_arn in self.get_target_groups_from_autoscale(as_group):
+            as_instance_status[tg_arn] = {}
+            for target_health in alb_conn.describe_target_health(TargetGroupArn=tg_arn)['TargetHealthDescriptions']:
+                target_id = target_health['Target']['Id']
+                target_state = target_health['TargetHealth']['State']
+                as_instance_status[tg_arn][target_id] = "healthy" if target_state.lower() == "healthy" else "unhealthy"
+        return as_instance_status

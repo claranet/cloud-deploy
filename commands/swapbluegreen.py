@@ -94,14 +94,14 @@ class Swapbluegreen():
         """
         if action == 'reduce':
             log(_green('Changing HealthCheck to be "minimal" on online ELB "{0}"'.format(elb_name)), self._log_file)
-            lb_mgr.configure_health_check(elb_name,
-                                          health_check_config['Target'], hc_params['hc_interval'], hc_params['hc_timeout'],
-                                          health_check_config['UnhealthyThreshold'], hc_params['hc_healthy_threshold'])
+            lb_mgr.configure_health_check(elb_name, hc_params['hc_interval'], hc_params['hc_timeout'],
+                                          health_check_config['UnhealthyThreshold'], hc_params['hc_healthy_threshold'],
+                                          health_check_config['Target'])
         elif action == 'restore':
             log(_green('Restoring original HealthCheck config on online ELB "{0}"'.format(elb_name)), self._log_file)
-            lb_mgr.configure_health_check(elb_name,
-                                          health_check_config['Target'], health_check_config['Interval'], health_check_config['Timeout'],
-                                          health_check_config['UnhealthyThreshold'], health_check_config['HealthyThreshold'])
+            lb_mgr.configure_health_check(elb_name, health_check_config['Interval'], health_check_config['Timeout'],
+                                          health_check_config['UnhealthyThreshold'],
+                                          health_check_config['HealthyThreshold'], health_check_config['Target'])
         else:
             log(_red('Unsupported Update Health Check operation. Currently, only reduce or restore are supported'), self._log_file)
             return False
