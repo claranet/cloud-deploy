@@ -147,7 +147,7 @@ function deploy_module() {
     echo "--------------------------------" >> /tmp/$LOGFILE
     echo "Deploying module $MODULE_NAME in $TARGET" >> /tmp/$LOGFILE
 
-    $AWS_BIN s3 cp s3://${S3_BUCKET}/${APP_PATH}/$MODULE_NAME/$MODULE_FILE /tmp/$MODULE_FILE  --region "$S3_REGION"
+    $AWS_BIN s3 cp --quiet s3://${S3_BUCKET}/${APP_PATH}/$MODULE_NAME/$MODULE_FILE /tmp/$MODULE_FILE --region "$S3_REGION"
 
     mkdir -p /ghost/$UUID
     echo "Extracting module in /ghost/$UUID" >> /tmp/$LOGFILE
@@ -228,9 +228,9 @@ function exit_deployment() {
 function download_and_run_lifecycle_hook_script() {
     local script_name=$1
     echo "Downloading custom vars script" >> /tmp/$LOGFILE
-    $AWS_BIN s3 cp s3://${S3_BUCKET}/${APP_PATH}/custom_env_vars /tmp/ghost_custom_env_vars --region "$S3_REGION" | grep -v HeadObject 2> /dev/null
+    $AWS_BIN s3 cp --quiet s3://${S3_BUCKET}/${APP_PATH}/custom_env_vars /tmp/ghost_custom_env_vars --region "$S3_REGION" | grep -v HeadObject 2> /dev/null
     echo "Downloading ${script_name} script" >> /tmp/$LOGFILE
-    $AWS_BIN s3 cp s3://${S3_BUCKET}/${APP_PATH}/${script_name} /tmp/ghost_${script_name} --region "$S3_REGION" | grep -v HeadObject 2> /dev/null
+    $AWS_BIN s3 cp --quiet s3://${S3_BUCKET}/${APP_PATH}/${script_name} /tmp/ghost_${script_name} --region "$S3_REGION" | grep -v HeadObject 2> /dev/null
     if [ -e /tmp/ghost_${script_name} ]; then
         if [ -e /tmp/ghost_custom_env_vars ]; then
             echo "Sourcing custom vars in env" >> /tmp/$LOGFILE
@@ -250,7 +250,7 @@ function download_and_run_lifecycle_hook_script() {
 }
 
 echo "Downloading Manifest" >> /tmp/$LOGFILE
-$AWS_BIN s3 cp s3://${S3_BUCKET}/${APP_PATH}/MANIFEST /tmp/ --region "$S3_REGION"
+$AWS_BIN s3 cp --quiet s3://${S3_BUCKET}/${APP_PATH}/MANIFEST /tmp/ --region "$S3_REGION"
 
 if [ $? -ne 0 ]; then
     echo "Manifest download error...Exiting" >> /tmp/$LOGFILE
