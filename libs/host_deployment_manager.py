@@ -74,7 +74,7 @@ class HostDeploymentManager():
 
         lb_mgr = load_balancing.get_lb_manager(self._cloud_connection, app_region, load_balancing.LB_TYPE_AWS_CLB)
 
-        elb_instances = lb_mgr.get_instance_status_autoscaling_group(self._as_name)
+        elb_instances = lb_mgr.get_instance_status_autoscaling_group(self._as_name, self._log_file)
         if not len(elb_instances):
             raise GCallException('Cannot continue because there is no ELB configured in the AutoScaling Group')
         elif len([i for i in elb_instances.values() if 'outofservice' in i.values()]):
@@ -96,7 +96,7 @@ class HostDeploymentManager():
             time.sleep(int(self._safe_infos['wait_after_deploy']))
             lb_mgr.register_instance_from_elb(elb_instances.keys(), [host['id'] for host in instances_list],
                                               self._log_file)
-            while len([i for i in lb_mgr.get_instance_status_autoscaling_group(self._as_name).values() if
+            while len([i for i in lb_mgr.get_instance_status_autoscaling_group(self._as_name, self._log_file).values() if
                        'outofservice' in i.values()]):
                 log('Waiting 10s because the instance is not in service in the ELB', self._log_file)
                 time.sleep(10)

@@ -22,7 +22,7 @@ def test_copy_elb():
     connection.describe_load_balancer_attributes.return_value = get_aws_data('elb--describe-load-balancers-attributes')
     connection.create_load_balancer.return_value.__getitem__.side_effect = {"DNSName": "test-dns"}.__getitem__
 
-    dns = AwsClbManager(cloud_connection, 'region').copy('copied_elb', 'test-elb', {'Key': 'foo', 'Value': 'bar'}, LOG_FILE)
+    dns = AwsClbManager(cloud_connection, 'region').copy('copied_elb', 'test-elb', {'foo': 'bar'}, LOG_FILE)
 
     assert dns == "test-dns"
 

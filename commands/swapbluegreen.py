@@ -69,44 +69,19 @@ class Swapbluegreen():
         """ Wait until each instances become online in the Load Balancer.
             If timeout value is reached, raise an exception
 
-            elb_conn    boto2 obj   Connection object to the ELB endpoint.
-            elb_names   list        A list of ELB names.
-            timeout     int         Maximum time to wait before the instances become healthy.
-            return      None
+            :param   lb_mgr:    load_balacing.LoadBalancerManager:   LB manager
+            :param   elb_names:   list        A list of ELB names.
+            :param   timeout:     int         Maximum time to wait before the instances become healthy.
+            :returns bool:       False if timeout exceeded, True otherwise
         """
         t = 0
         while len([i for i in lb_mgr.get_instance_status(elb_names).values() if 'outofservice' in i.values()]):
-            if t > timeout: raise Exception
+            if t > timeout:
+                return False
             log(_yellow('Waiting 10s because the instance is not in service in the ELB'), self._log_file)
             time.sleep(10)
             t += 10
-
-    def _update_health_check(self, lb_mgr, elb_name, health_check_config, hc_params, action):
-        """ Update the ELB Health Check parameter
-
-            elb_conn3             boto3 obj  Connection object to the ELB endpoint.
-            elb_name              string     The name of the ELB to modify
-            health_check_config   dict       The informations about the current health check configuration of the ELB.
-            hc_params             dict       The parameters of the Health check config(Ghost side).
-            action                string     Two possibilities, reduce(to set the Health Check interval to the minimum) or
-                                                                    restore(to set the "default(predeploy)" check interval)
-            return Bool True if the operation succeed, False otherwise
-        """
-        if action == 'reduce':
-            log(_green('Changing HealthCheck to be "minimal" on online ELB "{0}"'.format(elb_name)), self._log_file)
-            lb_mgr.configure_health_check(elb_name, hc_params['hc_interval'], hc_params['hc_timeout'],
-                                          health_check_config['UnhealthyThreshold'], hc_params['hc_healthy_threshold'],
-                                          health_check_config['Target'])
-        elif action == 'restore':
-            log(_green('Restoring original HealthCheck config on online ELB "{0}"'.format(elb_name)), self._log_file)
-            lb_mgr.configure_health_check(elb_name, health_check_config['Interval'], health_check_config['Timeout'],
-                                          health_check_config['UnhealthyThreshold'],
-                                          health_check_config['HealthyThreshold'], health_check_config['Target'])
-        else:
-            log(_red('Unsupported Update Health Check operation. Currently, only reduce or restore are supported'), self._log_file)
-            return False
         return True
-
 
     def _swap_asg(self, lb_mgr, swap_execution_strategy, online_app, to_deploy_app, config, log_file):
         """ Swap group of instances from A to B atatched to the main ELB
@@ -125,25 +100,28 @@ class Swapbluegreen():
         as_group_old, as_group_old_processes_to_suspend = get_autoscaling_group_and_processes_to_suspend(as_conn3, online_app, log_file)
         as_group_new, as_group_new_processes_to_suspend = get_autoscaling_group_and_processes_to_suspend(as_conn3, to_deploy_app, log_file)
         # Retrieve ELB instances
-        elb_online_instances = lb_mgr.get_instance_status_autoscaling_group(online_app['autoscale']['name'])
-        elb_tempwarm_instances = lb_mgr.get_instance_status_autoscaling_group(to_deploy_app['autoscale']['name'])
+        elb_online_instances = lb_mgr.get_instance_status_autoscaling_group(online_app['autoscale']['name'], log_file)
+        log(_green('Online configuration : {0}'.format(str(elb_online_instances))), self._log_file)
+        elb_tempwarm_instances = lb_mgr.get_instance_status_autoscaling_group(to_deploy_app['autoscale']['name'], log_file)
+        log(_green('Offline configuration : {0}'.format(str(elb_tempwarm_instances))), self._log_file)
 
         try:
+            log("Swapping using strategy '{0}'".format(swap_execution_strategy), self._log_file)
+
             # Suspend autoscaling groups
             suspend_autoscaling_group_processes(as_conn3, as_group_old, as_group_old_processes_to_suspend, log_file)
             suspend_autoscaling_group_processes(as_conn3, as_group_new, as_group_new_processes_to_suspend, log_file)
 
             # Retrieve online ELB object
             elb_online = lb_mgr.get_by_name(elb_online_instances.keys()[0])
-            health_check_config = elb_online['HealthCheck']
+            health_check_config = lb_mgr.get_health_check(elb_online.name)
 
-            hc_params = {'hc_interval': get_blue_green_config(self._config, 'swapbluegreen', 'healthcheck_interval', 5),
-                         'hc_timeout': get_blue_green_config(self._config, 'swapbluegreen', 'healthcheck_timeout', 2),
-                         'registration_timeout': get_blue_green_config(self._config, 'swapbluegreen', 'registreation_timeout', 45),
-                         'hc_healthy_threshold': get_blue_green_config(self._config, 'swapbluegreen', 'healthcheck_healthy_threshold', 2)}
-
-            log("Swapping using strategy '{0}'".format(swap_execution_strategy), self._log_file)
-            self._update_health_check(lb_mgr, elb_online['LoadBalancerName'], health_check_config, hc_params, 'reduce')
+            log(_green('Changing HealthCheck to be "minimal" on online ELB "{0}"'.format(elb_online)), self._log_file)
+            lb_mgr.configure_health_check(elb_online.name,
+                                          interval=get_blue_green_config(self._config, 'swapbluegreen', 'healthcheck_interval', 5),
+                                          timeout=get_blue_green_config(self._config, 'swapbluegreen', 'healthcheck_timeout', 2),
+                                          healthy_threshold=get_blue_green_config(self._config, 'swapbluegreen', 'healthcheck_healthy_threshold', 2)
+            )
             if swap_execution_strategy == 'isolated':
                 log(_green('De-register all online instances from ELB {0}'.format(', '.join(elb_online_instances.keys()))), self._log_file)
                 lb_mgr.deregister_all_instances_from_elb(elb_online_instances, self._log_file)
@@ -158,9 +136,10 @@ class Swapbluegreen():
             else:
                 log("Invalid swap execution strategy selected : '{0}'. Please choose between 'isolated' and 'overlap'".format(swap_execution_strategy), self._log_file)
                 return None, None
-            try:
-                self._wait_until_instances_registered(lb_mgr, elb_online_instances.keys(), hc_params['registration_timeout'])
-            except:
+
+            if not self._wait_until_instances_registered(
+                    lb_mgr, elb_online_instances.keys(),
+                    get_blue_green_config(self._config, 'swapbluegreen', 'registreation_timeout', 45)):
                 log(_red("Timeout reached while waiting the instances registration. Rollback process launch"), self._log_file)
                 lb_mgr.deregister_instance_from_elb(elb_online_instances.keys(), elb_tempwarm_instances[elb_tempwarm_instances.keys()[0]].keys(), self._log_file)
                 lb_mgr.register_all_instances_to_elb(elb_online_instances.keys(), elb_online_instances, self._log_file)
@@ -177,7 +156,8 @@ class Swapbluegreen():
             log(_green('Update autoscale groups with their new ELB'), self._log_file)
             lb_mgr.register_into_autoscale(to_deploy_app['autoscale']['name'], elb_tempwarm_instances.keys(), elb_online_instances.keys(), self._log_file)
             lb_mgr.register_into_autoscale(online_app['autoscale']['name'], elb_online_instances.keys(), elb_tempwarm_instances.keys(), self._log_file)
-            self._update_health_check(lb_mgr, elb_online['LoadBalancerName'], health_check_config, hc_params, 'restore')
+            log(_green('Restoring original HealthCheck config on online ELB "{0}"'.format(elb_online['LoadBalancerName'])), self._log_file)
+            lb_mgr.configure_health_check(elb_online['LoadBalancerName'], **health_check_config)
 
             # Update _is_online field in DB on both app
             self._update_app_is_online(online_app, False) # no more online anymore
@@ -218,7 +198,7 @@ class Swapbluegreen():
             # Check ASG
             if to_deploy_app['autoscale']['name'] and online_app['autoscale']['name']:
                 if not (check_autoscale_exists(self._cloud_connection, to_deploy_app['autoscale']['name'], to_deploy_app['region'])
-                    and check_autoscale_exists(self._cloud_connection, online_app['autoscale']['name'], online_app['region'])):
+                   and check_autoscale_exists(self._cloud_connection, online_app['autoscale']['name'], online_app['region'])):
                     self._worker.update_status("aborted", message=self._get_notification_message_aborted(to_deploy_app, "Please set an AutoScale on both green and blue app"))
                     return
             else:
@@ -232,9 +212,7 @@ class Swapbluegreen():
 
             # Check if we're ready to swap. If an instance is out of service
             # into the ELB pool raise an exception
-            app_region = self._app['region']
-
-            elb_instances = lb_mgr.get_instance_status_autoscaling_group(to_deploy_app['autoscale']['name'])
+            elb_instances = lb_mgr.get_instance_status_autoscaling_group(to_deploy_app['autoscale']['name'], self._log_file)
             if len(elb_instances) == 0:
                 self._worker.update_status("aborted", message=self._get_notification_message_aborted(to_deploy_app, "The offline application [%s] doesn't have a valid Load Balancer associated.'" % to_deploy_app['_id']))
                 return

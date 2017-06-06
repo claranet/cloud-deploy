@@ -101,7 +101,7 @@ class Purgebluegreen():
             if not get_instances_from_autoscaling(offline_app['autoscale']['name'], as_conn3):
                 log(_yellow(" WARNING: Autoscaling Group [{%s}] of offline app is empty. No running instances to clean detected." % offline_app['autoscale']['name']), self._log_file)
 
-            temp_elbs = lb_mgr.get_from_autoscale(offline_app['autoscale']['name'])
+            temp_elbs = lb_mgr.list_from_autoscale(offline_app['autoscale']['name'], self._log_file, {'bluegreen-temporary': 'true'})
 
             if len(temp_elbs) != 1:
                 self._worker.update_status("aborted", message=self._get_notification_message_aborted(offline_app, "There are *not* only one (temporary) ELB associated to the ASG '{0}' \nELB found: {1}".format(offline_app['autoscale']['name'], str(temp_elbs))))
@@ -118,10 +118,7 @@ class Purgebluegreen():
 
             # Destroy temp ELB
             if destroy_temporary_elb_option:
-                if temp_elbs[0].startswith('bgtmp-'):
-                    lb_mgr.destroy(temp_elbs[0], self._log_file)
-                else:
-                    log(_yellow(" WARNING: Cannot delete temporary ELB '{0}' because it was not created by Ghost".format(temp_elbs[0])), self._log_file)
+                lb_mgr.destroy(temp_elbs[0], self._log_file)
             else:
                 log(_yellow(" WARNING: Keeping temporary ELB '{0}'".format(temp_elbs[0])), self._log_file)
 

@@ -15,6 +15,15 @@ ROOT_PATH = os.path.dirname(os.path.realpath(__file__))
 with open(os.path.dirname(os.path.realpath(__file__)) + '/config.yml', 'r') as conf_file:
     config = yaml.load(conf_file)
 
+
+def dict_to_aws_tags(d):
+    return [{'Key': k, 'Value': v} for k, v in d.items()]
+
+
+def aws_tags_to_dict(t):
+    return {v['Key']: v['Value'] for v in t}
+
+
 def get_autoscaling_group_and_processes_to_suspend(as_conn, app, log_file):
     if 'autoscale' in app.keys() and 'name' in app['autoscale'].keys() and app['autoscale']['name']:
         as_name = app['autoscale']['name']

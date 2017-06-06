@@ -57,7 +57,7 @@ class RollingUpdate():
         destroy_asg_policy = ['OldestLaunchConfiguration']
 
         try:
-            elb_instances = lb_mgr.get_instance_status_autoscaling_group(self.as_name)
+            elb_instances = lb_mgr.get_instance_status_autoscaling_group(self.as_name, self.log_file)
             asg_infos = get_autoscaling_group_object(as_conn, self.as_name)
             if not len(elb_instances):
                 raise GCallException('Cannot continue because there is no ELB configured in the AutoScaling Group')
@@ -89,7 +89,7 @@ class RollingUpdate():
                     time.sleep(30)
                     asg_updated_infos = get_autoscaling_group_object(as_conn, self.as_name)
 
-                while len([i for i in lb_mgr.get_instance_status_autoscaling_group(self.as_name, as_conn).values() if 'outofservice' in i.values()]):
+                while len([i for i in lb_mgr.get_instance_status_autoscaling_group(self.as_name, self.log_file).values() if 'outofservice' in i.values()]):
                     log('Waiting 10s because the instance(s) are not in service in the ELB', self.log_file)
                     time.sleep(10)
 
