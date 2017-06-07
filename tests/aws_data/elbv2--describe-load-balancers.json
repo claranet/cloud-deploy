@@ -9,7 +9,7 @@
       },
       "DNSName": "alb-test-0123456789.eu-central-1.elb.amazonaws.com",
       "SecurityGroups": [
-        "sg-7853cd13"
+        "sg-test"
       ],
       "LoadBalancerName": "alb-test",
       "CreatedTime": "2017-06-02T16:19:46-02:00",

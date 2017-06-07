@@ -504,7 +504,7 @@ class AwsAlbManager(AwsElbManager):
         except Exception as e:
             if e.__class__.__name__ == 'LoadBalancerNotFoundException':
                 return None
-            raise e
+            raise
 
     def get_dns_name(self, elb_name):
         return self.get_by_name(elb_name).DNSName

@@ -1,0 +1,24 @@
+{
+  "TagDescriptions": [
+    {
+      "Tags": [
+        {
+          "Key": "test-key",
+          "Value": "test-value"
+        }
+      ],
+      "ResourceArn": "arn:aws:elasticloadbalancing:eu-central-1:0123456789:loadbalancer/app/alb-test/0123456789"
+    }
+  ],
+  "ResponseMetadata": {
+    "RetryAttempts": 0,
+    "HTTPStatusCode": 200,
+    "RequestId": "c219ce76-4ad5-11e7-8215-8578912f97c8",
+    "HTTPHeaders": {
+      "x-amzn-requestid": "c219ce76-4ad5-11e7-8215-8578912f97c8",
+      "date": "Tue, 06 Jun 2017 16:32:39 GMT",
+      "content-length": "1342",
+      "content-type": "text/xml"
+    }
+  }
+}

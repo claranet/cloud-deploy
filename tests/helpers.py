@@ -103,8 +103,8 @@ def mocked_logger(msg, file):
 
 
 def get_aws_data(data_name):
-    with open(os.path.join(
-            os.path.dirname(os.path.realpath(__file__)),
-            'aws_data',
-            '{}.json'.format(data_name)), 'r') as f:
+    filename = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'aws_data', '{}.json'.format(data_name))
+    if not os.path.isfile(filename):
+        raise ValueError("File not found {}".format(filename))
+    with open(filename, 'r') as f:
         return simplejson.load(f)

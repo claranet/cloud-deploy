@@ -1,0 +1,27 @@
+{
+  "Listeners": [
+    {
+      "Protocol": "HTTP",
+      "DefaultActions": [
+        {
+          "TargetGroupArn": "arn:aws:elasticloadbalancing:eu-central-1:0123456789:targetgroup/tg-test/0123456789",
+          "Type": "forward"
+        }
+      ],
+      "LoadBalancerArn": "arn:aws:elasticloadbalancing:eu-central-1:0123456789:loadbalancer/app/alb-test/0123456789",
+      "Port": 80,
+      "ListenerArn": "arn:aws:elasticloadbalancing:eu-central-1:0123456789:listener/app/alb-test/0123456789/0123456789"
+    }
+  ],
+  "ResponseMetadata": {
+    "RetryAttempts": 0,
+    "HTTPStatusCode": 200,
+    "RequestId": "75b6b5db-4b98-11e7-bb62-9f4379c0c7d4",
+    "HTTPHeaders": {
+      "x-amzn-requestid": "75b6b5db-4b98-11e7-bb62-9f4379c0c7d4",
+      "date": "Wed, 07 Jun 2017 15:46:23 GMT",
+      "content-length": "1001",
+      "content-type": "text/xml"
+    }
+  }
+}
