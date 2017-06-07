@@ -5,8 +5,9 @@ import ghost_aws
 from ghost_log import log
 from libs.autoscaling import get_autoscaling_group_object
 
-LB_TYPE_AWS_CLB = 'elb'
-LB_TYPE_AWS_ALB = 'alb'
+LB_TYPE_AWS_CLB   = 'elb'
+LB_TYPE_AWS_ALB   = 'alb'
+LB_TYPE_AWS_MIXED = 'aws_mixed'
 
 
 def get_lb_manager(cloud_connection, region, lb_type):
@@ -21,6 +22,8 @@ def get_lb_manager(cloud_connection, region, lb_type):
         return AwsAlbManager(cloud_connection, region)
     if lb_type == LB_TYPE_AWS_CLB:
         return AwsClbManager(cloud_connection, region)
+    if lb_type == LB_TYPE_AWS_MIXED:
+        return AwsMixedLoadBalancersManager(cloud_connection, region)
     raise ValueError("Unknown load balancer type")
 
 
@@ -807,3 +810,15 @@ class AwsAlbManager(AwsElbManager):
                 target_state = target_health['TargetHealth']['State']
                 as_instance_status[tg_arn][target_id] = "healthy" if target_state.lower() == "healthy" else "unhealthy"
         return as_instance_status
+
+
+class AwsMixedLoadBalancersManager(LoadBalancersManager):
+    def __init__(self, cloud_connection, region):
+        super(AwsMixedLoadBalancersManager, self).__init__(cloud_connection, region)
+        self.aws_clb_mgr = AwsClbManager(cloud_connection, region)
+        self.aws_alb_mgr = AwsAlbManager(cloud_connection, region)
+
+    def get_instance_status_autoscaling_group(self, as_group, log_file):
+        instances = self.aws_clb_mgr.get_instance_status_autoscaling_group(as_group, log_file)
+        instances.update(self.aws_alb_mgr.get_instance_status_autoscaling_group(as_group, log_file))
+        return instances
