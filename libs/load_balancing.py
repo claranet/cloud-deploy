@@ -1,12 +1,10 @@
 import itertools
-from botocore.exceptions import ClientError
-
 import ghost_aws
 from ghost_log import log
 from libs.autoscaling import get_autoscaling_group_object
 
-LB_TYPE_AWS_CLB   = 'elb'
-LB_TYPE_AWS_ALB   = 'alb'
+LB_TYPE_AWS_CLB = 'elb'
+LB_TYPE_AWS_ALB = 'alb'
 LB_TYPE_AWS_MIXED = 'aws_mixed'
 
 
@@ -99,7 +97,7 @@ class LoadBalancersManager(object):
         """
         raise NotImplementedError()
 
-    def list_from_autoscale(self, as_name, log_file, filter_tag=None):
+    def list_lbs_from_autoscale(self, as_name, log_file, filter_tag=None):
         """ Return a list of LB names defined in
             the Autoscaling Group in parameter.
 
@@ -130,7 +128,7 @@ class LoadBalancersManager(object):
         """
         raise NotImplementedError()
 
-    def register_into_autoscale(self, as_name, lb_names_to_deregister, lb_names_to_register, log_file):
+    def register_lbs_into_autoscale(self, as_name, lb_names_to_deregister, lb_names_to_register, log_file):
         """ Modify the AutoScale Group to set the list of LB to use
 
         :param  as_name:  string: string of the autoscaling group name.
@@ -201,7 +199,7 @@ class LoadBalancersManager(object):
         """
         raise NotImplementedError()
 
-    def get_connection_draining_value(self, lb_names):
+    def get_lbs_max_connection_draining_value(self, lb_names):
         """ Return the biggest connection draining value for the list of LB in parameters.
 
             :param  lb_names: list The name of the Elastic Load Balancers.
@@ -338,7 +336,7 @@ class AwsClbManager(AwsElbManager):
                     instance.instance_id] = "inservice" if instance.state.lower() == "inservice" else "outofservice"
         return as_instance_status
 
-    def register_into_autoscale(self, as_name, lb_names_to_deregister, lb_names_to_register, log_file):
+    def register_lbs_into_autoscale(self, as_name, lb_names_to_deregister, lb_names_to_register, log_file):
         as_conn = self._get_as_connection()
         try:
             if lb_names_to_deregister and len(lb_names_to_deregister) > 0:
@@ -349,7 +347,7 @@ class AwsClbManager(AwsElbManager):
             log("Exception during register ELB operation into ASG: {0}".format(str(e)), log_file)
             raise
 
-    def list_from_autoscale(self, as_name, log_file, filter_tag=None):
+    def list_lbs_from_autoscale(self, as_name, log_file, filter_tag=None):
         if filter_tag and len(filter_tag) > 1:
             raise LoadBalancerManagerException('Filter can only take one tag')
         as_conn = self._get_as_connection()
@@ -371,7 +369,7 @@ class AwsClbManager(AwsElbManager):
     def get_instances_status_from_autoscale(self, as_name, log_file):
         elb_conn2 = self._get_elb_connection(boto2_compat=True)
         as_instance_status = {}
-        for elb in self.list_from_autoscale(as_name, log_file):
+        for elb in self.list_lbs_from_autoscale(as_name, log_file):
             as_instance_status[elb] = {}
             for instance in elb_conn2.describe_instance_health(elb):
                 as_instance_status[elb][
@@ -432,7 +430,7 @@ class AwsClbManager(AwsElbManager):
         log("  INFO: Destroying ELB {0}".format(lb_name), log_file)
         elb_conn.delete_load_balancer(LoadBalancerName=lb_name)
 
-    def get_connection_draining_value(self, lb_names):
+    def get_lbs_max_connection_draining_value(self, lb_names):
         elb_conn2 = self._get_elb_connection(boto2_compat=True)
         return max([elb_conn2.get_all_lb_attributes(elb).connection_draining.timeout for elb in lb_names])
 
@@ -493,7 +491,7 @@ class AwsAlbManager(AwsElbManager):
     def get_dns_name(self, lb_name):
         return self.get_by_name(lb_name).dns_name
 
-    def get_connection_draining_value(self, lb_names):
+    def get_lbs_max_connection_draining_value(self, lb_names):
         alb_conn = self._get_alb_connection()
         values = []
         alb_arns = ([alb['LoadBalancerArn']
@@ -640,10 +638,11 @@ class AwsAlbManager(AwsElbManager):
         for tg in tg_list:
             if len(tg['LoadBalancerArns']) > 1:
                 raise LoadBalancerManagerException('Multiple ALBs for a target group is currently not supported')
-            as_instance_status[lb_names[tg['LoadBalancerArns'][0]]] = self._get_instance_status_from_tg(tg['TargetGroupArn'])
+            as_instance_status[lb_names[tg['LoadBalancerArns'][0]]] = (
+                self._get_instance_status_from_tg(tg['TargetGroupArn']))
         return as_instance_status
 
-    def register_into_autoscale(self, as_name, lb_names_to_deregister, lb_names_to_register, log_file):
+    def register_lbs_into_autoscale(self, as_name, lb_names_to_deregister, lb_names_to_register, log_file):
         lb_names_to_deregister = lb_names_to_deregister or []
         lb_names_to_register = lb_names_to_register or []
         as_conn = self._get_as_connection()
@@ -688,7 +687,7 @@ class AwsAlbManager(AwsElbManager):
             return conn.describe_load_balancers(LoadBalancerArns=lb_arns)['LoadBalancers']
         return []
 
-    def list_from_autoscale(self, as_name, log_file, filter_tag=None):
+    def list_lbs_from_autoscale(self, as_name, log_file, filter_tag=None):
         return [lb['LoadBalancerName'] for lb in self._list_objects_from_autoscale(as_name, filter_tag)]
 
     def get_health_check(self, lb_name):

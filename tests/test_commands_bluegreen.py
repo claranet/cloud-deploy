@@ -48,7 +48,7 @@ def test_prepare_bluegreen(get_blue_green_apps,
         green_app
     )
 
-    load_balancing.get_lb_manager.return_value.list_from_autoscale.return_value = ['elb_online']
+    load_balancing.get_lb_manager.return_value.list_lbs_from_autoscale.return_value = ['elb_online']
 
     def get_asgapts_behavior(as_conn, app, log_file):
         if app == green_app:
@@ -78,7 +78,7 @@ def test_prepare_bluegreen(get_blue_green_apps,
     load_balancing.get_lb_manager.return_value.copy_lb.assert_called_once_with(
         'bgtmp-id_green', 'elb_online', {'bluegreen-temporary': 'true', 'app_id': 'id_green'}, LOG_FILE)
 
-    load_balancing.get_lb_manager.return_value.register_into_autoscale.assert_called_once_with(
+    load_balancing.get_lb_manager.return_value.register_lbs_into_autoscale.assert_called_once_with(
         'autoscale-green', [], ['bgtmp-id_green'], LOG_FILE)
 
 
@@ -215,7 +215,7 @@ def test_purge_bluegreen(get_blue_green_apps,
         green_app
     )
 
-    load_balancing.get_lb_manager.return_value.list_from_autoscale.return_value = ['bgtmp-id_green']
+    load_balancing.get_lb_manager.return_value.list_lbs_from_autoscale.return_value = ['bgtmp-id_green']
 
     get_autoscaling_group_and_processes_to_suspend.return_value = ('autoscale-green', ['suspend_process'])
 
@@ -235,7 +235,7 @@ def test_purge_bluegreen(get_blue_green_apps,
     flush_instances_update_autoscale.assert_called_once_with(
         connection_mock, connection_pool, green_app, LOG_FILE)
 
-    load_balancing.get_lb_manager.return_value.register_into_autoscale.assert_called_once_with(
+    load_balancing.get_lb_manager.return_value.register_lbs_into_autoscale.assert_called_once_with(
         'autoscale-green', ['bgtmp-id_green'], None, LOG_FILE)
 
     load_balancing.get_lb_manager.return_value.destroy_lb.assert_called_once_with(

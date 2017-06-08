@@ -75,7 +75,7 @@ class RollingUpdate():
 
                 log(_green('Deregister old instances from the Load Balancer (%s)' % str([host['id'] for host in instances_list])), self.log_file)
                 lb_mgr.deregister_instances_from_lbs(elb_instances.keys(), [host['id'] for host in instances_list], self.log_file)
-                wait_con_draining = int(lb_mgr.get_connection_draining_value(elb_instances.keys()))
+                wait_con_draining = int(lb_mgr.get_lbs_max_connection_draining_value(elb_instances.keys()))
                 log('Waiting {0}s: The connection draining time'.format(wait_con_draining), self.log_file)
                 time.sleep(wait_con_draining)
 

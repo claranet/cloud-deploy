@@ -131,7 +131,7 @@ class Preparebluegreen(object):
                 return
 
             # Get the online ELB
-            online_elbs = lb_mgr.list_from_autoscale(online_app['autoscale']['name'], self._log_file)
+            online_elbs = lb_mgr.list_lbs_from_autoscale(online_app['autoscale']['name'], self._log_file)
             if len(online_elbs) == 0:
                 self._worker.update_status("aborted", message=self._get_notification_message_aborted(offline_app, "Online app AutoScale is not attached to a valid Elastic Load Balancer"))
                 return
@@ -144,7 +144,7 @@ class Preparebluegreen(object):
 
             # Register the temporary ELB into the AutoScale
             log(_green("Attaching ELB [{0}] to the AutoScale [{1}]".format(temp_elb_name, offline_app['autoscale']['name'])), self._log_file)
-            lb_mgr.register_into_autoscale(offline_app['autoscale']['name'], [], [temp_elb_name], self._log_file)
+            lb_mgr.register_lbs_into_autoscale(offline_app['autoscale']['name'], [], [temp_elb_name], self._log_file)
 
             offline_app['autoscale']['min'] = online_app['autoscale']['min']
             offline_app['autoscale']['max'] = online_app['autoscale']['max']

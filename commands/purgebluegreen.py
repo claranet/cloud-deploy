@@ -101,7 +101,7 @@ class Purgebluegreen():
             if not get_instances_from_autoscaling(offline_app['autoscale']['name'], as_conn3):
                 log(_yellow(" WARNING: Autoscaling Group [{%s}] of offline app is empty. No running instances to clean detected." % offline_app['autoscale']['name']), self._log_file)
 
-            temp_elbs = lb_mgr.list_from_autoscale(offline_app['autoscale']['name'], self._log_file, {'bluegreen-temporary': 'true'})
+            temp_elbs = lb_mgr.list_lbs_from_autoscale(offline_app['autoscale']['name'], self._log_file, {'bluegreen-temporary': 'true'})
 
             if len(temp_elbs) != 1:
                 self._worker.update_status("aborted", message=self._get_notification_message_aborted(offline_app, "There are *not* only one (temporary) ELB associated to the ASG '{0}' \nELB found: {1}".format(offline_app['autoscale']['name'], str(temp_elbs))))
@@ -109,7 +109,7 @@ class Purgebluegreen():
 
             # Detach temp ELB from ASG
             log(_green("Detach the current temporary ELB [{0}] from the AutoScale [{1}]".format(temp_elbs, offline_app['autoscale']['name'])), self._log_file)
-            lb_mgr.register_into_autoscale(offline_app['autoscale']['name'], temp_elbs, None, self._log_file)
+            lb_mgr.register_lbs_into_autoscale(offline_app['autoscale']['name'], temp_elbs, None, self._log_file)
 
             # Update ASG and kill instances
             log("Update AutoScale with `0` on mix, max, desired values.", self._log_file)

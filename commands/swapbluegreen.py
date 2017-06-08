@@ -61,7 +61,7 @@ class Swapbluegreen():
             elb_names    List        A list of ELB names.
             Return      None
         """
-        wait_before_swap = int(lb_mgr.get_connection_draining_value(elb_names)) + 1
+        wait_before_swap = int(lb_mgr.get_lbs_max_connection_draining_value(elb_names)) + 1
         log(_green('Waiting {0}s: The ELB connection draining time' .format(wait_before_swap)), self._log_file)
         time.sleep(wait_before_swap)
 
@@ -154,8 +154,8 @@ class Swapbluegreen():
             lb_mgr.register_all_instances_to_lbs(elb_tempwarm_instances.keys(), elb_online_instances, self._log_file)
 
             log(_green('Update autoscale groups with their new ELB'), self._log_file)
-            lb_mgr.register_into_autoscale(to_deploy_app['autoscale']['name'], elb_tempwarm_instances.keys(), elb_online_instances.keys(), self._log_file)
-            lb_mgr.register_into_autoscale(online_app['autoscale']['name'], elb_online_instances.keys(), elb_tempwarm_instances.keys(), self._log_file)
+            lb_mgr.register_lbs_into_autoscale(to_deploy_app['autoscale']['name'], elb_tempwarm_instances.keys(), elb_online_instances.keys(), self._log_file)
+            lb_mgr.register_lbs_into_autoscale(online_app['autoscale']['name'], elb_online_instances.keys(), elb_tempwarm_instances.keys(), self._log_file)
             log(_green('Restoring original HealthCheck config on online ELB "{0}"'.format(elb_online['LoadBalancerName'])), self._log_file)
             lb_mgr.configure_health_check(elb_online['LoadBalancerName'], **health_check_config)
 
