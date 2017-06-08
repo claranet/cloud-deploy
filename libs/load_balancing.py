@@ -471,11 +471,8 @@ class AwsAlbManager(AwsElbManager):
 
     def _get_targetgroup_arns_from_autoscale(self, as_name):
         conn = self._get_as_connection()
-        try:
-            lbtg = conn.describe_load_balancer_target_groups(AutoScalingGroupName=as_name)
-            return [tg['LoadBalancerTargetGroupARN'] for tg in lbtg['LoadBalancerTargetGroups']]
-        except (ClientError, KeyError):
-            return []
+        lbtg = conn.describe_load_balancer_target_groups(AutoScalingGroupName=as_name)['LoadBalancerTargetGroups']
+        return [tg['LoadBalancerTargetGroupARN'] for tg in lbtg if tg['State'] not in ('Removing', 'Removed')]
 
     def _get_targetgroup_arns_from_alb(self, alb_arn):
         return [tg['TargetGroupArn']
@@ -549,6 +546,7 @@ class AwsAlbManager(AwsElbManager):
             raise LoadBalancerManagerException('Multiple target groups for an ALB is currently not supported')
         source_tg = source_tg_list[0]
         source_tg_arn = source_tg['TargetGroupArn']
+        source_tg_attributes = alb_conn.describe_target_group_attributes(TargetGroupArn=source_tg_arn)['Attributes']
 
         response = alb_conn.create_target_group(
             Name='tg-{}'.format(new_lb_name)[:31],
@@ -566,7 +564,11 @@ class AwsAlbManager(AwsElbManager):
         )
         dest_tg_arn = response['TargetGroups'][0]['TargetGroupArn']
         alb_conn.add_tags(ResourceArns=[dest_tg_arn],
-                           Tags=ghost_aws.dict_to_aws_tags(additional_tags))
+                          Tags=ghost_aws.dict_to_aws_tags(additional_tags))
+        alb_conn.modify_target_group_attributes(
+            TargetGroupArn=dest_tg_arn,
+            Attributes=[attr for attr in source_tg_attributes if attr['Value'] != '']
+        )
 
         # Creating listeners
         source_listeners = alb_conn.describe_listeners(LoadBalancerArn=source_alb_arn)
@@ -607,16 +609,14 @@ class AwsAlbManager(AwsElbManager):
         log('Deleting ALB {}'.format(alb_arn), log_file)
         alb_conn.delete_load_balancer(LoadBalancerArn=alb_arn)
 
-    def _get_instance_status_from_alb(self, alb_arn):
+    def _get_instance_status_from_tg(self, tg_arn):
         alb_conn = self._get_alb_connection()
         ret = {}
-        for tg_arn in self._get_targetgroup_arns_from_alb(alb_arn):
-            for target_health in alb_conn.describe_target_health(TargetGroupArn=tg_arn)['TargetHealthDescriptions']:
-                # Accepting draining state in order to behave like CLB
-                ret[target_health['Target']['Id']] = (
-                    "inservice"
-                    if target_health['TargetHealth']['State'].lower() in ("healthy", 'draining')
-                    else "outofservice")
+        for target_health in alb_conn.describe_target_health(TargetGroupArn=tg_arn)['TargetHealthDescriptions']:
+            # Accepting draining state in order to behave like CLB
+            state = target_health['TargetHealth']['State'].lower()
+            if state != "draining":  # We do not consider draining instances as still registered
+                ret[target_health['Target']['Id']] = "inservice" if state == "healthy" else "outofservice"
         return ret
 
     def get_instances_status_fom_lb(self, lb_names):
@@ -625,13 +625,22 @@ class AwsAlbManager(AwsElbManager):
                  for alb in alb_conn.describe_load_balancers(Names=lb_names)['LoadBalancers']})
         as_instance_status = {}
         for alb_name, alb_arn in albs.items():
-            as_instance_status[alb_name] = self._get_instance_status_from_alb(alb_arn)
+            for tg_arn in self._get_targetgroup_arns_from_alb(alb_arn):
+                as_instance_status[alb_name] = self._get_instance_status_from_tg(tg_arn)
         return as_instance_status
 
     def get_instances_status_from_autoscale(self, as_name, log_file):
+        alb_conn = self._get_alb_connection()
         as_instance_status = {}
-        for alb in self._list_objects_from_autoscale(as_name):
-            as_instance_status[alb['LoadBalancerName']] = self._get_instance_status_from_alb(alb['LoadBalancerArn'])
+        tg_list = alb_conn.describe_target_groups(
+            TargetGroupArns=self._get_targetgroup_arns_from_autoscale(as_name))['TargetGroups']
+        lb_arns = list(itertools.chain(*(tg['LoadBalancerArns'] for tg in tg_list)))
+        lb_names = {lb['LoadBalancerArn']: lb['LoadBalancerName']
+                    for lb in alb_conn.describe_load_balancers(LoadBalancerArns=lb_arns)['LoadBalancers']}
+        for tg in tg_list:
+            if len(tg['LoadBalancerArns']) > 1:
+                raise LoadBalancerManagerException('Multiple ALBs for a target group is currently not supported')
+            as_instance_status[lb_names[tg['LoadBalancerArns'][0]]] = self._get_instance_status_from_tg(tg['TargetGroupArn'])
         return as_instance_status
 
     def register_into_autoscale(self, as_name, lb_names_to_deregister, lb_names_to_register, log_file):
