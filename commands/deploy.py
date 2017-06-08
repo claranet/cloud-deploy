@@ -131,7 +131,7 @@ class Deploy():
         pkg_path = '../{0}'.format(pkg_name)
         uid = module.get('uid', os.geteuid())
         gid = module.get('gid', os.getegid())
-        tar_exclude_git = "--exclude '.git'" if boolify(self._config.get('deployment_package_exclude_git_metadata', True)) else ''
+        tar_exclude_git = "--exclude '.git'" if boolify(self._config.get('deployment_package_exclude_git_metadata', False)) else ''
         gcall("tar czf {0} --owner={1} --group={2} {3} .".format(pkg_path, uid, gid, tar_exclude_git), "Creating package: %s" % pkg_name, self._log_file)
 
         log("Uploading package: %s" % pkg_name, self._log_file)

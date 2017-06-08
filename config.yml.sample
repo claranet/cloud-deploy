@@ -209,4 +209,4 @@ deployment_package_retention:
 
 # Specify if Ghost must exclude Git metadata (.git folder) when packaging the artefact
 # Optional, default:
-#deployment_package_exclude_git_metadata: true
+#deployment_package_exclude_git_metadata: false
