@@ -75,7 +75,7 @@ class Swapbluegreen():
             :returns bool:       False if timeout exceeded, True otherwise
         """
         t = 0
-        while len([i for i in lb_mgr.get_instance_status(elb_names).values() if 'outofservice' in i.values()]):
+        while len([i for i in lb_mgr.get_instances_status_fom_lb(elb_names).values() if 'outofservice' in i.values()]):
             if t > timeout:
                 return False
             log(_yellow('Waiting 10s because the instance is not in service in the ELB'), self._log_file)
@@ -100,9 +100,9 @@ class Swapbluegreen():
         as_group_old, as_group_old_processes_to_suspend = get_autoscaling_group_and_processes_to_suspend(as_conn3, online_app, log_file)
         as_group_new, as_group_new_processes_to_suspend = get_autoscaling_group_and_processes_to_suspend(as_conn3, to_deploy_app, log_file)
         # Retrieve ELB instances
-        elb_online_instances = lb_mgr.get_instance_status_autoscaling_group(online_app['autoscale']['name'], log_file)
+        elb_online_instances = lb_mgr.get_instances_status_from_autoscale(online_app['autoscale']['name'], log_file)
         log(_green('Online configuration : {0}'.format(str(elb_online_instances))), self._log_file)
-        elb_tempwarm_instances = lb_mgr.get_instance_status_autoscaling_group(to_deploy_app['autoscale']['name'], log_file)
+        elb_tempwarm_instances = lb_mgr.get_instances_status_from_autoscale(to_deploy_app['autoscale']['name'], log_file)
         log(_green('Offline configuration : {0}'.format(str(elb_tempwarm_instances))), self._log_file)
 
         try:
@@ -124,15 +124,15 @@ class Swapbluegreen():
             )
             if swap_execution_strategy == 'isolated':
                 log(_green('De-register all online instances from ELB {0}'.format(', '.join(elb_online_instances.keys()))), self._log_file)
-                lb_mgr.deregister_all_instances_from_elb(elb_online_instances, self._log_file)
+                lb_mgr.deregister_all_instances_from_lbs(elb_online_instances, self._log_file)
                 self._wait_draining_connection(lb_mgr, elb_online_instances.keys())
                 log(_green('Register and put online new instances to online ELB {0}'.format(', '.join(elb_online_instances.keys()))), self._log_file)
-                lb_mgr.register_all_instances_to_elb(elb_online_instances.keys(), elb_tempwarm_instances, self._log_file)
+                lb_mgr.register_all_instances_to_lbs(elb_online_instances.keys(), elb_tempwarm_instances, self._log_file)
             elif swap_execution_strategy == 'overlap':
                 log(_green('De-register old instances from ELB {0}'.format(', '.join(elb_online_instances.keys()))), self._log_file)
-                lb_mgr.deregister_all_instances_from_elb(elb_online_instances, self._log_file)
+                lb_mgr.deregister_all_instances_from_lbs(elb_online_instances, self._log_file)
                 log(_green('Register new instances in the ELB: {0}' .format(elb_online['LoadBalancerName'])), self._log_file)
-                lb_mgr.register_all_instances_to_elb(elb_online_instances.keys(), elb_tempwarm_instances, self._log_file)
+                lb_mgr.register_all_instances_to_lbs(elb_online_instances.keys(), elb_tempwarm_instances, self._log_file)
             else:
                 log("Invalid swap execution strategy selected : '{0}'. Please choose between 'isolated' and 'overlap'".format(swap_execution_strategy), self._log_file)
                 return None, None
@@ -141,17 +141,17 @@ class Swapbluegreen():
                     lb_mgr, elb_online_instances.keys(),
                     get_blue_green_config(self._config, 'swapbluegreen', 'registreation_timeout', 45)):
                 log(_red("Timeout reached while waiting the instances registration. Rollback process launch"), self._log_file)
-                lb_mgr.deregister_instance_from_elb(elb_online_instances.keys(), elb_tempwarm_instances[elb_tempwarm_instances.keys()[0]].keys(), self._log_file)
-                lb_mgr.register_all_instances_to_elb(elb_online_instances.keys(), elb_online_instances, self._log_file)
-                lb_mgr.register_all_instances_to_elb(elb_tempwarm_instances.keys(), elb_tempwarm_instances, self._log_file)
+                lb_mgr.deregister_instances_from_lbs(elb_online_instances.keys(), elb_tempwarm_instances[elb_tempwarm_instances.keys()[0]].keys(), self._log_file)
+                lb_mgr.register_all_instances_to_lbs(elb_online_instances.keys(), elb_online_instances, self._log_file)
+                lb_mgr.register_all_instances_to_lbs(elb_tempwarm_instances.keys(), elb_tempwarm_instances, self._log_file)
                 log(_yellow("Rollback completed."), self._log_file)
                 return None, None
 
             log(_green('De-register all instances from temp (warm) ELB {0}'.format(', '.join(elb_tempwarm_instances.keys()))), self._log_file)
-            lb_mgr.deregister_all_instances_from_elb(elb_tempwarm_instances, self._log_file)
+            lb_mgr.deregister_all_instances_from_lbs(elb_tempwarm_instances, self._log_file)
 
             log(_green('Register old instances to Temp ELB {0} (usefull for another Rollback Swap)'.format(', '.join(elb_tempwarm_instances.keys()))), self._log_file)
-            lb_mgr.register_all_instances_to_elb(elb_tempwarm_instances.keys(), elb_online_instances, self._log_file)
+            lb_mgr.register_all_instances_to_lbs(elb_tempwarm_instances.keys(), elb_online_instances, self._log_file)
 
             log(_green('Update autoscale groups with their new ELB'), self._log_file)
             lb_mgr.register_into_autoscale(to_deploy_app['autoscale']['name'], elb_tempwarm_instances.keys(), elb_online_instances.keys(), self._log_file)
@@ -212,7 +212,7 @@ class Swapbluegreen():
 
             # Check if we're ready to swap. If an instance is out of service
             # into the ELB pool raise an exception
-            elb_instances = lb_mgr.get_instance_status_autoscaling_group(to_deploy_app['autoscale']['name'], self._log_file)
+            elb_instances = lb_mgr.get_instances_status_from_autoscale(to_deploy_app['autoscale']['name'], self._log_file)
             if len(elb_instances) == 0:
                 self._worker.update_status("aborted", message=self._get_notification_message_aborted(to_deploy_app, "The offline application [%s] doesn't have a valid Load Balancer associated.'" % to_deploy_app['_id']))
                 return

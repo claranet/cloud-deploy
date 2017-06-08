@@ -41,6 +41,8 @@ class LoadBalancerItem(object):
             value = self._data.get('LoadBalancerName', self._data.get('Name', value))
         if item.lower() == 'id':
             value = self._data.get('LoadBalancerArn', self._data.get('Name', value))
+        if item.lower() == 'dns_name':
+            value = self._data.get('DNSName', value)
         if value == KeyError:
             raise KeyError('Invalid key')
         return value
@@ -57,21 +59,21 @@ class LoadBalancersManager(object):
         self.cloud_connection = cloud_connection
         self.region = region
 
-    def get_health_check(self, elb_name):
+    def get_health_check(self, lb_name):
         """
             returns the health check configuration as dict like {'interval': '',
                       'timeout': '', 'unhealthy_threshold': '', 'healthy_threshold': '',
                       'protocol': '', 'port': '', 'path': '', 'target': ''}
-            :param elb_name: string: resource name
+            :param lb_name: string: resource name
             :returns dict:
         """
         raise NotImplementedError()
 
-    def configure_health_check(self, elb_name, interval=None, timeout=None, unhealthy_threshold=None,
+    def configure_health_check(self, lb_name, interval=None, timeout=None, unhealthy_threshold=None,
                                healthy_threshold=None, protocol=None, port=None, path=None, target=None):
         """
             Configures the HealthCheck value
-            :param elb_name: string: resource name
+            :param lb_name: string: resource name
             :param interval: int: health check interval
             :param timeout: int: health check timeout
             :param unhealthy_threshold: string:
@@ -83,142 +85,127 @@ class LoadBalancersManager(object):
         """
         raise NotImplementedError()
 
-    def get_by_name(self, elb_name):
+    def get_by_name(self, lb_name):
         """
-            :return the found ELB object
+            :return the found LB object
         """
         raise NotImplementedError()
 
-    def get_dns_name(self, elb_name):
-        """ Return the DNS name for the passed ELB
+    def get_dns_name(self, lb_name):
+        """ Return the DNS name for the passed LB
 
-            :param  elb_name:  string: The name of the Elastic Load Balancer.
+            :param  lb_name:  string: The name of the Elastic Load Balancer.
             :return string
         """
         raise NotImplementedError()
 
     def list_from_autoscale(self, as_name, log_file, filter_tag=None):
-        """ Return a list of ELB names defined in
+        """ Return a list of LB names defined in
             the Autoscaling Group in parameter.
 
             :param log_file:
             :param  as_name:  string: The Autoscaling Group name.
             :param  filter_tag: dict: A dict with a unique value that will be used as a filter for tags
-            :return  a list of ELB names.
+            :return  a list of LB names.
         """
         raise NotImplementedError()
 
-    def copy(self, elb_name, source_elb_name, additional_tags, log_file):
-        """ Copy an existing ELB, currently copies basic configuration
+    def copy_lb(self, new_lb_name, source_lb_name, additional_tags, log_file):
+        """ Copy an existing LB, currently copies basic configuration
             (Subnets, SGs, first listener), health check and tags.
 
-            :param elb_name: string: created ELB name
-            :param source_elb_name: string: source ELB name
+            :param new_lb_name: string: created LB name
+            :param source_lb_name: string: source LB name
             :param additional_tags: dict: tags to add to the new lb
             :param log_file: string: log file
-            :return created ELB endpoint
+            :return created LB endpoint
         """
         raise NotImplementedError()
 
-    def destroy(self, elb_name, log_file):
-        """ Destroy the specified ELB
+    def destroy_lb(self, lb_name, log_file):
+        """ Destroy the specified LB
 
-            :param  elb_name:  string: The name of the Elastic Load Balancer.
+            :param  lb_name:  string: The name of the Load Balancer.
             :param  log_file: string: log file
         """
         raise NotImplementedError()
 
-    def register_into_autoscale(self, as_name, elbs_to_deregister, elbs_to_register, log_file):
-        """ Modify the AutoScale Group to set the list of ELB to use
+    def register_into_autoscale(self, as_name, lb_names_to_deregister, lb_names_to_register, log_file):
+        """ Modify the AutoScale Group to set the list of LB to use
 
         :param  as_name:  string: string of the autoscaling group name.
-        :param  elbs_to_deregister:  list: The name of the Elastic Load Balancers.
-        :param  elbs_to_register:  list: The name of the Elastic Load Balancers.
+        :param  lb_names_to_deregister:  list: The name of the Elastic Load Balancers.
+        :param  lb_names_to_register:  list: The name of the Elastic Load Balancers.
         :param  log_file: string: The log file
         :return boolean(True if succeed otherwise False)
         """
         raise NotImplementedError()
 
-    def get_instance_status_autoscaling_group(self, as_group, log_file):
-        """ Return a dict of instance ids as key and their status as value per elb.
+    def get_instances_status_from_autoscale(self, as_name, log_file):
+        """ Return a dict of instance ids as key and their status as value per LB.
 
             :param log_file:
-            :param  as_group: string of the autoscaling group name.
-            :return dict(ex: {'elb_XXX1':{'instance_id':'inservice/outofservice'}})
+            :param  as_name: string of the autoscaling group name.
+            :return dict(ex: {'lb_XXX1':{'instance_id':'inservice/outofservice'}})
         """
         raise NotImplementedError()
 
-    def get_instance_status(self, elb_names):
-        """ Return a dict of instance ids as key and their status as value per elb.
+    def get_instances_status_fom_lb(self, lb_names):
+        """ Return a dict of instance ids as key and their status as value per LB.
 
-            :param  elb_names: list: The name of the Elastic Load Balancers.
-            :return dict(ex: {'elb_XXX1':{'instance_id':'inservice/outofservice'}})
+            :param  lb_names: list: The name of the Elastic Load Balancers.
+            :return dict(ex: {'lb_XXX1':{'instance_id':'inservice/outofservice'}})
         """
         raise NotImplementedError()
 
-    def deregister_instance_from_elb(self, elb_names, hosts_id_list, log_file):
-        """ Registrer one or multiple instances in the ELB pool.
+    def deregister_instances_from_lbs(self, lb_names, instances_ids, log_file):
+        """ Registrer one or multiple instances in the LB pool.
 
-            :param  elb_names: list The name of the Elastic Load Balancers.
-            :param  hosts_id_list: list of instances ID to add to the ELB pool.
+            :param  lb_names: list The name of the Elastic Load Balancers.
+            :param  instances_ids: list of instances ID to add to the LB pool.
             :param  log_file:  string  The log file
             :return boolean(True if succeed otherwise False)
         """
         raise NotImplementedError()
 
-    def deregister_all_instances_from_elb(self, elbs_with_instances, log_file):
-        """ Deregistrer one or multiple instances in the ELB pool.
+    # TODO refactor code to remove this function
+    def deregister_all_instances_from_lbs(self, lbs_with_instances, log_file):
+        """ DEPRECATED : Deregistrer one or multiple instances in the LB pool.
 
-            :param  elbs_with_instances: list The name of the Elastic Load Balancers, and all instances in one of them.
-                    (dict(ex: {'elb_XXX1':{'instance_id':'inservice/outofservice'}}))
+            :param  lbs_with_instances: list The name of the Elastic Load Balancers, and all instances in one of them.
+                    (dict(ex: {'lb_XXX1':{'instance_id':'inservice/outofservice'}}))
             :param  log_file:  string  The log file
             :return boolean(True if succeed otherwise False)
         """
         raise NotImplementedError()
 
-    def register_instance_from_elb(self, elb_names, hosts_id_list, log_file):
-        """ Registrer one or multiple instances in the ELB pool.
+    def register_instances_from_lbs(self, lb_names, instances_ids, log_file):
+        """ Registrer one or multiple instances in the LB pool.
 
-            :param  elb_names: list The name of the Elastic Load Balancers.
-            :param  hosts_id_list: list of instances ID to add to the ELB pool.
+            :param  lb_names: list The name of the Elastic Load Balancers.
+            :param  instances_ids: list of instances ID to add to the LB pool.
             :param  log_file:  string  The log file
             :return boolean(True if succeed otherwise False)
         """
         raise NotImplementedError()
 
-    def register_all_instances_to_elb(self, elb_names, instances, log_file):
-        """ Registrer one or multiple instances in the ELB pool.
+    # TODO refactor code to remove this function
+    def register_all_instances_to_lbs(self, lb_names, instances, log_file):
+        """ DEPRECATED : Registrer one or multiple instances in the LB pool.
 
-            :param  elb_names: list The name of the Elastic Load Balancers.
+            :param  lb_names: list The name of the Elastic Load Balancers.
             :param  instances: list The name of the Elastic Load Balancers, and all instances in one of them.
-                    (dict(ex: {'elb_XXX1':{'instance_id':'inservice/outofservice'}}))
+                    (dict(ex: {'lb_XXX1':{'instance_id':'inservice/outofservice'}}))
             :param  log_file:  string  The log file
             :return boolean(True if succeed otherwise False)
         """
         raise NotImplementedError()
 
-    def get_connection_draining_value(self, elb_names):
-        """ Return the biggest connection draining value for the list of elb in parameters.
+    def get_connection_draining_value(self, lb_names):
+        """ Return the biggest connection draining value for the list of LB in parameters.
 
-            :param  elb_names: list The name of the Elastic Load Balancers.
+            :param  lb_names: list The name of the Elastic Load Balancers.
             :return  int  The value in seconds of the connection draining.
-        """
-        raise NotImplementedError()
-
-    def get_target_groups_from_autoscale(self, as_name):
-        """ Return a list of ALB target groups ARN defined in
-            the Autoscaling Group in parameter.
-
-            :param  as_name:  string: The Autoscaling Group name.
-            :return  a list of ALB target groups ARN.
-        """
-        raise NotImplementedError()
-
-    def get_target_status_autoscaling_group(self, as_group):
-        """ Return a dict of instance ids as key and their status as value per alb target group.
-
-            :param  as_group: string of the autoscaling group name.
-            :return dict(ex: {'alb_XXX1':{'instance_id':'healthy/unhealthy'}})
         """
         raise NotImplementedError()
 
@@ -261,56 +248,56 @@ class AwsClbManager(AwsElbManager):
         else:
             return self._get_connection(['elb'])
 
-    def get_by_name(self, elb_name):
-        elb_conn3 = self._get_elb_connection()
+    def get_by_name(self, lb_name):
+        elb_conn = self._get_elb_connection()
         try:
-            elb = elb_conn3.describe_load_balancers(
-                LoadBalancerNames=[elb_name])['LoadBalancerDescriptions'][0]
+            elb = elb_conn.describe_load_balancers(
+                LoadBalancerNames=[lb_name])['LoadBalancerDescriptions'][0]
             return LoadBalancerItem(elb)
         except Exception:
             return None
 
-    def get_dns_name(self, elb_name):
-        return self.get_by_name(elb_name).DNSName
+    def get_dns_name(self, lb_name):
+        return self.get_by_name(lb_name).dns_name
 
-    def register_instance_from_elb(self, elb_names, hosts_id_list, log_file):
+    def register_instances_from_lbs(self, lb_names, instances_ids, log_file):
         try:
             elb_conn = self._get_elb_connection()
-            for elb_name in elb_names:
-                if not elb_conn.register_instances(elb_name, hosts_id_list).status:
-                    log("Failed to register instances {0} in the ELB {1}".format(str(hosts_id_list), elb_name),
+            for elb_name in lb_names:
+                if not elb_conn.register_instances(elb_name, instances_ids).status:
+                    log("Failed to register instances {0} in the ELB {1}".format(str(instances_ids), elb_name),
                         log_file)
                     raise Exception()
                 else:
-                    log("Instances {0} well registered in the ELB {1}".format(str(hosts_id_list), elb_name), log_file)
+                    log("Instances {0} well registered in the ELB {1}".format(str(instances_ids), elb_name), log_file)
             return True
         except Exception as e:
             log("Exception during register operation: {0}".format(str(e)), log_file)
             raise
 
-    def deregister_instance_from_elb(self, elb_names, hosts_id_list, log_file):
+    def deregister_instances_from_lbs(self, lb_names, instances_ids, log_file):
         try:
-            elb_conn = self._get_elb_connection(boto2_compat=True)
-            for elb_name in elb_names:
-                if not elb_conn.deregister_instances(elb_name, hosts_id_list).status:
-                    log("Failed to deregister instances {0} in the ELB {1}".format(str(hosts_id_list), elb_name),
+            elb_conn2 = self._get_elb_connection(boto2_compat=True)
+            for elb_name in lb_names:
+                if not elb_conn2.deregister_instances(elb_name, instances_ids).status:
+                    log("Failed to deregister instances {0} in the ELB {1}".format(str(instances_ids), elb_name),
                         log_file)
                     raise Exception()
                 else:
-                    log("Instances {0} well deregistered in the ELB {1}" .format(str(hosts_id_list), elb_name),
+                    log("Instances {0} well deregistered in the ELB {1}" .format(str(instances_ids), elb_name),
                         log_file)
             return True
         except Exception as e:
             log("Exception during deregister operation: {0}" .format(str(e)), log_file)
             raise
 
-    def deregister_all_instances_from_elb(self, elbs_with_instances, log_file):
+    def deregister_all_instances_from_lbs(self, lbs_with_instances, log_file):
         try:
-            elb_conn = self._get_elb_connection(boto2_compat=True)
-            for elb_name, elb_instances in elbs_with_instances.items():
+            elb_conn2 = self._get_elb_connection(boto2_compat=True)
+            for elb_name, elb_instances in lbs_with_instances.items():
                 # sorted is only used in order to have predictable method calls for test cases
                 instance_names = sorted(elb_instances.keys())
-                if not elb_conn.deregister_instances(elb_name, instance_names).status:
+                if not elb_conn2.deregister_instances(elb_name, instance_names).status:
                     log("Failed to deregister instances {0} in the ELB {1}".format(str(instance_names), elb_name),
                         log_file)
                     raise Exception()
@@ -322,14 +309,14 @@ class AwsClbManager(AwsElbManager):
             log("Exception during deregister operation: {0}".format(str(e)), log_file)
             raise
 
-    def register_all_instances_to_elb(self, elb_names, instances, log_file):
+    def register_all_instances_to_lbs(self, lb_names, instances, log_file):
         try:
-            elb_conn = self._get_elb_connection(boto2_compat=True)
-            for elb_name in elb_names:
+            elb_conn2 = self._get_elb_connection(boto2_compat=True)
+            for elb_name in lb_names:
                 for unused_elb_name, elb_instances in instances.items():
                     # sorted is only used in order to have predictable method calls for test cases
                     instance_names = sorted(elb_instances.keys())
-                    if not elb_conn.register_instances(elb_name, instance_names).status:
+                    if not elb_conn2.register_instances(elb_name, instance_names).status:
                         log("Failed to register instances {0} in the ELB {1}".format(str(instance_names), elb_name),
                             log_file)
                         raise Exception()
@@ -341,23 +328,23 @@ class AwsClbManager(AwsElbManager):
             log("Exception during register operation: {0}".format(str(e)), log_file)
             raise
 
-    def get_instance_status(self, elb_names):
-        elb_conn = self._get_elb_connection(boto2_compat=True)
+    def get_instances_status_fom_lb(self, lb_names):
+        elb_conn2 = self._get_elb_connection(boto2_compat=True)
         as_instance_status = {}
-        for elb in elb_names:
+        for elb in lb_names:
             as_instance_status[elb] = {}
-            for instance in elb_conn.describe_instance_health(elb):
+            for instance in elb_conn2.describe_instance_health(elb):
                 as_instance_status[elb][
                     instance.instance_id] = "inservice" if instance.state.lower() == "inservice" else "outofservice"
         return as_instance_status
 
-    def register_into_autoscale(self, as_name, elbs_to_deregister, elbs_to_register, log_file):
-        as_conn3 = self._get_as_connection()
+    def register_into_autoscale(self, as_name, lb_names_to_deregister, lb_names_to_register, log_file):
+        as_conn = self._get_as_connection()
         try:
-            if elbs_to_deregister and len(elbs_to_deregister) > 0:
-                as_conn3.detach_load_balancers(AutoScalingGroupName=as_name, LoadBalancerNames=elbs_to_deregister)
-            if elbs_to_register and len(elbs_to_register) > 0:
-                as_conn3.attach_load_balancers(AutoScalingGroupName=as_name, LoadBalancerNames=elbs_to_register)
+            if lb_names_to_deregister and len(lb_names_to_deregister) > 0:
+                as_conn.detach_load_balancers(AutoScalingGroupName=as_name, LoadBalancerNames=lb_names_to_deregister)
+            if lb_names_to_register and len(lb_names_to_register) > 0:
+                as_conn.attach_load_balancers(AutoScalingGroupName=as_name, LoadBalancerNames=lb_names_to_register)
         except Exception as e:
             log("Exception during register ELB operation into ASG: {0}".format(str(e)), log_file)
             raise
@@ -381,29 +368,29 @@ class AwsClbManager(AwsElbManager):
             return filtered_lb_names
         return lb_names
 
-    def get_instance_status_autoscaling_group(self, as_group, log_file):
-        elb_conn = self._get_elb_connection(boto2_compat=True)
+    def get_instances_status_from_autoscale(self, as_name, log_file):
+        elb_conn2 = self._get_elb_connection(boto2_compat=True)
         as_instance_status = {}
-        for elb in self.list_from_autoscale(as_group, log_file):
+        for elb in self.list_from_autoscale(as_name, log_file):
             as_instance_status[elb] = {}
-            for instance in elb_conn.describe_instance_health(elb):
+            for instance in elb_conn2.describe_instance_health(elb):
                 as_instance_status[elb][
                     instance.instance_id] = "inservice" if instance.state.lower() == "inservice" else "outofservice"
         return as_instance_status
 
-    def copy(self, elb_name, source_elb_name, additional_tags, log_file):
-        elb_conn3 = self._get_elb_connection()
-        dest_elb = self.get_by_name(elb_name)
+    def copy_lb(self, new_lb_name, source_lb_name, additional_tags, log_file):
+        elb_conn = self._get_elb_connection()
+        dest_elb = self.get_by_name(new_lb_name)
         if dest_elb:
-            log("  INFO: ELB {0} already available, no copy needed".format(elb_name), log_file)
+            log("  INFO: ELB {0} already available, no copy needed".format(new_lb_name), log_file)
             return dest_elb['DNSName']
-        source_elb = self.get_by_name(source_elb_name)
+        source_elb = self.get_by_name(source_lb_name)
         source_elb_listener = source_elb['ListenerDescriptions'][0]['Listener']
-        source_elb_tags = elb_conn3.describe_tags(
-            LoadBalancerNames=[source_elb_name]
+        source_elb_tags = elb_conn.describe_tags(
+            LoadBalancerNames=[source_lb_name]
         )['TagDescriptions'][0]['Tags']
-        source_elb_attributes = elb_conn3.describe_load_balancer_attributes(
-            LoadBalancerName=source_elb_name
+        source_elb_attributes = elb_conn.describe_load_balancer_attributes(
+            LoadBalancerName=source_lb_name
         )['LoadBalancerAttributes']
         dest_elb_listener = {
             'Protocol': source_elb_listener['Protocol'],
@@ -417,8 +404,8 @@ class AwsClbManager(AwsElbManager):
             dest_elb_listener['SSLCertificateId'] = source_elb_listener['SSLCertificateId']
 
         # Create ELB
-        response = elb_conn3.create_load_balancer(
-            LoadBalancerName=elb_name,
+        response = elb_conn.create_load_balancer(
+            LoadBalancerName=new_lb_name,
             Listeners=[dest_elb_listener],
             Subnets=source_elb['Subnets'],
             SecurityGroups=source_elb['SecurityGroups'],
@@ -427,42 +414,42 @@ class AwsClbManager(AwsElbManager):
         )
 
         # Configure Healthcheck
-        elb_conn3.configure_health_check(
-            LoadBalancerName=elb_name,
+        elb_conn.configure_health_check(
+            LoadBalancerName=new_lb_name,
             HealthCheck=source_elb['HealthCheck']
         )
 
         # Update ELB attributes
-        elb_conn3.modify_load_balancer_attributes(
-            LoadBalancerName=elb_name,
+        elb_conn.modify_load_balancer_attributes(
+            LoadBalancerName=new_lb_name,
             LoadBalancerAttributes=source_elb_attributes
         )
 
         return response['DNSName']
 
-    def destroy(self, elb_name, log_file):
-        elb_conn3 = self._get_elb_connection()
-        log("  INFO: Destroying ELB {0}".format(elb_name), log_file)
-        elb_conn3.delete_load_balancer(LoadBalancerName=elb_name)
+    def destroy_lb(self, lb_name, log_file):
+        elb_conn = self._get_elb_connection()
+        log("  INFO: Destroying ELB {0}".format(lb_name), log_file)
+        elb_conn.delete_load_balancer(LoadBalancerName=lb_name)
 
-    def get_connection_draining_value(self, elb_names):
-        elb_conn = self._get_elb_connection(boto2_compat=True)
-        return max([elb_conn.get_all_lb_attributes(elb).connection_draining.timeout for elb in elb_names])
+    def get_connection_draining_value(self, lb_names):
+        elb_conn2 = self._get_elb_connection(boto2_compat=True)
+        return max([elb_conn2.get_all_lb_attributes(elb).connection_draining.timeout for elb in lb_names])
 
-    def get_health_check(self, elb_name):
-        elb = self.get_by_name(elb_name)
+    def get_health_check(self, lb_name):
+        elb = self.get_by_name(lb_name)
         return {k: elb['HealthCheck'].get(v) for k, v in self.HEALTHCHECK_PARAMS_MAPPING.items()}
 
-    def configure_health_check(self, elb_name, interval=None, timeout=None, unhealthy_threshold=None,
+    def configure_health_check(self, lb_name, interval=None, timeout=None, unhealthy_threshold=None,
                                healthy_threshold=None, protocol=None, port=None, path=None, target=None):
-        elb_conn3 = self._get_elb_connection()
-        cur_health_check = self.get_by_name(elb_name)['HealthCheck']
+        elb_conn = self._get_elb_connection()
+        cur_health_check = self.get_by_name(lb_name)['HealthCheck']
 
         func_params = locals()
         cur_health_check.update({v: func_params[p]
                                  for p, v in self.HEALTHCHECK_PARAMS_MAPPING.items() if func_params.get(p, None)})
-        elb_conn3.configure_health_check(
-            LoadBalancerName=elb_name,
+        elb_conn.configure_health_check(
+            LoadBalancerName=lb_name,
             HealthCheck=cur_health_check
         )
 
@@ -494,11 +481,11 @@ class AwsAlbManager(AwsElbManager):
         return [tg['TargetGroupArn']
                 for tg in self._get_alb_connection().describe_target_groups(LoadBalancerArn=alb_arn)['TargetGroups']]
 
-    def get_by_name(self, elb_name):
-        alb_conn3 = self._get_alb_connection()
+    def get_by_name(self, lb_name):
+        alb_conn = self._get_alb_connection()
         try:
-            alb = alb_conn3.describe_load_balancers(
-                Names=[elb_name]
+            alb = alb_conn.describe_load_balancers(
+                Names=[lb_name]
             )['LoadBalancers'][0]
             return LoadBalancerItem(alb)
         except Exception as e:
@@ -506,14 +493,14 @@ class AwsAlbManager(AwsElbManager):
                 return None
             raise
 
-    def get_dns_name(self, elb_name):
-        return self.get_by_name(elb_name).DNSName
+    def get_dns_name(self, lb_name):
+        return self.get_by_name(lb_name).dns_name
 
-    def get_connection_draining_value(self, elb_names):
+    def get_connection_draining_value(self, lb_names):
         alb_conn = self._get_alb_connection()
         values = []
         alb_arns = ([alb['LoadBalancerArn']
-                    for alb in alb_conn.describe_load_balancers(Names=elb_names)['LoadBalancers']])
+                     for alb in alb_conn.describe_load_balancers(Names=lb_names)['LoadBalancers']])
         for alb_arn in alb_arns:
             for tg_arn in self._get_targetgroup_arns_from_alb(alb_arn):
                 attrs = alb_conn.describe_target_group_attributes(TargetGroupArn=tg_arn)['Attributes']
@@ -523,26 +510,26 @@ class AwsAlbManager(AwsElbManager):
                         break
         return max(values)
 
-    def copy(self, elb_name, source_elb_name, additional_tags, log_file):
-        alb_conn3 = self._get_alb_connection()
-        dest_alb = self.get_by_name(elb_name)
+    def copy_lb(self, new_lb_name, source_lb_name, additional_tags, log_file):
+        alb_conn = self._get_alb_connection()
+        dest_alb = self.get_by_name(new_lb_name)
         if dest_alb:
-            log("  INFO: ALB {0} already available, no copy needed".format(elb_name), log_file)
+            log("  INFO: ALB {0} already available, no copy needed".format(new_lb_name), log_file)
             return dest_alb['DNSName']
-        source_alb = self.get_by_name(source_elb_name)
+        source_alb = self.get_by_name(source_lb_name)
         source_alb_arn = source_alb['LoadBalancerArn']
 
-        source_alb_tags = alb_conn3.describe_tags(
+        source_alb_tags = alb_conn.describe_tags(
             ResourceArns=[source_alb_arn]
         )['TagDescriptions'][0]['Tags']
 
-        source_alb_attributes = alb_conn3.describe_load_balancer_attributes(
+        source_alb_attributes = alb_conn.describe_load_balancer_attributes(
             LoadBalancerArn=source_alb_arn
         )['Attributes']
 
         # Create ALB
-        dest_alb = alb_conn3.create_load_balancer(
-            Name=elb_name,
+        dest_alb = alb_conn.create_load_balancer(
+            Name=new_lb_name,
             Subnets=[az['SubnetId'] for az in source_alb['AvailabilityZones']],
             SecurityGroups=source_alb['SecurityGroups'],
             Scheme=source_alb['Scheme'],
@@ -551,20 +538,20 @@ class AwsAlbManager(AwsElbManager):
         dest_alb_arn = dest_alb['LoadBalancerArn']
 
         # Update ALB attributes
-        alb_conn3.modify_load_balancer_attributes(
+        alb_conn.modify_load_balancer_attributes(
             LoadBalancerArn=dest_alb_arn,
             Attributes=[attr for attr in source_alb_attributes if attr['Value'] != '']
         )
 
         # Copy target group
-        source_tg_list = alb_conn3.describe_target_groups(LoadBalancerArn=source_alb_arn)['TargetGroups']
+        source_tg_list = alb_conn.describe_target_groups(LoadBalancerArn=source_alb_arn)['TargetGroups']
         if len(source_tg_list) > 1:
             raise LoadBalancerManagerException('Multiple target groups for an ALB is currently not supported')
         source_tg = source_tg_list[0]
         source_tg_arn = source_tg['TargetGroupArn']
 
-        response = alb_conn3.create_target_group(
-            Name='tg-{}'.format(elb_name)[:31],
+        response = alb_conn.create_target_group(
+            Name='tg-{}'.format(new_lb_name)[:31],
             Protocol=source_tg['Protocol'],
             Port=source_tg['Port'],
             VpcId=source_tg['VpcId'],
@@ -578,11 +565,11 @@ class AwsAlbManager(AwsElbManager):
             Matcher=source_tg['Matcher']
         )
         dest_tg_arn = response['TargetGroups'][0]['TargetGroupArn']
-        alb_conn3.add_tags(ResourceArns=[dest_tg_arn],
+        alb_conn.add_tags(ResourceArns=[dest_tg_arn],
                            Tags=ghost_aws.dict_to_aws_tags(additional_tags))
 
         # Creating listeners
-        source_listeners = alb_conn3.describe_listeners(LoadBalancerArn=source_alb_arn)
+        source_listeners = alb_conn.describe_listeners(LoadBalancerArn=source_alb_arn)
         for listener in source_listeners['Listeners']:
             for action in listener['DefaultActions']:
                 if action['TargetGroupArn'] == source_tg_arn:
@@ -597,28 +584,28 @@ class AwsAlbManager(AwsElbManager):
             for param in ['SslPolicy', 'Certificates']:
                 if listener.get(param, None):
                     params[param] = listener[param]
-            alb_conn3.create_listener(**params)
+            alb_conn.create_listener(**params)
 
         return dest_alb['DNSName']
 
-    def destroy(self, elb_name, log_file):
-        alb_conn3 = self._get_alb_connection()
+    def destroy_lb(self, lb_name, log_file):
+        alb_conn = self._get_alb_connection()
 
-        alb = alb_conn3.describe_load_balancers(Names=[elb_name])['LoadBalancers'][0]
+        alb = alb_conn.describe_load_balancers(Names=[lb_name])['LoadBalancers'][0]
         alb_arn = alb['LoadBalancerArn']
         listeners_arns = [tg['ListenerArn']
-                          for tg in alb_conn3.describe_listeners(LoadBalancerArn=alb_arn)['Listeners']]
+                          for tg in alb_conn.describe_listeners(LoadBalancerArn=alb_arn)['Listeners']]
         tg_arns = [tg['TargetGroupArn']
-                   for tg in alb_conn3.describe_target_groups(LoadBalancerArn=alb_arn)['TargetGroups']]
+                   for tg in alb_conn.describe_target_groups(LoadBalancerArn=alb_arn)['TargetGroups']]
 
         for arn in listeners_arns:
             log('Deleting LB Listener {}'.format(arn), log_file)
-            alb_conn3.delete_listener(ListenerArn=arn)
+            alb_conn.delete_listener(ListenerArn=arn)
         for arn in tg_arns:
             log('Deleting Target Group {}'.format(arn), log_file)
-            alb_conn3.delete_target_group(TargetGroupArn=arn)
+            alb_conn.delete_target_group(TargetGroupArn=arn)
         log('Deleting ALB {}'.format(alb_arn), log_file)
-        alb_conn3.delete_load_balancer(LoadBalancerArn=alb_arn)
+        alb_conn.delete_load_balancer(LoadBalancerArn=alb_arn)
 
     def _get_instance_status_from_alb(self, alb_arn):
         alb_conn = self._get_alb_connection()
@@ -632,42 +619,42 @@ class AwsAlbManager(AwsElbManager):
                     else "outofservice")
         return ret
 
-    def get_instance_status(self, elb_names):
+    def get_instances_status_fom_lb(self, lb_names):
         alb_conn = self._get_alb_connection()
         albs = ({alb['LoadBalancerName']: alb['LoadBalancerArn']
-                 for alb in alb_conn.describe_load_balancers(Names=elb_names)['LoadBalancers']})
+                 for alb in alb_conn.describe_load_balancers(Names=lb_names)['LoadBalancers']})
         as_instance_status = {}
         for alb_name, alb_arn in albs.items():
             as_instance_status[alb_name] = self._get_instance_status_from_alb(alb_arn)
         return as_instance_status
 
-    def get_instance_status_autoscaling_group(self, as_group, log_file):
+    def get_instances_status_from_autoscale(self, as_name, log_file):
         as_instance_status = {}
-        for alb in self._list_objects_from_autoscale(as_group):
+        for alb in self._list_objects_from_autoscale(as_name):
             as_instance_status[alb['LoadBalancerName']] = self._get_instance_status_from_alb(alb['LoadBalancerArn'])
         return as_instance_status
 
-    def register_into_autoscale(self, as_name, elbs_to_deregister, elbs_to_register, log_file):
-        elbs_to_deregister = elbs_to_deregister or []
-        elbs_to_register = elbs_to_register or []
-        as_conn3 = self._get_as_connection()
+    def register_into_autoscale(self, as_name, lb_names_to_deregister, lb_names_to_register, log_file):
+        lb_names_to_deregister = lb_names_to_deregister or []
+        lb_names_to_register = lb_names_to_register or []
+        as_conn = self._get_as_connection()
         try:
-            for alb in elbs_to_register:
+            for alb in lb_names_to_register:
                 alb = self.get_by_name(alb)
                 source_tg_list = self._get_targetgroup_arns_from_alb(alb['LoadBalancerArn'])
                 if len(source_tg_list) > 1:
                     raise LoadBalancerManagerException('Multiple target groups for an ALB is currently not supported')
                 log('Attaching Target Group {0} to ASG {1}'.format(source_tg_list[0], as_name), log_file)
-                as_conn3.attach_load_balancer_target_groups(
+                as_conn.attach_load_balancer_target_groups(
                     AutoScalingGroupName=as_name, TargetGroupARNs=[source_tg_list[0]])
 
-            for alb in elbs_to_deregister:
+            for alb in lb_names_to_deregister:
                 alb = self.get_by_name(alb)
                 source_tg_list = self._get_targetgroup_arns_from_alb(alb['LoadBalancerArn'])
                 if len(source_tg_list) > 1:
                     raise LoadBalancerManagerException('Multiple target groups for an ALB is currently not supported')
                 log('Detaching Target Group {0} from ASG {1}'.format(source_tg_list[0], as_name), log_file)
-                as_conn3.detach_load_balancer_target_groups(
+                as_conn.detach_load_balancer_target_groups(
                     AutoScalingGroupName=as_name, TargetGroupARNs=[source_tg_list[0]])
         except Exception as e:
             log("Exception during register ELB operation into ASG: {0}".format(str(e)), log_file)
@@ -695,28 +682,28 @@ class AwsAlbManager(AwsElbManager):
     def list_from_autoscale(self, as_name, log_file, filter_tag=None):
         return [lb['LoadBalancerName'] for lb in self._list_objects_from_autoscale(as_name, filter_tag)]
 
-    def get_health_check(self, elb_name):
-        alb = self.get_by_name(elb_name)
+    def get_health_check(self, lb_name):
+        alb = self.get_by_name(lb_name)
         conn = self._get_alb_connection()
         tg_list = conn.describe_target_groups(LoadBalancerArn=alb['LoadBalancerArn'])['TargetGroups']
         if len(tg_list) > 1:
             raise LoadBalancerManagerException('Multiple target groups for an ALB is currently not supported')
         return {k: tg_list[0].get(v, None) for k, v in self.HEALTHCHECK_PARAMS_MAPPING.items()}
 
-    def configure_health_check(self, elb_name, interval=None, timeout=None, unhealthy_threshold=None,
+    def configure_health_check(self, lb_name, interval=None, timeout=None, unhealthy_threshold=None,
                                healthy_threshold=None, protocol=None, port=None, path=None, target=None):
-        alb_conn3 = self._get_alb_connection()
+        alb_conn = self._get_alb_connection()
         func_params = locals()
         params = {v: func_params[p] for p, v in self.HEALTHCHECK_PARAMS_MAPPING.items() if func_params.get(p, None)}
-        for tg_arn in self._get_targetgroup_arns_from_alb(self.get_by_name(elb_name)['LoadBalancerArn']):
+        for tg_arn in self._get_targetgroup_arns_from_alb(self.get_by_name(lb_name)['LoadBalancerArn']):
             params['TargetGroupArn'] = tg_arn
-            response = alb_conn3.modify_target_group(**params)
+            response = alb_conn.modify_target_group(**params)
 
-    def register_all_instances_to_elb(self, elb_names, instances, log_file):
+    def register_all_instances_to_lbs(self, lb_names, instances, log_file):
         try:
             alb_conn = self._get_alb_connection()
             albs = ({alb['LoadBalancerName']: alb['LoadBalancerArn']
-                    for alb in alb_conn.describe_load_balancers(Names=elb_names)['LoadBalancers']})
+                     for alb in alb_conn.describe_load_balancers(Names=lb_names)['LoadBalancers']})
             for alb_name, alb_arn in albs.items():
                 tg_list = alb_conn.describe_target_groups(LoadBalancerArn=alb_arn)['TargetGroups']
                 if len(tg_list) > 1:
@@ -739,18 +726,18 @@ class AwsAlbManager(AwsElbManager):
             log("Exception during register operation: {0}".format(str(e)), log_file)
             raise
 
-    def deregister_all_instances_from_elb(self, elbs_with_instances, log_file):
+    def deregister_all_instances_from_lbs(self, lbs_with_instances, log_file):
         try:
             alb_conn = self._get_alb_connection()
             albs = ({alb['LoadBalancerName']: alb['LoadBalancerArn']
-                    for alb in alb_conn.describe_load_balancers(Names=elbs_with_instances.keys())['LoadBalancers']})
+                     for alb in alb_conn.describe_load_balancers(Names=lbs_with_instances.keys())['LoadBalancers']})
             for alb_name, alb_arn in albs.items():
                 tg_list = alb_conn.describe_target_groups(LoadBalancerArn=alb_arn)['TargetGroups']
                 if len(tg_list) > 1:
                     raise LoadBalancerManagerException('Multiple target groups for an ALB is currently not supported')
                 tg_arn = tg_list[0]['TargetGroupArn']
                 # sorted is only used in order to have predictable method calls for test cases
-                instance_names = sorted(elbs_with_instances[alb_name].keys())
+                instance_names = sorted(lbs_with_instances[alb_name].keys())
                 try:
                     alb_conn.deregister_targets(TargetGroupArn=tg_arn,
                                                 Targets=[{'Id': name} for name in instance_names])
@@ -765,51 +752,37 @@ class AwsAlbManager(AwsElbManager):
             log("Exception during deregister operation: {0}".format(str(e)), log_file)
             raise
 
-    def register_instance_from_elb(self, elb_names, hosts_id_list, log_file):
+    def register_instances_from_lbs(self, lb_names, instances_ids, log_file):
         try:
             alb_conn = self._get_alb_connection()
             albs = ({alb['LoadBalancerName']: alb['LoadBalancerArn']
-                    for alb in alb_conn.describe_load_balancers(Names=elb_names)['LoadBalancers']})
+                     for alb in alb_conn.describe_load_balancers(Names=lb_names)['LoadBalancers']})
             for alb_name, alb_arn in albs.items():
                 for alb_tg_arn in self._get_targetgroup_arns_from_alb(alb_arn):
                     alb_conn.register_targets(
                         TargetGroupArn=alb_tg_arn,
-                        Targets=[{'Id': host_id} for host_id in hosts_id_list])
-                    log("Instances {0} well registered in the ALB {1}".format(str(hosts_id_list), alb_name), log_file)
+                        Targets=[{'Id': host_id} for host_id in instances_ids])
+                    log("Instances {0} well registered in the ALB {1}".format(str(instances_ids), alb_name), log_file)
             return True
         except Exception as e:
             log("Exception during deregister operation: {0}".format(str(e)), log_file)
             raise
 
-    def deregister_instance_from_elb(self, elb_names, hosts_id_list, log_file):
+    def deregister_instances_from_lbs(self, lb_names, instances_ids, log_file):
         try:
             alb_conn = self._get_alb_connection()
             albs = ({alb['LoadBalancerName']: alb['LoadBalancerArn']
-                    for alb in alb_conn.describe_load_balancers(Names=elb_names)['LoadBalancers']})
+                     for alb in alb_conn.describe_load_balancers(Names=lb_names)['LoadBalancers']})
             for alb_name, alb_arn in albs.items():
                 for alb_tg_arn in self._get_targetgroup_arns_from_alb(alb_arn):
                     alb_conn.deregister_targets(
                         TargetGroupArn=alb_tg_arn,
-                        Targets=[{'Id': host_id} for host_id in hosts_id_list])
-                    log("Instances {0} well deregistered in the ALB {1}".format(str(hosts_id_list), alb_name), log_file)
+                        Targets=[{'Id': host_id} for host_id in instances_ids])
+                    log("Instances {0} well deregistered in the ALB {1}".format(str(instances_ids), alb_name), log_file)
             return True
         except Exception as e:
             log("Exception during deregister operation: {0}".format(str(e)), log_file)
             raise
-
-    def get_target_groups_from_autoscale(self, as_name):
-        return self._get_targetgroup_arns_from_autoscale(as_name)
-
-    def get_target_status_autoscaling_group(self, as_group):
-        alb_conn = self._get_alb_connection()
-        as_instance_status = {}
-        for tg_arn in self._get_targetgroup_arns_from_autoscale(as_group):
-            as_instance_status[tg_arn] = {}
-            for target_health in alb_conn.describe_target_health(TargetGroupArn=tg_arn)['TargetHealthDescriptions']:
-                target_id = target_health['Target']['Id']
-                target_state = target_health['TargetHealth']['State']
-                as_instance_status[tg_arn][target_id] = "healthy" if target_state.lower() == "healthy" else "unhealthy"
-        return as_instance_status
 
 
 class AwsMixedLoadBalancersManager(LoadBalancersManager):
@@ -818,7 +791,7 @@ class AwsMixedLoadBalancersManager(LoadBalancersManager):
         self.aws_clb_mgr = AwsClbManager(cloud_connection, region)
         self.aws_alb_mgr = AwsAlbManager(cloud_connection, region)
 
-    def get_instance_status_autoscaling_group(self, as_group, log_file):
-        instances = self.aws_clb_mgr.get_instance_status_autoscaling_group(as_group, log_file)
-        instances.update(self.aws_alb_mgr.get_instance_status_autoscaling_group(as_group, log_file))
+    def get_instances_status_from_autoscale(self, as_name, log_file):
+        instances = self.aws_clb_mgr.get_instances_status_from_autoscale(as_name, log_file)
+        instances.update(self.aws_alb_mgr.get_instances_status_from_autoscale(as_name, log_file))
         return instances

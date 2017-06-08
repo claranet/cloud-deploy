@@ -118,7 +118,7 @@ class Purgebluegreen():
 
             # Destroy temp ELB
             if destroy_temporary_elb_option:
-                lb_mgr.destroy(temp_elbs[0], self._log_file)
+                lb_mgr.destroy_lb(temp_elbs[0], self._log_file)
             else:
                 log(_yellow(" WARNING: Keeping temporary ELB '{0}'".format(temp_elbs[0])), self._log_file)
 

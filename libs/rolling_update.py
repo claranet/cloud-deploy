@@ -57,7 +57,7 @@ class RollingUpdate():
         destroy_asg_policy = ['OldestLaunchConfiguration']
 
         try:
-            elb_instances = lb_mgr.get_instance_status_autoscaling_group(self.as_name, self.log_file)
+            elb_instances = lb_mgr.get_instances_status_from_autoscale(self.as_name, self.log_file)
             asg_infos = get_autoscaling_group_object(as_conn, self.as_name)
             if not len(elb_instances):
                 raise GCallException('Cannot continue because there is no ELB configured in the AutoScaling Group')
@@ -74,7 +74,7 @@ class RollingUpdate():
                 update_auto_scaling_group_attributes(as_conn, self.as_name, asg_infos['MinSize'], asg_infos['MaxSize'] + group_size, asg_infos['DesiredCapacity'] + group_size)
 
                 log(_green('Deregister old instances from the Load Balancer (%s)' % str([host['id'] for host in instances_list])), self.log_file)
-                lb_mgr.deregister_instance_from_elb(elb_instances.keys(), [host['id'] for host in instances_list], self.log_file)
+                lb_mgr.deregister_instances_from_lbs(elb_instances.keys(), [host['id'] for host in instances_list], self.log_file)
                 wait_con_draining = int(lb_mgr.get_connection_draining_value(elb_instances.keys()))
                 log('Waiting {0}s: The connection draining time'.format(wait_con_draining), self.log_file)
                 time.sleep(wait_con_draining)
@@ -89,7 +89,7 @@ class RollingUpdate():
                     time.sleep(30)
                     asg_updated_infos = get_autoscaling_group_object(as_conn, self.as_name)
 
-                while len([i for i in lb_mgr.get_instance_status_autoscaling_group(self.as_name, self.log_file).values() if 'outofservice' in i.values()]):
+                while len([i for i in lb_mgr.get_instances_status_from_autoscale(self.as_name, self.log_file).values() if 'outofservice' in i.values()]):
                     log('Waiting 10s because the instance(s) are not in service in the ELB', self.log_file)
                     time.sleep(10)
 

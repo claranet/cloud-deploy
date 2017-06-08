@@ -75,7 +75,7 @@ def test_prepare_bluegreen(get_blue_green_apps,
 
     update_auto_scale.assert_called_once_with(connection_pool, green_app, None, LOG_FILE, update_as_params=True)
 
-    load_balancing.get_lb_manager.return_value.copy.assert_called_once_with(
+    load_balancing.get_lb_manager.return_value.copy_lb.assert_called_once_with(
         'bgtmp-id_green', 'elb_online', {'bluegreen-temporary': 'true', 'app_id': 'id_green'}, LOG_FILE)
 
     load_balancing.get_lb_manager.return_value.register_into_autoscale.assert_called_once_with(
@@ -130,7 +130,7 @@ def test_swap_bluegreen_clb(get_blue_green_apps,
         if as_group == 'autoscale-blue':
             return {'elb_online': {'instance_blue1': 'inservice'}}
         raise Exception("get_elb_instance_status_autoscaling_group : auto scale parameter is not correct")
-    load_balancing.get_lb_manager.return_value.get_instance_status_autoscaling_group.side_effect = get_isag_behavior
+    load_balancing.get_lb_manager.return_value.get_instances_status_from_autoscale.side_effect = get_isag_behavior
 
     def get_asgapts_behavior(as_conn, app, log_file):
         if app == green_app:
@@ -162,14 +162,14 @@ def test_swap_bluegreen_clb(get_blue_green_apps,
         call(connection_mock, 'autoscale-blue', [], LOG_FILE)
     ], True)
 
-    assert load_balancing.get_lb_manager.return_value.register_all_instances_to_elb.call_count == 2
-    load_balancing.get_lb_manager.return_value.register_all_instances_to_elb.assert_has_calls([
+    assert load_balancing.get_lb_manager.return_value.register_all_instances_to_lbs.call_count == 2
+    load_balancing.get_lb_manager.return_value.register_all_instances_to_lbs.assert_has_calls([
         call(['elb_online'], {'elb_temp': {'instance_green1': 'inservice'}}, LOG_FILE),
         call(['elb_temp'],  {'elb_online': {'instance_blue1': 'inservice'}}, LOG_FILE)
     ], False)
 
-    assert load_balancing.get_lb_manager.return_value.deregister_all_instances_from_elb.call_count == 2
-    load_balancing.get_lb_manager.return_value.deregister_all_instances_from_elb.assert_has_calls([
+    assert load_balancing.get_lb_manager.return_value.deregister_all_instances_from_lbs.call_count == 2
+    load_balancing.get_lb_manager.return_value.deregister_all_instances_from_lbs.assert_has_calls([
         call({'elb_online': {'instance_blue1': 'inservice'}}, LOG_FILE),
         call({'elb_temp': {'instance_green1': 'inservice'}}, LOG_FILE)
     ], False)
@@ -238,5 +238,5 @@ def test_purge_bluegreen(get_blue_green_apps,
     load_balancing.get_lb_manager.return_value.register_into_autoscale.assert_called_once_with(
         'autoscale-green', ['bgtmp-id_green'], None, LOG_FILE)
 
-    load_balancing.get_lb_manager.return_value.destroy.assert_called_once_with(
+    load_balancing.get_lb_manager.return_value.destroy_lb.assert_called_once_with(
         'bgtmp-id_green', LOG_FILE)

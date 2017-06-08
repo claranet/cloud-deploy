@@ -140,7 +140,7 @@ class Preparebluegreen(object):
             online_elb = online_elbs[0]
             temp_elb_name = "bgtmp-{0}".format(offline_app['_id'])[:31] # ELB name is 32 char long max
             log(_green("Creating the temporary ELB [{0}] by copying parameters from [{1}]".format(temp_elb_name, online_elb)), self._log_file)
-            new_elb_dns = lb_mgr.copy(temp_elb_name, online_elb, {'app_id': str(offline_app['_id']), 'bluegreen-temporary': 'true'}, self._log_file)
+            new_elb_dns = lb_mgr.copy_lb(temp_elb_name, online_elb, {'app_id': str(offline_app['_id']), 'bluegreen-temporary': 'true'}, self._log_file)
 
             # Register the temporary ELB into the AutoScale
             log(_green("Attaching ELB [{0}] to the AutoScale [{1}]".format(temp_elb_name, offline_app['autoscale']['name'])), self._log_file)

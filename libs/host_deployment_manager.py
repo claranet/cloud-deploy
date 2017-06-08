@@ -74,14 +74,14 @@ class HostDeploymentManager():
 
         lb_mgr = load_balancing.get_lb_manager(self._cloud_connection, app_region, load_balancing.LB_TYPE_AWS_CLB)
 
-        elb_instances = lb_mgr.get_instance_status_autoscaling_group(self._as_name, self._log_file)
+        elb_instances = lb_mgr.get_instances_status_from_autoscale(self._as_name, self._log_file)
         if not len(elb_instances):
             raise GCallException('Cannot continue because there is no ELB configured in the AutoScaling Group')
         elif len([i for i in elb_instances.values() if 'outofservice' in i.values()]):
             raise GCallException('Cannot continue because one or more instances are in the out of service state')
         else:
-            lb_mgr.deregister_instance_from_elb(elb_instances.keys(), [host['id'] for host in instances_list],
-                                                self._log_file)
+            lb_mgr.deregister_instances_from_lbs(elb_instances.keys(), [host['id'] for host in instances_list],
+                                                 self._log_file)
             wait_before_deploy = int(lb_mgr.get_connection_draining_value(elb_instances.keys())) + int(
                 self._safe_infos['wait_before_deploy'])
             log('Waiting {0}s: The connection draining time plus the custom value set for wait_before_deploy'.format(
@@ -94,9 +94,9 @@ class HostDeploymentManager():
             log('Waiting {0}s: The value set for wait_after_deploy'.format(self._safe_infos['wait_after_deploy']),
                 self._log_file)
             time.sleep(int(self._safe_infos['wait_after_deploy']))
-            lb_mgr.register_instance_from_elb(elb_instances.keys(), [host['id'] for host in instances_list],
-                                              self._log_file)
-            while len([i for i in lb_mgr.get_instance_status_autoscaling_group(self._as_name, self._log_file).values() if
+            lb_mgr.register_instances_from_lbs(elb_instances.keys(), [host['id'] for host in instances_list],
+                                               self._log_file)
+            while len([i for i in lb_mgr.get_instances_status_from_autoscale(self._as_name, self._log_file).values() if
                        'outofservice' in i.values()]):
                 log('Waiting 10s because the instance is not in service in the ELB', self._log_file)
                 time.sleep(10)
@@ -123,7 +123,7 @@ class HostDeploymentManager():
         elif len([i for i in alb_targets.values() if 'unhealthy' in i.values()]):
             raise GCallException('Cannot continue because one or more instances are in the unhealthy state')
         else:
-            alb_mgr.deregister_all_instances_from_elb(alb_targets.keys(),
+            alb_mgr.deregister_all_instances_from_lbs(alb_targets.keys(),
                                                       [{'Id': host['id']} for host in instances_list], self._log_file)
             wait_before_deploy = int(alb_mgr.get_connection_draining_value(alb_targets.keys())) + int(
                 self._safe_infos['wait_before_deploy'])
@@ -137,8 +137,8 @@ class HostDeploymentManager():
             log('Waiting {0}s: The value set for wait_after_deploy'.format(self._safe_infos['wait_after_deploy']),
                 self._log_file)
             time.sleep(int(self._safe_infos['wait_after_deploy']))
-            alb_mgr.register_instance_from_elb(alb_targets.keys(), [{'Id': host['id']} for host in instances_list],
-                                               self._log_file)
+            alb_mgr.register_instances_from_lbs(alb_targets.keys(), [{'Id': host['id']} for host in instances_list],
+                                                self._log_file)
             while len([i for i in alb_mgr.get_alb_target_status_autoscaling_group(self._as_name).values() if
                        'unhealthy' in i.values()]):
                 log('Waiting 10s because the instance is unhealthy in the ALB', self._log_file)
