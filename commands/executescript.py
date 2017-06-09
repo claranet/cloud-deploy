@@ -4,7 +4,7 @@ from settings import cloud_connections, DEFAULT_PROVIDER
 
 from ghost_log import log
 from ghost_tools import get_aws_connection_data
-from ghost_tools import b64decode_utf8
+from ghost_tools import b64decode_utf8, get_ghost_env_variables
 from libs.blue_green import get_blue_green_from_app
 from libs.ec2 import find_ec2_running_instances
 from libs.deploy import launch_executescript
@@ -83,14 +83,14 @@ class Executescript():
         """
         for item in self._app['modules']:
             if 'name' in item and item['name'] == module_name:
-                return item['path'], item.get('uid', 0)
-        return '/tmp', 0
+                return item['path'], item.get('uid', 0), item
+        return '/tmp', 0, None
 
     def _exec_script(self, script, module_name, fabric_execution_strategy):
-        context_path, sudoer_uid = self._get_module_path_and_uid(module_name)
+        context_path, sudoer_uid, module = self._get_module_path_and_uid(module_name)
         running_instances = find_ec2_running_instances(self._cloud_connection, self._app['name'], self._app['env'], self._app['role'], self._app['region'], ghost_color=self._color)
         hosts_list = [host['private_ip_address'] for host in running_instances]
-        launch_executescript(self._app, script, context_path, sudoer_uid, self._job['_id'], hosts_list, fabric_execution_strategy, self._log_file)
+        launch_executescript(self._app, script, context_path, sudoer_uid, self._job['_id'], hosts_list, fabric_execution_strategy, self._log_file, get_ghost_env_variables(self._app, module, self._color, self._job['user']))
 
     def execute(self):
         script = self._job['options'][0] if 'options' in self._job and len(self._job['options']) > 0 else None
