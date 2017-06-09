@@ -88,6 +88,14 @@ def find_ec2_instances(cloud_connection, ghost_app, ghost_env, ghost_role, regio
             hosts.append({'id': instance.id, 'private_ip_address': instance.private_ip_address, 'subnet_id': instance.subnet_id})
     return hosts
 
+def get_ec2_instance(cloud_connection, region, instance_filters):
+    """
+    Find and return an EC2 object based on criteria given via `instance_filters` parameter.
+    """
+    conn = cloud_connection.get_connection(region, ["ec2"])
+    found_instances = conn.get_only_instances(filters=instance_filters)
+    return found_instances[0] if len(found_instances) else None
+
 def destroy_ec2_instances(cloud_connection, app, log_file, ec2_state_filter=None):
     """ Destroy all EC2 instances which matches the `ghost app` tags
 
