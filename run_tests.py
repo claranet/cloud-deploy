@@ -11,6 +11,7 @@ modules = [
   "command",
   "commands.buildimage",
   "commands.deploy",
+  "commands.executescript",
   "commands.redeploy",
   "ghost_aws",
   "ghost_blueprints",

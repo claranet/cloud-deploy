@@ -14,7 +14,7 @@ import sys
 import os
 import tempfile
 from fabric.api import execute as fab_execute
-from fabfile import deploy
+from fabfile import deploy, executescript
 from ghost_tools import config
 from ghost_tools import render_stage2, get_app_module_name_list
 from ghost_tools import b64decode_utf8
@@ -335,15 +335,7 @@ def get_key_path(config, region, account, key_name, log_file):
 
     return key_path
 
-def launch_deploy(app, module, hosts_list, fabric_execution_strategy, log_file):
-    """ Launch fabric tasks on remote hosts.
-
-        :param  app:          dict: Ghost object which describe the application parameters.
-        :param  fabric_execution_strategy  string: Deployment strategy(serial or parallel).
-        :param  module:       dict: Ghost object which describe the module parameters.
-        :param  hosts_list:   list: Instances private IP.
-        :param  log_file:     object for logging.
-    """
+def _get_fabric_params(app, fabric_execution_strategy, task, log_file):
     app_region = app['region']
     app_assumed_account_id = app.get('assumed_account_id', '')
 
@@ -355,13 +347,8 @@ def launch_deploy(app, module, hosts_list, fabric_execution_strategy, log_file):
 
     key_filename = get_key_path(config, app_region, app_assumed_account_id, app_key_name, log_file)
 
-    bucket_region = config.get('bucket_region', app_region)
-    stage2 = render_stage2(config, bucket_region)
     if fabric_execution_strategy not in ['serial', 'parallel']:
         fabric_execution_strategy = config.get('fabric_execution_strategy', 'serial')
-
-    # Clone the deploy task function to avoid modifying the original shared instance
-    task = copy(deploy)
 
     if fabric_execution_strategy == 'parallel':
         setattr(task, 'serial', False)
@@ -370,11 +357,56 @@ def launch_deploy(app, module, hosts_list, fabric_execution_strategy, log_file):
         setattr(task, 'serial', True)
         setattr(task, 'parallel', False)
 
-    log("Updating current instances in {}: {}".format(fabric_execution_strategy, hosts_list), log_file)
-    result = fab_execute(task, module, app_ssh_username, key_filename, stage2, log_file, hosts=hosts_list)
+    return task, app_ssh_username, key_filename, fabric_execution_strategy
+
+def _handle_fabric_errors(result, message):
     hosts_error = []
-    for host, ret_code in result.iteritems():
+    for host, ret_code in result.items():
         if ret_code != 0:
             hosts_error.append(host)
     if len(hosts_error):
-        raise GCallException("Deploy error on: %s" % (", ".join(hosts_error)))
+        raise GCallException("{0} on: {1}".format(message, ", ".join(hosts_error)))
+
+def launch_deploy(app, module, hosts_list, fabric_execution_strategy, log_file):
+    """ Launch fabric tasks on remote hosts.
+
+        :param  app:          dict: Ghost object which describe the application parameters.
+        :param  module:       dict: Ghost object which describe the module parameters.
+        :param  hosts_list:   list: Instances private IP.
+        :param  fabric_execution_strategy  string: Deployment strategy(serial or parallel).
+        :param  log_file:     object for logging.
+    """
+    # Clone the deploy task function to avoid modifying the original shared instance
+    task = copy(deploy)
+
+    task, app_ssh_username, key_filename, fabric_execution_strategy = _get_fabric_params(app, fabric_execution_strategy, task, log_file)
+
+    bucket_region = config.get('bucket_region', app['region'])
+    stage2 = render_stage2(config, bucket_region)
+
+    log("Updating current instances in {}: {}".format(fabric_execution_strategy, hosts_list), log_file)
+    result = fab_execute(task, module, app_ssh_username, key_filename, stage2, log_file, hosts=hosts_list)
+
+    _handle_fabric_errors(result, "Deploy error")
+
+def launch_executescript(app, script, context_path, sudoer_user, jobid, hosts_list, fabric_execution_strategy, log_file):
+    """ Launch fabric tasks on remote hosts.
+
+        :param  app:          dict: Ghost object which describe the application parameters.
+        :param  script:       string: Shell script to execute.
+        :param  context_path: string: Directory to launch the script from.
+        :param  sudoer_user:  int: user UID to exec the script with
+        :param  jobid:        uuid: Job uuid
+        :param  hosts_list:   list: Instances private IP.
+        :param  fabric_execution_strategy  string: Deployment strategy(serial or parallel).
+        :param  log_file:     object for logging.
+    """
+    # Clone the executescript task function to avoid modifying the original shared instance
+    task = copy(executescript)
+
+    task, app_ssh_username, key_filename, fabric_execution_strategy = _get_fabric_params(app, fabric_execution_strategy, task, log_file)
+
+    log("Updating current instances in {}: {}".format(fabric_execution_strategy, hosts_list), log_file)
+    result = fab_execute(task, app_ssh_username, key_filename, context_path, sudoer_user, jobid, script, log_file, hosts=hosts_list)
+
+    _handle_fabric_errors(result, "Script execution error")

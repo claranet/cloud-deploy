@@ -25,3 +25,13 @@ def deploy(module, ssh_username, key_filename, stage2, log_file):
         sudo('chmod +x /tmp/stage2', stdout=log_file)
         result = sudo('/tmp/stage2 %s' % module['name'], stdout=log_file)
         return result.return_code
+
+@task
+def executescript(ssh_username, key_filename, context_path, sudoer_user, jobid, hot_script, log_file):
+    with settings(show('debug'), warn_only=True, user=ssh_username, key_filename=key_filename):
+        working_dir = '/ghost/%s' % jobid
+        sudo('mkdir -p "%s"' % working_dir, stdout=log_file)
+        put(StringIO(hot_script), '%s/ghost-execute-script' % working_dir, use_sudo=True)
+        sudo('chmod +x %s/ghost-execute-script' % working_dir, stdout=log_file)
+        result = sudo('cd "{c}" && {w}/ghost-execute-script'.format(c=context_path, w=working_dir), stdout=log_file, user=sudoer_user)
+        return result.return_code
