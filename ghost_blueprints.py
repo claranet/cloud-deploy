@@ -5,6 +5,7 @@ from flask import Blueprint
 
 from eve.auth import requires_auth
 from libs import blue_green
+from ghost_tools import boolify, config
 
 commands_blueprint = Blueprint('commands_blueprint', __name__)
 
@@ -31,5 +32,8 @@ def list_commands():
             # Blue/Green is disabled
             if name in blue_green.BLUE_GREEN_COMMANDS:
                 continue
+        # Check if `executescript` is disabled
+        if name == 'executescript' and not boolify(config.get('enable_executescript_command', True)):
+            continue
         commands.append( (name, module_desc) )
     return jsonify(commands)

@@ -3,7 +3,7 @@ from fabric.colors import green as _green, yellow as _yellow, red as _red
 from settings import cloud_connections, DEFAULT_PROVIDER
 
 from ghost_log import log
-from ghost_tools import get_aws_connection_data, GCallException
+from ghost_tools import get_aws_connection_data, GCallException, boolify
 from ghost_tools import b64decode_utf8, get_ghost_env_variables
 from libs.host_deployment_manager import HostDeploymentManager
 from libs.blue_green import get_blue_green_from_app
@@ -120,6 +120,8 @@ class Executescript():
         launch_executescript(self._app, script, context_path, sudoer_uid, self._job['_id'], [single_host_ip], 'serial', self._log_file, ghost_env_vars)
 
     def execute(self):
+        if not boolify(self._config.get('enable_executescript_command', True)):
+            return self._abort("This command has been disabled by your administrator.")
         script = self._job['options'][0] if 'options' in self._job and len(self._job['options']) > 0 else None
         module_name = self._job['options'][1] if 'options' in self._job and len(self._job['options']) > 1 else None
         execution_strategy = self._job['options'][2] if 'options' in self._job and len(self._job['options']) > 2 else None
