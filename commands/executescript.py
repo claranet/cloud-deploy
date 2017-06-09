@@ -5,11 +5,11 @@ from settings import cloud_connections, DEFAULT_PROVIDER
 from ghost_log import log
 from ghost_tools import get_aws_connection_data
 from ghost_tools import b64decode_utf8, get_ghost_env_variables
+from libs.host_deployment_manager import HostDeploymentManager
 from libs.blue_green import get_blue_green_from_app
-from libs.ec2 import find_ec2_running_instances
-from libs.deploy import launch_executescript
 
 COMMAND_DESCRIPTION = "Execute a script/commands on every instance"
+
 
 class Executescript():
     _app = None
@@ -23,14 +23,14 @@ class Executescript():
         self._worker = worker
         self._log_file = worker.log_file
         self._connection_data = get_aws_connection_data(
-                self._app.get('assumed_account_id', ''),
-                self._app.get('assumed_role_name', ''),
-                self._app.get('assumed_region_name', '')
-                )
+            self._app.get('assumed_account_id', ''),
+            self._app.get('assumed_role_name', ''),
+            self._app.get('assumed_region_name', '')
+        )
         self._cloud_connection = cloud_connections.get(self._app.get('provider', DEFAULT_PROVIDER))(
-                self._log_file,
-                **self._connection_data
-                )
+            self._log_file,
+            **self._connection_data
+        )
         blue_green, self._color = get_blue_green_from_app(self._app)
 
     def _get_notification_message_done(self):
@@ -86,16 +86,28 @@ class Executescript():
                 return item['path'], item.get('uid', 0), item
         return '/tmp', 0, None
 
-    def _exec_script(self, script, module_name, fabric_execution_strategy):
+    def _exec_script(self, script, module_name, fabric_execution_strategy, safe_deployment_strategy):
         context_path, sudoer_uid, module = self._get_module_path_and_uid(module_name)
-        running_instances = find_ec2_running_instances(self._cloud_connection, self._app['name'], self._app['env'], self._app['role'], self._app['region'], ghost_color=self._color)
-        hosts_list = [host['private_ip_address'] for host in running_instances]
-        launch_executescript(self._app, script, context_path, sudoer_uid, self._job['_id'], hosts_list, fabric_execution_strategy, self._log_file, get_ghost_env_variables(self._app, module, self._color, self._job['user']))
+        ghost_env_vars = get_ghost_env_variables(self._app, module, self._color, self._job['user'])
+
+        deploy_manager = HostDeploymentManager(self._cloud_connection, self._app, module, self._log_file,
+                                               self._app['safe-deployment'], fabric_execution_strategy,
+                                               'executescript', {
+                                                   'script': script,
+                                                   'context_path': context_path,
+                                                   'sudoer_uid': sudoer_uid,
+                                                   'jobid': self._job['_id'],
+                                                   'env_vars': ghost_env_vars,
+                                               })
+        deploy_manager.deployment(safe_deployment_strategy)
 
     def execute(self):
         script = self._job['options'][0] if 'options' in self._job and len(self._job['options']) > 0 else None
         module_name = self._job['options'][1] if 'options' in self._job and len(self._job['options']) > 1 else None
-        fabric_execution_strategy = self._job['options'][2] if 'options' in self._job and len(self._job['options']) > 2 else None
+        fabric_execution_strategy = self._job['options'][2] if 'options' in self._job and len(
+            self._job['options']) > 2 else None
+        safe_deployment_strategy = self._job['options'][3] if 'options' in self._job and len(
+            self._job['options']) > 3 else None
 
         try:
             log(_green("STATE: Started"), self._log_file)
@@ -114,7 +126,7 @@ class Executescript():
             except:
                 return self._abort("No valid script provided")
 
-            self._exec_script(script_data, module_name, fabric_execution_strategy)
+            self._exec_script(script_data, module_name, fabric_execution_strategy, safe_deployment_strategy)
 
             self._worker.update_status("done", message=self._get_notification_message_done())
             log(_green("STATE: End"), self._log_file)
