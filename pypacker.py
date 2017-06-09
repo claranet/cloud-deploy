@@ -26,12 +26,12 @@ class Packer:
 
         provisioners_config = get_provisioners_config()
 
-        self.provisioners = []
+        self._provisioners = []
         for key, provisioner_config in provisioners_config.iteritems():
             if key == 'salt':
-                self.provisioners.append(FeaturesProvisionerSalt(self._log_file, self.unique, provisioner_config, config))
+                self._provisioners.append(FeaturesProvisionerSalt(self._log_file, self.unique, provisioner_config, config))
             elif key == 'ansible':
-                self.provisioners.append(FeaturesProvisionerAnsible(self._log_file, self.unique, provisioner_config, config))
+                self._provisioners.append(FeaturesProvisionerAnsible(self._log_file, self.unique, provisioner_config, config))
             else:
                 log("Invalid provisioner type. Please check your yaml 'config.yml' file", self._log_file)
                 raise GCallException("Invalid features provisioner type")
@@ -61,8 +61,8 @@ class Packer:
             'script': hooks['pre_buildimage']
         }]
 
-        for provisioner in self.provisioners:
-            provisioners.append(provisioner.build_packer_provisioner_config(self.packer_config))
+        for provisioner in self._provisioners:
+            provisioners.extend(provisioner.build_packer_provisioner_config(self.packer_config))
 
         provisioners.append({
             'type': 'shell',
@@ -70,7 +70,7 @@ class Packer:
             'script': hooks['post_buildimage']
         })
 
-        for provisioner in self.provisioners:
+        for provisioner in self._provisioners:
             provisioners.append(provisioner.build_packer_provisioner_cleanup())
 
         packer_json['builders'] = builders
@@ -116,7 +116,7 @@ class Packer:
         return rc, result
 
     def build_image(self, features_infos, hooks):
-        for provisioner in self.provisioners:
+        for provisioner in self._provisioners:
             provisioner_params = provisioner.format_provisioner_params(features_infos)
             features = provisioner.format_provisioner_features(features_infos)
             provisioner.build_provisioner_features_files(provisioner_params, features)

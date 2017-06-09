@@ -27,9 +27,9 @@ features_provisioners:
     salt: # salt by default, might be ansible
         git_repo: git@bitbucket.org:morea/morea-salt-formulas.git # default value if type is 'salt'
         git_revision: master
-#    ansible:
-#        git_repo: git@bitbucket.org:morea/morea-ansible-playbooks
-#        git_revision: master
+    ansible:
+        git_repo: git@bitbucket.org:morea/ansible-galaxy-requirements.git
+        git_revision: master
 
 
 # Endpoints
@@ -141,9 +141,9 @@ key_path: /home/admin/key/client_morea.pem
 # Optional, default:
 #eve_pagination_limit: 200
 
-# Packer should install or not the Salt Minion when baking an Image
+# Packer should install recipe package (salt minion or ansible) when backing Image
 # Optional, default:
-#skip_salt_bootstrap: True
+#skip_provisioner_bootstrap: True
 
 # LaunchConfiguration retention history per AutoScaling Group
 # Optional, default:

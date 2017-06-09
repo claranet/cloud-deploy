@@ -15,12 +15,12 @@ class FeaturesProvisionerSalt(FeaturesProvisioner):
         self._build_salt_pillar(params)
 
     def build_packer_provisioner_config(self, packer_config):
-        return {
+        return [{
             'type': 'salt-masterless',
             'local_state_tree': self.local_repo_path + '/salt',
             'local_pillar_roots': self.local_repo_path + '/pillar',
-            'skip_bootstrap': packer_config['skip_salt_bootstrap'],
-        }
+            'skip_bootstrap': packer_config['skip_provisioner_bootstrap'],
+        }]
 
     def build_packer_provisioner_cleanup(self):
         return {
