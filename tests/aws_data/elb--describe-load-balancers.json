@@ -35,6 +35,18 @@
             "InstancePort": 80,
             "InstanceProtocol": "HTTP"
           }
+        },
+        {
+          "PolicyNames": [
+            "AWSConsole-SSLNegotiationPolicy-elb-test-0123456789"
+          ],
+          "Listener": {
+            "LoadBalancerPort": 443,
+            "Protocol": "HTTPS",
+            "InstancePort": 80,
+            "InstanceProtocol": "HTTP",
+            "SSLCertificateId": "arn:aws:iam::0123456789:server-certificate/test-certificate"
+          }
         }
       ],
       "Instances": [
