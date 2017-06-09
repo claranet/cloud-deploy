@@ -147,7 +147,7 @@ function deploy_module() {
     echo "--------------------------------" >> /tmp/$LOGFILE
     echo "Deploying module $MODULE_NAME in $TARGET" >> /tmp/$LOGFILE
 
-    $AWS_BIN s3 cp --quiet s3://${S3_BUCKET}/${APP_PATH}/$MODULE_NAME/$MODULE_FILE /tmp/$MODULE_FILE --region "$S3_REGION"
+    $AWS_BIN s3 cp --only-show-errors s3://${S3_BUCKET}/${APP_PATH}/$MODULE_NAME/$MODULE_FILE /tmp/$MODULE_FILE --region "$S3_REGION"
 
     mkdir -p /ghost/$UUID
     echo "Extracting module in /ghost/$UUID" >> /tmp/$LOGFILE
@@ -250,7 +250,7 @@ function download_and_run_lifecycle_hook_script() {
 }
 
 echo "Downloading Manifest" >> /tmp/$LOGFILE
-$AWS_BIN s3 cp --quiet s3://${S3_BUCKET}/${APP_PATH}/MANIFEST /tmp/ --region "$S3_REGION"
+$AWS_BIN s3 cp --only-show-errors s3://${S3_BUCKET}/${APP_PATH}/MANIFEST /tmp/ --region "$S3_REGION"
 
 if [ $? -ne 0 ]; then
     echo "Manifest download error...Exiting" >> /tmp/$LOGFILE
