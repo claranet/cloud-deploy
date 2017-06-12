@@ -202,3 +202,7 @@ slack_configs:
 deployment_package_retention:
     prod: 42
     dev: 3
+
+# Option to enable or disable the `executescript` command
+# This command might be disabled in some cases
+#enable_executescript_command: True
