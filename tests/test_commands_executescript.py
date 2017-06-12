@@ -17,6 +17,30 @@ def test_executescript_cmd_abort():
     worker = MagicMock()
     worker.app = test_app
     worker.log_file = LOG_FILE
+    worker._config = {'enable_executescript_command': 'true'}
+
+    def assert_aborted(status, message=None):
+        assert status == "aborted", "Status is {} and not done : {}".format(status, message)
+    worker.update_status = assert_aborted
+
+    # Launching command
+    cmd = Executescript(worker)
+    cmd.execute()
+
+
+@mock.patch('commands.executescript.log', new=mocked_logger)
+@mock.patch('ghost_tools.log', new=mocked_logger)
+@mock.patch('ghost_aws.log', new=mocked_logger)
+def test_executescript_cmd_abort_disabled():
+    """
+    Test missing mandatory options
+    """
+    # Set up mocks and variables
+    test_app = get_test_application()
+
+    worker = MagicMock()
+    worker.app = test_app
+    worker.log_file = LOG_FILE
 
     def assert_aborted(status, message=None):
         assert status == "aborted", "Status is {} and not done : {}".format(status, message)
@@ -46,6 +70,7 @@ def test_executescript_cmd_single_host(cloud_connections):
     worker = MagicMock()
     worker.app = test_app
     worker.log_file = LOG_FILE
+    worker._config = {'enable_executescript_command': 'true'}
     worker.job = {
         'options': [
             get_dummy_bash_script(True),
@@ -96,6 +121,7 @@ def test_executescript_cmd_single_host_deep(get_ghost_env_variables,
     worker = MagicMock()
     worker.app = test_app
     worker.log_file = LOG_FILE
+    worker._config = {'enable_executescript_command': 'true'}
     worker.job = {
         'options': [
             get_dummy_bash_script(True),
@@ -167,6 +193,7 @@ def test_executescript_cmd(cloud_connections):
     worker = MagicMock()
     worker.app = test_app
     worker.log_file = LOG_FILE
+    worker._config = {'enable_executescript_command': 'true'}
     worker.job = {
         'options': [
             get_dummy_bash_script(True),
@@ -215,6 +242,7 @@ def test_executescript_cmd_deep(cloud_connections,
     worker = MagicMock()
     worker.app = test_app
     worker.log_file = LOG_FILE
+    worker._config = {'enable_executescript_command': 'true'}
     worker.job = {
         'options': [
             get_dummy_bash_script(True),
