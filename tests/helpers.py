@@ -3,6 +3,7 @@ import os
 import sys
 
 import simplejson
+from ghost_tools import b64encode_utf8
 
 LOG_FILE = 'log_file'
 
@@ -108,3 +109,11 @@ def get_aws_data(data_name):
             'aws_data',
             '{}.json'.format(data_name)), 'r') as f:
         return simplejson.load(f)
+
+
+def get_dummy_bash_script(b64_encoding=False):
+    script = """#!/bin/bash
+set -x
+echo "Dummy"
+"""
+    return b64encode_utf8(script) if b64_encoding else script
