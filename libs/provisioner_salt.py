@@ -11,25 +11,34 @@ class FeaturesProvisionerSalt(FeaturesProvisioner):
         FeaturesProvisioner.__init__(self, log_file, 'salt', unique_id, config, global_config)
 
     def build_provisioner_features_files(self, params, features):
-        self._build_salt_top(features)
-        self._build_salt_pillar(params)
+        """ Build salt files only if features with salt provisioner """
+        self._enabled_packer_salt_config = self._test_not_empty_salt_features(features)
+        if self._enabled_packer_salt_config:
+            self._build_salt_top(features)
+            self._build_salt_pillar(params)
 
     def build_packer_provisioner_config(self, packer_config):
-        return [{
-            'type': 'salt-masterless',
-            'local_state_tree': self.local_repo_path + '/salt',
-            'local_pillar_roots': self.local_repo_path + '/pillar',
-            'skip_bootstrap': packer_config['skip_provisioner_bootstrap'],
-        }]
+        if self._enabled_packer_salt_config:
+            return [{
+                'type': 'salt-masterless',
+                'local_state_tree': self.local_repo_path + '/salt',
+                'local_pillar_roots': self.local_repo_path + '/pillar',
+                'skip_bootstrap': packer_config['skip_provisioner_bootstrap'],
+            }]
 
     def build_packer_provisioner_cleanup(self):
-        return {
-            'type': 'shell',
-            'inline': [
-                "sudo rm -rf /srv/salt || echo 'salt: no cleanup salt'",
-                "sudo rm -rf /srv/pillar || echo 'salt: no cleanup pillar'"
-            ]
-        }
+        if self._enabled_packer_salt_config:
+            return {
+                'type': 'shell',
+                'inline': [
+                    "sudo rm -rf /srv/salt || echo 'salt: no cleanup salt'",
+                    "sudo rm -rf /srv/pillar || echo 'salt: no cleanup pillar'"
+                ]
+            }
+
+    def _test_not_empty_salt_features(self, features):
+        if features != []:
+            return True
 
     def _build_salt_top(self, params):
         self.salt_path = self.local_repo_path + '/salt'
@@ -38,9 +47,9 @@ class FeaturesProvisionerSalt(FeaturesProvisioner):
         log("Writing Salt Top state to: {0}".format(self.salt_top_path), self._log_file)
         #The common sls file is optional
         if os.path.exists(self.salt_path + '/common'):
-            data = {'base': {'*': ['common'] + params }}
+            data = {'base': {'*': ['common'] + params}}
         else:
-            data = {'base': {'*': params }}
+            data = {'base': {'*': params}}
         log('state: top.sls: {0}'.format(data), self._log_file)
         yaml.dump(data, stream, default_flow_style=False)
 
@@ -64,6 +73,12 @@ class FeaturesProvisionerSalt(FeaturesProvisioner):
         >>> features = [{'name': 'pkg', 'version': 'git_vim'}, {'name': 'pkg', 'version': 'package=lsof'}, {'name': 'pkg', 'version': 'package=curl'}]
         >>> FeaturesProvisionerSalt(None, None, None, None).format_provisioner_features(features)
         ['pkg']
+        >>> features = [{'name': 'pkg', 'version': 'git_vim', 'provisioner': 'salt'}, {'name': 'pkg', 'version': 'package=lsof', 'provisioner': 'salt'}, {'name': 'pkg', 'version': 'package=curl', 'provisioner': 'salt'}]
+        >>> FeaturesProvisionerSalt(None, None, None, None).format_provisioner_features(features)
+        ['pkg']
+        >>> features = []
+        >>> FeaturesProvisionerSalt(None, None, None, None).format_provisioner_features(features)
+        []
 
         """
         top = []
@@ -87,6 +102,22 @@ class FeaturesProvisionerSalt(FeaturesProvisioner):
         >>> import pprint
         >>> pprint.pprint(FeaturesProvisionerSalt(None, None, None, None).format_provisioner_params(features).items())
         [('pkg', {'package': ['lsof', 'curl'], 'version': 'git_vim'})]
+        >>> features = [{'name': 'pkg', 'version': 'git_vim', 'provisioner': 'salt'}, {'name': 'pkg', 'version': 'package=lsof', 'provisioner': 'salt'}, {'name': 'pkg', 'version': 'package=curl', 'provisioner': 'salt'}]
+        >>> import pprint
+        >>> pprint.pprint(FeaturesProvisionerSalt(None, None, None, None).format_provisioner_params(features).items())
+        [('pkg', {'package': ['lsof', 'curl'], 'version': 'git_vim'})]
+        >>> features = [{'name': 'pkg', 'version': 'git_vim', 'provisioner': 'ansible'}, {'name': 'pkg', 'version': 'package=lsof', 'provisioner': 'salt'}, {'name': 'pkg', 'version': 'package=curl', 'provisioner': 'salt'}]
+        >>> import pprint
+        >>> pprint.pprint(FeaturesProvisionerSalt(None, None, None, None).format_provisioner_params(features).items())
+        [('pkg', {'package': ['lsof', 'curl']})]
+        >>> features = [{'name': 'pkg', 'version': 'git_vim', 'provisioner': 'ansible'}, {'name': 'pkg', 'version': 'package=lsof', 'provisioner': 'ansible'}, {'name': 'pkg', 'version': 'package=curl', 'provisioner': 'ansible'}]
+        >>> import pprint
+        >>> pprint.pprint(FeaturesProvisionerSalt(None, None, None, None).format_provisioner_params(features).items())
+        []
+        >>> features = []
+        >>> import pprint
+        >>> pprint.pprint(FeaturesProvisionerSalt(None, None, None, None).format_provisioner_params(features).items())
+        []
 
         """
         pillar = {}

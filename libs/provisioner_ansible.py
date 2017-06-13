@@ -15,8 +15,10 @@ class FeaturesProvisionerAnsible(FeaturesProvisioner):
         self._ansible_requirement_app = self.local_repo_path + '/requirement_app.yml'
 
     def build_provisioner_features_files(self, params, features):
-        self._build_ansible_galaxy_requirement(features)
-        self._build_ansible_playbook(features)
+        self._enabled_packer_ansible_config = self._test_not_empty_ansible_features(features)
+        if self._enabled_packer_ansible_config:
+            self._build_ansible_galaxy_requirement(features)
+            self._build_ansible_playbook(features)
 
     def _build_ansible_playbook(self, features):
         """ Write ansible playbook from application features """
@@ -27,6 +29,10 @@ class FeaturesProvisionerAnsible(FeaturesProvisioner):
             except yaml.YAMLError, exc:
                 log("ERROR Writing ansible playbook: {0}".format(exc), self._log_file)
 
+    def _test_not_empty_ansible_features(self, features):
+        if features != [{'hosts': 'localhost', 'roles': []}]:
+            return True
+
     def _get_ansible_roles(self, features):
         """ Get role list with unique role
 
@@ -34,6 +40,10 @@ class FeaturesProvisionerAnsible(FeaturesProvisioner):
         >>> import pprint
         >>> pprint.pprint(sorted(FeaturesProvisionerAnsible(None, None, None, None)._get_ansible_roles(features)))
         ['apache2', 'package']
+        >>> features = [{'hosts': 'localhost', 'roles': []}]
+        >>> import pprint
+        >>> pprint.pprint(sorted(FeaturesProvisionerAnsible(None, None, None, None)._get_ansible_roles(features)))
+        []
 
         """
         return list(set([r['role'] for r in features[0]['roles']]))
@@ -68,23 +78,25 @@ class FeaturesProvisionerAnsible(FeaturesProvisioner):
         self._ansible_bootstrap_path = str(config['ghost_root_path']) + '/scripts/ansible_bootstrap.sh'
         if os.path.exists(self._ansible_bootstrap_path):
             if not boolify(packer_config.get('skip_provisioner_bootstrap', 'True')):
-                return [{
-                    'type': 'shell',
-                    'script': self._ansible_bootstrap_path,
-                    'execute_command' : "chmod +x {{ .Path }}; sudo bash -c '{{ .Vars }} {{ .Path }}'"
-                }, {
-                    'type': 'ansible-local',
-                    'playbook_dir': self.local_repo_path,
-                    'playbook_file': self.local_repo_path + '/main.yml',
-                    'command': "ANSIBLE_FORCE_COLOR=1 PYTHONUNBUFFERED=1 sudo ansible-playbook"
-                }]
+                if self._enabled_packer_ansible_config:
+                    return [{
+                        'type': 'shell',
+                        'script': self._ansible_bootstrap_path,
+                        'execute_command' : "chmod +x {{ .Path }}; sudo bash -c '{{ .Vars }} {{ .Path }}'"
+                    }, {
+                        'type': 'ansible-local',
+                        'playbook_dir': self.local_repo_path,
+                        'playbook_file': self.local_repo_path + '/main.yml',
+                        'command': "ANSIBLE_FORCE_COLOR=1 PYTHONUNBUFFERED=1 sudo ansible-playbook"
+                    }]
             else:
-                return [{
-                    'type': 'ansible-local',
-                    'playbook_dir': self.local_repo_path,
-                    'playbook_file': self.local_repo_path + '/main.yml',
-                    'command': "ANSIBLE_FORCE_COLOR=1 PYTHONUNBUFFERED=1 sudo ansible-playbook"
-                }]
+                if self._enabled_packer_ansible_config:
+                    return [{
+                        'type': 'ansible-local',
+                        'playbook_dir': self.local_repo_path,
+                        'playbook_file': self.local_repo_path + '/main.yml',
+                        'command': "ANSIBLE_FORCE_COLOR=1 PYTHONUNBUFFERED=1 sudo ansible-playbook"
+                    }]
 
     def build_packer_provisioner_cleanup(self):
         return {
@@ -103,6 +115,20 @@ class FeaturesProvisionerAnsible(FeaturesProvisioner):
         [{'hosts': 'localhost',
           'roles': [{'package_name': 'git_vim', 'role': 'package'},
                     {'package_name': 'curl', 'role': 'package'}]}]
+        >>> features = [{'name': 'package', 'version': 'package_name=git_vim', 'provisioner': 'salt'}, {'name': 'package', 'version': 'package_name=curl', 'provisioner': 'ansible'}]
+        >>> import pprint
+        >>> pprint.pprint(sorted(FeaturesProvisionerAnsible(None, None, None, None).format_provisioner_features(features)))
+        [{'hosts': 'localhost',
+          'roles': [{'package_name': 'curl', 'role': 'package'}]}]
+        >>> features = [{'name': 'package', 'version': 'package_name=git_vim', 'provisioner': 'salt'}, {'name': 'package', 'version': 'package_name=curl', 'provisioner': 'salt'}]
+        >>> import pprint
+        >>> pprint.pprint(sorted(FeaturesProvisionerAnsible(None, None, None, None).format_provisioner_features(features)))
+        [{'hosts': 'localhost', 'roles': []}]
+        >>> features = [{'name': 'package', 'version': 'package_name=git_vim'}, {'name': 'package', 'version': 'package_name=curl'}]
+        >>> import pprint
+        >>> pprint.pprint(sorted(FeaturesProvisionerAnsible(None, None, None, None).format_provisioner_features(features)))
+        [{'hosts': 'localhost', 'roles': []}]
+
         """
         playbook = [{'hosts': 'localhost', 'roles':[]}]
         for ft in features:
