@@ -44,13 +44,13 @@ class FeaturesProvisionerSalt(FeaturesProvisioner):
         self.salt_path = self.local_repo_path + '/salt'
         self.salt_top_path = self.salt_path + '/top.sls'
         stream = file(self.salt_top_path, 'w')
-        log("Writing Salt Top state to: {0}".format(self.salt_top_path), self._log_file)
+        log("Salt - Writing Top state to: {0}".format(self.salt_top_path), self._log_file)
         #The common sls file is optional
         if os.path.exists(self.salt_path + '/common'):
             data = {'base': {'*': ['common'] + params}}
         else:
             data = {'base': {'*': params}}
-        log('state: top.sls: {0}'.format(data), self._log_file)
+        log('Salt - state: top.sls: {0}'.format(data), self._log_file)
         yaml.dump(data, stream, default_flow_style=False)
 
     def _build_salt_pillar(self, features):
@@ -60,11 +60,11 @@ class FeaturesProvisionerSalt(FeaturesProvisioner):
         #Creating top.sls to call features.sls
         stream_top = file(self.salt_pillar_top_path, 'w')
         data_top = {'base': {'*': ['features']}}
-        log('pillar: top.sls: {0}'.format(data_top), self._log_file)
+        log('Salt - pillar: top.sls: {0}'.format(data_top), self._log_file)
         yaml.dump(data_top, stream_top, default_flow_style=False)
         #Creating features.sls file based on ghost app features
         stream_features = file(self.salt_pillar_features_path, 'w')
-        log('pillar: features.sls: {0}'.format(features), self._log_file)
+        log('Salt - pillar: features.sls: {0}'.format(features), self._log_file)
         yaml.dump(features, stream_features, default_flow_style=False)
 
     def format_provisioner_features(self, features):

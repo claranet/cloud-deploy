@@ -23,11 +23,12 @@ class FeaturesProvisionerAnsible(FeaturesProvisioner):
     def _build_ansible_playbook(self, features):
         """ Write ansible playbook from application features """
         with open(self._ansible_playbook_path, "w") as stream_features:
-            log("Writing ansible playbook: {0}".format(self._ansible_playbook_path), self._log_file)
+            log("Ansible - Writing playbook: {0}".format(self._ansible_playbook_path), self._log_file)
+            log("Ansible - features: {0}".format(features[0]['roles']), self._log_file)
             try:
                 yaml.dump(features, stream_features, default_flow_style=False, explicit_start=True)
             except yaml.YAMLError, exc:
-                log("ERROR Writing ansible playbook: {0}".format(exc), self._log_file)
+                log("Ansible - ERROR Writing playbook: {0}".format(exc), self._log_file)
 
     def _test_not_empty_ansible_features(self, features):
         if features != [{'hosts': 'localhost', 'roles': []}]:
@@ -58,7 +59,7 @@ class FeaturesProvisionerAnsible(FeaturesProvisioner):
                         if feature['name'] == role:
                             return feature
         else:
-            log("ERROR path doesn't exist : {0}".format(self._ansible_galaxy_rq_path), self._log_file)
+            log("Ansible - ERROR path doesn't exist : {0}".format(self._ansible_galaxy_rq_path), self._log_file)
 
     def _build_ansible_galaxy_requirement(self, features):
         """ Generates ansible galaxy requirement file from features """
@@ -68,11 +69,11 @@ class FeaturesProvisionerAnsible(FeaturesProvisioner):
         if requirement_app != []:
             with open(self._ansible_requirement_app, "w") as stream_requirement_app:
                 yaml.dump(requirement_app, stream_requirement_app, default_flow_style=False)
-            log("Getting roles from : {0}".format(self._ansible_galaxy_rq_path), self._log_file)
+            log("Ansible - Getting roles from : {0}".format(self._ansible_galaxy_rq_path), self._log_file)
             try:
-                gcall('ansible-galaxy install -r %s -p %s' % (self._ansible_requirement_app, self._ansible_galaxy_role_path), 'Install roles', self._log_file)
+                gcall('ansible-galaxy install -r %s -p %s' % (self._ansible_requirement_app, self._ansible_galaxy_role_path), 'Ansible - Installing roles', self._log_file)
             except GCallException, err:
-                log("ERROR excuting ansible-galaxy command {0}".format(err), self._log_file)
+                log("Ansible - ERROR excuting ansible-galaxy command {0}".format(err), self._log_file)
 
     def build_packer_provisioner_config(self, packer_config):
         self._ansible_bootstrap_path = str(config['ghost_root_path']) + '/scripts/ansible_bootstrap.sh'
