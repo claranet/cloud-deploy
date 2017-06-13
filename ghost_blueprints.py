@@ -5,6 +5,7 @@ from flask import Blueprint
 
 from eve.auth import requires_auth
 from libs import blue_green
+from ghost_tools import boolify, config
 
 commands_blueprint = Blueprint('commands_blueprint', __name__)
 
@@ -16,11 +17,19 @@ def list_commands():
     >>> from web_ui.tests import create_test_app_context; create_test_app_context()
     >>> import json
     >>> blue_green.ghost_has_blue_green_enabled = lambda: False
+    >>> config['enable_executescript_command'] = 'true'
+
+    >>> sorted(json.loads(list_commands().data))
+    [[u'buildimage', u'Build Image'], [u'createinstance', u'Create a new instance'], [u'deploy', u'Deploy module(s)'], [u'destroyallinstances', u'Destroy all instances'], [u'executescript', u'Execute a script/commands on every instance'], [u'recreateinstances', u'Recreate all the instances, rolling update possible when using an Autoscale'], [u'redeploy', u'Re-deploy an old module package'], [u'updateautoscaling', u'Update the autoscaling group and its LaunchConfiguration'], [u'updatelifecyclehooks', u'Update LifeCycle Hooks scripts']]
+
+    >>> config['enable_executescript_command'] = 'false'
     >>> sorted(json.loads(list_commands().data))
     [[u'buildimage', u'Build Image'], [u'createinstance', u'Create a new instance'], [u'deploy', u'Deploy module(s)'], [u'destroyallinstances', u'Destroy all instances'], [u'recreateinstances', u'Recreate all the instances, rolling update possible when using an Autoscale'], [u'redeploy', u'Re-deploy an old module package'], [u'updateautoscaling', u'Update the autoscaling group and its LaunchConfiguration'], [u'updatelifecyclehooks', u'Update LifeCycle Hooks scripts']]
+
     >>> blue_green.ghost_has_blue_green_enabled = lambda: True
+    >>> config['enable_executescript_command'] = 'true'
     >>> sorted(json.loads(list_commands().data))
-    [[u'buildimage', u'Build Image'], [u'createinstance', u'Create a new instance'], [u'deploy', u'Deploy module(s)'], [u'destroyallinstances', u'Destroy all instances'], [u'preparebluegreen', u'Prepare the Blue/Green env before swap'], [u'purgebluegreen', u'Purge the Blue/Green env'], [u'recreateinstances', u'Recreate all the instances, rolling update possible when using an Autoscale'], [u'redeploy', u'Re-deploy an old module package'], [u'swapbluegreen', u'Swap the Blue/Green env'], [u'updateautoscaling', u'Update the autoscaling group and its LaunchConfiguration'], [u'updatelifecyclehooks', u'Update LifeCycle Hooks scripts']]
+    [[u'buildimage', u'Build Image'], [u'createinstance', u'Create a new instance'], [u'deploy', u'Deploy module(s)'], [u'destroyallinstances', u'Destroy all instances'], [u'executescript', u'Execute a script/commands on every instance'], [u'preparebluegreen', u'Prepare the Blue/Green env before swap'], [u'purgebluegreen', u'Purge the Blue/Green env'], [u'recreateinstances', u'Recreate all the instances, rolling update possible when using an Autoscale'], [u'redeploy', u'Re-deploy an old module package'], [u'swapbluegreen', u'Swap the Blue/Green env'], [u'updateautoscaling', u'Update the autoscaling group and its LaunchConfiguration'], [u'updatelifecyclehooks', u'Update LifeCycle Hooks scripts']]
     """
     commands = []
     ghost_blue_green = blue_green.ghost_has_blue_green_enabled()
@@ -31,5 +40,8 @@ def list_commands():
             # Blue/Green is disabled
             if name in blue_green.BLUE_GREEN_COMMANDS:
                 continue
+        # Check if `executescript` is disabled
+        if name == 'executescript' and not boolify(config.get('enable_executescript_command', True)):
+            continue
         commands.append( (name, module_desc) )
     return jsonify(commands)

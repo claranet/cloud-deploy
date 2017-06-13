@@ -3,9 +3,6 @@ import os.path
 import time
 import yaml
 
-from libs.safe_deployment import SafeDeployment
-from libs.deploy import launch_deploy
-from libs.ec2 import find_ec2_pending_instances, find_ec2_running_instances
 from libs.ec2 import create_block_device, generate_userdata
 from libs.autoscaling import get_autoscaling_group_object
 from libs.blue_green import get_blue_green_from_app
@@ -61,53 +58,6 @@ def resume_autoscaling_group_processes(as_conn, as_group, as_group_processes_to_
             AutoScalingGroupName=as_group,
             ScalingProcesses=as_group_processes_to_resume
         )
-
-def deploy_module_on_hosts(cloud_connection, module, fabric_execution_strategy, app, config, log_file, safe_deployment_strategy):
-    """ Prepare the deployment process on instances.
-
-        :param  cloud_connection           object: AWS Provider
-        :param  module                     dict: Ghost object wich describe the module parameters.
-        :param  app                        dict: Ghost object which describe the application parameters.
-        :param  fabric_execution_strategy  string: Deployment strategy(serial or parrallel).
-        :param  safe_deployment_strategy   string: Safe Deployment strategy(1by1-1/3-25%-50%).
-        :param  config                     dict: The worker configuration.
-        :param  log_file:                  object for logging.
-    """
-    app_name = app['name']
-    app_env = app['env']
-    app_role = app['role']
-    app_region = app['region']
-    app_blue_green, app_color = get_blue_green_from_app(app)
-
-    # Retrieve autoscaling infos, if any
-    as_conn = cloud_connection.get_connection(app_region, ['autoscaling'], boto_version='boto3')
-    as_group, as_group_processes_to_suspend = get_autoscaling_group_and_processes_to_suspend(as_conn, app, log_file)
-    try:
-        # Suspend autoscaling
-        suspend_autoscaling_group_processes(as_conn, as_group, as_group_processes_to_suspend, log_file)
-        # Wait for pending instances to become ready
-        while True:
-            pending_instances = find_ec2_pending_instances(cloud_connection, app_name, app_env, app_role, app_region, as_group, ghost_color=app_color)
-            if not pending_instances:
-                break
-            log("INFO: waiting 10s for {} instance(s) to become running before proceeding with deployment: {}".format(len(pending_instances), pending_instances), log_file)
-            time.sleep(10)
-        running_instances = find_ec2_running_instances(cloud_connection, app_name, app_env, app_role, app_region, ghost_color=app_color)
-        if running_instances:
-            if safe_deployment_strategy:
-                safedeploy = SafeDeployment(cloud_connection, app, module, running_instances, log_file, app['safe-deployment'], fabric_execution_strategy, as_group)
-                safedeploy.safe_manager(safe_deployment_strategy)
-            else:
-                hosts_list = [host['private_ip_address'] for host in running_instances]
-                launch_deploy(app, module, hosts_list, fabric_execution_strategy, log_file)
-        else:
-            raise GCallException("No instance found in region {region} with tags app:{app}, env:{env}, role:{role}{color}".format(region=app_region,
-                                                                                                                                  app=app_name,
-                                                                                                                                  env=app_env,
-                                                                                                                                  role=app_role,
-                                                                                                                                  color=', color:%s' % app_color if app_color else ''))
-    finally:
-        resume_autoscaling_group_processes(as_conn, as_group, as_group_processes_to_suspend, log_file)
 
 def create_userdata_launchconfig_update_asg(ami_id, cloud_connection, app, config, log_file, update_as_params=False):
     if check_autoscale_exists(cloud_connection, app['autoscale']['name'], app['region']):

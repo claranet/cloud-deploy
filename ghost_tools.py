@@ -523,3 +523,25 @@ def get_provisioners_config():
 def get_available_provisioners_from_config():
     provisioners_config = get_provisioners_config()
     return provisioners_config.keys()
+
+
+def get_ghost_env_variables(app, module, color, user):
+    """
+    Generate an environment variable dictionnary for fabric
+    """
+    ghost_env = {}
+    ghost_env['GHOST_APP'] = app['name']
+    ghost_env['GHOST_ENV'] = app['env']
+    if color:
+        ghost_env['GHOST_ENV_COLOR'] = color
+    ghost_env['GHOST_ROLE'] = app['role']
+    if module:
+        ghost_env['GHOST_MODULE_NAME'] = module['name']
+        ghost_env['GHOST_MODULE_PATH'] = module['path']
+        ghost_env['GHOST_MODULE_REPO'] = module['git_repo'].strip()
+        if user:
+            ghost_env['GHOST_MODULE_USER'] = user
+    custom_env_vars = app.get('env_vars', None)
+    if custom_env_vars and len(custom_env_vars):
+        ghost_env.update({env_var['var_key'].encode('ascii', 'ignore'): env_var['var_value'].encode('ascii', 'ignore') for env_var in custom_env_vars})
+    return ghost_env
