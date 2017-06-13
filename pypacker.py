@@ -62,7 +62,8 @@ class Packer:
         }]
 
         for provisioner in self._provisioners:
-            provisioners.extend(provisioner.build_packer_provisioner_config(self.packer_config))
+            if provisioner.build_packer_provisioner_config(self.packer_config):
+                provisioners.extend(provisioner.build_packer_provisioner_config(self.packer_config))
 
         provisioners.append({
             'type': 'shell',
@@ -71,7 +72,8 @@ class Packer:
         })
 
         for provisioner in self._provisioners:
-            provisioners.append(provisioner.build_packer_provisioner_cleanup())
+            if provisioner.build_packer_provisioner_config(self.packer_config):
+                provisioners.append(provisioner.build_packer_provisioner_cleanup())
 
         packer_json['builders'] = builders
         packer_json['provisioners'] = provisioners
