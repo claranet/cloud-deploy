@@ -145,6 +145,10 @@ key_path: /home/admin/key/client_morea.pem
 # Optional, default:
 #skip_provisioner_bootstrap: True
 
+# Provisioner log level
+# Optional, default:
+#provisioner_log_level: info
+
 # LaunchConfiguration retention history per AutoScaling Group
 # Optional, default:
 #launch_configuration_retention: 5

@@ -3,6 +3,7 @@ import re
 import yaml
 
 from ghost_log import log
+from ghost_tools import config
 
 from .provisioner import FeaturesProvisioner
 
@@ -18,12 +19,14 @@ class FeaturesProvisionerSalt(FeaturesProvisioner):
             self._build_salt_pillar(params)
 
     def build_packer_provisioner_config(self, packer_config):
+        self._provisioner_log_level = config.get('provisioner_log_level', 'info')
         if self._enabled_packer_salt_config:
             return [{
                 'type': 'salt-masterless',
                 'local_state_tree': self.local_repo_path + '/salt',
                 'local_pillar_roots': self.local_repo_path + '/pillar',
                 'skip_bootstrap': packer_config['skip_provisioner_bootstrap'],
+                'log_level': self._provisioner_log_level,
             }]
 
     def build_packer_provisioner_cleanup(self):

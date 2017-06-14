@@ -1,12 +1,12 @@
 #!/bin/bash
-set -xe
+set -e
 
 info() {
     if type uname >/dev/null 2>&1; then
         info_arch
         info_system 
     else
-        echo "Error: needs \"uname\" command to work"
+        echo "Ansible Bootstrap - Error: needs \"uname\" command to work"
         exit 1
     fi
     echo -e "OS ARCH:\t $OS_ARCH"
@@ -25,7 +25,7 @@ info_system() {
             info_distro
             ;;
         * )
-            echo "Error: ${OS_NAME} not supported"
+            echo "Ansible Bootstrap - Error: ${OS_NAME} not supported"
             exit 1
             ;;
     esac
@@ -46,7 +46,7 @@ info_distro() {
     elif type pip >/dev/null 2>&1; then
         PIP_INSTALL=1
     else
-        echo "Error: impossible to find release information and pip is not available"
+        echo "Ansible Bootstrap - Error: impossible to find release information and pip is not available"
         exit 1
     fi
 }
@@ -87,7 +87,7 @@ init() {
             ;;
 	* )
             if [ -z ${PIP_INSTALL} ]; then
-                 echo "No need init for this distro"
+                 echo "Ansible Bootstrap - No need init for this distro"
             else
 		 init_pip
             fi
@@ -133,7 +133,7 @@ install_package() {
             emerge -av app-admin/ansible
             ;;
         * )
-            echo "Error: install not supported for this os"
+            echo "Ansible Bootstrap - Error: install not supported for this os"
     esac
 }
 
