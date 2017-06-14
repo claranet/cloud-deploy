@@ -145,6 +145,14 @@ key_path: /home/admin/key/client_morea.pem
 # Optional, default:
 #skip_provisioner_bootstrap: True
 
+# Ansible Galaxy requirements file name can add additional path for example (public/requirements.yml)
+# Optional, default:
+#ansible_galaxy_requirements_path: requirements.yml
+
+# Salt additional pillar file to load
+# Optional, default:
+#salt_additional_pillar: None
+
 # Provisioner log level
 # Optional, default:
 #provisioner_log_level: info

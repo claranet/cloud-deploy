@@ -34,14 +34,25 @@ class FeaturesProvisionerSalt(FeaturesProvisioner):
             return {
                 'type': 'shell',
                 'inline': [
-                    "sudo rm -rf /srv/salt || echo 'salt: no cleanup salt'",
-                    "sudo rm -rf /srv/pillar || echo 'salt: no cleanup pillar'"
+                    "sudo rm -rf /srv/salt || echo 'Salt - no cleanup salt'",
+                    "sudo rm -rf /srv/pillar || echo 'Salt - no cleanup pillar'"
                 ]
             }
 
     def _test_not_empty_salt_features(self, features):
-        if features != []:
-            return True
+        """ Test is features set
+
+        >>> features = []
+        >>> import pprint
+        >>> pprint.pprint(FeaturesProvisionerSalt(None, None, None, None)._test_not_empty_salt_features(features))
+        False
+
+        >>> features = ['pkg']
+        >>> pprint.pprint(FeaturesProvisionerSalt(None, None, None, None)._test_not_empty_salt_features(features))
+        True
+
+        """
+        return features != []
 
     def _build_salt_top(self, params):
         self.salt_path = self.local_repo_path + '/salt'
@@ -60,9 +71,14 @@ class FeaturesProvisionerSalt(FeaturesProvisioner):
         self.salt_pillar_path = self.local_repo_path + '/pillar'
         self.salt_pillar_top_path = self.salt_pillar_path + '/top.sls'
         self.salt_pillar_features_path = self.salt_pillar_path + '/features.sls'
+        self._salt_additional_pillar = config.get('salt_additional_pillar', '')
         #Creating top.sls to call features.sls
         stream_top = file(self.salt_pillar_top_path, 'w')
         data_top = {'base': {'*': ['features']}}
+        if self._salt_additional_pillar != '':
+            data_top['base']['*'].append(self._salt_additional_pillar)
+        else:
+            log('Salt - No additional pillar to add', self._log_file)
         log('Salt - pillar: top.sls: {0}'.format(data_top), self._log_file)
         yaml.dump(data_top, stream_top, default_flow_style=False)
         #Creating features.sls file based on ghost app features
@@ -76,9 +92,11 @@ class FeaturesProvisionerSalt(FeaturesProvisioner):
         >>> features = [{'name': 'pkg', 'version': 'git_vim'}, {'name': 'pkg', 'version': 'package=lsof'}, {'name': 'pkg', 'version': 'package=curl'}]
         >>> FeaturesProvisionerSalt(None, None, None, None).format_provisioner_features(features)
         ['pkg']
+
         >>> features = [{'name': 'pkg', 'version': 'git_vim', 'provisioner': 'salt'}, {'name': 'pkg', 'version': 'package=lsof', 'provisioner': 'salt'}, {'name': 'pkg', 'version': 'package=curl', 'provisioner': 'salt'}]
         >>> FeaturesProvisionerSalt(None, None, None, None).format_provisioner_features(features)
         ['pkg']
+
         >>> features = []
         >>> FeaturesProvisionerSalt(None, None, None, None).format_provisioner_features(features)
         []
@@ -105,20 +123,20 @@ class FeaturesProvisionerSalt(FeaturesProvisioner):
         >>> import pprint
         >>> pprint.pprint(FeaturesProvisionerSalt(None, None, None, None).format_provisioner_params(features).items())
         [('pkg', {'package': ['lsof', 'curl'], 'version': 'git_vim'})]
+
         >>> features = [{'name': 'pkg', 'version': 'git_vim', 'provisioner': 'salt'}, {'name': 'pkg', 'version': 'package=lsof', 'provisioner': 'salt'}, {'name': 'pkg', 'version': 'package=curl', 'provisioner': 'salt'}]
-        >>> import pprint
         >>> pprint.pprint(FeaturesProvisionerSalt(None, None, None, None).format_provisioner_params(features).items())
         [('pkg', {'package': ['lsof', 'curl'], 'version': 'git_vim'})]
+
         >>> features = [{'name': 'pkg', 'version': 'git_vim', 'provisioner': 'ansible'}, {'name': 'pkg', 'version': 'package=lsof', 'provisioner': 'salt'}, {'name': 'pkg', 'version': 'package=curl', 'provisioner': 'salt'}]
-        >>> import pprint
         >>> pprint.pprint(FeaturesProvisionerSalt(None, None, None, None).format_provisioner_params(features).items())
         [('pkg', {'package': ['lsof', 'curl']})]
+
         >>> features = [{'name': 'pkg', 'version': 'git_vim', 'provisioner': 'ansible'}, {'name': 'pkg', 'version': 'package=lsof', 'provisioner': 'ansible'}, {'name': 'pkg', 'version': 'package=curl', 'provisioner': 'ansible'}]
-        >>> import pprint
         >>> pprint.pprint(FeaturesProvisionerSalt(None, None, None, None).format_provisioner_params(features).items())
         []
+
         >>> features = []
-        >>> import pprint
         >>> pprint.pprint(FeaturesProvisionerSalt(None, None, None, None).format_provisioner_params(features).items())
         []
 

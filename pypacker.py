@@ -72,8 +72,10 @@ class Packer:
         })
 
         for provisioner in self._provisioners:
+            iscleanup = provisioner.build_packer_provisioner_cleanup()
             if provisioner.build_packer_provisioner_config(self.packer_config):
-                provisioners.append(provisioner.build_packer_provisioner_cleanup())
+                if iscleanup:
+                    provisioners.append(provisioner.build_packer_provisioner_cleanup())
 
         packer_json['builders'] = builders
         packer_json['provisioners'] = provisioners

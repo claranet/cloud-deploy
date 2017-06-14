@@ -10,6 +10,8 @@ PROVISIONER_LOCAL_MIRROR="/ghost/.mirrors"
 ZABBIX_REPO="git@bitbucket.org:morea/zabbix.git"
 DEFAULT_PROVISIONER_TYPE="salt"
 
+class GalaxyNoMatchRoles(Exception):
+    pass
 
 class FeaturesProvisioner:
     def __init__(self, log_file, name, unique_id, config, global_config):
