@@ -1,5 +1,6 @@
 import os
 import yaml
+from fabric.colors import yellow as _yellow, red as _red
 
 from ghost_log import log
 from ghost_tools import gcall, GCallException, boolify, config
@@ -25,11 +26,11 @@ class FeaturesProvisionerAnsible(FeaturesProvisioner):
         """ Write ansible playbook from application features """
         with open(self._ansible_playbook_path, "w") as stream_features:
             log("Ansible - Writing playbook: {0}".format(self._ansible_playbook_path), self._log_file)
-            log("Ansible - features: {0}".format(features[0]['roles']), self._log_file)
+            log(_yellow("Ansible - features: {0}".format(features[0]['roles'])), self._log_file)
             try:
                 yaml.dump(features, stream_features, default_flow_style=False, explicit_start=True)
             except yaml.YAMLError, exc:
-                log("Ansible - ERROR Writing playbook: {0}".format(exc), self._log_file)
+                log(_red("Ansible - ERROR Writing playbook: {0}".format(exc)), self._log_file)
                 raise
 
     def _test_not_empty_ansible_features(self, features):
@@ -73,7 +74,7 @@ class FeaturesProvisionerAnsible(FeaturesProvisioner):
                         if feature['name'] == role:
                             return feature
         else:
-            log("Ansible - ERROR path doesn't exist : {0}".format(self._ansible_galaxy_rq_path), self._log_file)
+            log(_red("Ansible - ERROR path doesn't exist : {0}".format(self._ansible_galaxy_rq_path)), self._log_file)
 
     def _build_ansible_galaxy_requirement(self, features):
         """ Generates ansible galaxy requirement file from features """
@@ -89,7 +90,7 @@ class FeaturesProvisionerAnsible(FeaturesProvisioner):
             except GCallException:
                 raise
         else:
-            raise GalaxyNoMatchRoles("Ansible - ERROR No roles match galaxy requirements for one or more features {0}".format(features[0]['roles']))
+            raise GalaxyNoMatchRoles("Ansible - ERROR: No roles match galaxy requirements for one or more features {0}".format(features[0]['roles']))
 
     def build_packer_provisioner_config(self, packer_config):
         self._ansible_bootstrap_path = str(config['ghost_root_path']) + '/scripts/ansible_bootstrap.sh'

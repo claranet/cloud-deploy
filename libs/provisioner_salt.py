@@ -1,6 +1,7 @@
 import os
 import re
 import yaml
+from fabric.colors import yellow as _yellow
 
 from ghost_log import log
 from ghost_tools import config
@@ -83,7 +84,7 @@ class FeaturesProvisionerSalt(FeaturesProvisioner):
         yaml.dump(data_top, stream_top, default_flow_style=False)
         #Creating features.sls file based on ghost app features
         stream_features = file(self.salt_pillar_features_path, 'w')
-        log('Salt - pillar: features.sls: {0}'.format(features), self._log_file)
+        log(_yellow('Salt - pillar: features.sls: {0}'.format(features)), self._log_file)
         yaml.dump(features, stream_features, default_flow_style=False)
 
     def format_provisioner_features(self, features):
