@@ -29,6 +29,8 @@ class FeaturesProvisionerSalt(FeaturesProvisioner):
                 'skip_bootstrap': packer_config['skip_provisioner_bootstrap'],
                 'log_level': self._provisioner_log_level,
             }]
+        else:
+            return None
 
     def build_packer_provisioner_cleanup(self):
         if self._enabled_packer_salt_config:
@@ -39,6 +41,8 @@ class FeaturesProvisionerSalt(FeaturesProvisioner):
                     "sudo rm -rf /srv/pillar || echo 'Salt - no cleanup pillar'"
                 ]
             }
+        else:
+            return None
 
     def _test_not_empty_salt_features(self, features):
         """ Test is features set
