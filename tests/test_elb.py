@@ -1,14 +1,14 @@
 from mock import MagicMock, mock
 
-from libs.elb import copy_elb
-from libs.elb import deregister_instance_from_elb, deregister_all_instances_from_elb
-from libs.elb import register_instance_from_elb, register_all_instances_to_elb
+from libs.load_balancing import AwsClbManager
 from tests.helpers import LOG_FILE, mocked_logger, get_aws_data
 
 
-@mock.patch('libs.elb.log', new=mocked_logger)
+@mock.patch('libs.load_balancing.log', new=mocked_logger)
 def test_copy_elb():
+    cloud_connection = MagicMock()
     connection = MagicMock()
+    cloud_connection.get_connection.return_value = connection
 
     def describe_load_balancers(LoadBalancerNames=None):
         if LoadBalancerNames == ['test-elb']:
@@ -22,7 +22,7 @@ def test_copy_elb():
     connection.describe_load_balancer_attributes.return_value = get_aws_data('elb--describe-load-balancers-attributes')
     connection.create_load_balancer.return_value.__getitem__.side_effect = {"DNSName": "test-dns"}.__getitem__
 
-    dns = copy_elb(connection, 'copied_elb', 'test-elb', {'Key': 'foo', 'Value': 'bar'}, LOG_FILE)
+    dns = AwsClbManager(cloud_connection, 'region').copy_lb('copied_elb', 'test-elb', {'foo': 'bar'}, LOG_FILE)
 
     assert dns == "test-dns"
 
@@ -63,39 +63,49 @@ def test_copy_elb():
     )
 
 
-@mock.patch('libs.elb.log', new=mocked_logger)
+@mock.patch('libs.load_balancing.log', new=mocked_logger)
 def test_deregister_instance_from_elb():
+    cloud_connection = MagicMock()
     connection = MagicMock()
+    cloud_connection.get_connection.return_value = connection
 
-    ret = deregister_instance_from_elb(connection, ['test-elb'], ['id0', 'id1'], LOG_FILE)
+    ret = AwsClbManager(cloud_connection, 'region').deregister_instances_from_lbs(['test-elb'], ['id0', 'id1'], LOG_FILE)
 
     assert ret == True
     connection.deregister_instances.assert_called_once_with('test-elb', ['id0', 'id1'])
 
 
-@mock.patch('libs.elb.log', new=mocked_logger)
+@mock.patch('libs.load_balancing.log', new=mocked_logger)
 def test_deregister_all_instances_from_elb():
+    cloud_connection = MagicMock()
     connection = MagicMock()
+    cloud_connection.get_connection.return_value = connection
 
-    ret = deregister_all_instances_from_elb(connection, {'test-elb': {'id0':'inservice', 'id1': 'inservice'}}, LOG_FILE)
+    ret = AwsClbManager(cloud_connection, 'region').deregister_all_instances_from_lbs({'test-elb': {'id0': 'inservice', 'id1': 'inservice'}}, LOG_FILE)
 
     assert ret == True
     connection.deregister_instances.assert_called_once_with('test-elb', ['id0', 'id1'])
 
 
-@mock.patch('libs.elb.log', new=mocked_logger)
+@mock.patch('libs.load_balancing.log', new=mocked_logger)
 def test_register_instance_from_elb():
+    cloud_connection = MagicMock()
     connection = MagicMock()
+    cloud_connection.get_connection.return_value = connection
 
-    register_instance_from_elb(connection, ['test-elb'], ['id0', 'id1'], LOG_FILE)
+    ret = AwsClbManager(cloud_connection, 'region').register_instances_from_lbs(['test-elb'], ['id0', 'id1'], LOG_FILE)
 
+    assert ret == True
     connection.register_instances.assert_called_once_with('test-elb', ['id0', 'id1'])
 
 
-@mock.patch('libs.elb.log', new=mocked_logger)
+@mock.patch('libs.load_balancing.log', new=mocked_logger)
 def test_register_all_instances_to_elb():
+    cloud_connection = MagicMock()
     connection = MagicMock()
+    cloud_connection.get_connection.return_value = connection
 
-    register_all_instances_to_elb(connection, ['test-elb'], {'test-elb2': {'id0':'inservice', 'id1': 'inservice'}}, LOG_FILE)
+    ret = AwsClbManager(cloud_connection, 'region').register_all_instances_to_lbs(['test-elb'], {'test-elb2': {'id0': 'inservice', 'id1': 'inservice'}}, LOG_FILE)
 
+    assert ret == True
     connection.register_instances.assert_called_once_with('test-elb', ['id0', 'id1'])

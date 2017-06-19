@@ -1,0 +1,42 @@
+{
+  "LoadBalancers": [
+    {
+      "IpAddressType": "ipv4",
+      "VpcId": "vpc-test",
+      "LoadBalancerArn": "arn:aws:elasticloadbalancing:eu-central-1:0123456789:loadbalancer/app/alb-test/0123456789",
+      "State": {
+        "Code": "active"
+      },
+      "DNSName": "alb-test-0123456789.eu-central-1.elb.amazonaws.com",
+      "SecurityGroups": [
+        "sg-test"
+      ],
+      "LoadBalancerName": "alb-test",
+      "CreatedTime": "2017-06-02T16:19:46-02:00",
+      "Scheme": "internet-facing",
+      "Type": "application",
+      "CanonicalHostedZoneId": "Z215JYRZR1TBD5",
+      "AvailabilityZones": [
+        {
+          "SubnetId": "subnet-test-1",
+          "ZoneName": "eu-central-1a"
+        },
+        {
+          "SubnetId": "subnet-test-2",
+          "ZoneName": "eu-central-1b"
+        }
+      ]
+    }
+  ],
+  "ResponseMetadata": {
+    "RetryAttempts": 0,
+    "HTTPStatusCode": 200,
+    "RequestId": "1d63eeb3-4ad4-11e7-bda3-c3d4b3c0b279",
+    "HTTPHeaders": {
+      "x-amzn-requestid": "1d63eeb3-4ad4-11e7-bda3-c3d4b3c0b279",
+      "date": "Tue, 06 Jun 2017 16:20:54 GMT",
+      "content-length": "1457",
+      "content-type": "text/xml"
+    }
+  }
+}

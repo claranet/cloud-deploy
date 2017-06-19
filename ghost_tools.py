@@ -500,8 +500,9 @@ def split_hosts_list(hosts_list, split_type, log_file=None):
     elif split_type == '50%' and len(hosts_list) >= 2:
         chunk = 2
     else:
-        log("Not enough instances to perform safe deployment. Number of instances: \
-            {0} for safe deployment type: {1}" .format(str(len(hosts_list)), str(split_type)), log_file)
+        if log_file:
+            log("Not enough instances to perform safe deployment. Number of instances: \
+                {0} for safe deployment type: {1}" .format(str(len(hosts_list)), str(split_type)), log_file)
         raise GCallException("Cannot continue, not enought instances to perform the safe deployment")
     return [hosts_list[i::chunk] for i in range(chunk)]
 
