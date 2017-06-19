@@ -34,11 +34,19 @@ def test_copy_elb():
     connection.create_load_balancer.assert_called_once_with(
         LoadBalancerName='copied_elb',
         Listeners=[{
-            "LoadBalancerPort": 80,
-            "Protocol": "HTTP",
-            "InstancePort": 80,
-            "InstanceProtocol": "HTTP"
-        }],
+                "LoadBalancerPort": 80,
+                "Protocol": "HTTP",
+                "InstancePort": 80,
+                "InstanceProtocol": "HTTP"
+            },
+            {
+                "LoadBalancerPort": 443,
+                "Protocol": "HTTPS",
+                "InstancePort": 80,
+                "InstanceProtocol": "HTTP",
+                "SSLCertificateId": "arn:aws:iam::0123456789:server-certificate/test-certificate"
+            }
+        ],
         Subnets=["subnet-test"],
         SecurityGroups=["sg-test"],
         Scheme="internet-facing",

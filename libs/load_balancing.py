@@ -383,28 +383,17 @@ class AwsClbManager(AwsElbManager):
             log("  INFO: ELB {0} already available, no copy needed".format(new_lb_name), log_file)
             return dest_elb['DNSName']
         source_elb = self.get_by_name(source_lb_name)
-        source_elb_listener = source_elb['ListenerDescriptions'][0]['Listener']
         source_elb_tags = elb_conn.describe_tags(
             LoadBalancerNames=[source_lb_name]
         )['TagDescriptions'][0]['Tags']
         source_elb_attributes = elb_conn.describe_load_balancer_attributes(
             LoadBalancerName=source_lb_name
         )['LoadBalancerAttributes']
-        dest_elb_listener = {
-            'Protocol': source_elb_listener['Protocol'],
-            'LoadBalancerPort': source_elb_listener['LoadBalancerPort'],
-            'InstanceProtocol': source_elb_listener['InstanceProtocol'],
-            'InstancePort': source_elb_listener['InstancePort']
-        }
-
-        # Check if listener needs SSLCertificate
-        if 'SSLCertificateId' in source_elb_listener:
-            dest_elb_listener['SSLCertificateId'] = source_elb_listener['SSLCertificateId']
 
         # Create ELB
         response = elb_conn.create_load_balancer(
             LoadBalancerName=new_lb_name,
-            Listeners=[dest_elb_listener],
+            Listeners=[ld['Listener'] for ld in source_elb['ListenerDescriptions']],
             Subnets=source_elb['Subnets'],
             SecurityGroups=source_elb['SecurityGroups'],
             Scheme=source_elb['Scheme'],
