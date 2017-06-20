@@ -5,7 +5,7 @@ from fabric.colors import yellow as _yellow, red as _red
 
 from ghost_log import log
 from ghost_tools import gcall, GCallException, boolify
-from .provisioner import FeaturesProvisioner, GalaxyNoMatchingRolesException
+from .provisioner import FeaturesProvisioner, GalaxyNoMatchingRolesException, GalaxyBadRequirementPathException, AnsibleBadBootstrapPathException
 
 ANSIBLE_BASE_PLAYBOOK = [{'hosts': 'localhost', 'roles':[]}]
 ANSIBLE_COMMAND = "ANSIBLE_FORCE_COLOR=1 PYTHONUNBUFFERED=1 sudo ansible-playbook"
@@ -77,7 +77,7 @@ class FeaturesProvisionerAnsible(FeaturesProvisioner):
                         if feature['name'] == role:
                             return feature
         else:
-            log(_red("Ansible - ERROR path doesn't exist : {0}".format(self._ansible_galaxy_rq_path)), self._log_file)
+            raise GalaxyBadRequirementPathException("Ansible - ERROR: galaxy requirement path doesn't exist check file name on repository : {0}".format(self._ansible_galaxy_rq_path))
 
     def _build_ansible_galaxy_requirement(self, features):
         """ Generates ansible galaxy requirement file from features """
@@ -114,6 +114,8 @@ class FeaturesProvisionerAnsible(FeaturesProvisioner):
                         'playbook_file': self._ansible_playbook_path,
                         'command': ANSIBLE_COMMAND
                     }]
+        else:
+            raise AnsibleBadBootstrapPathException("Ansible - ERROR: bootstrap path not found : {0}".format(self._ansible_bootstrap_path))
 
     def build_packer_provisioner_cleanup(self):
         return None

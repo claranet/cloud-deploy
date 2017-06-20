@@ -6,7 +6,7 @@ from ghost_tools import get_aws_connection_data, GCallException
 from settings import cloud_connections, DEFAULT_PROVIDER
 from libs.deploy import touch_app_manifest
 from libs.image_builder_aws import AWSImageBuilder
-from libs.provisioner import GalaxyNoMatchingRolesException
+from libs.provisioner import GalaxyNoMatchingRolesException, GalaxyBadRequirementPathException, AnsibleBadBootstrapPathException
 
 COMMAND_DESCRIPTION = "Build Image"
 RELATED_APP_FIELDS = ['features', 'build_infos']
@@ -62,7 +62,7 @@ class Buildimage():
     def execute(self):
         try:
             ami_id, ami_name = self._aws_image_builder.start_builder()
-        except (GalaxyNoMatchingRolesException, GCallException) as e:
+        except (GalaxyNoMatchingRolesException, GalaxyBadRequirementPathException, AnsibleBadBootstrapPathException, GCallException) as e:
             self._worker.update_status("aborted", message=str(e))
             return
         if ami_id is not "ERROR":
