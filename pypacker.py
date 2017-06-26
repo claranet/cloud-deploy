@@ -24,7 +24,7 @@ class Packer:
         if not os.path.exists(PACKER_JSON_PATH):
             os.makedirs(PACKER_JSON_PATH)
 
-        provisioners_config = get_provisioners_config()
+        provisioners_config = get_provisioners_config(config)
 
         self._provisioners = []
         for key, provisioner_config in provisioners_config.iteritems():
