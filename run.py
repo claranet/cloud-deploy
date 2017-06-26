@@ -20,7 +20,7 @@ from models.apps import apps
 from models.jobs import jobs, CANCELLABLE_JOB_STATUSES, DELETABLE_JOB_STATUSES
 from models.deployments import deployments
 
-from ghost_tools import get_rq_name_from_app
+from ghost_tools import get_rq_name_from_app, boolify
 from ghost_blueprints import commands_blueprint
 from ghost_api import ghost_api_bluegreen_is_enabled, ghost_api_enable_green_app, ghost_api_delete_alter_ego_app, ghost_api_clean_bluegreen_app
 from ghost_api import check_app_feature_provisioner
@@ -197,23 +197,38 @@ def post_insert_app(items):
         if not ghost_api_enable_green_app(get_apps_db(), app, request.authorization.username):
             abort(422)
 
+
+def _post_fetched_app(app, embed_last_deployment=False):
+    # Retrieve each module's last deployment
+    for module in app.get('modules', []):
+        query = {
+            '$and': [
+                {'app_id': app['_id']},
+                {'module': module['name']}
+            ]
+        }
+        sort = [('timestamp', -1)]
+        deployment = get_deployments_db().find_one(query, sort=sort)
+        if deployment:
+            module['last_deployment'] = deployment if embed_last_deployment else deployment['_id']
+
+
+def post_fetched_apps(response):
+    # Do we need to embed each module's last_deployment?
+    embedded = json.loads(request.args.get('embedded', '{}'))
+    embed_last_deployment = boolify(embedded.get('modules.last_deployment', False))
+
+    for app in response['_items']:
+        _post_fetched_app(app, embed_last_deployment)
+
+
 def post_fetched_app(response):
     # Do we need to embed each module's last_deployment?
     embedded = json.loads(request.args.get('embedded', '{}'))
     embed_last_deployment = embedded.get('modules.last_deployment', False)
 
-    # Retrieve each module's last deployment
-    for module in response['modules']:
-        query = {
-                 '$and': [
-                          {'app_id': response['_id']},
-                          {'module': module['name']}
-                          ]
-                 }
-        sort = [('timestamp', -1)]
-        deployment = get_deployments_db().find_one(query, sort=sort)
-        if deployment:
-            module['last_deployment'] = deployment if embed_last_deployment else deployment['_id']
+    _post_fetched_app(response, embed_last_deployment)
+
 
 def pre_insert_job(items):
     job = items[0]
@@ -282,6 +297,7 @@ ghost.add_url_rule('/docs/api', 'eve_swagger.index')
 
 # Register eve hooks
 ghost.on_fetched_item_apps += post_fetched_app
+ghost.on_fetched_resource_apps += post_fetched_apps
 ghost.on_update_apps += pre_update_app
 ghost.on_updated_apps += post_update_app
 ghost.on_replace_apps += pre_replace_app
