@@ -225,7 +225,7 @@ def post_fetched_apps(response):
 def post_fetched_app(response):
     # Do we need to embed each module's last_deployment?
     embedded = json.loads(request.args.get('embedded', '{}'))
-    embed_last_deployment = embedded.get('modules.last_deployment', False)
+    embed_last_deployment = boolify(embedded.get('modules.last_deployment', False))
 
     _post_fetched_app(response, embed_last_deployment)
 
