@@ -1,6 +1,7 @@
 import os
 import copy
 import yaml
+import sys
 from fabric.colors import yellow as _yellow, red as _red
 
 from ghost_log import log
@@ -9,6 +10,7 @@ from .provisioner import FeaturesProvisioner, GalaxyNoMatchingRolesException, Ga
 
 ANSIBLE_BASE_PLAYBOOK = [{'hosts': 'localhost', 'roles':[]}]
 ANSIBLE_COMMAND = "ANSIBLE_FORCE_COLOR=1 PYTHONUNBUFFERED=1 sudo ansible-playbook"
+ANSIBLE_GALAXY_DEFAULT_CMD_PATH = "bin/ansible-galaxy"
 
 class FeaturesProvisionerAnsible(FeaturesProvisioner):
     """ Build features with ansible """
@@ -19,6 +21,7 @@ class FeaturesProvisionerAnsible(FeaturesProvisioner):
         self._ansible_requirement_app = os.path.join(self.local_repo_path, 'requirement_app.yml')
         self._ansible_bootstrap_path = os.path.join(self.global_config.get('ghost_root_path', '/usr/local/share/ghost'), 'scripts/ansible_bootstrap.sh')
         self._ansible_galaxy_rq_path = os.path.join(self.local_repo_path, self.global_config.get('ansible_galaxy_requirements_path', 'requirements.yml'))
+        self._ansible_command_path = os.path.join(sys.exec_prefix, ANSIBLE_GALAXY_DEFAULT_CMD_PATH)
 
     def build_provisioner_features_files(self, params, features):
         self._enabled_packer_ansible_config = self._test_not_empty_ansible_features(features)
@@ -88,7 +91,7 @@ class FeaturesProvisionerAnsible(FeaturesProvisioner):
             with open(self._ansible_requirement_app, "w") as stream_requirement_app:
                 yaml.dump(requirement_app, stream_requirement_app, default_flow_style=False)
             log("Ansible - Getting roles from : {0}".format(self._ansible_galaxy_rq_path), self._log_file)
-            gcall("ansible-galaxy install -r {} -p {}".format(self._ansible_requirement_app, self._ansible_galaxy_role_path), 'Ansible -  ansible-galaxy command', self._log_file)
+            gcall("{} install -r {} -p {}".format(self._ansible_command_path, self._ansible_requirement_app, self._ansible_galaxy_role_path), 'Ansible -  ansible-galaxy command', self._log_file)
         else:
             raise GalaxyNoMatchingRolesException("Ansible - ERROR: No roles match galaxy requirements for one or more features {0}".format(features[0]['roles']))
 
