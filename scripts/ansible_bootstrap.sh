@@ -96,7 +96,7 @@ init() {
 
 init_deb_old() {
     DEBIAN_FRONTEND=noninteractive apt-get install -y build-essential
-    DEBIAN_FRONTEND=noninteractive apt-get install -y python-all-dev python-mysqldb sshpass libssl-dev libffi-dev python-pip python-jinja2 python-httplib2 python-keyczar python-paramiko python-yaml git
+    DEBIAN_FRONTEND=noninteractive apt-get install -y python-all-dev sshpass libssl-dev libffi-dev python-pip python-jinja2 python-httplib2 python-keyczar python-paramiko python-yaml git
     PIP_INSTALL=1
 }
 
@@ -107,7 +107,7 @@ init_deb_new() {
 }
 
 init_pip() {
-    pip install MySQL-python Jinja2 httplib2 keyczar paramiko pyyaml
+    pip install Jinja2 httplib2 keyczar paramiko pyyaml
 }
 
 install() {

@@ -157,7 +157,7 @@ def check_app_feature_provisioner(updates):
     Check if all provisioner choosen per feature is a valid one available in the core configuration
     """
     if 'features' in updates:
-        provisioners_available = get_available_provisioners_from_config()
+        provisioners_available = get_available_provisioners_from_config(updates)
         for ft in updates['features']:
             if 'provisioner' in ft and not ft['provisioner'] in provisioners_available:
                 print('Provisioner "{p}" set for feature "{f}" is not available or not compatible.'.format(
