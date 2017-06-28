@@ -11,6 +11,8 @@ from libs.blue_green import get_blue_green_apps, get_blue_green_destroy_temporar
 from libs.blue_green import abort_if_other_bluegreen_job
 
 COMMAND_DESCRIPTION = "Purge the Blue/Green env"
+COMMAND_APP_FIELDS = ['blue_green']
+
 
 class Purgebluegreen():
     _app = None

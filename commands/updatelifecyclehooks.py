@@ -10,6 +10,8 @@ from ghost_tools import b64decode_utf8
 from libs.deploy import get_path_from_app_with_color
 
 COMMAND_DESCRIPTION = "Update LifeCycle Hooks scripts"
+COMMAND_APP_FIELDS = ['lifecycle_hooks']
+
 
 class Updatelifecyclehooks():
     _app = None

@@ -1,6 +1,3 @@
-import json
-import io
-import os
 import traceback
 
 from ghost_log import log
@@ -11,6 +8,8 @@ from libs.deploy import touch_app_manifest
 from libs.image_builder_aws import AWSImageBuilder
 
 COMMAND_DESCRIPTION = "Build Image"
+COMMAND_APP_FIELDS = ['features', 'build_infos']
+
 
 class Buildimage():
     _app = None
@@ -25,16 +24,15 @@ class Buildimage():
         self._config = worker._config
         self._log_file = worker.log_file
         self._connection_data = get_aws_connection_data(
-                self._app.get('assumed_account_id', ''),
-                self._app.get('assumed_role_name', ''),
-                self._app.get('assumed_region_name', '')
-                )
+            self._app.get('assumed_account_id', ''),
+            self._app.get('assumed_role_name', ''),
+            self._app.get('assumed_region_name', '')
+        )
         self._cloud_connection = cloud_connections.get(self._app.get('provider', DEFAULT_PROVIDER))(
-                self._log_file,
-                **self._connection_data
-                )
+            self._log_file,
+            **self._connection_data
+        )
         self._aws_image_builder = AWSImageBuilder(self._app, self._job, self._db, self._log_file, self._config)
-
 
     def _get_notification_message_done(self, ami_id):
         """
@@ -53,7 +51,7 @@ class Buildimage():
         return 'Build image OK: [{0}]'.format(ami_id)
 
     def _update_app_ami(self, ami_id, ami_name):
-        self._db.apps.update({'_id': self._app['_id']},{'$set': {'ami': ami_id, 'build_infos.ami_name': ami_name}})
+        self._db.apps.update({'_id': self._app['_id']}, {'$set': {'ami': ami_id, 'build_infos.ami_name': ami_name}})
         self._worker.update_status("done")
 
     def execute(self):
@@ -68,7 +66,8 @@ class Buildimage():
                 log("Purge old AMIs failed", self._log_file)
             if self._app['autoscale']['name']:
                 try:
-                    if create_userdata_launchconfig_update_asg(ami_id, self._cloud_connection, self._app, self._config, self._log_file):
+                    if create_userdata_launchconfig_update_asg(ami_id, self._cloud_connection, self._app, self._config,
+                                                               self._log_file):
                         self._worker.update_status("done", message=self._get_notification_message_done(ami_id))
                     else:
                         self._worker.update_status("failed")
