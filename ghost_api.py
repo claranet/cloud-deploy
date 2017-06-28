@@ -257,40 +257,42 @@ def check_app_b64_scripts(updates):
 
 def initialize_app_modules(updates, original):
     modules_edited = False
-    for updated_module in updates['modules']:
-        # Set 'initialized' to False by default in case of new modules
-        updated_module['initialized'] = False
-        updated_module['git_repo'] = updated_module['git_repo'].strip()
-        for original_module in original['modules']:
-            if updated_module['name'] == original_module['name']:
-                # Restore previous 'initialized' value as 'updated_module' does not contain it (read-only field)
-                updated_module['initialized'] = original_module.get('initialized', False)
-                # Compare all fields except 'initialized'
-                fields = set(original_module.keys() + updated_module.keys())
-                if 'initialized' in fields:
-                    fields.remove('initialized')
-                for prop in fields:
-                    if not updated_module.get(prop, None) == original_module.get(prop, None):
-                        updated_module['initialized'] = False
-                        modules_edited = True
-                        # At least one of the module's prop have changed, can exit loop
-                        break
-                # Module found, can exit loop
-                break
+    if 'modules' in updates and 'modules' in original:
+        for updated_module in updates['modules']:
+            # Set 'initialized' to False by default in case of new modules
+            updated_module['initialized'] = False
+            updated_module['git_repo'] = updated_module['git_repo'].strip()
+            for original_module in original['modules']:
+                if updated_module['name'] == original_module['name']:
+                    # Restore previous 'initialized' value as 'updated_module' does not contain it (read-only field)
+                    updated_module['initialized'] = original_module.get('initialized', False)
+                    # Compare all fields except 'initialized'
+                    fields = set(original_module.keys() + updated_module.keys())
+                    if 'initialized' in fields:
+                        fields.remove('initialized')
+                    for prop in fields:
+                        if not updated_module.get(prop, None) == original_module.get(prop, None):
+                            updated_module['initialized'] = False
+                            modules_edited = True
+                            # At least one of the module's prop have changed, can exit loop
+                            break
+                    # Module found, can exit loop
+                    break
     return updates, modules_edited
 
 
 def initialize_app_features(updates, original):
-    for updated_feature in updates['features']:
-        for original_feature in original['features']:
-            if updated_feature['name'] == original_feature['name']:
-                # Compare all fields
-                fields = set(original_feature.keys() + updated_feature.keys())
-                for prop in fields:
-                    if not updated_feature.get(prop, None) == original_feature.get(prop, None):
-                        # Feature field is different
-                        return True
-                break
+    if 'features' in updates and 'features' in original:
+        for updated_feature in updates['features']:
+            for original_feature in original['features']:
+                if updated_feature['name'] == original_feature['name']:
+                    # Compare all fields
+                    fields = set(original_feature.keys() + updated_feature.keys())
+                    for prop in fields:
+                        if not updated_feature.get(prop, None) == original_feature.get(prop, None):
+                            # Feature field is different
+                            return True
+                    break
     return False
 
 

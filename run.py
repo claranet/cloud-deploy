@@ -116,9 +116,7 @@ def pre_update_app(updates, original):
         abort(422)
 
     # Selectively reset each module's 'initialized' property if any of its other properties have changed
-    modules_edited = False
-    if 'modules' in updates and 'modules' in original:
-        updates, modules_edited = initialize_app_modules(updates, original)
+    updates, modules_edited = initialize_app_modules(updates, original)
 
     updates = check_and_set_app_fields_state(updates, original, modules_edited)
 
