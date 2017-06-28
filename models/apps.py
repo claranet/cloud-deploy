@@ -227,6 +227,14 @@ apps_schema = {
                                                    'schema': volumes.block}
                           }},
     'user': {'type': 'string'},
+    'modified_fields': {
+        'type': 'list',
+        'schema': {
+            'type': 'string',
+            'regex': '[a-zA-Z_]+[a-zA-Z0-9_]*$',
+            'required': False
+        },
+    },
 }
 
 apps = {
