@@ -22,19 +22,24 @@ from models.deployments import deployments
 
 from ghost_tools import get_rq_name_from_app, boolify
 from ghost_blueprints import commands_blueprint
-from ghost_api import ghost_api_bluegreen_is_enabled, ghost_api_enable_green_app, ghost_api_delete_alter_ego_app, ghost_api_clean_bluegreen_app
+from ghost_api import ghost_api_bluegreen_is_enabled, ghost_api_enable_green_app, ghost_api_delete_alter_ego_app, \
+    ghost_api_clean_bluegreen_app
 from ghost_api import check_app_feature_provisioner
 from libs.blue_green import BLUE_GREEN_COMMANDS, get_blue_green_from_app, ghost_has_blue_green_enabled
 from ghost_aws import normalize_application_tags
 
+
 def get_apps_db():
     return ghost.data.driver.db[apps['datasource']['source']]
+
 
 def get_jobs_db():
     return ghost.data.driver.db[jobs['datasource']['source']]
 
+
 def get_deployments_db():
     return ghost.data.driver.db[deployments['datasource']['source']]
+
 
 def pre_update_app(updates, original):
     """
@@ -104,7 +109,7 @@ def pre_update_app(updates, original):
             updated_module['initialized'] = False
             updated_module['git_repo'] = updated_module['git_repo'].strip()
             for original_module in original['modules']:
-                if updated_module['name'] ==  original_module['name']:
+                if updated_module['name'] == original_module['name']:
                     # Restore previous 'initialized' value as 'updated_module' does not contain it (read-only field)
                     updated_module['initialized'] = original_module.get('initialized', False)
                     # Compare all fields except 'initialized'
@@ -127,10 +132,10 @@ def pre_update_app(updates, original):
     try:
         blue_green_section, color = get_blue_green_from_app(updates)
         if (
-            blue_green_section and
-            'enable_blue_green' in blue_green_section and
-            isinstance(blue_green_section['enable_blue_green'], bool) and
-            not blue_green_section['enable_blue_green']
+                            blue_green_section and
+                                'enable_blue_green' in blue_green_section and
+                        isinstance(blue_green_section['enable_blue_green'], bool) and
+                    not blue_green_section['enable_blue_green']
         ):
 
             if not ghost_api_clean_bluegreen_app(get_apps_db(), original):
@@ -143,6 +148,7 @@ def pre_update_app(updates, original):
     except Exception as e:
         print e
         abort(500)
+
 
 def post_update_app(updates, original):
     try:
@@ -157,17 +163,21 @@ def post_update_app(updates, original):
         print e
         abort(500)
 
+
 def pre_replace_app(item, original):
-    #TODO: implement (or not?) application replacement
+    # TODO: implement (or not?) application replacement
     pass
 
+
 def pre_delete_app(item):
-    #TODO: implement purge of application (git repo clone)
+    # TODO: implement purge of application (git repo clone)
     pass
+
 
 def post_delete_app(item):
     if not ghost_api_delete_alter_ego_app(get_apps_db(), item):
         abort(422)
+
 
 def pre_insert_app(items):
     app = items[0]
@@ -182,14 +192,16 @@ def pre_insert_app(items):
     blue_green = app.get('blue_green', None)
     # We can now insert a new app with a different color
     if blue_green and blue_green.get('color', None):
-        if get_apps_db().find_one({'$and' : [{'name': name}, {'role': role}, {'env': env}, {'blue_green.color': blue_green['color']}]}):
+        if get_apps_db().find_one(
+                {'$and': [{'name': name}, {'role': role}, {'env': env}, {'blue_green.color': blue_green['color']}]}):
             abort(422)
     else:
-        if get_apps_db().find_one({'$and' : [{'name': name}, {'role': role}, {'env': env}]}):
+        if get_apps_db().find_one({'$and': [{'name': name}, {'role': role}, {'env': env}]}):
             abort(422)
     for module in app.get('modules'):
         module['initialized'] = False
     app['user'] = request.authorization.username
+
 
 def post_insert_app(items):
     app = items[0]
@@ -255,6 +267,7 @@ def pre_insert_job(items):
     job['status'] = 'init'
     job['message'] = 'Initializing job'
 
+
 def post_insert_job(items):
     job = items[0]
     job_id = str(job.get('_id'))
@@ -263,13 +276,16 @@ def post_insert_job(items):
     app = get_apps_db().find_one({'_id': ObjectId(app_id)})
 
     # Place job in app's queue
-    rq_job = Queue(name=get_rq_name_from_app(app), connection=ghost.ghost_redis_connection, default_timeout=RQ_JOB_TIMEOUT).enqueue(Command().execute, job_id, job_id=job_id)
+    rq_job = Queue(name=get_rq_name_from_app(app), connection=ghost.ghost_redis_connection,
+                   default_timeout=RQ_JOB_TIMEOUT).enqueue(Command().execute, job_id, job_id=job_id)
     assert rq_job.id == job_id
+
 
 def pre_delete_job(item):
     if item['status'] not in DELETABLE_JOB_STATUSES:
         # Do not allow deleting jobs not in cancelled, done, failed or aborted status
         abort(422)
+
 
 def pre_delete_job_enqueueings():
     job_id = request.view_args['job_id']
@@ -278,11 +294,13 @@ def pre_delete_job_enqueueings():
     if job and job['status'] in CANCELLABLE_JOB_STATUSES:
         # Cancel the job from RQ
         cancel_job(job_id, connection=ghost.ghost_redis_connection)
-        get_jobs_db().update({'_id': ObjectId(job_id)}, {'$set': {'status': 'cancelled', 'message': 'Job cancelled', '_updated': datetime.now()}})
+        get_jobs_db().update({'_id': ObjectId(job_id)},
+                             {'$set': {'status': 'cancelled', 'message': 'Job cancelled', '_updated': datetime.now()}})
         return
 
     # Do not allow cancelling jobs not in init status
     abort(422)
+
 
 # Create ghost app, explicitly specifying the settings to avoid errors during doctest execution
 ghost = Eve(auth=BCryptAuth, settings=eve_settings)
