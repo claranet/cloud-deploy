@@ -194,7 +194,7 @@ class Command:
         self.job['status'] = status
         self.job['message'] = message
         log(message, self.log_file)
-        self.job['_updated'] = datetime.now()
+        self.job['_updated'] = datetime.utcnow()
         self._db.jobs.update({ '_id': self.job['_id']}, {'$set': {'status': status, 'message': message, '_updated': self.job['_updated']}})
 
     def _get_log_path(self):
