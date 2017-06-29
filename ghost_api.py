@@ -283,26 +283,28 @@ def initialize_app_modules(updates, original):
 
 def initialize_app_features(updates, original):
     if 'features' in updates and 'features' in original:
-        for updated_feature in updates['features']:
-            for original_feature in original['features']:
-                if updated_feature['name'] == original_feature['name']:
-                    # Compare all fields
-                    fields = set(original_feature.keys() + updated_feature.keys())
-                    for prop in fields:
-                        if not updated_feature.get(prop, None) == original_feature.get(prop, None):
-                            # Feature field is different
-                            return True
-                    break
+        if not len(updates['features']) == len(original['features']):
+            # Different length means that feature have changed
+            return True
+        for index, updated_feature in enumerate(updates['features']):
+            original_feature = original['features'][index]
+            if updated_feature['name'] == original_feature['name']:
+                # Compare all fields
+                fields = set(original_feature.keys() + updated_feature.keys())
+                for prop in fields:
+                    if not updated_feature.get(prop, None) == original_feature.get(prop, None):
+                        # Feature field is different
+                        return True
     return False
 
 
 def check_field_diff(updates, original, object_name):
     if object_name in updates and object_name in original:
-        fields = set(original[object_name].keys() + updates[object_name].keys())
+        fields = set(updates[object_name].keys())
         for prop in fields:
             if not updates[object_name].get(prop, None) == original[object_name].get(prop, None):
+                # Field is different
                 return True
-
     return False
 
 
