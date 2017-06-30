@@ -22,16 +22,16 @@ docutils==0.13.1          # via awscli, botocore
 dominate==2.3.1           # via flask-bootstrap
 enum34==1.1.6             # via cryptography
 eve-swagger==0.0.6
-Eve==0.7.2                # via eve-swagger
+eve==0.7.2
 events==0.2.2             # via eve
-Fabric==1.13.1
+fabric==1.13.1
 first==2.0.1              # via pip-tools
-Flask-Bootstrap==3.3.7.1
-Flask-Login==0.4.0
+flask-bootstrap==3.3.7.1
+flask-login==0.4.0
 flask-pymongo==0.4.1      # via eve
-Flask-SocketIO==2.8.6
-Flask-WTF==0.14.2
-Flask==0.12               # via eve, flask-bootstrap, flask-login, flask-pymongo, flask-socketio, flask-wtf, rq-dashboard
+flask-socketio==2.8.6
+flask-wtf==0.14.2
+flask==0.12
 futures==3.0.5            # via s3transfer
 gevent-websocket==0.9.5
 gevent==1.2.1             ; python_version > '2.7.3'
@@ -42,11 +42,10 @@ gunicorn==19.7.0
 idna==2.5                 # via cryptography
 ipaddress==1.0.18         # via cryptography
 itsdangerous==0.24        # via eve, flask
-Jinja2==2.9.5             # via eve, flask
+jinja2==2.9.5
 jmespath==0.9.1           # via boto3, botocore
 markupsafe==0.23          # via eve, jinja2
 ndg-httpsclient==0.4.2
-packaging==16.8           # via setuptools
 paramiko==2.1.2           # via fabric
 pip-tools==1.8.0
 pluggy==0.4.0             # via tox
@@ -56,11 +55,10 @@ pyasn1==0.2.3
 pycparser==2.17           # via cffi
 pymongo==3.4.0
 pyopenssl==16.2.0
-pyparsing==2.2.0          # via packaging
 python-dateutil==2.6.0    # via arrow, botocore
 python-engineio==1.4.0    # via flask-socketio, python-socketio
 python-socketio==1.7.3    # via flask-socketio
-PyYAML==3.12              # via awscli
+pyyaml==3.12
 redis==2.10.5
 requests==2.13.0
 rq-dashboard==0.3.7
@@ -76,9 +74,6 @@ tox==2.7.0
 uwsgi==2.0.14
 virtualenv==15.1.0        # via tox
 visitor==0.1.3            # via flask-bootstrap
-Werkzeug==0.11.15         # via eve, flask
-WTForms==2.1              # via flask-wtf
+werkzeug==0.11.15
+wtforms==2.1
 yapf==0.16.0
-
-# The following packages are considered to be unsafe in a requirements file:
-# setuptools                # via cryptography
