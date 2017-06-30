@@ -1,5 +1,9 @@
 # Requirements
 
+* virtualenv
+* pip >= 9.0.1 (in local virtualenv)
+* pip-tools >= 1.9.0 (in local virtualenv)
+
 ## Dev
 Installing requirements:
 
@@ -7,8 +11,13 @@ Installing requirements:
 
 Updating dependencies:
 
+    $ pip-compile
+    $ pip install -r requirements.txt
+
+Upgrading dependencies:
+
     $ pip-compile -U
-    $ pip-sync
+    $ pip install -r requirements.txt
 
 Running unit tests with tox (sets up a virtualenv under the hood):
 
