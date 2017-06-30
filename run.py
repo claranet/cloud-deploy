@@ -26,6 +26,7 @@ from ghost_api import ghost_api_bluegreen_is_enabled, ghost_api_enable_green_app
 from ghost_api import ghost_api_delete_alter_ego_app, ghost_api_clean_bluegreen_app
 from ghost_api import check_app_feature_provisioner, check_app_module_path, check_app_b64_scripts
 from ghost_api import initialize_app_modules, check_and_set_app_fields_state
+from ghost_api import ALL_COMMAND_FIELDS
 from libs.blue_green import BLUE_GREEN_COMMANDS, get_blue_green_from_app, ghost_has_blue_green_enabled
 from ghost_aws import normalize_application_tags
 
@@ -193,6 +194,7 @@ def pre_insert_app(items):
             abort(422)
     for module in app.get('modules'):
         module['initialized'] = False
+    app['modified_fields'] = ALL_COMMAND_FIELDS
     app['user'] = request.authorization.username
 
 

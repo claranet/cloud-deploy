@@ -16,6 +16,8 @@ OPPOSITE_COLOR = {
     'green': 'blue'
 }
 FORBIDDEN_PATH = ['/', '/tmp', '/var', '/etc', '/ghost', '/root', '/home', '/home/admin']
+COMMAND_FIELDS = ['autoscale', 'blue_green', 'build_infos', 'environment_infos', 'lifecycle_hooks']
+ALL_COMMAND_FIELDS = ['modules', 'features'] + COMMAND_FIELDS
 
 
 def ghost_api_bluegreen_is_enabled(app):
@@ -316,7 +318,7 @@ def check_and_set_app_fields_state(updates, original, modules_edited=False):
     if initialize_app_features(updates, original):
         modified_fields.add('features')
 
-    for object_name in ['autoscale', 'blue_green', 'build_infos', 'environment_infos', 'lifecycle_hooks']:
+    for object_name in COMMAND_FIELDS:
         if check_field_diff(updates, original, object_name):
             modified_fields.add(object_name)
 
