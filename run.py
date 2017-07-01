@@ -118,8 +118,8 @@ def pre_update_app(updates, original):
 
     # Selectively reset each module's 'initialized' property if any of its other properties have changed
     updates, modules_edited = initialize_app_modules(updates, original)
-
-    updates = check_and_set_app_fields_state(request.authorization.username, updates, original, modules_edited)
+    user = request.authorization.username if request and request.authorization else 'Nobody'
+    updates = check_and_set_app_fields_state(user, updates, original, modules_edited)
 
     if 'environment_infos' in updates and 'instance_tags' in updates['environment_infos']:
         updates['environment_infos']['instance_tags'] = normalize_application_tags(original, updates)
