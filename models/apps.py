@@ -229,10 +229,24 @@ apps_schema = {
     'user': {'type': 'string'},
     'modified_fields': {
         'type': 'list',
+        'required': False,
         'schema': {
-            'type': 'string',
-            'regex': '[a-zA-Z_]+[a-zA-Z0-9_]*$',
-            'required': False
+            'type': 'dict',
+            'schema': {
+                'field': {
+                    'type': 'string',
+                    'regex': '[a-zA-Z_]+[a-zA-Z0-9_]*$',
+                    'required': False
+                },
+                'user': {
+                    'type': 'string',
+                    'required': False
+                },
+                'updated': {
+                    'type': 'datetime',
+                    'required': False
+                },
+           },
         },
     },
 }

@@ -2,11 +2,11 @@
     Library with all needed functions by Ghost API
 """
 # -*- coding: utf-8 -*-
-# !/usr/bin/env python
 
 import os
 import traceback
 import binascii
+from datetime import datetime
 from ghost_tools import ghost_app_object_copy, get_available_provisioners_from_config, b64decode_utf8
 from eve.methods.post import post_internal
 from libs.blue_green import get_blue_green_from_app
@@ -310,17 +310,34 @@ def check_field_diff(updates, original, object_name):
     return False
 
 
-def check_and_set_app_fields_state(updates, original, modules_edited=False):
-    modified_fields = set(original.get('modified_fields', []))
+def get_modified_fields_objects(data):
+    modified_fields_objects = data.get('modified_fields', [])
+    return {ob['field']: ob for ob in modified_fields_objects}
+
+
+def check_and_set_app_fields_state(user, updates, original, modules_edited=False):
+    modified_fields = get_modified_fields_objects(original)
 
     if modules_edited:
-        modified_fields.add('modules')
+        modified_fields['modules'] = {
+            'field': 'modules',
+            'user': user,
+            'updated': datetime.utcnow(),
+        }
     if initialize_app_features(updates, original):
-        modified_fields.add('features')
+        modified_fields['features'] = {
+            'field': 'features',
+            'user': user,
+            'updated': datetime.utcnow(),
+        }
 
     for object_name in COMMAND_FIELDS:
         if check_field_diff(updates, original, object_name):
-            modified_fields.add(object_name)
+            modified_fields[object_name] = {
+                'field': object_name,
+                'user': user,
+                'updated': datetime.utcnow(),
+            }
 
-    updates['modified_fields'] = list(modified_fields)
+    updates['modified_fields'] = modified_fields.values()
     return updates

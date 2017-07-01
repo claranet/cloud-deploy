@@ -119,7 +119,7 @@ def pre_update_app(updates, original):
     # Selectively reset each module's 'initialized' property if any of its other properties have changed
     updates, modules_edited = initialize_app_modules(updates, original)
 
-    updates = check_and_set_app_fields_state(updates, original, modules_edited)
+    updates = check_and_set_app_fields_state(request.authorization.username, updates, original, modules_edited)
 
     if 'environment_infos' in updates and 'instance_tags' in updates['environment_infos']:
         updates['environment_infos']['instance_tags'] = normalize_application_tags(original, updates)
@@ -192,9 +192,15 @@ def pre_insert_app(items):
     else:
         if get_apps_db().find_one({'$and': [{'name': name}, {'role': role}, {'env': env}]}):
             abort(422)
-    for module in app.get('modules'):
-        module['initialized'] = False
-    app['modified_fields'] = ALL_COMMAND_FIELDS
+    for mod in app.get('modules'):
+        mod['initialized'] = False
+
+    app['modified_fields'] = [{
+        'field': object_name,
+        'user': request.authorization.username,
+        'updated': datetime.utcnow(),
+    } for object_name in ALL_COMMAND_FIELDS]
+
     app['user'] = request.authorization.username
 
 
