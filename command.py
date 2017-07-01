@@ -197,6 +197,14 @@ class Command:
         self._db.jobs.update({'_id': self.job['_id']},
                              {'$set': {'status': status, 'message': message, '_updated': self.job['_updated']}})
 
+    def _update_app_modified_fields(self, fields):
+        app_modified_fields = {ob['field']: ob for ob in self.app.get('modified_fields', [])}
+        for f in fields:
+            if f in app_modified_fields.keys():
+                del app_modified_fields[f]
+        self._db.apps.update({'_id': self.app['_id']},
+                             {'$set': {'modified_fields': app_modified_fields.values()}})
+
     def _get_log_path(self):
         log_path = "{log_path}/{job_id}.txt".format(log_path=LOG_ROOT, job_id=self._worker_job.id)
         return log_path
@@ -271,6 +279,9 @@ class Command:
             if self.job['status'] == 'init':
                 self.update_status("started", "Job processing started")
                 command.execute()
+                if self.job['status'] == 'done':
+                    fmod = __import__('commands.' + self.job['command'], fromlist=['COMMAND_APP_FIELDS'])
+                    self._update_app_modified_fields(fmod.COMMAND_APP_FIELDS)
             else:
                 self.update_status("aborted",
                                    "Job was already in '{}' status (not in 'init' status)".format(self.job['status']))
