@@ -1,7 +1,7 @@
 # You can use a Docker image from Docker Hub or your own container
 # registry for your build environment.
 image:
-  name: moreaghost/morea-ghost:dev-2017.07.03
+  name: moreaghost/morea-ghost:2017.07.03
   username: moreaghost
   password: ***REMOVED***
   email: ghost-devops@morea.fr
