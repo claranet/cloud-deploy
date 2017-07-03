@@ -284,6 +284,52 @@ def initialize_app_modules(updates, original):
 
 
 def initialize_app_features(updates, original):
+    """
+    Check for feature modifications
+    - feature order
+    - attributes modifications
+
+    :param updates:
+    :param original:
+    :return: bool - if the features changed
+
+    >>> from copy import deepcopy
+    >>> initialize_app_features({}, {})
+    False
+
+    >>> initialize_app_features({'features': []}, {})
+    False
+
+    >>> initialize_app_features({}, {'features': []})
+    False
+
+    >>> base_app = {'features': [
+    ...     {'name': 'feat1', 'version': 'param=test', 'provisioner': 'salt'},
+    ...     {'name': 'feat1', 'version': 'param2=dummy', 'provisioner': 'salt'},
+    ...     {'name': 'feat2', 'version': 'other=feat1', 'provisioner': 'ansible'},
+    ...     {'name': 'feat2', 'version': 'other=feat2', 'provisioner': 'ansible'},
+    ...     {'name': 'feat3', 'version': 'f=f3', 'provisioner': 'ansible'},
+    ... ]}
+    >>> up_app = deepcopy(base_app)
+    >>> initialize_app_features(up_app, base_app)
+    False
+
+    >>> up_app = deepcopy(base_app)
+    >>> up_app['features'][1]['version'] = 'param=modified'
+    >>> initialize_app_features(up_app, base_app)
+    True
+
+    >>> up_app = deepcopy(base_app)
+    >>> del up_app['features'][4]
+    >>> initialize_app_features(up_app, base_app)
+    True
+
+    >>> up_app = deepcopy(base_app)
+    >>> up_app['features'][2]['version'] = 'other=feat2'
+    >>> up_app['features'][3]['version'] = 'other=feat1'
+    >>> initialize_app_features(up_app, base_app)
+    True
+    """
     if 'features' in updates and 'features' in original:
         if not len(updates['features']) == len(original['features']):
             # Different length means that feature have changed
@@ -301,6 +347,55 @@ def initialize_app_features(updates, original):
 
 
 def check_field_diff(updates, original, object_name):
+    """
+    Generic function to check if inner properties of a sub-document has been changed.
+
+    :param updates:
+    :param original:
+    :param object_name:
+    :return: bool - if the object (sub-document) has changed
+
+    >>> from copy import deepcopy
+    >>> base_ob = {'a': {
+    ...     'x': 1,
+    ...     'y': 2,
+    ...     'z': 3,
+    ... }, 'b': {
+    ...     'i': 'a',
+    ...     'ii': 'b',
+    ... }}
+    >>> up_ob = deepcopy(base_ob)
+    >>> check_field_diff(up_ob, base_ob, 'a')
+    False
+
+    >>> check_field_diff({}, {}, 'a')
+    False
+
+    >>> check_field_diff({'a': {}}, {}, 'a')
+    False
+
+    >>> check_field_diff({}, {'a': {}}, 'a')
+    False
+
+    >>> up_ob = deepcopy(base_ob)
+    >>> del base_ob['b']['i']
+    >>> check_field_diff(up_ob, base_ob, 'a')
+    False
+
+    >>> check_field_diff(up_ob, base_ob, 'b')
+    True
+
+    >>> up_ob = deepcopy(base_ob)
+    >>> up_ob['a']['y'] = 10
+    >>> check_field_diff(up_ob, base_ob, 'a')
+    True
+
+    >>> up_ob = deepcopy(base_ob)
+    >>> up_ob['a']['y'] = 3
+    >>> up_ob['a']['z'] = 2
+    >>> check_field_diff(up_ob, base_ob, 'a')
+    True
+    """
     if object_name in updates and object_name in original:
         fields = set(updates[object_name].keys())
         for prop in fields:
@@ -311,6 +406,40 @@ def check_field_diff(updates, original, object_name):
 
 
 def get_modified_fields_objects(data):
+    """
+    Transform the 'modified_fields' array into a dictionary
+
+    :param data:
+    :return: A key (field name) value (original object) dictionary
+
+    >>> base_ob = {'modified_fields': [
+    ...     {'field': 'x', 'f1': 1, 'f2': 2},
+    ...     {'field': 'y', 'y1': True, 'y2': False},
+    ...     {'field': 'z', 'zz': '1', 'zzz': '2'},
+    ... ], 'b': {
+    ...     'i': 'a',
+    ...     'ii': 'b',
+    ... }}
+    >>> get_modified_fields_objects({})
+    {}
+
+    >>> get_modified_fields_objects({'a': 1})
+    {}
+
+    >>> get_modified_fields_objects({'modified_fields': []})
+    {}
+
+    >>> from pprint import pprint
+    >>> res = get_modified_fields_objects(base_ob)
+    >>> pprint(sorted(res))
+    ['x', 'y', 'z']
+    >>> pprint(sorted(res['x']))
+    ['f1', 'f2', 'field']
+    >>> pprint(sorted(res['y']))
+    ['field', 'y1', 'y2']
+    >>> pprint(sorted(res['z']))
+    ['field', 'zz', 'zzz']
+    """
     modified_fields_objects = data.get('modified_fields', [])
     return {ob['field']: ob for ob in modified_fields_objects}
 
