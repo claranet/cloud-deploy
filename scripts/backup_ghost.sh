@@ -41,6 +41,14 @@ cp -f $SCRIPTPATH/../.ssh/config ./ssh_config
 mkdir logs
 cp -r /var/log/ghost/*.txt logs/
 
+# Copy nginx config
+mkdir nginx
+cp /etc/nginx/sites-enabled/* ./nginx
+
+# Copy supervisor config
+mkdir supervisor
+cp /etc/supervisor/conf.d/* ./supervisor
+
 # Create archive
 cd ..
 tar -czf $FILE $BACKUP
