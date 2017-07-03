@@ -4,17 +4,19 @@ def list_lxd_images():
     """
     Retrieve images on local registry
     """
-    lxd = LXDClient()
-    images = lxd.images.all()
-    image_list = {}
-    image_list[''] = 'Not use container'
-    for image in images:
-        if image.aliases:
-            alias = image.aliases[0]['name']
-            for value in image.properties:
-                image_list[alias] = image.properties[value]
-    for image in image_list:
-        return [(image, image_list[image]) for image in image_list]
+    if lxd_is_available():
+        lxd = LXDClient()
+        images = lxd.images.all()
+        image_list = {}
+        image_list[''] = 'Not use container'
+        for image in images:
+                fingerprint = image.fingerprint
+                for value in image.properties:
+                    image_list[fingerprint] = image.properties['description']
+        for image in image_list:
+            return [(image, image_list[image]) for image in image_list]
+    else:
+        return [('','Container Image list is unvailable, check your LXD parameters in config.yml')]
 
 def lxd_is_available():
     """
@@ -25,3 +27,4 @@ def lxd_is_available():
     except:
         return False
     return True
+

@@ -47,9 +47,9 @@ class LXDImageBuilder(ImageBuilder):
         if self._job["command"] == u"buildimage":
             alias = self._app['build_infos']["source_container_image"]
             if self._container_config['endpoint'] == "localhost":
-                config['source'] = {"type": "image", "alias": alias}
+                config['source'] = {"type": "image", "fingerprint": alias}
             else:
-                config['source'] = {"type": "image", "protocol":"simplestreams", "mode":"pull", "alias": alias, "server" : self._container_config['endpoint']}
+                config['source'] = {"type": "image", "protocol":"simplestreams", "mode":"pull", "fingerprint": alias, "server" : self._container_config['endpoint']}
 
         elif self._job["command"] == u"deploy":
             alias = self._app['build_infos']["container_image"]
