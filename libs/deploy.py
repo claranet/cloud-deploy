@@ -47,11 +47,13 @@ def execute_module_script_on_ghost(app, module, script_name, script_friendly_nam
 
         script_env = os.environ.copy()
         script_env.update(get_ghost_env_variables(app, module, app.get('blue_green', {}).get('color', ''), None))
-        if script_name is 'build_pack' and app['build_infos']['container']:
+
+        if script_name is 'build_pack' and app['build_infos']['container_image'] and lxd_is_available():
             container = LXDImageBuilder(app, job, None, log_file, config)
             container.deploy(script_path, module)
-
-        gcall('bash %s' % script_path, '%s: Execute' % script_friendly_name, log_file, env=script_env)
+        else :
+            gcall('bash %s' % script_path, '%s: Execute' % script_friendly_name, log_file, env=script_env)
+        
         gcall('du -hs .', 'Display current build directory disk usage', log_file)
         gcall('rm -vf %s' % script_path, '%s: Done, cleaning temporary file' % script_friendly_name, log_file)
 

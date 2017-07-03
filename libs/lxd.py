@@ -11,10 +11,10 @@ def list_lxd_images():
     for image in images:
         if image.aliases:
             alias = image.aliases[0]['name']
-        for value in image.properties:
-            image_list[alias]=image.properties[value]
+            for value in image.properties:
+                image_list[alias] = image.properties[value]
     for image in image_list:
-        return [(image,image_list[image]) for image in image_list]
+        return [(image, image_list[image]) for image in image_list]
 
 def lxd_is_available():
     """
