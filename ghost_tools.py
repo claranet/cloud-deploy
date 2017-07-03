@@ -379,7 +379,7 @@ def boolify(val):
     """
     if isinstance(val, bool):
         return val
-    return val in ['True', 'true', '1']
+    return val in ['True', 'true', '1', 1]
 
 def get_running_jobs(_db, app_id_1, app_id_2, current_job):
     """
