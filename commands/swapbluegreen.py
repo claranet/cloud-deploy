@@ -75,7 +75,7 @@ class Swapbluegreen():
             :returns bool:       False if timeout exceeded, True otherwise
         """
         t = 0
-        while len([i for i in lb_mgr.get_instances_status_fom_lb(elb_names).values() if 'outofservice' in i.values()]):
+        while len([i for i in lb_mgr.get_instances_status_from_lbs(elb_names).values() if 'outofservice' in i.values()]):
             if t > timeout:
                 return False
             log(_yellow('Waiting 10s because the instance is not in service in the ELB'), self._log_file)
