@@ -260,9 +260,9 @@ class AwsClbManager(AwsElbManager):
 
     def register_instances_from_lbs(self, lb_names, instances_ids, log_file):
         try:
-            elb_conn = self._get_elb_connection()
+            elb_conn2 = self._get_elb_connection(boto2_compat=True)
             for elb_name in lb_names:
-                if not elb_conn.register_instances(elb_name, instances_ids).status:
+                if not elb_conn2.register_instances(elb_name, instances_ids).status:
                     log("Failed to register instances {0} in the ELB {1}".format(str(instances_ids), elb_name),
                         log_file)
                     raise Exception()
