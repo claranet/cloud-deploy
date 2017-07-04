@@ -117,14 +117,15 @@ class HostDeploymentManager():
 
         alb_mgr = load_balancing.get_lb_manager(self._cloud_connection, app_region, load_balancing.LB_TYPE_AWS_ALB)
 
-        alb_targets = alb_mgr.get_alb_target_status_autoscaling_group(self._as_name)
+        alb_targets = alb_mgr.get_instances_status_from_autoscale(self._as_name, self._log_file)
         if not len(alb_targets):
             raise GCallException('Cannot continue because there is no ALB configured in the AutoScaling Group')
         elif len([i for i in alb_targets.values() if 'unhealthy' in i.values()]):
             raise GCallException('Cannot continue because one or more instances are in the unhealthy state')
         else:
-            alb_mgr.deregister_all_instances_from_lbs(alb_targets.keys(),
-                                                      [{'Id': host['id']} for host in instances_list], self._log_file)
+            alb_mgr.deregister_instances_from_lbs(alb_targets.keys(),
+                                                  [host['id'] for host in instances_list],
+                                                  self._log_file)
             wait_before_deploy = int(alb_mgr.get_lbs_max_connection_draining_value(alb_targets.keys())) + int(
                 self._safe_infos['wait_before_deploy'])
             log('Waiting {0}s: The deregistation delay time plus the custom value set for wait_before_deploy'.format(
@@ -137,9 +138,10 @@ class HostDeploymentManager():
             log('Waiting {0}s: The value set for wait_after_deploy'.format(self._safe_infos['wait_after_deploy']),
                 self._log_file)
             time.sleep(int(self._safe_infos['wait_after_deploy']))
-            alb_mgr.register_instances_from_lbs(alb_targets.keys(), [{'Id': host['id']} for host in instances_list],
+            alb_mgr.register_instances_from_lbs(alb_targets.keys(),
+                                                [host['id'] for host in instances_list],
                                                 self._log_file)
-            while len([i for i in alb_mgr.get_alb_target_status_autoscaling_group(self._as_name).values() if
+            while len([i for i in alb_mgr.get_instances_status_from_autoscale(self._as_name, self._log_file).values() if
                        'unhealthy' in i.values()]):
                 log('Waiting 10s because the instance is unhealthy in the ALB', self._log_file)
                 time.sleep(10)

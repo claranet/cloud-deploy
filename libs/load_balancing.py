@@ -148,7 +148,7 @@ class LoadBalancersManager(object):
         """
         raise NotImplementedError()
 
-    def get_instances_status_fom_lb(self, lb_names):
+    def get_instances_status_from_lbs(self, lb_names):
         """ Return a dict of instance ids as key and their status as value per LB.
 
             :param  lb_names: list: The name of the Elastic Load Balancers.
@@ -260,9 +260,9 @@ class AwsClbManager(AwsElbManager):
 
     def register_instances_from_lbs(self, lb_names, instances_ids, log_file):
         try:
-            elb_conn = self._get_elb_connection()
+            elb_conn2 = self._get_elb_connection(boto2_compat=True)
             for elb_name in lb_names:
-                if not elb_conn.register_instances(elb_name, instances_ids).status:
+                if not elb_conn2.register_instances(elb_name, instances_ids).status:
                     log("Failed to register instances {0} in the ELB {1}".format(str(instances_ids), elb_name),
                         log_file)
                     raise Exception()
@@ -326,7 +326,7 @@ class AwsClbManager(AwsElbManager):
             log("Exception during register operation: {0}".format(str(e)), log_file)
             raise
 
-    def get_instances_status_fom_lb(self, lb_names):
+    def get_instances_status_from_lbs(self, lb_names):
         elb_conn2 = self._get_elb_connection(boto2_compat=True)
         as_instance_status = {}
         for elb in lb_names:
@@ -606,7 +606,7 @@ class AwsAlbManager(AwsElbManager):
                 ret[target_health['Target']['Id']] = "inservice" if state == "healthy" else "outofservice"
         return ret
 
-    def get_instances_status_fom_lb(self, lb_names):
+    def get_instances_status_from_lbs(self, lb_names):
         alb_conn = self._get_alb_connection()
         albs = ({alb['LoadBalancerName']: alb['LoadBalancerArn']
                  for alb in alb_conn.describe_load_balancers(Names=lb_names)['LoadBalancers']})
