@@ -75,10 +75,16 @@ chown -R ghost. $GHOST_LOGS/
 # Restore MongoDB
 mongorestore dump
 
+# Restore nginx config
+cp -vf ./nginx/ghost.conf /etc/nginx/sites-enabled/
+
+# Restore supervisor config
+cp -vf ./supervisor/rqworker.conf  /etc/supervisor/conf.d/
+cp -vf ./supervisor/uwsgi-ghost.conf  /etc/supervisor/conf.d/
+
 # Restart Ghost services
-supervisorctl restart ghost
-supervisorctl restart rqworker
-supervisorctl restart front
+service supervisor restart
+service nginx restart
 
 # Infos
 grep -Hni "key" ./config.yml

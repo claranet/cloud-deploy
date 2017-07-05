@@ -9,11 +9,11 @@ from fabric.colors import green as _green, yellow as _yellow, red as _red
 
 from ghost_tools import GCallException, log, split_hosts_list
 from ghost_aws import suspend_autoscaling_group_processes, resume_autoscaling_group_processes
+from libs import load_balancing
 
 from .blue_green import get_blue_green_from_app
 from .ec2 import find_ec2_running_instances, destroy_specific_ec2_instances
 from .autoscaling import get_autoscaling_group_object, update_auto_scaling_group_attributes, check_autoscale_instances_lifecycle_state
-from .elb import get_elb_instance_status_autoscaling_group, get_connection_draining_value, register_instance_from_elb, deregister_instance_from_elb
 
 class RollingUpdate():
     """ Class which will manage the safe destroy process """
@@ -53,11 +53,11 @@ class RollingUpdate():
         app_region = self.app['region']
 
         as_conn = self.cloud_connection.get_connection(app_region, ['autoscaling'], boto_version='boto3')
-        elb_conn = self.cloud_connection.get_connection(app_region, ["ec2", "elb"])
+        lb_mgr = load_balancing.get_lb_manager(self.cloud_connection, app_region, load_balancing.LB_TYPE_AWS_CLB)
         destroy_asg_policy = ['OldestLaunchConfiguration']
 
         try:
-            elb_instances = get_elb_instance_status_autoscaling_group(elb_conn, self.as_name, as_conn)
+            elb_instances = lb_mgr.get_instances_status_from_autoscale(self.as_name, self.log_file)
             asg_infos = get_autoscaling_group_object(as_conn, self.as_name)
             if not len(elb_instances):
                 raise GCallException('Cannot continue because there is no ELB configured in the AutoScaling Group')
@@ -74,8 +74,8 @@ class RollingUpdate():
                 update_auto_scaling_group_attributes(as_conn, self.as_name, asg_infos['MinSize'], asg_infos['MaxSize'] + group_size, asg_infos['DesiredCapacity'] + group_size)
 
                 log(_green('Deregister old instances from the Load Balancer (%s)' % str([host['id'] for host in instances_list])), self.log_file)
-                deregister_instance_from_elb(elb_conn, elb_instances.keys(), [host['id'] for host in instances_list], self.log_file)
-                wait_con_draining = int(get_connection_draining_value(elb_conn, elb_instances.keys()))
+                lb_mgr.deregister_instances_from_lbs(elb_instances.keys(), [host['id'] for host in instances_list], self.log_file)
+                wait_con_draining = int(lb_mgr.get_lbs_max_connection_draining_value(elb_instances.keys()))
                 log('Waiting {0}s: The connection draining time'.format(wait_con_draining), self.log_file)
                 time.sleep(wait_con_draining)
 
@@ -89,7 +89,7 @@ class RollingUpdate():
                     time.sleep(30)
                     asg_updated_infos = get_autoscaling_group_object(as_conn, self.as_name)
 
-                while len([i for i in get_elb_instance_status_autoscaling_group(elb_conn, self.as_name, as_conn).values() if 'outofservice' in i.values()]):
+                while len([i for i in lb_mgr.get_instances_status_from_autoscale(self.as_name, self.log_file).values() if 'outofservice' in i.values()]):
                     log('Waiting 10s because the instance(s) are not in service in the ELB', self.log_file)
                     time.sleep(10)
 

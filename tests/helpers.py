@@ -103,12 +103,22 @@ def mocked_logger(msg, file):
     print(msg)
 
 
-def get_aws_data(data_name):
-    with open(os.path.join(
-            os.path.dirname(os.path.realpath(__file__)),
-            'aws_data',
-            '{}.json'.format(data_name)), 'r') as f:
-        return simplejson.load(f)
+class DictObject(object):
+    def __init__(self, **d):
+        self.__dict__.update(d)
+
+
+def get_aws_data(data_name, as_object=False):
+    filename = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'aws_data', '{}.json'.format(data_name))
+    if not os.path.isfile(filename):
+        raise ValueError("File not found {}".format(filename))
+    with open(filename, 'r') as f:
+        d = simplejson.load(f)
+        if as_object:
+            if d.__iter__:
+                return [DictObject(**e) for e in d]
+            return DictObject(**d)
+        return d
 
 
 def get_dummy_bash_script(b64_encoding=False):

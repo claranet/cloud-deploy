@@ -1,0 +1,35 @@
+{
+  "TargetGroups": [
+    {
+      "HealthCheckPath": "/",
+      "HealthCheckIntervalSeconds": 20,
+      "VpcId": "vpc-test",
+      "Protocol": "HTTP",
+      "HealthCheckTimeoutSeconds": 6,
+      "HealthCheckProtocol": "HTTP",
+      "LoadBalancerArns": [
+        "arn:aws:elasticloadbalancing:eu-central-1:0123456789:loadbalancer/app/alb-test/0123456789"
+      ],
+      "UnhealthyThresholdCount": 4,
+      "HealthyThresholdCount": 2,
+      "TargetGroupArn": "arn:aws:elasticloadbalancing:eu-central-1:0123456789:targetgroup/tg-test/0123456789",
+      "Matcher": {
+        "HttpCode": "200"
+      },
+      "HealthCheckPort": "80",
+      "Port": 80,
+      "TargetGroupName": "tg-test"
+    }
+  ],
+  "ResponseMetadata": {
+    "RetryAttempts": 0,
+    "HTTPStatusCode": 200,
+    "RequestId": "c219ce76-4ad5-11e7-8215-8578912f97c8",
+    "HTTPHeaders": {
+      "x-amzn-requestid": "c219ce76-4ad5-11e7-8215-8578912f97c8",
+      "date": "Tue, 06 Jun 2017 16:32:39 GMT",
+      "content-length": "1342",
+      "content-type": "text/xml"
+    }
+  }
+}

@@ -7,13 +7,42 @@ from libs.ec2 import create_block_device, generate_userdata
 from libs.autoscaling import get_autoscaling_group_object
 from libs.blue_green import get_blue_green_from_app
 
-from ghost_tools import GCallException, boolify
+from ghost_tools import boolify
 from ghost_log import log
 
 ROOT_PATH = os.path.dirname(os.path.realpath(__file__))
 
 with open(os.path.dirname(os.path.realpath(__file__)) + '/config.yml', 'r') as conf_file:
     config = yaml.load(conf_file)
+
+
+def dict_to_aws_tags(d):
+    """
+    Transforms a python dict {'a': 'b', 'c': 'd'} to the aws tags format [{'Key': 'a', 'Value': 'b'}, {'Key': 'c', 'Value': 'd'}]
+    Only needed for boto3 api calls
+    :param d: dict: the dict to transform
+    :return: list: the tags in aws format
+
+    >>> from pprint import pprint
+    >>> pprint(sorted(dict_to_aws_tags({'a': 'b', 'c': 'd'}), key=lambda d: d['Key']))
+    [{'Key': 'a', 'Value': 'b'}, {'Key': 'c', 'Value': 'd'}]
+    """
+    return [{'Key': k, 'Value': v} for k, v in d.items()]
+
+
+def aws_tags_to_dict(t):
+    """
+    Transforms a list of aws tags like [{'Key': 'a', 'Value': 'b'}, {'Key': 'c', 'Value': 'd'}] in a python dict {'a': 'b', 'c': 'd'}
+    Only needed for boto3 api calls
+    :param t: list: the list of aws tags
+    :return: dict: python dict of the tags
+
+    >>> from pprint import pprint
+    >>> pprint(aws_tags_to_dict([{'Key': 'a', 'Value': 'b'}, {'Key': 'c', 'Value': 'd'}]))
+    {'a': 'b', 'c': 'd'}
+    """
+    return {v['Key']: v['Value'] for v in t}
+
 
 def get_autoscaling_group_and_processes_to_suspend(as_conn, app, log_file):
     if 'autoscale' in app.keys() and 'name' in app['autoscale'].keys() and app['autoscale']['name']:

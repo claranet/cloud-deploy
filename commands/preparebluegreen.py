@@ -6,11 +6,10 @@ from ghost_log import log
 from ghost_aws import check_autoscale_exists, update_auto_scale, get_autoscaling_group_and_processes_to_suspend, suspend_autoscaling_group_processes, resume_autoscaling_group_processes
 from ghost_aws import create_userdata_launchconfig_update_asg
 from ghost_tools import GCallException, get_aws_connection_data, get_app_friendly_name, get_app_module_name_list, boolify, get_running_jobs
+from libs import load_balancing
 from settings import cloud_connections, DEFAULT_PROVIDER
 from libs.blue_green import get_blue_green_apps, check_app_manifest, get_blue_green_config, abort_if_other_bluegreen_job
 from libs.autoscaling import get_instances_from_autoscaling, get_autoscaling_group_object
-from libs.deploy import get_path_from_app_with_color
-from libs.elb import get_elb_from_autoscale, copy_elb, register_elb_into_autoscale
 
 COMMAND_DESCRIPTION = "Prepare the Blue/Green env before swap"
 
@@ -84,6 +83,9 @@ class Preparebluegreen(object):
         suspend_autoscaling_group_processes(as_conn3, as_group, as_group_processes_to_suspend, self._log_file)
 
         try:
+            lb_mgr = load_balancing.get_lb_manager(
+                self._cloud_connection, self._app['region'], online_app["safe-deployment"]["load_balancer_type"])
+
             # check if app is online
             if not online_app:
                 self._worker.update_status("aborted", message=self._get_notification_message_aborted(self._app, "Blue/green is not enabled on this app or not well configured"))
@@ -129,21 +131,20 @@ class Preparebluegreen(object):
                 return
 
             # Get the online ELB
-            online_elbs = get_elb_from_autoscale(online_app['autoscale']['name'], as_conn3)
+            online_elbs = lb_mgr.list_lbs_from_autoscale(online_app['autoscale']['name'], self._log_file)
             if len(online_elbs) == 0:
                 self._worker.update_status("aborted", message=self._get_notification_message_aborted(offline_app, "Online app AutoScale is not attached to a valid Elastic Load Balancer"))
                 return
 
             # Create the temporary ELB: ghost-bluegreentemp-{original ELB name}, duplicated from the online ELB
-            elb_conn3 = self._cloud_connection.get_connection(app_region, ['elb'], boto_version='boto3')
             online_elb = online_elbs[0]
             temp_elb_name = "bgtmp-{0}".format(offline_app['_id'])[:31] # ELB name is 32 char long max
             log(_green("Creating the temporary ELB [{0}] by copying parameters from [{1}]".format(temp_elb_name, online_elb)), self._log_file)
-            new_elb_dns = copy_elb(elb_conn3, temp_elb_name, online_elb, {'Key': 'app_id', 'Value': str(offline_app['_id'])}, self._log_file)
+            new_elb_dns = lb_mgr.copy_lb(temp_elb_name, online_elb, {'app_id': str(offline_app['_id']), 'bluegreen-temporary': 'true'}, self._log_file)
 
             # Register the temporary ELB into the AutoScale
             log(_green("Attaching ELB [{0}] to the AutoScale [{1}]".format(temp_elb_name, offline_app['autoscale']['name'])), self._log_file)
-            register_elb_into_autoscale(offline_app['autoscale']['name'], as_conn3, [], [temp_elb_name], self._log_file)
+            lb_mgr.register_lbs_into_autoscale(offline_app['autoscale']['name'], [], [temp_elb_name], self._log_file)
 
             offline_app['autoscale']['min'] = online_app['autoscale']['min']
             offline_app['autoscale']['max'] = online_app['autoscale']['max']
