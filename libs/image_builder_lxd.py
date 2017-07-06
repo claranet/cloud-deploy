@@ -50,7 +50,6 @@ class LXDImageBuilder(ImageBuilder):
                 config['source'] = {"type": "image", "fingerprint": alias}
             else:
                 config['source'] = {"type": "image", "protocol":"simplestreams", "mode":"pull", "fingerprint": alias, "server" : self._container_config['endpoint']}
-
         elif self._job["command"] == u"deploy":
             alias = self._app['build_infos']["container_image"]
             config['source'] = {"type": "image", "alias": alias}
@@ -134,14 +133,15 @@ class LXDImageBuilder(ImageBuilder):
         self._container_log(update)
         wget = self.container.execute(["apt-get", "-y", "--force-yes", "install", "apt-utils", "wget", "sudo"])
         self._container_log(wget)
-        if 'salt' in self.provisioners and self.skip_salt_bootstrap_option == "False":
-            salt_bootstrap = self.container.execute(["wget", "-O", "bootstrap-salt.sh", "https://bootstrap.saltstack.com"])
-            self._container_log(salt_bootstrap)
-            salt_bootstrap = self.container.execute(["sh", "bootstrap-salt.sh"])
-            self._container_log(salt_bootstrap)
-        if 'ansible' in self.provisioners and self.skip_salt_bootstrap_option == "False":
-            ansible_bootstrap = self.container.execute(["apt-get", "-y", "install", "ansible"])
-            self._container_log(ansible_bootstrap)
+        if self.skip_salt_bootstrap_option == "False":
+            if 'salt' in self.provisioners :
+                salt_bootstrap = self.container.execute(["wget", "-O", "bootstrap-salt.sh", "https://bootstrap.saltstack.com"])
+                self._container_log(salt_bootstrap)
+                salt_bootstrap = self.container.execute(["sh", "bootstrap-salt.sh"])
+                self._container_log(salt_bootstrap)
+            if 'ansible' in self.provisioners :
+                ansible_bootstrap = self.container.execute(["apt-get", "-y", "install", "ansible"])
+                self._container_log(ansible_bootstrap)
 
     def _lxd_run_features_install(self):
         log("run features install", self._log_file)
@@ -168,6 +168,7 @@ class LXDImageBuilder(ImageBuilder):
         buildpack = self.container.execute(["sed", "2icd "+module['path'], "-i", "{module_path}/{script}".format(module_path=module['path'], script=script)])
         self._container_log(buildpack)
         buildpack = self.container.execute(["sh", "{module_path}/{script}".format(module_path=module['path'], script=script)])
+        self._container_log(buildpack)
         buildpack = self.container.execute(["chown", "-R", "1001:1002", "{module_path}".format(module_path=module['path'])])
         self._container_log(buildpack)
 

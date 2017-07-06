@@ -102,6 +102,4 @@ class Buildimage():
                 self._worker.update_status("done")
         else:
             log("ERROR: ami_id not found. The packer process had maybe fail.", self._log_file)
-            if container:
-                container._clean()
             self._worker.update_status("failed")
