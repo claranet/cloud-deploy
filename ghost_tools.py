@@ -532,7 +532,9 @@ def get_job_log_remote_path(worker_job_id):
     return "{log_dir}/{job_id}.txt".format(log_dir="log/job/", job_id=worker_job_id)
 
 
-def get_provisioners_config(last_config):
+def get_provisioners_config(last_config=None):
+    if not last_config:
+        last_config = config
     provisioners_config = last_config.get('features_provisioners', {
         'salt': {
             'git_repo': last_config.get('salt_formulas_repo', 'git@bitbucket.org:morea/morea-salt-formulas.git'),
@@ -542,7 +544,7 @@ def get_provisioners_config(last_config):
     return provisioners_config
 
 
-def get_available_provisioners_from_config(last_config):
+def get_available_provisioners_from_config(last_config=None):
     provisioners_config = get_provisioners_config(last_config)
     return provisioners_config.keys()
 
