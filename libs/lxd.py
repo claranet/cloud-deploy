@@ -1,28 +1,23 @@
 from pylxd import Client as LXDClient
+from ghost_tools import config
 
-def list_lxd_images():
+
+def list_lxd_images(config=None):
     """
     Retrieve images on local registry
     """
     if lxd_is_available():
-
-        # container_config = config.get('container', {'endpoint': self._config.get('endpoint', 'localhost'),
-        #                                                         'debug': self._config.get('debug', False),
-        #                                                        })
-        #container_config = "https://images.linuxcontainers.org"
-        container_config = "localhost"
-        if container_config == "localhost":
+        container_config = config.get('container', {'endpoint': config.get('endpoint', 'localhost')})
+        if  container_config['endpoint'] == "localhost":
             lxd = LXDClient()
         else:
-            lxd = LXDClient(endpoint=container_config, verify=False)
-        images = lxd.images.all()
-        
+            lxd = LXDClient(endpoint=container_config['endpoint'], verify=False)
+        images = lxd.images.all()        
 
         image_list = {}
         image_list[''] = 'Not use container'
         #return [('','Container Image list is unvailable, check your LXD parameters in config.yml')]
         for image in images:
-                print image.fingerprint
                 fingerprint = image.fingerprint
                 for value in image.properties:
                     image_list[fingerprint] = image.properties['description']
