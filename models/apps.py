@@ -195,7 +195,7 @@ apps_schema = {
             'ami_name': {'type': 'string',
                          'readonly': True},
             'source_container_image': {'type': 'string',
-                          'regex': '^centos[/][0-9]|debian[/][a-z]*|[0-9]|^$',
+                          'regex': '^[0-9[a-z]*',
                           'required': True
                           },
             'container_image': {'type': 'string',

@@ -11,12 +11,11 @@ def list_lxd_images(config=None):
         if  container_config['endpoint'] == "localhost":
             lxd = LXDClient()
         else:
-            lxd = LXDClient(endpoint=container_config['endpoint'], verify=False)
+            lxd = LXDClient(endpoint=container_config['endpoint'], verify=True)
         images = lxd.images.all()        
 
         image_list = {}
         image_list[''] = 'Not use container'
-        #return [('','Container Image list is unvailable, check your LXD parameters in config.yml')]
         for image in images:
                 fingerprint = image.fingerprint
                 for value in image.properties:

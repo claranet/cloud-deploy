@@ -49,7 +49,7 @@ class LXDImageBuilder(ImageBuilder):
             if self._container_config['endpoint'] == "localhost":
                 config['source'] = {"type": "image", "fingerprint": alias}
             else:
-                config['source'] = {"type": "image", "protocol":"simplestreams", "mode":"pull", "fingerprint": alias, "server" : self._container_config['endpoint']}
+                config['source'] = {"type": "image", "protocol":"lxd", "mode":"pull", "fingerprint": alias, "server" : self._container_config['endpoint']}
         elif self._job["command"] == u"deploy":
             alias = self._app['build_infos']["container_image"]
             config['source'] = {"type": "image", "alias": alias}
@@ -86,7 +86,7 @@ class LXDImageBuilder(ImageBuilder):
 
         self._client.profiles.create(self._container_name, devices=devices)
 
-    def _create_container(self,module=None, wait=5):
+    def _create_container(self,module=None, wait=10):
         """ Create a container with his profile and set time paramet to wait until network was up (default: 5 sec)
         """
         log("Create container {container_name}".format(container_name=self._container_name), self._log_file)
@@ -129,10 +129,6 @@ class LXDImageBuilder(ImageBuilder):
 
     def _lxd_bootstrap(self):
         log("Bootstrap container", self._log_file)
-        update = self.container.execute(["apt-get", "--force-yes", "update"])
-        self._container_log(update)
-        wget = self.container.execute(["apt-get", "-y", "--force-yes", "install", "apt-utils", "wget", "sudo"])
-        self._container_log(wget)
         if self.skip_salt_bootstrap_option == "False":
             if 'salt' in self.provisioners :
                 salt_bootstrap = self.container.execute(["wget", "-O", "bootstrap-salt.sh", "https://bootstrap.saltstack.com"])
@@ -140,7 +136,7 @@ class LXDImageBuilder(ImageBuilder):
                 salt_bootstrap = self.container.execute(["sh", "bootstrap-salt.sh"])
                 self._container_log(salt_bootstrap)
             if 'ansible' in self.provisioners :
-                ansible_bootstrap = self.container.execute(["apt-get", "-y", "install", "ansible"])
+                ansible_bootstrap = self.container.execute(["pip", "install", "--yes","ansible"])
                 self._container_log(ansible_bootstrap)
 
     def _lxd_run_features_install(self):
