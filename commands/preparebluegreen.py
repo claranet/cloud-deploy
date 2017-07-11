@@ -12,7 +12,7 @@ from libs.blue_green import get_blue_green_apps, check_app_manifest, get_blue_gr
 from libs.autoscaling import get_instances_from_autoscaling, get_autoscaling_group_object
 
 COMMAND_DESCRIPTION = "Prepare the Blue/Green env before swap"
-COMMAND_APP_FIELDS = ['blue_green']
+RELATED_APP_FIELDS = ['blue_green']
 
 
 class Preparebluegreen(object):

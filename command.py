@@ -280,8 +280,8 @@ class Command:
                 self.update_status("started", "Job processing started")
                 command.execute()
                 if self.job['status'] == 'done':
-                    fmod = __import__('commands.' + self.job['command'], fromlist=['COMMAND_APP_FIELDS'])
-                    self._update_app_modified_fields(fmod.COMMAND_APP_FIELDS)
+                    fmod = __import__('commands.' + self.job['command'], fromlist=['RELATED_APP_FIELDS'])
+                    self._update_app_modified_fields(fmod.RELATED_APP_FIELDS)
             else:
                 self.update_status("aborted",
                                    "Job was already in '{}' status (not in 'init' status)".format(self.job['status']))

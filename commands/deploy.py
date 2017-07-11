@@ -16,7 +16,7 @@ from libs.deploy import execute_module_script_on_ghost
 from libs.deploy import get_path_from_app_with_color, get_buildpack_clone_path_from_module, update_app_manifest, rollback_app_manifest
 
 COMMAND_DESCRIPTION = "Deploy module(s)"
-COMMAND_APP_FIELDS = ['modules']
+RELATED_APP_FIELDS = ['modules']
 
 
 class Deploy():

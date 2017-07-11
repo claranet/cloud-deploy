@@ -6,7 +6,7 @@ from settings import cloud_connections, DEFAULT_PROVIDER
 from libs.ec2 import destroy_ec2_instances
 
 COMMAND_DESCRIPTION = "Destroy all instances"
-COMMAND_APP_FIELDS = []
+RELATED_APP_FIELDS = []
 
 
 class Destroyallinstances():

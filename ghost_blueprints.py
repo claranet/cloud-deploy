@@ -14,7 +14,7 @@ def _get_commands():
     commands = []
     ghost_blue_green = blue_green.ghost_has_blue_green_enabled()
     for _, name, _ in pkgutil.iter_modules(['commands']):
-        command = __import__('commands.' + name, fromlist=['COMMAND_DESCRIPTION', 'COMMAND_APP_FIELDS'])
+        command = __import__('commands.' + name, fromlist=['COMMAND_DESCRIPTION', 'RELATED_APP_FIELDS'])
         if not ghost_blue_green:
             # Blue/Green is disabled
             if name in blue_green.BLUE_GREEN_COMMANDS:
@@ -22,7 +22,7 @@ def _get_commands():
         # Check if `executescript` is disabled
         if name == 'executescript' and not boolify(config.get('enable_executescript_command', True)):
             continue
-        commands.append( (name, command.COMMAND_DESCRIPTION, command.COMMAND_APP_FIELDS) )
+        commands.append( (name, command.COMMAND_DESCRIPTION, command.RELATED_APP_FIELDS) )
     return commands
 
 

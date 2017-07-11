@@ -8,7 +8,7 @@ from libs.blue_green import get_blue_green_from_app
 from libs.ec2 import create_ec2_instance
 
 COMMAND_DESCRIPTION = "Create a new instance"
-COMMAND_APP_FIELDS = ['environment_infos']
+RELATED_APP_FIELDS = ['environment_infos']
 
 
 class Createinstance():

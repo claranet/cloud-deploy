@@ -8,7 +8,7 @@ from libs.deploy import touch_app_manifest
 from libs.image_builder_aws import AWSImageBuilder
 
 COMMAND_DESCRIPTION = "Build Image"
-COMMAND_APP_FIELDS = ['features', 'build_infos']
+RELATED_APP_FIELDS = ['features', 'build_infos']
 
 
 class Buildimage():

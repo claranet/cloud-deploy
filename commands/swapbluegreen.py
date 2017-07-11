@@ -11,7 +11,7 @@ from ghost_aws import suspend_autoscaling_group_processes, resume_autoscaling_gr
 from libs.blue_green import get_blue_green_apps, check_app_manifest, get_blue_green_config, abort_if_other_bluegreen_job
 
 COMMAND_DESCRIPTION = "Swap the Blue/Green env"
-COMMAND_APP_FIELDS = ['blue_green']
+RELATED_APP_FIELDS = ['blue_green']
 
 
 class Swapbluegreen():
