@@ -271,7 +271,7 @@ class Command:
         self.app = self._db.apps.find_one({'_id': ObjectId(self.job['app_id'])})
         self._init_log_file()
         klass_name = self.job['command'].title()
-        mod = __import__('commands.' + self.job['command'], fromlist=[klass_name])
+        mod = __import__('commands.' + self.job['command'], fromlist=[klass_name, 'RELATED_APP_FIELDS'])
         command = getattr(mod, klass_name)(self)
 
         # Execute command and always mark the job as 'failed' in case of an unexpected exception
@@ -280,8 +280,7 @@ class Command:
                 self.update_status("started", "Job processing started")
                 command.execute()
                 if self.job['status'] == 'done':
-                    fmod = __import__('commands.' + self.job['command'], fromlist=['RELATED_APP_FIELDS'])
-                    self._update_app_modified_fields(fmod.RELATED_APP_FIELDS)
+                    self._update_app_modified_fields(mod.RELATED_APP_FIELDS)
             else:
                 self.update_status("aborted",
                                    "Job was already in '{}' status (not in 'init' status)".format(self.job['status']))
