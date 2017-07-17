@@ -280,6 +280,9 @@ def initialize_app_modules(updates, original):
                             break
                     # Module found, can exit loop
                     break
+            else:
+                # Module not found in original, so it's a new one
+                modules_edited = True
     return updates, modules_edited
 
 
