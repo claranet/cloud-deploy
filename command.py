@@ -20,9 +20,10 @@ from notification import Notification
 from settings import cloud_connections, DEFAULT_PROVIDER
 from settings import MONGO_DBNAME, MONGO_HOST, MONGO_PORT, REDIS_HOST
 
-LOG_ROOT='/var/log/ghost'
-ROOT_PATH=os.path.dirname(os.path.realpath(__file__))
-MAIL_LOG_FROM_DEFAULT='no-reply@morea.fr'
+LOG_ROOT = '/var/log/ghost'
+ROOT_PATH = os.path.dirname(os.path.realpath(__file__))
+MAIL_LOG_FROM_DEFAULT = 'no-reply@morea.fr'
+
 
 def format_html_mail_body(app, job):
     """
@@ -104,19 +105,20 @@ td{{font-family:arial,helvetica,sans-serif;}}
     """
 
     html_body = html_template.format(
-        user = job['user'],
-        status = job['status'],
-        status_color = GHOST_JOB_STATUSES_COLORS[job['status']],
-        app = app['name'],
-        env = app['env'],
-        role = app['role'],
-        command = job['command'],
-        jobId = str(job['_id']),
-        message = job['message'],
-        creation_date = job['_created'],
-        end_date = job['_updated'],
+        user=job['user'],
+        status=job['status'],
+        status_color=GHOST_JOB_STATUSES_COLORS[job['status']],
+        app=app['name'],
+        env=app['env'],
+        role=app['role'],
+        command=job['command'],
+        jobId=str(job['_id']),
+        message=job['message'],
+        creation_date=job['_created'],
+        end_date=job['_updated'],
     )
     return html_body
+
 
 def format_notif(app, job):
     """
@@ -158,6 +160,7 @@ def format_notif(app, job):
                                  message=job['message'])
     return title, message, slack_msg
 
+
 class Command:
     _config = None
     _worker_job = None
@@ -173,29 +176,26 @@ class Command:
         conf_file = open(conf_file_path, 'r')
         self._config = yaml.load(conf_file)
 
-
     def _connect_db(self):
         self._db = MongoClient(host=MONGO_HOST, port=MONGO_PORT)[MONGO_DBNAME]
-
 
     def _disconnect_db(self):
         MongoClient().close()
 
-
-    #FIXME: not used anymore
+    # FIXME: not used anymore
     def _update_progress(self, message, **kwargs):
         self._worker_job.meta['progress_message'] = message
         if kwargs and kwargs['percent']:
             self._worker_job.meta['progress_completion'] = kwargs['percent']
         self._worker_job.save()
 
-
     def update_status(self, status, message=None):
         self.job['status'] = status
         self.job['message'] = message
         log(message, self.log_file)
         self.job['_updated'] = datetime.utcnow()
-        self._db.jobs.update({ '_id': self.job['_id']}, {'$set': {'status': status, 'message': message, '_updated': self.job['_updated']}})
+        self._db.jobs.update({'_id': self.job['_id']},
+                             {'$set': {'status': status, 'message': message, '_updated': self.job['_updated']}})
 
     def _get_log_path(self):
         log_path = "{log_path}/{job_id}.txt".format(log_path=LOG_ROOT, job_id=self._worker_job.id)
@@ -210,7 +210,7 @@ class Command:
         # but may also serve in other cases.
         sys.stdout = sys.stderr = self.log_file = open(log_path, 'a', 1)
 
-        self._db.jobs.update({ '_id': self.job['_id']}, {'$set': {'log_id': self._worker_job.id }})
+        self._db.jobs.update({'_id': self.job['_id']}, {'$set': {'log_id': self._worker_job.id}})
 
     def _close_log_file(self):
         self.log_file.close()
@@ -225,7 +225,8 @@ class Command:
 
     def _mail_log_action(self, subject, body):
         ses_settings = self._config['ses_settings']
-        notif = Notification(aws_access_key=ses_settings['aws_access_key'], aws_secret_key=ses_settings['aws_secret_key'], region=ses_settings['region'])
+        notif = Notification(aws_access_key=ses_settings['aws_access_key'],
+                             aws_secret_key=ses_settings['aws_secret_key'], region=ses_settings['region'])
         html_body = format_html_mail_body(self.app, self.job)
         log_path = self._get_log_path()
         log = {
@@ -234,7 +235,8 @@ class Command:
         }
         try:
             for mail in self.app['log_notifications']:
-                notif.send_mail(From=ses_settings.get('mail_from', MAIL_LOG_FROM_DEFAULT), To=mail, subject=subject, body_text=body, body_html=html_body, attachments=[log])
+                notif.send_mail(From=ses_settings.get('mail_from', MAIL_LOG_FROM_DEFAULT), To=mail, subject=subject,
+                                body_text=body, body_html=html_body, attachments=[log])
                 pass
         except:
             logging.exception("An exception occurred when trying to send the Job mail notification.")
@@ -250,8 +252,8 @@ class Command:
         if slack_configs and len(slack_configs):
             for slack_conf in slack_configs:
                 slack_conf['ghost_base_url'] = ghost_base_url
-                notif.send_slack_notification(slack_conf, slack_msg, self.app, self.job, job_log) #, self.log_file) # Log file for debug purpose only
-
+                notif.send_slack_notification(slack_conf, slack_msg, self.app, self.job,
+                                              job_log)  # , self.log_file) # Log file for debug purpose only
 
     def execute(self, job_id):
         with Connection(Redis(host=REDIS_HOST)):
@@ -270,8 +272,9 @@ class Command:
                 self.update_status("started", "Job processing started")
                 command.execute()
             else:
-                self.update_status("aborted", "Job was already in '{}' status (not in 'init' status)".format(self.job['status']))
-        except :
+                self.update_status("aborted",
+                                   "Job was already in '{}' status (not in 'init' status)".format(self.job['status']))
+        except:
             message = sys.exc_info()[0]
             log(message, self.log_file)
             traceback.print_exc(file=self.log_file)
