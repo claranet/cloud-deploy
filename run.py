@@ -49,8 +49,8 @@ def pre_update_app(updates, original):
 
     >>> from copy import deepcopy
     >>> base_original = {'_id': 1111, 'env': 'prod', 'name': 'app1', 'role': 'webfront', 'modules': [
-    ...     {'name': 'mod1', 'git_repo': 'git@github.com/test/mod1'},
-    ...     {'name': 'mod2', 'git_repo': 'git@github.com/test/mod2'}],
+    ...     {'name': 'mod1', 'git_repo': 'git@github.com/test/mod1', 'path': '/tmp/ok'},
+    ...     {'name': 'mod2', 'git_repo': 'git@github.com/test/mod2', 'path': '/tmp/ok'}],
     ... 'environment_infos': {'instance_tags':[]}}
     >>> original = deepcopy(base_original)
     >>> updates = deepcopy(base_original)
@@ -95,7 +95,7 @@ def pre_update_app(updates, original):
     New modules get their 'initialized' field set to False by default:
 
     >>> updates = deepcopy(base_original)
-    >>> updates['modules'].append({'name': 'mod3', 'git_repo': 'git@github.com/test/mod3'})
+    >>> updates['modules'].append({'name': 'mod3', 'git_repo': 'git@github.com/test/mod3', 'path': '/tmp/ok'})
     >>> pre_update_app(updates, original)
     >>> updates['modules'][0]['initialized']
     True
