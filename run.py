@@ -24,7 +24,7 @@ from ghost_tools import get_rq_name_from_app, boolify
 from ghost_blueprints import commands_blueprint
 from ghost_api import ghost_api_bluegreen_is_enabled, ghost_api_enable_green_app, ghost_api_delete_alter_ego_app, \
     ghost_api_clean_bluegreen_app
-from ghost_api import check_app_feature_provisioner, check_app_module_path
+from ghost_api import check_app_feature_provisioner, check_app_module_path, check_app_b64_scripts
 from libs.blue_green import BLUE_GREEN_COMMANDS, get_blue_green_from_app, ghost_has_blue_green_enabled
 from ghost_aws import normalize_application_tags
 
@@ -106,6 +106,9 @@ def pre_update_app(updates, original):
     """
 
     if not check_app_module_path(updates):
+        abort(422)
+
+    if not check_app_b64_scripts(updates):
         abort(422)
 
     # Selectively reset each module's 'initialized' property if any of its other properties have changed
