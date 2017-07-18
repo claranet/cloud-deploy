@@ -4,6 +4,7 @@
 # -*- coding: utf-8 -*-
 # !/usr/bin/env python
 
+import os
 from ghost_tools import ghost_app_object_copy, get_available_provisioners_from_config
 from eve.methods.post import post_internal
 from libs.blue_green import get_blue_green_from_app
@@ -12,6 +13,7 @@ OPPOSITE_COLOR = {
     'blue': 'green',
     'green': 'blue'
 }
+FORBIDDEN_PATH = ['/', '/tmp', '/var', '/etc', '/ghost', '/root', '/home', '/home/admin']
 
 
 def ghost_api_bluegreen_is_enabled(app):
@@ -156,5 +158,74 @@ def check_app_feature_provisioner(updates):
             if 'provisioner' in ft and not ft['provisioner'] in provisioners_available:
                 print('Provisioner "{p}" set for feature "{f}" is not available or not compatible.'.format(
                     p=ft['provisioner'], f=ft['name']))
+                return False
+    return True
+
+
+def check_app_module_path(updates):
+    """
+    Check if all modules path are allowed
+    :param updates:
+    :return: bool
+
+    >>> check_app_module_path({})
+    True
+
+    >>> check_app_module_path({'modules': []})
+    True
+
+    >>> check_app_module_path({'modules': [{'name': 'empty'}]})
+    False
+
+    >>> app = {'_id': 1111, 'env': 'prod', 'name': 'app1', 'role': 'webfront', 'modules': [
+    ...     {'name': 'mod1', 'path': '/tmp/test'}, {'name': 'mod2', 'path': '/srv/ok'}]}
+    >>> check_app_module_path(app)
+    True
+
+    >>> app = {'_id': 1111, 'env': 'prod', 'name': 'app1', 'role': 'webfront', 'modules': [
+    ...     {'name': 'mod1', 'path': '/tmp/test/'}, {'name': 'mod2', 'path': '/srv/ok//'}]}
+    >>> check_app_module_path(app)
+    True
+
+    >>> app = {'_id': 1111, 'env': 'prod', 'name': 'app1', 'role': 'webfront', 'modules': [
+    ...     {'name': 'mod1', 'path': '/tmp/'}, {'name': 'mod2', 'path': '/srv/ok//'}]}
+    >>> check_app_module_path(app)
+    False
+
+    >>> app = {'_id': 1111, 'env': 'prod', 'name': 'app1', 'role': 'webfront', 'modules': [
+    ...     {'name': 'mod1', 'path': '/'}, {'name': 'mod2', 'path': '/srv/ok//'}]}
+    >>> check_app_module_path(app)
+    False
+
+    >>> app = {'_id': 1111, 'env': 'prod', 'name': 'app1', 'role': 'webfront', 'modules': [
+    ...     {'name': 'mod1', 'path': '/ghost/x'}, {'name': 'mod2', 'path': '/ghost'}]}
+    >>> check_app_module_path(app)
+    False
+
+    >>> app = {'_id': 1111, 'env': 'prod', 'name': 'app1', 'role': 'webfront', 'modules': [
+    ...     {'name': 'mod1', 'path': '/ghost/x'}, {'name': 'mod2', 'path': '/ghost////'}]}
+    >>> check_app_module_path(app)
+    False
+
+    >>> app = {'_id': 1111, 'env': 'prod', 'name': 'app1', 'role': 'webfront', 'modules': [
+    ...     {'name': 'mod1', 'path': '/root/x/..'}, {'name': 'mod2', 'path': '/srv/ok'}]}
+    >>> check_app_module_path(app)
+    False
+
+    >>> app = {'_id': 1111, 'env': 'prod', 'name': 'app1', 'role': 'webfront', 'modules': [
+    ...     {'name': 'mod1', 'path': '/root/x/.//'}, {'name': 'mod2', 'path': '/srv/ok'}]}
+    >>> check_app_module_path(app)
+    True
+
+    >>> app = {'_id': 1111, 'env': 'prod', 'name': 'app1', 'role': 'webfront', 'modules': [
+    ...     {'name': 'mod1', 'path': '/root/x/.//..//////'}, {'name': 'mod2', 'path': '/srv/ok'}]}
+    >>> check_app_module_path(app)
+    False
+    """
+    if 'modules' in updates:
+        for mod in updates['modules']:
+            if not 'path' in mod:
+                return False
+            if os.path.abspath(mod['path']) in FORBIDDEN_PATH:
                 return False
     return True
