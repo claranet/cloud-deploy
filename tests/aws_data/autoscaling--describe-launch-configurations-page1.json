@@ -1,0 +1,157 @@
+{
+  "LaunchConfigurations": [
+    {
+      "UserData": "",
+      "EbsOptimized": false,
+      "LaunchConfigurationARN": "arn:aws:autoscaling:eu-central-1:930379479477:launchConfiguration:b497dfac-93ad-4195-b77e-bde22fb57fe1:launchConfigurationName/dummy",
+      "InstanceMonitoring": {
+        "Enabled": false
+      },
+      "ClassicLinkVPCSecurityGroups": [],
+      "CreatedTime": "2016-06-03T14:11:00.981000+00:00",
+      "BlockDeviceMappings": [
+        {
+          "DeviceName": "/dev/xvda",
+          "Ebs": {
+            "DeleteOnTermination": true,
+            "VolumeSize": 8,
+            "VolumeType": "gp2"
+          }
+        }
+      ],
+      "KeyName": "keyname-test",
+      "SecurityGroups": [
+        "sg-test"
+      ],
+      "LaunchConfigurationName": "dummy",
+      "KernelId": "",
+      "RamdiskId": "",
+      "ImageId": "ami-test",
+      "InstanceType": "t2.nano"
+    },
+    {
+      "UserData": "",
+      "IamInstanceProfile": "iam.ec2.test",
+      "EbsOptimized": false,
+      "LaunchConfigurationARN": "arn:aws:autoscaling:eu-central-1:930379479477:launchConfiguration:9f000062-65ef-4da8-8fbb-7fc5252e1a53:launchConfigurationName/launchconfig.test.eu-west-1.webfront.test-app.test1",
+      "InstanceMonitoring": {
+        "Enabled": false
+      },
+      "ClassicLinkVPCSecurityGroups": [],
+      "CreatedTime": "2016-06-03T14:22:37.251000+00:00",
+      "BlockDeviceMappings": [
+        {
+          "DeviceName": "/dev/xvda",
+          "Ebs": {
+            "DeleteOnTermination": true,
+            "VolumeSize": 10,
+            "VolumeType": "gp2"
+          }
+        }
+      ],
+      "KeyName": "keyname-test",
+      "SecurityGroups": [
+        "sg-3657935e"
+      ],
+      "LaunchConfigurationName": "launchconfig.test.eu-west-1.webfront.test-app.test1",
+      "KernelId": "",
+      "RamdiskId": "",
+      "ImageId": "ami-test",
+      "InstanceType": "t2.nano",
+      "AssociatePublicIpAddress": true
+    },
+    {
+      "UserData": "",
+      "IamInstanceProfile": "iam.ec2.test",
+      "EbsOptimized": false,
+      "LaunchConfigurationARN": "arn:aws:autoscaling:eu-central-1:930379479477:launchConfiguration:9f000062-65ef-4da8-8fbb-7fc5252e1a53:launchConfigurationName/launchconfig.test.eu-west-1.webfront.test-app.test2",
+      "InstanceMonitoring": {
+        "Enabled": false
+      },
+      "ClassicLinkVPCSecurityGroups": [],
+      "CreatedTime": "2017-06-03T14:22:37.251000+00:00",
+      "BlockDeviceMappings": [
+        {
+          "DeviceName": "/dev/xvda",
+          "Ebs": {
+            "DeleteOnTermination": true,
+            "VolumeSize": 10,
+            "VolumeType": "gp2"
+          }
+        }
+      ],
+      "KeyName": "keyname-test",
+      "SecurityGroups": [
+        "sg-3657935e"
+      ],
+      "LaunchConfigurationName": "launchconfig.test.eu-west-1.webfront.test-app.test2",
+      "KernelId": "",
+      "RamdiskId": "",
+      "ImageId": "ami-test",
+      "InstanceType": "t2.nano",
+      "AssociatePublicIpAddress": true
+    },
+    {
+      "UserData": "",
+      "IamInstanceProfile": "iam.ec2.test",
+      "EbsOptimized": false,
+      "LaunchConfigurationARN": "arn:aws:autoscaling:eu-central-1:930379479477:launchConfiguration:9f000062-65ef-4da8-8fbb-7fc5252e1a53:launchConfigurationName/launchconfig.test.eu-west-1.webfront.test-app.test3",
+      "InstanceMonitoring": {
+        "Enabled": false
+      },
+      "ClassicLinkVPCSecurityGroups": [],
+      "CreatedTime": "2016-06-03T14:22:37.251000+00:00",
+      "BlockDeviceMappings": [
+        {
+          "DeviceName": "/dev/xvda",
+          "Ebs": {
+            "DeleteOnTermination": true,
+            "VolumeSize": 10,
+            "VolumeType": "gp2"
+          }
+        }
+      ],
+      "KeyName": "keyname-test",
+      "SecurityGroups": [
+        "sg-3657935e"
+      ],
+      "LaunchConfigurationName": "launchconfig.test.eu-west-1.webfront.test-app.test3",
+      "KernelId": "",
+      "RamdiskId": "",
+      "ImageId": "ami-test",
+      "InstanceType": "t2.nano",
+      "AssociatePublicIpAddress": true
+    },
+    {
+      "UserData": "",
+      "IamInstanceProfile": "iam.ec2.test",
+      "EbsOptimized": false,
+      "LaunchConfigurationARN": "arn:aws:autoscaling:eu-central-1:930379479477:launchConfiguration:9f000062-65ef-4da8-8fbb-7fc5252e1a53:launchConfigurationName/launchconfig.test.eu-west-1.webfront.test-app.test5",
+      "InstanceMonitoring": {
+        "Enabled": false
+      },
+      "ClassicLinkVPCSecurityGroups": [],
+      "CreatedTime": "2016-06-03T14:22:37.251000+00:00",
+      "BlockDeviceMappings": [
+        {
+          "DeviceName": "/dev/xvda",
+          "Ebs": {
+            "DeleteOnTermination": true,
+            "VolumeSize": 10,
+            "VolumeType": "gp2"
+          }
+        }
+      ],
+      "KeyName": "keyname-test",
+      "SecurityGroups": [
+        "sg-3657935e"
+      ],
+      "LaunchConfigurationName": "launchconfig.test.eu-west-1.webfront.test-app.test5",
+      "KernelId": "",
+      "RamdiskId": "",
+      "ImageId": "ami-test",
+      "InstanceType": "t2.nano",
+      "AssociatePublicIpAddress": true
+    }
+  ]
+}

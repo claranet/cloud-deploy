@@ -2,6 +2,7 @@ import os
 import os.path
 import time
 import yaml
+from botocore.exceptions import ClientError
 
 from libs.ec2 import create_block_device, generate_userdata
 from libs.autoscaling import get_autoscaling_group_object
@@ -120,16 +121,17 @@ def create_userdata_launchconfig_update_asg(ami_id, cloud_connection, app, confi
         return False
 
 
+def _format_launchconfig_name(app, app_color, only_prefix=False):
+    return "launchconfig.{}.{}.{}.{}{}.{}".format(
+            app['env'], app['region'], app['role'], app['name'],
+            '.{}'.format(app_color) if app_color else '',
+            time.strftime('%Y%m%d-%H%M%S', time.localtime()) if not only_prefix else "")
+
+
 def create_launch_config(cloud_connection, app, userdata, ami_id):
-    d = time.strftime('%d%m%Y-%H%M%S', time.localtime())
     blue_green, app_color = get_blue_green_from_app(app)
 
-    launch_config_name = "launchconfig.{0}.{1}.{2}.{3}{color}.{4}".format(app['env'],
-                                                                          app['region'],
-                                                                          app['role'],
-                                                                          app['name'],
-                                                                          d,
-                                                                          color='.%s' % app_color if app_color else '')
+    launchconfig_name = _format_launchconfig_name(app, app_color)
     conn_as = cloud_connection.get_connection(app['region'], ["ec2", "autoscale"])
     if 'root_block_device' in app['environment_infos']:
         bdm = create_block_device(cloud_connection, app['region'], app['environment_infos']['root_block_device'])
@@ -139,7 +141,7 @@ def create_launch_config(cloud_connection, app, userdata, ami_id):
     launch_config = cloud_connection.launch_service(
         ["ec2", "autoscale", "LaunchConfiguration"],
         connection=conn_as,
-        name=launch_config_name,
+        name=launchconfig_name,
         image_id=ami_id, key_name=app['environment_infos']['key_name'],
         security_groups=app['environment_infos']['security_groups'],
         user_data=userdata, instance_type=app['instance_type'], kernel_id=None,
@@ -160,41 +162,32 @@ def check_autoscale_exists(cloud_connection, as_name, region):
 
 
 def purge_launch_configuration(cloud_connection, app, retention):
-    conn_as = cloud_connection.get_connection(app['region'], ["ec2", "autoscale"])
-    launchconfigs = []
-    lcs = conn_as.get_all_launch_configurations()
+    """
+    Removes the old launch configurations except the `retention`th latest
+    :param cloud_connection: object:
+    :param app: object:
+    :param retention: int:
+    :return: bool:
+    """
+    conn_as = cloud_connection.get_connection(app['region'], ["autoscaling"], boto_version='boto3')
+    paginator = conn_as.get_paginator('describe_launch_configurations')
+    lcs = []
+    for page in paginator.paginate():
+        lcs = lcs + page['LaunchConfigurations']
+
     blue_green, app_color = get_blue_green_from_app(app)
+    launchconfig_prefix = _format_launchconfig_name(app, app_color, only_prefix=True)
 
-    launchconfig_format = "launchconfig.{0}.{1}.{2}.{3}{color}.".format(app['env'],
-                                                                        app['region'],
-                                                                        app['role'],
-                                                                        app['name'],
-                                                                        color='.%s' % app_color if app_color else '')
+    lcs = [lc for lc in lcs if lc['LaunchConfigurationName'].startswith(launchconfig_prefix)]
+    lcs = sorted(lcs, key=lambda lc: lc['CreatedTime'], reverse=True)[retention:]
 
     for lc in lcs:
-        if launchconfig_format in lc.name:
-            launchconfigs.append(lc)
-
-    if launchconfigs and len(launchconfigs) > retention:
-        launchconfigs.sort(key=lambda lc: lc.created_time, reverse=True)
-        i = 0
-        while i < retention:
-            launchconfigs.pop(0)
-            i += 1
-
-        for lc in launchconfigs:
-            conn_as.delete_launch_configuration(lc.name)
-
-    # Check if the purge works : current_version and current_version -1 are not removed.
-    launchconfigs = []
-    lcs = conn_as.get_all_launch_configurations()
-    for lc in lcs:
-        if launchconfig_format in lc.name:
-            launchconfigs.append(lc)
-    if len(launchconfigs) <= retention:
-        return True
-    else:
-        return False
+        try:
+            conn_as.delete_launch_configuration(LaunchConfigurationName=lc['LaunchConfigurationName'])
+        except ClientError as e:
+            if e.response.get('Error', {}).get('Code') != 'ResourceInUse':
+                raise
+    return True
 
 
 def update_auto_scale(cloud_connection, app, launch_config, log_file, update_as_params=False):
