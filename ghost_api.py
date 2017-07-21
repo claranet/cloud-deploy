@@ -6,6 +6,7 @@
 
 import os
 import traceback
+import binascii
 from ghost_tools import ghost_app_object_copy, get_available_provisioners_from_config, b64decode_utf8
 from eve.methods.post import post_internal
 from libs.blue_green import get_blue_green_from_app
@@ -249,6 +250,6 @@ def check_app_b64_scripts(updates):
                 if script in updates['lifecycle_hooks']:
                     b64decode_utf8(updates['lifecycle_hooks'][script])
         return True
-    except:
+    except binascii.Error:
         traceback.print_exc()
         return False
