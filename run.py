@@ -24,7 +24,7 @@ from ghost_tools import get_rq_name_from_app, boolify
 from ghost_blueprints import commands_blueprint
 from ghost_api import ghost_api_bluegreen_is_enabled, ghost_api_enable_green_app, ghost_api_delete_alter_ego_app, \
     ghost_api_clean_bluegreen_app
-from ghost_api import check_app_feature_provisioner
+from ghost_api import check_app_feature_provisioner, check_app_module_path
 from libs.blue_green import BLUE_GREEN_COMMANDS, get_blue_green_from_app, ghost_has_blue_green_enabled
 from ghost_aws import normalize_application_tags
 
@@ -48,7 +48,10 @@ def pre_update_app(updates, original):
     Uninitialized modules stay so, modified or not:
 
     >>> from copy import deepcopy
-    >>> base_original = {'_id': 1111, 'env': 'prod', 'name': 'app1', 'role': 'webfront', 'modules': [{'name': 'mod1', 'git_repo': 'git@github.com/test/mod1'}, {'name': 'mod2', 'git_repo': 'git@github.com/test/mod2'}], 'environment_infos': {'instance_tags':[]}}
+    >>> base_original = {'_id': 1111, 'env': 'prod', 'name': 'app1', 'role': 'webfront', 'modules': [
+    ...     {'name': 'mod1', 'git_repo': 'git@github.com/test/mod1', 'path': '/tmp/ok'},
+    ...     {'name': 'mod2', 'git_repo': 'git@github.com/test/mod2', 'path': '/tmp/ok'}],
+    ... 'environment_infos': {'instance_tags':[]}}
     >>> original = deepcopy(base_original)
     >>> updates = deepcopy(base_original)
     >>> pre_update_app(updates, original)
@@ -92,7 +95,7 @@ def pre_update_app(updates, original):
     New modules get their 'initialized' field set to False by default:
 
     >>> updates = deepcopy(base_original)
-    >>> updates['modules'].append({'name': 'mod3', 'git_repo': 'git@github.com/test/mod3'})
+    >>> updates['modules'].append({'name': 'mod3', 'git_repo': 'git@github.com/test/mod3', 'path': '/tmp/ok'})
     >>> pre_update_app(updates, original)
     >>> updates['modules'][0]['initialized']
     True
@@ -101,6 +104,9 @@ def pre_update_app(updates, original):
     >>> updates['modules'][2]['initialized']
     False
     """
+
+    if not check_app_module_path(updates):
+        abort(422)
 
     # Selectively reset each module's 'initialized' property if any of its other properties have changed
     if 'modules' in updates and 'modules' in original:

@@ -13,6 +13,7 @@ modules = [
   "commands.deploy",
   "commands.executescript",
   "commands.redeploy",
+  "ghost_api",
   "ghost_aws",
   "ghost_blueprints",
   "ghost_tools",
