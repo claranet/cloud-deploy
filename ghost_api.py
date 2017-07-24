@@ -408,14 +408,14 @@ def check_field_diff(updates, original, object_name):
     return False
 
 
-def get_modified_fields_objects(data):
+def get_pending_changes_objects(data):
     """
-    Transform the 'modified_fields' array into a dictionary
+    Transform the 'pending_changes' array into a dictionary
 
     :param data:
     :return: A key (field name) value (original object) dictionary
 
-    >>> base_ob = {'modified_fields': [
+    >>> base_ob = {'pending_changes': [
     ...     {'field': 'x', 'f1': 1, 'f2': 2},
     ...     {'field': 'y', 'y1': True, 'y2': False},
     ...     {'field': 'z', 'zz': '1', 'zzz': '2'},
@@ -423,17 +423,17 @@ def get_modified_fields_objects(data):
     ...     'i': 'a',
     ...     'ii': 'b',
     ... }}
-    >>> get_modified_fields_objects({})
+    >>> get_pending_changes_objects({})
     {}
 
-    >>> get_modified_fields_objects({'a': 1})
+    >>> get_pending_changes_objects({'a': 1})
     {}
 
-    >>> get_modified_fields_objects({'modified_fields': []})
+    >>> get_pending_changes_objects({'pending_changes': []})
     {}
 
     >>> from pprint import pprint
-    >>> res = get_modified_fields_objects(base_ob)
+    >>> res = get_pending_changes_objects(base_ob)
     >>> pprint(sorted(res))
     ['x', 'y', 'z']
     >>> pprint(sorted(res['x']))
@@ -443,21 +443,21 @@ def get_modified_fields_objects(data):
     >>> pprint(sorted(res['z']))
     ['field', 'zz', 'zzz']
     """
-    modified_fields_objects = data.get('modified_fields', [])
-    return {ob['field']: ob for ob in modified_fields_objects}
+    pending_changes_objects = data.get('pending_changes', [])
+    return {ob['field']: ob for ob in pending_changes_objects}
 
 
 def check_and_set_app_fields_state(user, updates, original, modules_edited=False):
-    modified_fields = get_modified_fields_objects(original)
+    pending_changes = get_pending_changes_objects(original)
 
     if modules_edited:
-        modified_fields['modules'] = {
+        pending_changes['modules'] = {
             'field': 'modules',
             'user': user,
             'updated': datetime.utcnow(),
         }
     if initialize_app_features(updates, original):
-        modified_fields['features'] = {
+        pending_changes['features'] = {
             'field': 'features',
             'user': user,
             'updated': datetime.utcnow(),
@@ -465,11 +465,11 @@ def check_and_set_app_fields_state(user, updates, original, modules_edited=False
 
     for object_name in COMMAND_FIELDS:
         if check_field_diff(updates, original, object_name):
-            modified_fields[object_name] = {
+            pending_changes[object_name] = {
                 'field': object_name,
                 'user': user,
                 'updated': datetime.utcnow(),
             }
 
-    updates['modified_fields'] = modified_fields.values()
+    updates['pending_changes'] = pending_changes.values()
     return updates

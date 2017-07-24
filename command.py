@@ -197,13 +197,13 @@ class Command:
         self._db.jobs.update({'_id': self.job['_id']},
                              {'$set': {'status': status, 'message': message, '_updated': self.job['_updated']}})
 
-    def _update_app_modified_fields(self, fields):
-        app_modified_fields = {ob['field']: ob for ob in self.app.get('modified_fields', [])}
+    def _update_app_pending_changes(self, fields):
+        app_pending_changes = {ob['field']: ob for ob in self.app.get('pending_changes', [])}
         for f in fields:
-            if f in app_modified_fields.keys():
-                del app_modified_fields[f]
+            if f in app_pending_changes.keys():
+                del app_pending_changes[f]
         self._db.apps.update({'_id': self.app['_id']},
-                             {'$set': {'modified_fields': app_modified_fields.values()}})
+                             {'$set': {'pending_changes': app_pending_changes.values()}})
 
     def _get_log_path(self):
         log_path = "{log_path}/{job_id}.txt".format(log_path=LOG_ROOT, job_id=self._worker_job.id)
@@ -280,7 +280,7 @@ class Command:
                 self.update_status("started", "Job processing started")
                 command.execute()
                 if self.job['status'] == 'done':
-                    self._update_app_modified_fields(mod.RELATED_APP_FIELDS)
+                    self._update_app_pending_changes(mod.RELATED_APP_FIELDS)
             else:
                 self.update_status("aborted",
                                    "Job was already in '{}' status (not in 'init' status)".format(self.job['status']))

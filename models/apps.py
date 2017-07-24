@@ -227,7 +227,7 @@ apps_schema = {
                                                    'schema': volumes.block}
                           }},
     'user': {'type': 'string'},
-    'modified_fields': {
+    'pending_changes': {
         'type': 'list',
         'required': False,
         'schema': {

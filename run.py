@@ -195,7 +195,7 @@ def pre_insert_app(items):
     for mod in app.get('modules'):
         mod['initialized'] = False
 
-    app['modified_fields'] = [{
+    app['pending_changes'] = [{
         'field': object_name,
         'user': request.authorization.username,
         'updated': datetime.utcnow(),
