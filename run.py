@@ -127,7 +127,9 @@ def pre_update_app(updates, original):
     if not check_app_feature_provisioner(updates):
         abort(422)
 
-    updates['environment_infos']['instance_tags'] = normalize_application_tags(original, updates)
+    if 'environment_infos' in updates and 'instance_tags' in updates['environment_infos']:
+        updates['environment_infos']['instance_tags'] = normalize_application_tags(original, updates)
+
     # Blue/green disabled ?
     try:
         blue_green_section, color = get_blue_green_from_app(updates)
