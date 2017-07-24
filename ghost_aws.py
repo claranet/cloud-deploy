@@ -18,7 +18,8 @@ with open(os.path.dirname(os.path.realpath(__file__)) + '/config.yml', 'r') as c
 
 def dict_to_aws_tags(d):
     """
-    Transforms a python dict {'a': 'b', 'c': 'd'} to the aws tags format [{'Key': 'a', 'Value': 'b'}, {'Key': 'c', 'Value': 'd'}]
+    Transforms a python dict {'a': 'b', 'c': 'd'} to the
+    aws tags format [{'Key': 'a', 'Value': 'b'}, {'Key': 'c', 'Value': 'd'}]
     Only needed for boto3 api calls
     :param d: dict: the dict to transform
     :return: list: the tags in aws format
@@ -32,7 +33,8 @@ def dict_to_aws_tags(d):
 
 def aws_tags_to_dict(t):
     """
-    Transforms a list of aws tags like [{'Key': 'a', 'Value': 'b'}, {'Key': 'c', 'Value': 'd'}] in a python dict {'a': 'b', 'c': 'd'}
+    Transforms a list of aws tags like [{'Key': 'a', 'Value': 'b'}, {'Key': 'c', 'Value': 'd'}]
+    in a python dict {'a': 'b', 'c': 'd'}
     Only needed for boto3 api calls
     :param t: list: the list of aws tags
     :return: dict: python dict of the tags
@@ -55,12 +57,14 @@ def get_autoscaling_group_and_processes_to_suspend(as_conn, app, log_file):
             as_group = as_list[0]
             log("INFO: Auto-scaling group {0} found".format(as_name), log_file)
 
-            # Determine if the auto-scaling Launch and/or Terminate processes should be suspended (i.e. they are already suspended and should remain as is)
+            # Determine if the auto-scaling Launch and/or Terminate processes should be suspended
+            # (i.e. they are already suspended and should remain as is)
             as_processes_to_suspend = {'Launch': None, 'Terminate': None}
             for suspended_process in as_group['SuspendedProcesses']:
                 if suspended_process['ProcessName'] in ['Launch', 'Terminate']:
                     del as_processes_to_suspend[suspended_process['ProcessName']]
-                    log("INFO: Auto-scaling group {0} {1} process is already suspended".format(as_name, suspended_process['ProcessName']), log_file)
+                    log("INFO: Auto-scaling group {0} {1} process is already suspended"
+                        .format(as_name, suspended_process['ProcessName']), log_file)
 
             return as_group['AutoScalingGroupName'], as_processes_to_suspend.keys()
         else:
@@ -72,6 +76,7 @@ def get_autoscaling_group_and_processes_to_suspend(as_conn, app, log_file):
                 log("WARNING: No auto-scaling group found", log_file)
     return None, None
 
+
 def suspend_autoscaling_group_processes(as_conn, as_group, as_group_processes_to_suspend, log_file):
     if as_group and as_group_processes_to_suspend:
         log("Suspending auto-scaling group processes {0}".format(as_group_processes_to_suspend), log_file)
@@ -79,6 +84,7 @@ def suspend_autoscaling_group_processes(as_conn, as_group, as_group_processes_to
             AutoScalingGroupName=as_group,
             ScalingProcesses=as_group_processes_to_suspend
         )
+
 
 def resume_autoscaling_group_processes(as_conn, as_group, as_group_processes_to_resume, log_file):
     if as_group and as_group_processes_to_resume:
@@ -88,16 +94,17 @@ def resume_autoscaling_group_processes(as_conn, as_group, as_group_processes_to_
             ScalingProcesses=as_group_processes_to_resume
         )
 
+
 def create_userdata_launchconfig_update_asg(ami_id, cloud_connection, app, config, log_file, update_as_params=False):
     if check_autoscale_exists(cloud_connection, app['autoscale']['name'], app['region']):
-        launch_config = None
-        userdata = generate_userdata(config['bucket_s3'], config.get('bucket_region', app['region']), config['ghost_root_path'])
+        userdata = generate_userdata(config['bucket_s3'], config.get('bucket_region', app['region']),
+                                     config['ghost_root_path'])
         if userdata:
             launch_config = create_launch_config(cloud_connection, app, userdata, ami_id)
             log("Launch configuration [{0}] created.".format(launch_config.name), log_file)
             if launch_config:
                 update_auto_scale(cloud_connection, app, launch_config, log_file, update_as_params)
-                if (purge_launch_configuration(cloud_connection, app, config.get('launch_configuration_retention', 5))):
+                if purge_launch_configuration(cloud_connection, app, config.get('launch_configuration_retention', 5)):
                     log("Old launch configurations removed for this app", log_file)
                 else:
                     log("ERROR: Purge launch configurations failed", log_file)
@@ -128,7 +135,7 @@ def create_launch_config(cloud_connection, app, userdata, ami_id):
         bdm = create_block_device(cloud_connection, app['region'], app['environment_infos']['root_block_device'])
     else:
         bdm = create_block_device(cloud_connection, app['region'])
-    instance_monitoring=app.get('instance_monitoring', False)
+    instance_monitoring = app.get('instance_monitoring', False)
     launch_config = cloud_connection.launch_service(
         ["ec2", "autoscale", "LaunchConfiguration"],
         connection=conn_as,
@@ -146,9 +153,11 @@ def create_launch_config(cloud_connection, app, userdata, ami_id):
     conn_as.create_launch_configuration(launch_config)
     return launch_config
 
+
 def check_autoscale_exists(cloud_connection, as_name, region):
     conn_as = cloud_connection.get_connection(region, ['autoscaling'], boto_version='boto3')
     return get_autoscaling_group_object(conn_as, as_name) is not None
+
 
 def purge_launch_configuration(cloud_connection, app, retention):
     conn_as = cloud_connection.get_connection(app['region'], ["ec2", "autoscale"])
@@ -176,8 +185,7 @@ def purge_launch_configuration(cloud_connection, app, retention):
         for lc in launchconfigs:
             conn_as.delete_launch_configuration(lc.name)
 
-    #Check if the purge works : current_version and current_version -1 are not removed.
-    lcs = []
+    # Check if the purge works : current_version and current_version -1 are not removed.
     launchconfigs = []
     lcs = conn_as.get_all_launch_configurations()
     for lc in lcs:
@@ -187,6 +195,7 @@ def purge_launch_configuration(cloud_connection, app, retention):
         return True
     else:
         return False
+
 
 def update_auto_scale(cloud_connection, app, launch_config, log_file, update_as_params=False):
     """ Update the AutoScaling parameters.
@@ -215,7 +224,8 @@ def update_auto_scale(cloud_connection, app, launch_config, log_file, update_as_
             AvailabilityZones=az,
             VPCZoneIdentifier=','.join(app['environment_infos']['subnet_ids'])
         )
-    asg_metrics = ["GroupMinSize", "GroupMaxSize", "GroupDesiredCapacity", "GroupInServiceInstances", "GroupPendingInstances", "GroupStandbyInstances", "GroupTerminatingInstances", "GroupTotalInstances"]
+    asg_metrics = ["GroupMinSize", "GroupMaxSize", "GroupDesiredCapacity", "GroupInServiceInstances",
+                   "GroupPendingInstances", "GroupStandbyInstances", "GroupTerminatingInstances", "GroupTotalInstances"]
     if boolify(app['autoscale'].get('enable_metrics', True)):
         log("Enabling Autoscaling group [{0}] metrics ({1}).".format(app['autoscale']['name'], asg_metrics), log_file)
         as_conn.enable_metrics_collection(
@@ -231,11 +241,12 @@ def update_auto_scale(cloud_connection, app, launch_config, log_file, update_as_
     if update_as_params:
         app_tags = get_app_tags(app, log_file)
         as_tags = get_autoscale_tags(as_group, log_file)
-        to_delete_tags = [v for k,v in as_tags.items() if k and k not in app_tags.keys() and v]
+        to_delete_tags = [v for k, v in as_tags.items() if k and k not in app_tags.keys() and v]
         if to_delete_tags and len(to_delete_tags):
             as_conn.delete_tags(Tags=to_delete_tags)
         as_conn.create_or_update_tags(Tags=app_tags.values())
         log("Autoscaling tags [{0}] updated.".format(app['autoscale']['name']), log_file)
+
 
 def get_autoscale_tags(as_group, log_file):
     """ Return the current Tags set for an AutoScaling.
@@ -247,15 +258,16 @@ def get_autoscale_tags(as_group, log_file):
     as_tags = {}
     for tag in as_group['Tags']:
         as_tags[tag['Key']] = tag
-    log("Tags currently set  {0}" .format(", ".join(as_tags.keys())), log_file)
+    log("Tags currently set  {0}".format(", ".join(as_tags.keys())), log_file)
     return as_tags
+
 
 def get_app_tags(app, log_file=None):
     """ Return the tags defined for this application.
 
-        :param  app  dict The application object
-        :log_file   obj Log file objet
-        :return  dict  Every tags defined for this Ghost Application
+        :param  app dict The application object
+        :param  log_file obj Log file objet
+        :return dict Every tags defined for this Ghost Application
 
         >>> app_original = {'_id': 1111, 'env': 'prod', 'name': 'app1', 'role': 'webfront', 'autoscale': {'name': 'asg-mod1'}, 'environment_infos': {'instance_tags':[]}}
         >>> len(get_app_tags(app_original)) == 4
@@ -267,7 +279,7 @@ def get_app_tags(app, log_file=None):
 
     """
     tags_app = {}
-    for ghost_tag_key, ghost_tag_val in {'app': 'name', 'app_id': '_id', 'env': 'env', 'role': 'role'}.iteritems():
+    for ghost_tag_key, ghost_tag_val in {'app': 'name', 'app_id': '_id', 'env': 'env', 'role': 'role'}.items():
         tags_app[ghost_tag_key] = {
             'Key': ghost_tag_key,
             'Value': str(app[ghost_tag_val]),
@@ -295,6 +307,7 @@ def get_app_tags(app, log_file=None):
     if log_file:
         log("[{0}] will be updated with: {1}".format(app['autoscale']['name'], ", ".join(tags_app.keys())), log_file)
     return tags_app
+
 
 def normalize_application_tags(app_original, app_updated):
     """ Simple function to normalize application tags when application is created or updated.
@@ -346,9 +359,11 @@ def normalize_application_tags(app_original, app_updated):
     """
     app_tags = []
     reserved_ghost_tags = ['app', 'app_id', 'env', 'role', 'color']
-    default_tag_name_value = "ec2.{env}.{role}.{app}".format(env=app_original['env'], role=app_original['role'], app=app_original['name'])
+    default_tag_name_value = "ec2.{env}.{role}.{app}".format(env=app_original['env'], role=app_original['role'],
+                                                             app=app_original['name'])
 
-    custom_tags = app_updated['environment_infos']['instance_tags'] if 'instance_tags' in app_updated['environment_infos'] else []
+    custom_tags = (app_updated['environment_infos']['instance_tags']
+                   if 'instance_tags' in app_updated['environment_infos'] else [])
 
     if 'Name' not in [i['tag_name'] for i in custom_tags]:
         app_tags.append({'tag_name': 'Name', 'tag_value': default_tag_name_value})
@@ -357,6 +372,7 @@ def normalize_application_tags(app_original, app_updated):
         if tag['tag_name'] not in reserved_ghost_tags:
             app_tags.append({'tag_name': tag['tag_name'], 'tag_value': tag['tag_value']})
     return app_tags
+
 
 def push_file_to_s3(cloud_connection, bucket_name, region, bucket_key_path, file_path):
     """
@@ -369,6 +385,7 @@ def push_file_to_s3(cloud_connection, bucket_name, region, bucket_key_path, file
     key.set_contents_from_filename(file_path)
     key.close()
 
+
 def download_file_from_s3(cloud_connection, bucket_name, region, bucket_key_path, file_path):
     try:
         conn = cloud_connection.get_connection(region, ["s3"])
@@ -379,5 +396,5 @@ def download_file_from_s3(cloud_connection, bucket_name, region, bucket_key_path
         key.close(True)
     except:
         # An error occured, so the downloaded file might be corrupted, deleting it.
-        if os.path.exist(file_path):
+        if os.path.exists(file_path):
             os.remove(file_path)
