@@ -1,8 +1,11 @@
 import collections
 import os
 import sys
+from glob import glob
 
 import simplejson
+from mock import Mock
+
 from ghost_tools import b64encode_utf8
 
 LOG_FILE = 'log_file'
@@ -119,6 +122,20 @@ def get_aws_data(data_name, as_object=False):
                 return [DictObject(**e) for e in d]
             return DictObject(**d)
         return d
+
+
+def get_aws_data_paginator(data_name, as_object=False):
+    files = sorted(glob("{}/{}-page[0-9].json".format(
+        os.path.join(os.path.dirname(os.path.realpath(__file__)), 'aws_data'),
+        data_name
+    )))
+
+    def paginate():
+        for f in files:
+            yield get_aws_data(os.path.splitext(f)[0], as_object=as_object)
+    paginator = Mock()
+    paginator.paginate = paginate
+    return paginator
 
 
 def get_dummy_bash_script(b64_encoding=False):
