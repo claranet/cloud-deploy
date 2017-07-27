@@ -22,9 +22,11 @@ from models.deployments import deployments
 
 from ghost_tools import get_rq_name_from_app, boolify
 from ghost_blueprints import commands_blueprint
-from ghost_api import ghost_api_bluegreen_is_enabled, ghost_api_enable_green_app, ghost_api_delete_alter_ego_app, \
-    ghost_api_clean_bluegreen_app
+from ghost_api import ghost_api_bluegreen_is_enabled, ghost_api_enable_green_app
+from ghost_api import ghost_api_delete_alter_ego_app, ghost_api_clean_bluegreen_app
 from ghost_api import check_app_feature_provisioner, check_app_module_path, check_app_b64_scripts
+from ghost_api import initialize_app_modules, check_and_set_app_fields_state
+from ghost_api import ALL_COMMAND_FIELDS
 from libs.blue_green import BLUE_GREEN_COMMANDS, get_blue_green_from_app, ghost_has_blue_green_enabled
 from ghost_aws import normalize_application_tags
 
@@ -111,30 +113,13 @@ def pre_update_app(updates, original):
     if not check_app_b64_scripts(updates):
         abort(422)
 
-    # Selectively reset each module's 'initialized' property if any of its other properties have changed
-    if 'modules' in updates and 'modules' in original:
-        for updated_module in updates['modules']:
-            # Set 'initialized' to False by default in case of new modules
-            updated_module['initialized'] = False
-            updated_module['git_repo'] = updated_module['git_repo'].strip()
-            for original_module in original['modules']:
-                if updated_module['name'] == original_module['name']:
-                    # Restore previous 'initialized' value as 'updated_module' does not contain it (read-only field)
-                    updated_module['initialized'] = original_module.get('initialized', False)
-                    # Compare all fields except 'initialized'
-                    fields = set(original_module.keys() + updated_module.keys())
-                    if 'initialized' in fields:
-                        fields.remove('initialized')
-                    for prop in fields:
-                        if not updated_module.get(prop, None) == original_module.get(prop, None):
-                            updated_module['initialized'] = False
-                            # At least one of the module's prop have changed, can exit loop
-                            break
-                    # Module found, can exit loop
-                    break
-
     if not check_app_feature_provisioner(updates):
         abort(422)
+
+    # Selectively reset each module's 'initialized' property if any of its other properties have changed
+    updates, modules_edited = initialize_app_modules(updates, original)
+    user = request.authorization.username if request and request.authorization else 'Nobody'
+    updates = check_and_set_app_fields_state(user, updates, original, modules_edited)
 
     if 'environment_infos' in updates and 'instance_tags' in updates['environment_infos']:
         updates['environment_infos']['instance_tags'] = normalize_application_tags(original, updates)
@@ -142,12 +127,10 @@ def pre_update_app(updates, original):
     # Blue/green disabled ?
     try:
         blue_green_section, color = get_blue_green_from_app(updates)
-        if (
-                            blue_green_section and
-                                'enable_blue_green' in blue_green_section and
-                        isinstance(blue_green_section['enable_blue_green'], bool) and
-                    not blue_green_section['enable_blue_green']
-        ):
+        if (blue_green_section and
+                    'enable_blue_green' in blue_green_section and
+                isinstance(blue_green_section['enable_blue_green'], bool) and
+                not blue_green_section['enable_blue_green']):
 
             if not ghost_api_clean_bluegreen_app(get_apps_db(), original):
                 abort(422)
@@ -209,8 +192,15 @@ def pre_insert_app(items):
     else:
         if get_apps_db().find_one({'$and': [{'name': name}, {'role': role}, {'env': env}]}):
             abort(422)
-    for module in app.get('modules'):
-        module['initialized'] = False
+    for mod in app.get('modules'):
+        mod['initialized'] = False
+
+    app['pending_changes'] = [{
+        'field': object_name,
+        'user': request.authorization.username,
+        'updated': datetime.utcnow(),
+    } for object_name in ALL_COMMAND_FIELDS]
+
     app['user'] = request.authorization.username
 
 

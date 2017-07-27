@@ -6,6 +6,8 @@ from settings import cloud_connections, DEFAULT_PROVIDER
 from ghost_tools import get_aws_connection_data
 
 COMMAND_DESCRIPTION = "Update the autoscaling group and its LaunchConfiguration"
+RELATED_APP_FIELDS = ['autoscale', 'environment_infos']
+
 
 class Updateautoscaling():
     _app = None

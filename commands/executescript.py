@@ -11,6 +11,7 @@ from libs.ec2 import get_ec2_instance
 from libs.deploy import launch_executescript
 
 COMMAND_DESCRIPTION = "Execute a script/commands on every instance"
+RELATED_APP_FIELDS = []
 
 
 class Executescript():

@@ -11,6 +11,8 @@ from libs.ec2 import create_ec2_instance, destroy_ec2_instances, test_ec2_instan
 from libs.rolling_update import RollingUpdate
 
 COMMAND_DESCRIPTION = "Recreate all the instances, rolling update possible when using an Autoscale"
+RELATED_APP_FIELDS = []
+
 
 class Recreateinstances():
     _app = None

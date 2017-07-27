@@ -197,6 +197,14 @@ class Command:
         self._db.jobs.update({'_id': self.job['_id']},
                              {'$set': {'status': status, 'message': message, '_updated': self.job['_updated']}})
 
+    def _update_app_pending_changes(self, fields):
+        app_pending_changes = {ob['field']: ob for ob in self.app.get('pending_changes', [])}
+        for f in fields:
+            if f in app_pending_changes.keys():
+                del app_pending_changes[f]
+        self._db.apps.update({'_id': self.app['_id']},
+                             {'$set': {'pending_changes': app_pending_changes.values()}})
+
     def _get_log_path(self):
         log_path = "{log_path}/{job_id}.txt".format(log_path=LOG_ROOT, job_id=self._worker_job.id)
         return log_path
@@ -263,7 +271,7 @@ class Command:
         self.app = self._db.apps.find_one({'_id': ObjectId(self.job['app_id'])})
         self._init_log_file()
         klass_name = self.job['command'].title()
-        mod = __import__('commands.' + self.job['command'], fromlist=[klass_name])
+        mod = __import__('commands.' + self.job['command'], fromlist=[klass_name, 'RELATED_APP_FIELDS'])
         command = getattr(mod, klass_name)(self)
 
         # Execute command and always mark the job as 'failed' in case of an unexpected exception
@@ -271,6 +279,8 @@ class Command:
             if self.job['status'] == 'init':
                 self.update_status("started", "Job processing started")
                 command.execute()
+                if self.job['status'] == 'done':
+                    self._update_app_pending_changes(mod.RELATED_APP_FIELDS)
             else:
                 self.update_status("aborted",
                                    "Job was already in '{}' status (not in 'init' status)".format(self.job['status']))

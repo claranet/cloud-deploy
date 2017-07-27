@@ -2,11 +2,11 @@
     Library with all needed functions by Ghost API
 """
 # -*- coding: utf-8 -*-
-# !/usr/bin/env python
 
 import os
 import traceback
 import binascii
+from datetime import datetime
 from ghost_tools import ghost_app_object_copy, get_available_provisioners_from_config, b64decode_utf8
 from eve.methods.post import post_internal
 from libs.blue_green import get_blue_green_from_app
@@ -16,6 +16,8 @@ OPPOSITE_COLOR = {
     'green': 'blue'
 }
 FORBIDDEN_PATH = ['/', '/tmp', '/var', '/etc', '/ghost', '/root', '/home', '/home/admin']
+COMMAND_FIELDS = ['autoscale', 'blue_green', 'build_infos', 'environment_infos', 'lifecycle_hooks']
+ALL_COMMAND_FIELDS = ['modules', 'features'] + COMMAND_FIELDS
 
 
 def ghost_api_bluegreen_is_enabled(app):
@@ -253,3 +255,221 @@ def check_app_b64_scripts(updates):
     except binascii.Error:
         traceback.print_exc()
         return False
+
+
+def initialize_app_modules(updates, original):
+    modules_edited = False
+    if 'modules' in updates and 'modules' in original:
+        for updated_module in updates['modules']:
+            # Set 'initialized' to False by default in case of new modules
+            updated_module['initialized'] = False
+            updated_module['git_repo'] = updated_module['git_repo'].strip()
+            for original_module in original['modules']:
+                if updated_module['name'] == original_module['name']:
+                    # Restore previous 'initialized' value as 'updated_module' does not contain it (read-only field)
+                    updated_module['initialized'] = original_module.get('initialized', False)
+                    # Compare all fields except 'initialized'
+                    fields = set(original_module.keys() + updated_module.keys())
+                    if 'initialized' in fields:
+                        fields.remove('initialized')
+                    for prop in fields:
+                        if not updated_module.get(prop, None) == original_module.get(prop, None):
+                            updated_module['initialized'] = False
+                            modules_edited = True
+                            # At least one of the module's prop have changed, can exit loop
+                            break
+                    # Module found, can exit loop
+                    break
+            else:
+                # Module not found in original, so it's a new one
+                modules_edited = True
+    return updates, modules_edited
+
+
+def initialize_app_features(updates, original):
+    """
+    Check for feature modifications
+    - feature order
+    - attributes modifications
+
+    :param updates:
+    :param original:
+    :return: bool - if the features changed
+
+    >>> from copy import deepcopy
+    >>> initialize_app_features({}, {})
+    False
+
+    >>> initialize_app_features({'features': []}, {})
+    False
+
+    >>> initialize_app_features({}, {'features': []})
+    False
+
+    >>> base_app = {'features': [
+    ...     {'name': 'feat1', 'version': 'param=test', 'provisioner': 'salt'},
+    ...     {'name': 'feat1', 'version': 'param2=dummy', 'provisioner': 'salt'},
+    ...     {'name': 'feat2', 'version': 'other=feat1', 'provisioner': 'ansible'},
+    ...     {'name': 'feat2', 'version': 'other=feat2', 'provisioner': 'ansible'},
+    ...     {'name': 'feat3', 'version': 'f=f3', 'provisioner': 'ansible'},
+    ... ]}
+    >>> up_app = deepcopy(base_app)
+    >>> initialize_app_features(up_app, base_app)
+    False
+
+    >>> up_app = deepcopy(base_app)
+    >>> up_app['features'][1]['version'] = 'param=modified'
+    >>> initialize_app_features(up_app, base_app)
+    True
+
+    >>> up_app = deepcopy(base_app)
+    >>> del up_app['features'][4]
+    >>> initialize_app_features(up_app, base_app)
+    True
+
+    >>> up_app = deepcopy(base_app)
+    >>> up_app['features'][2]['version'] = 'other=feat2'
+    >>> up_app['features'][3]['version'] = 'other=feat1'
+    >>> initialize_app_features(up_app, base_app)
+    True
+    """
+    if 'features' in updates and 'features' in original:
+        if not len(updates['features']) == len(original['features']):
+            # Different length means that feature have changed
+            return True
+        for index, updated_feature in enumerate(updates['features']):
+            original_feature = original['features'][index]
+            if updated_feature['name'] == original_feature['name']:
+                # Compare all fields
+                fields = set(original_feature.keys() + updated_feature.keys())
+                for prop in fields:
+                    if not updated_feature.get(prop, None) == original_feature.get(prop, None):
+                        # Feature field is different
+                        return True
+    return False
+
+
+def check_field_diff(updates, original, object_name):
+    """
+    Generic function to check if inner properties of a sub-document has been changed.
+
+    :param updates:
+    :param original:
+    :param object_name:
+    :return: bool - if the object (sub-document) has changed
+
+    >>> from copy import deepcopy
+    >>> base_ob = {'a': {
+    ...     'x': 1,
+    ...     'y': 2,
+    ...     'z': 3,
+    ... }, 'b': {
+    ...     'i': 'a',
+    ...     'ii': 'b',
+    ... }}
+    >>> up_ob = deepcopy(base_ob)
+    >>> check_field_diff(up_ob, base_ob, 'a')
+    False
+
+    >>> check_field_diff({}, {}, 'a')
+    False
+
+    >>> check_field_diff({'a': {}}, {}, 'a')
+    False
+
+    >>> check_field_diff({}, {'a': {}}, 'a')
+    False
+
+    >>> up_ob = deepcopy(base_ob)
+    >>> del base_ob['b']['i']
+    >>> check_field_diff(up_ob, base_ob, 'a')
+    False
+
+    >>> check_field_diff(up_ob, base_ob, 'b')
+    True
+
+    >>> up_ob = deepcopy(base_ob)
+    >>> up_ob['a']['y'] = 10
+    >>> check_field_diff(up_ob, base_ob, 'a')
+    True
+
+    >>> up_ob = deepcopy(base_ob)
+    >>> up_ob['a']['y'] = 3
+    >>> up_ob['a']['z'] = 2
+    >>> check_field_diff(up_ob, base_ob, 'a')
+    True
+    """
+    if object_name in updates and object_name in original:
+        fields = set(updates[object_name].keys())
+        for prop in fields:
+            if not updates[object_name].get(prop, None) == original[object_name].get(prop, None):
+                # Field is different
+                return True
+    return False
+
+
+def get_pending_changes_objects(data):
+    """
+    Transform the 'pending_changes' array into a dictionary
+
+    :param data:
+    :return: A key (field name) value (original object) dictionary
+
+    >>> base_ob = {'pending_changes': [
+    ...     {'field': 'x', 'f1': 1, 'f2': 2},
+    ...     {'field': 'y', 'y1': True, 'y2': False},
+    ...     {'field': 'z', 'zz': '1', 'zzz': '2'},
+    ... ], 'b': {
+    ...     'i': 'a',
+    ...     'ii': 'b',
+    ... }}
+    >>> get_pending_changes_objects({})
+    {}
+
+    >>> get_pending_changes_objects({'a': 1})
+    {}
+
+    >>> get_pending_changes_objects({'pending_changes': []})
+    {}
+
+    >>> from pprint import pprint
+    >>> res = get_pending_changes_objects(base_ob)
+    >>> pprint(sorted(res))
+    ['x', 'y', 'z']
+    >>> pprint(sorted(res['x']))
+    ['f1', 'f2', 'field']
+    >>> pprint(sorted(res['y']))
+    ['field', 'y1', 'y2']
+    >>> pprint(sorted(res['z']))
+    ['field', 'zz', 'zzz']
+    """
+    pending_changes_objects = data.get('pending_changes', [])
+    return {ob['field']: ob for ob in pending_changes_objects}
+
+
+def check_and_set_app_fields_state(user, updates, original, modules_edited=False):
+    pending_changes = get_pending_changes_objects(original)
+
+    if modules_edited:
+        pending_changes['modules'] = {
+            'field': 'modules',
+            'user': user,
+            'updated': datetime.utcnow(),
+        }
+    if initialize_app_features(updates, original):
+        pending_changes['features'] = {
+            'field': 'features',
+            'user': user,
+            'updated': datetime.utcnow(),
+        }
+
+    for object_name in COMMAND_FIELDS:
+        if check_field_diff(updates, original, object_name):
+            pending_changes[object_name] = {
+                'field': object_name,
+                'user': user,
+                'updated': datetime.utcnow(),
+            }
+
+    updates['pending_changes'] = pending_changes.values()
+    return updates
