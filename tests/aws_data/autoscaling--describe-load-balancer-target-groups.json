@@ -1,0 +1,9 @@
+{
+  "LoadBalancerTargetGroups": [
+    {
+      "LoadBalancerTargetGroupARN": "arn:aws:elasticloadbalancing:eu-central-1:0123456789:targetgroup/tg-test/0123456789",
+      "State": "Removed"
+    }
+  ],
+  "NextToken": "abc123"
+}

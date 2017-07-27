@@ -1,11 +1,11 @@
 from mock import mock, MagicMock
 
 from tests.helpers import get_aws_data
-from web_ui.forms import get_aws_ami_ids
+from web_ui.forms.form_aws_helper import get_aws_ami_ids
 
 
-@mock.patch('web_ui.forms.cloud_connections')
-@mock.patch('web_ui.forms.config', new={"display_amis_from_aws_accounts": None})
+@mock.patch('web_ui.forms.form_aws_helper.cloud_connections')
+@mock.patch('web_ui.forms.form_aws_helper.config', new={"display_amis_from_aws_accounts": None})
 def test_get_aws_ami_ids(cloud_connections):
     connection_mock = MagicMock()
     connection_pool = MagicMock()

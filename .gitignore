@@ -8,6 +8,7 @@ bin
 .composer/
 .config/
 config.yml
+config.yml.ansible
 .dbshell
 .env
 develop-eggs

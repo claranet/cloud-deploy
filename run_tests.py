@@ -13,6 +13,7 @@ modules = [
   "commands.deploy",
   "commands.executescript",
   "commands.redeploy",
+  "ghost_api",
   "ghost_aws",
   "ghost_blueprints",
   "ghost_tools",
@@ -25,7 +26,8 @@ modules = [
   "libs.provisioner_salt",
   "run",
   "run_rqworkers",
-  "web_ui.forms",
+  "web_ui.forms.form_aws_helper",
+  "web_ui.forms.form_helper",
   "web_ui.ghost_client",
   "web_ui.websocket"
 ]

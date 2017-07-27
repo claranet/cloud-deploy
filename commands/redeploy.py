@@ -1,6 +1,3 @@
-import os
-import sys
-import tempfile
 from bson.objectid import ObjectId
 
 from ghost_tools import GCallException, gcall, get_app_module_name_list, clean_local_module_workspace
@@ -12,6 +9,8 @@ from libs.deploy import execute_module_script_on_ghost
 from libs.deploy import get_path_from_app_with_color, get_buildpack_clone_path_from_module, update_app_manifest, rollback_app_manifest
 
 COMMAND_DESCRIPTION = "Re-deploy an old module package"
+RELATED_APP_FIELDS = []
+
 
 class Redeploy():
     _app = None

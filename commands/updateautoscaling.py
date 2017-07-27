@@ -6,6 +6,8 @@ from settings import cloud_connections, DEFAULT_PROVIDER
 from ghost_tools import get_aws_connection_data
 
 COMMAND_DESCRIPTION = "Update the autoscaling group and its LaunchConfiguration"
+RELATED_APP_FIELDS = ['autoscale', 'environment_infos']
+
 
 class Updateautoscaling():
     _app = None
@@ -36,14 +38,14 @@ class Updateautoscaling():
             if self._app['autoscale']['name']:
                 try:
                     if create_userdata_launchconfig_update_asg(ami_id, self._cloud_connection, self._app, self._config, self._log_file, update_as_params=True):
-                        self._worker.update_status("done")
+                        self._worker.update_status("done", message="AutoScaling [%s] updated" % self._app['autoscale']['name'])
                     else:
                         self._worker.update_status("failed")
                 except:
                     traceback.print_exc(self._log_file)
                     self._worker.update_status("failed")
             else:
-                log("No autoscaling group name was set", self._log_file)
+                log("No AutoScaling Group name was set", self._log_file)
                 self._worker.update_status("done")
         else:
             log("ERROR: ami_id not found. You must use the `buildimage` command first.", self._log_file)

@@ -619,11 +619,13 @@ class AwsAlbManager(AwsElbManager):
     def get_instances_status_from_autoscale(self, as_name, log_file):
         alb_conn = self._get_alb_connection()
         as_instance_status = {}
-        tg_list = alb_conn.describe_target_groups(
-            TargetGroupArns=self._get_targetgroup_arns_from_autoscale(as_name))['TargetGroups']
+        tg_arns = self._get_targetgroup_arns_from_autoscale(as_name)
+        tg_list = alb_conn.describe_target_groups(TargetGroupArns=tg_arns)['TargetGroups'] if tg_arns else []
         lb_arns = list(itertools.chain(*(tg['LoadBalancerArns'] for tg in tg_list)))
-        lb_names = {lb['LoadBalancerArn']: lb['LoadBalancerName']
-                    for lb in alb_conn.describe_load_balancers(LoadBalancerArns=lb_arns)['LoadBalancers']}
+        lb_names = {}
+        if lb_arns and tg_list:
+            lb_names = {lb['LoadBalancerArn']: lb['LoadBalancerName']
+                        for lb in alb_conn.describe_load_balancers(LoadBalancerArns=lb_arns)['LoadBalancers']}
         for tg in tg_list:
             if len(tg['LoadBalancerArns']) > 1:
                 raise LoadBalancerManagerException('Multiple ALBs for a target group is currently not supported')

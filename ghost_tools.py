@@ -18,12 +18,12 @@ with open(os.path.dirname(os.path.realpath(__file__)) + '/config.yml', 'r') as c
     config = yaml.load(conf_file)
 
 try:
-    CURRENT_REVISION_NAME=git('symbolic-ref', '-q', '--short', 'HEAD', _tty_out=False).strip()
+    CURRENT_REVISION_NAME = git('symbolic-ref', '-q', '--short', 'HEAD', _tty_out=False).strip()
 except:
     try:
-        CURRENT_REVISION_NAME=git('describe', '--tags', '--exact-match', _tty_out=False).strip()
+        CURRENT_REVISION_NAME = git('describe', '--tags', '--exact-match', _tty_out=False).strip()
     except:
-        CURRENT_REVISION_NAME=git('--no-pager', 'rev-parse', '--short', 'HEAD', _tty_out=False).strip()
+        CURRENT_REVISION_NAME = git('--no-pager', 'rev-parse', '--short', 'HEAD', _tty_out=False).strip()
 
 try:
     CURRENT_REVISION = dict(
@@ -47,15 +47,19 @@ GHOST_JOB_STATUSES_COLORS = {
     'default':   '#415560',
 }
 
+
 def get_aws_connection_data(assumed_account_id, assumed_role_name, assumed_region_name=""):
     """
     Build a key-value dictionnatiory args for aws cross  connections
     """
     if assumed_account_id and assumed_role_name:
-        aws_connection_data = dict([("assumed_account_id", assumed_account_id), ("assumed_role_name", assumed_role_name), ("assumed_region_name", assumed_region_name)])
+        aws_connection_data = dict(
+            [("assumed_account_id", assumed_account_id), ("assumed_role_name", assumed_role_name),
+             ("assumed_region_name", assumed_region_name)])
     else:
         aws_connection_data = dict()
     return (aws_connection_data)
+
 
 def render_stage2(config, s3_region):
     """
@@ -92,13 +96,14 @@ def render_stage2(config, s3_region):
     ghost_root_path = config['ghost_root_path']
     max_deploy_history = config.get('max_deploy_history', 3)
 
-    jinja_templates_path='%s/scripts' % ghost_root_path
-    if(os.path.exists('%s/stage2' % jinja_templates_path)):
-        loader=FileSystemLoader(jinja_templates_path)
+    jinja_templates_path = '%s/scripts' % ghost_root_path
+    if (os.path.exists('%s/stage2' % jinja_templates_path)):
+        loader = FileSystemLoader(jinja_templates_path)
         jinja_env = Environment(loader=loader)
         template = jinja_env.get_template('stage2')
         return template.render(bucket_s3=bucket_s3, max_deploy_history=max_deploy_history, bucket_region=s3_region)
     return None
+
 
 def refresh_stage2(cloud_connection, region, config):
     """
@@ -119,8 +124,10 @@ def refresh_stage2(cloud_connection, region, config):
 class GCallException(Exception):
     def __init__(self, value):
         self.value = value
+
     def __str__(self):
         return repr(self.value)
+
 
 def gcall(args, cmd_description, log_fd, dry_run=False, env=None):
     log(cmd_description, log_fd)
@@ -130,12 +137,14 @@ def gcall(args, cmd_description, log_fd, dry_run=False, env=None):
         if (ret != 0):
             raise GCallException("ERROR: %s" % cmd_description)
 
+
 def get_app_colored_env(app):
     color = app['blue_green'].get('color', None) if app.get('blue_green') else None
     if color:
         return '{env}-{color}'.format(color=color, env=app['env'])
     else:
         return app['env']
+
 
 def get_rq_name_from_app(app):
     """
@@ -177,6 +186,7 @@ def get_rq_name_from_app(app):
 
     return '{env}:{name}:{role}'.format(env=env, name=name, role=role)
 
+
 def get_app_from_rq_name(name):
     """
     Returns an app's env, name, role for a given RQ name
@@ -187,6 +197,7 @@ def get_app_from_rq_name(name):
     parts = name.split(':')
     return {'env': parts[0], 'name': parts[1], 'role': parts[2]}
 
+
 def clean_local_module_workspace(app_path, all_app_modules_list, log_file):
     """
     Walk through app_path directory and check if module workspace should be cleaned.
@@ -195,7 +206,9 @@ def clean_local_module_workspace(app_path, all_app_modules_list, log_file):
     log('Cleaning old module workspaces', log_file)
     for mod_dir in os.listdir(app_path):
         if not mod_dir in all_app_modules_list:
-            gcall('rm -rf "{p}"'.format(p=os.path.join(app_path, mod_dir)), 'Removing deleted module : %s' % mod_dir, log_file)
+            gcall('rm -rf "{p}"'.format(p=os.path.join(app_path, mod_dir)), 'Removing deleted module : %s' % mod_dir,
+                  log_file)
+
 
 def get_app_module_name_list(modules):
     """
@@ -257,6 +270,7 @@ def get_app_module_name_list(modules):
     """
     return [app_module['name'] for app_module in modules if 'name' in app_module]
 
+
 def b64decode_utf8(ascii):
     u"""
     Converts an ASCII UTF8/base64 encoded string to a unicode string
@@ -274,6 +288,7 @@ def b64decode_utf8(ascii):
     """
     if ascii is not None:
         return b64decode(ascii).decode('utf-8')
+
 
 def b64encode_utf8(string):
     u"""
@@ -298,6 +313,7 @@ def b64encode_utf8(string):
     """
     if string is not None:
         return b64encode(string.encode('utf-8'))
+
 
 def ghost_app_object_copy(app, user):
     """
@@ -337,6 +353,7 @@ def ghost_app_object_copy(app, user):
 
     return copy_app
 
+
 def get_app_friendly_name(app):
     """
     >>> my_app = {'_id': 1111, 'env': 'prod', 'name': 'app1', 'role': 'webfront', 'autoscale': {'name': 'asg-mod1'}, 'environment_infos': {'instance_tags':[]}}
@@ -345,6 +362,7 @@ def get_app_friendly_name(app):
 
     """
     return "{0}/{1}/{2}".format(app['name'], app['env'], app['role'])
+
 
 def boolify(val):
     """
@@ -381,6 +399,7 @@ def boolify(val):
         return val
     return val in ['True', 'true', '1', 1]
 
+
 def get_running_jobs(_db, app_id_1, app_id_2, current_job):
     """
     Get all running jobs for given app Ids
@@ -394,6 +413,7 @@ def get_running_jobs(_db, app_id_1, app_id_2, current_job):
         "_created": {"$gt": date_limit}
     })
     return list(jobs)
+
 
 def get_module_package_rev_from_manifest(bucket, manifest_key_path, module):
     """
@@ -409,6 +429,7 @@ def get_module_package_rev_from_manifest(bucket, manifest_key_path, module):
             return manifest_module_pkg_name
             break
     return None
+
 
 def keep_n_recent_elements_from_list(keys_list, nb_elt_to_keep, log_file=None):
     """
@@ -438,7 +459,7 @@ def keep_n_recent_elements_from_list(keys_list, nb_elt_to_keep, log_file=None):
         log("%s most recent element(s) must be kept" % str(nb_elt_to_keep), log_file)
 
     keys_list.sort()
-    del keys_list[(len(keys_list)-nb_elt_to_keep):]
+    del keys_list[(len(keys_list) - nb_elt_to_keep):]
 
     if log_file:
         log("List now contains %s element(s)" % str(len(keys_list)), log_file)
@@ -502,7 +523,7 @@ def split_hosts_list(hosts_list, split_type, log_file=None):
     else:
         if log_file:
             log("Not enough instances to perform safe deployment. Number of instances: \
-                {0} for safe deployment type: {1}" .format(str(len(hosts_list)), str(split_type)), log_file)
+                {0} for safe deployment type: {1}".format(str(len(hosts_list)), str(split_type)), log_file)
         raise GCallException("Cannot continue, not enought instances to perform the safe deployment")
     return [hosts_list[i::chunk] for i in range(chunk)]
 
@@ -530,9 +551,10 @@ def get_ghost_env_variables(app, module, color, user):
     """
     Generate an environment variable dictionnary for fabric
     """
-    ghost_env = {}
-    ghost_env['GHOST_APP'] = app['name']
-    ghost_env['GHOST_ENV'] = app['env']
+    ghost_env = {
+        'GHOST_APP': app['name'],
+        'GHOST_ENV': app['env']
+    }
     if color:
         ghost_env['GHOST_ENV_COLOR'] = color
     ghost_env['GHOST_ROLE'] = app['role']
@@ -544,5 +566,8 @@ def get_ghost_env_variables(app, module, color, user):
             ghost_env['GHOST_MODULE_USER'] = user
     custom_env_vars = app.get('env_vars', None)
     if custom_env_vars and len(custom_env_vars):
-        ghost_env.update({env_var['var_key'].encode('ascii', 'ignore'): env_var['var_value'].encode('ascii', 'ignore') for env_var in custom_env_vars})
+        ghost_env.update({
+            env_var['var_key'].encode('ascii', 'ignore'): env_var['var_value'].encode('ascii', 'ignore')
+            for env_var in custom_env_vars
+        })
     return ghost_env
