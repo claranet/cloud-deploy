@@ -17,3 +17,6 @@ def test_get_instances_status_from_autoscale():
     ret = AwsMixedLoadBalancersManager(cloud_connection, 'region').get_instances_status_from_autoscale('as_test', LOG_FILE)
 
     assert ret == {}
+    connection.describe_load_balancer_target_groups.assert_called_once_with(AutoScalingGroupName='as_test')
+    assert connection.describe_target_groups.call_count == 0
+    assert connection.describe_load_balancers.call_count == 0
