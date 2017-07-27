@@ -5,7 +5,9 @@
 # !/usr/bin/env python
 
 import os
-from ghost_tools import ghost_app_object_copy, get_available_provisioners_from_config
+import traceback
+import binascii
+from ghost_tools import ghost_app_object_copy, get_available_provisioners_from_config, b64decode_utf8
 from eve.methods.post import post_internal
 from libs.blue_green import get_blue_green_from_app
 
@@ -229,3 +231,25 @@ def check_app_module_path(updates):
             if os.path.abspath(mod['path']) in FORBIDDEN_PATH:
                 return False
     return True
+
+
+def check_app_b64_scripts(updates):
+    """
+    Trigger a base64 decode on every script given to the API in order to verify their validity
+    :param updates:
+    :return: bool
+    """
+    try:
+        if 'modules' in updates:
+            for mod in updates['modules']:
+                for script in ['build_pack', 'pre_deploy', 'post_deploy', 'after_all_deploy']:
+                    if script in mod:
+                        b64decode_utf8(mod[script])
+        if 'lifecycle_hooks' in updates:
+            for script in ['pre_buildimage', 'post_buildimage', 'pre_bootstrap', 'post_bootstrap']:
+                if script in updates['lifecycle_hooks']:
+                    b64decode_utf8(updates['lifecycle_hooks'][script])
+        return True
+    except binascii.Error:
+        traceback.print_exc()
+        return False
