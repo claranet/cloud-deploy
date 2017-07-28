@@ -534,8 +534,12 @@ def get_job_log_remote_path(worker_job_id):
 
 def get_provisioners_config(last_config=None):
     """
-    >>> get_provisioners_config()
-    {'salt': {'git_revision': 'master', 'git_repo': 'git@bitbucket.org:morea/morea-salt-formulas.git'}}
+    >>> get_provisioners_config(last_config={'dummy': 'dummy'}).keys()
+    ['salt']
+
+    >>> get_provisioners_config(last_config={'dummy': 'dummy'})['salt']['git_repo']
+    'git@bitbucket.org:morea/morea-salt-formulas.git'
+
     """
     if not last_config:
         last_config = config
