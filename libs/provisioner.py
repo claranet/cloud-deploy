@@ -53,7 +53,7 @@ class FeaturesProvisioner:
         try:
             output=git("ls-remote", "--exit-code", provisioner_git_repo, provisioner_git_revision).strip()
             log("Provisioner repository checked successfuly with output: " + output, self._log_file)
-        except sh.ErrorReturnCode, e:
+        except sh.ErrorReturnCode as e:
             log("Invalid provisioner repository or invalid credentials. Please check your yaml 'config.yml' file", self._log_file)
             raise
 

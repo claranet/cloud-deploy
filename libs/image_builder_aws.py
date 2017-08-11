@@ -55,7 +55,7 @@ class AWSImageBuilder(ImageBuilder):
             'custom_env_vars': self._app.get('env_vars', [])
         }
 
-        for opt_vol in self._app['environment_infos'].get('optional_volumes'):
+        for opt_vol in self._app['environment_infos'].get('optional_volumes', []):
             block = {
                 'device_name': opt_vol['device_name'],
                 'volume_type': opt_vol['volume_type'],
