@@ -8,9 +8,10 @@ from ghost_log import log
 from ghost_tools import gcall, GCallException, boolify
 from .provisioner import FeaturesProvisioner, GalaxyNoMatchingRolesException, GalaxyBadRequirementPathException, AnsibleBadBootstrapPathException
 
-ANSIBLE_BASE_PLAYBOOK = [{'hosts': 'localhost', 'roles':[]}]
-ANSIBLE_COMMAND = "ANSIBLE_FORCE_COLOR=1 PYTHONUNBUFFERED=1 sudo ansible-playbook"
+ANSIBLE_BASE_PLAYBOOK = [{'hosts': 'all', 'roles':[]}]
+ANSIBLE_COMMAND = "bin/ansible-playbook"
 ANSIBLE_GALAXY_DEFAULT_CMD_PATH = "bin/ansible-galaxy"
+ANSIBLE_ENV_VARS = [ "ANSIBLE_HOST_KEY_CHECKING=False", "ANSIBLE_FORCE_COLOR=1", "PYTHONUNBUFFERED=1" ]
 
 class FeaturesProvisionerAnsible(FeaturesProvisioner):
     """ Build features with ansible """
@@ -21,7 +22,9 @@ class FeaturesProvisionerAnsible(FeaturesProvisioner):
         self._ansible_requirement_app = os.path.join(self.local_repo_path, 'requirement_app.yml')
         self._ansible_bootstrap_path = os.path.join(self.global_config.get('ghost_root_path', '/usr/local/share/ghost'), 'scripts/ansible_bootstrap.sh')
         self._ansible_galaxy_rq_path = os.path.join(self.local_repo_path, self.global_config.get('ansible_galaxy_requirements_path', 'requirements.yml'))
-        self._ansible_command_path = os.path.join(sys.exec_prefix, ANSIBLE_GALAXY_DEFAULT_CMD_PATH)
+        self._ansible_galaxy_command_path = os.path.join(sys.exec_prefix, ANSIBLE_GALAXY_DEFAULT_CMD_PATH)
+        self._ansible_command_path = os.path.join(sys.exec_prefix, ANSIBLE_COMMAND)
+        self._ansible_env_vars = ANSIBLE_ENV_VARS + ["ANSIBLE_ROLES_PATH={}".format(self.local_repo_path)]
 
     def build_provisioner_features_files(self, params, features):
         self._enabled_packer_ansible_config = self._test_not_empty_ansible_features(features)
@@ -43,12 +46,12 @@ class FeaturesProvisionerAnsible(FeaturesProvisioner):
     def _test_not_empty_ansible_features(self, features):
         """ Test is features set
 
-        >>> features = [{'hosts': 'localhost', 'roles': []}]
+        >>> features = [{'hosts': 'all', 'roles': []}]
         >>> import pprint
         >>> pprint.pprint(FeaturesProvisionerAnsible(None, None, {}, {})._test_not_empty_ansible_features(features))
         False
 
-        >>> features = [{'hosts': 'localhost', 'roles': [{'role': 'package', 'package_name': ['git_vim']}]}]      
+        >>> features = [{'hosts': 'all', 'roles': [{'role': 'package', 'package_name': ['git_vim']}]}]      
         >>> pprint.pprint(FeaturesProvisionerAnsible(None, None, {}, {})._test_not_empty_ansible_features(features))
         True
 
@@ -58,12 +61,12 @@ class FeaturesProvisionerAnsible(FeaturesProvisioner):
     def _get_ansible_roles(self, features):
         """ Get role list with unique role
 
-        >>> features = [{'hosts': 'localhost', 'roles': [{'role': 'package', 'package_name': ['git_vim']}, {'role': 'package', 'package_name': ['curl']}, {'role': 'apache2', 'hostname': 'localhost'}]}]
+        >>> features = [{'hosts': 'all', 'roles': [{'role': 'package', 'package_name': ['git_vim']}, {'role': 'package', 'package_name': ['curl']}, {'role': 'apache2', 'hostname': 'localhost'}]}]
         >>> import pprint
         >>> pprint.pprint(sorted(FeaturesProvisionerAnsible(None, None, {}, {})._get_ansible_roles(features)))
         ['apache2', 'package']
 
-        >>> features = [{'hosts': 'localhost', 'roles': []}]
+        >>> features = [{'hosts': 'all', 'roles': []}]
         >>> pprint.pprint(sorted(FeaturesProvisionerAnsible(None, None, {}, {})._get_ansible_roles(features)))
         []
 
@@ -91,7 +94,7 @@ class FeaturesProvisionerAnsible(FeaturesProvisioner):
             with open(self._ansible_requirement_app, "w") as stream_requirement_app:
                 yaml.dump(requirement_app, stream_requirement_app, default_flow_style=False)
             log("Ansible - Getting roles from : {0}".format(self._ansible_galaxy_rq_path), self._log_file)
-            gcall("{} install -r {} -p {}".format(self._ansible_command_path, self._ansible_requirement_app, self._ansible_galaxy_role_path), 'Ansible -  ansible-galaxy command', self._log_file)
+            gcall("{} install -r {} -p {}".format(self._ansible_galaxy_command_path, self._ansible_requirement_app, self._ansible_galaxy_role_path), 'Ansible -  ansible-galaxy command', self._log_file)
         else:
             raise GalaxyNoMatchingRolesException("Ansible - ERROR: No roles match galaxy requirements for one or more features {0}".format(features[0]['roles']))
 
@@ -104,18 +107,20 @@ class FeaturesProvisionerAnsible(FeaturesProvisioner):
                         'script': self._ansible_bootstrap_path,
                         'execute_command' : "chmod +x {{ .Path }}; sudo bash -c '{{ .Vars }} {{ .Path }}'"
                     }, {
-                        'type': 'ansible-local',
-                        'playbook_dir': self.local_repo_path,
+                        'type': 'ansible',
                         'playbook_file': self._ansible_playbook_path,
-                        'command': ANSIBLE_COMMAND
+                        'ansible_env_vars': self._ansible_env_vars,
+                        'user': packer_config.get('ssh_username', 'admin'),
+                        'command': self._ansible_command_path
                     }]
             else:
                 if self._enabled_packer_ansible_config:
                     return [{
-                        'type': 'ansible-local',
-                        'playbook_dir': self.local_repo_path,
+                        'type': 'ansible',
                         'playbook_file': self._ansible_playbook_path,
-                        'command': ANSIBLE_COMMAND
+                        'ansible_env_vars': self._ansible_env_vars,
+                        'user': packer_config.get('ssh_username', 'admin'),
+                        'command': self._ansible_command_path
                     }]
         else:
             raise AnsibleBadBootstrapPathException("Ansible - ERROR: bootstrap path not found : {0}".format(self._ansible_bootstrap_path))
@@ -129,22 +134,21 @@ class FeaturesProvisionerAnsible(FeaturesProvisioner):
         >>> features = [{'name': 'package', 'version': 'package_name=git_vim', 'provisioner': 'ansible'}, {'name': 'package', 'version': 'package_name=curl', 'provisioner': 'ansible'}]
         >>> import pprint
         >>> pprint.pprint(sorted(FeaturesProvisionerAnsible(None, None, {}, {}).format_provisioner_features(features)))
-        [{'hosts': 'localhost',
+        [{'hosts': 'all',
           'roles': [{'package_name': 'git_vim', 'role': 'package'},
                     {'package_name': 'curl', 'role': 'package'}]}]
 
         >>> features = [{'name': 'package', 'version': 'package_name=git_vim', 'provisioner': 'salt'}, {'name': 'package', 'version': 'package_name=curl', 'provisioner': 'ansible'}]
         >>> pprint.pprint(sorted(FeaturesProvisionerAnsible(None, None, {}, {}).format_provisioner_features(features)))
-        [{'hosts': 'localhost',
-          'roles': [{'package_name': 'curl', 'role': 'package'}]}]
+        [{'hosts': 'all', 'roles': [{'package_name': 'curl', 'role': 'package'}]}]
 
         >>> features = [{'name': 'package', 'version': 'package_name=git_vim', 'provisioner': 'salt'}, {'name': 'package', 'version': 'package_name=curl', 'provisioner': 'salt'}]
         >>> pprint.pprint(sorted(FeaturesProvisionerAnsible(None, None, {}, {}).format_provisioner_features(features)))
-        [{'hosts': 'localhost', 'roles': []}]
+        [{'hosts': 'all', 'roles': []}]
 
         >>> features = [{'name': 'package', 'version': 'package_name=git_vim'}, {'name': 'package', 'version': 'package_name=curl'}]
         >>> pprint.pprint(sorted(FeaturesProvisionerAnsible(None, None, {}, {}).format_provisioner_features(features)))
-        [{'hosts': 'localhost', 'roles': []}]
+        [{'hosts': 'all', 'roles': []}]
 
         """
         playbook = copy.deepcopy(ANSIBLE_BASE_PLAYBOOK)

@@ -68,7 +68,7 @@ def test_build_image_ansible(packer_run_packer_cmd, gcall, provisioner_get_local
         with open(os.path.join(tmp_dir, 'main.yml'), 'r') as f3:
             playbook = yaml.load(f3)
             assert playbook == [
-                {"hosts": "localhost", "roles": [{"role": "feature-ansible", "feature-property": "property"}]}]
+                {"hosts": "all", "roles": [{"role": "feature-ansible", "feature-property": "property"}]}]
 
         # Verify packer config
         packer_config = json.load(f)
@@ -91,10 +91,11 @@ def test_build_image_ansible(packer_run_packer_cmd, gcall, provisioner_get_local
                                            "scripts/ansible_bootstrap.sh"),
                 },
                 {
-                    "playbook_dir": tmp_dir,
-                    "type": "ansible-local",
-                    "command": "ANSIBLE_FORCE_COLOR=1 PYTHONUNBUFFERED=1 sudo ansible-playbook",
+                    "type": "ansible",
                     "playbook_file": os.path.join(tmp_dir, "main.yml"),
+                    "ansible_env_vars": [ "ANSIBLE_HOST_KEY_CHECKING=False", "ANSIBLE_FORCE_COLOR=1", "PYTHONUNBUFFERED=1", "ANSIBLE_ROLES_PATH={}".format(tmp_dir)],
+                    "user": "admin",
+                    "command": os.path.join(venv_dir, "ansible-playbook"),
                 },
                 {
                     "type": "shell",
