@@ -9,6 +9,10 @@ COMMAND_DESCRIPTION = "Destroy all instances"
 RELATED_APP_FIELDS = []
 
 
+def is_available_for_current_application(app_context):
+    return True
+
+
 class Destroyallinstances():
     _app = None
     _job = None

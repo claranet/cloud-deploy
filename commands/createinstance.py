@@ -11,6 +11,10 @@ COMMAND_DESCRIPTION = "Create a new instance"
 RELATED_APP_FIELDS = ['environment_infos']
 
 
+def is_available_for_current_application(app_context):
+    return app_context and app_context.get('ami', None)
+
+
 class Createinstance():
     _app = None
     _job = None

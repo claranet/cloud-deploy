@@ -9,9 +9,18 @@ from ghost_aws import check_autoscale_exists, get_autoscaling_group_and_processe
 from libs.autoscaling import get_instances_from_autoscaling, flush_instances_update_autoscale
 from libs.blue_green import get_blue_green_apps, get_blue_green_destroy_temporary_elb_config
 from libs.blue_green import abort_if_other_bluegreen_job
+from libs.blue_green import ghost_has_blue_green_enabled, get_blue_green_from_app
 
 COMMAND_DESCRIPTION = "Purge the Blue/Green env"
 RELATED_APP_FIELDS = ['blue_green']
+
+
+def is_available_for_current_application(app_context):
+    ghost_has_blue_green = ghost_has_blue_green_enabled()
+    if not ghost_has_blue_green:
+        return False
+    app_blue_green, app_color = get_blue_green_from_app(app_context)
+    return app_blue_green and app_color
 
 
 class Purgebluegreen():

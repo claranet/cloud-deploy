@@ -19,6 +19,10 @@ COMMAND_DESCRIPTION = "Deploy module(s)"
 RELATED_APP_FIELDS = ['modules']
 
 
+def is_available_for_current_application(app_context):
+    return True
+
+
 class Deploy():
     _app = None
     _job = None

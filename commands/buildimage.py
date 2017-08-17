@@ -11,6 +11,10 @@ COMMAND_DESCRIPTION = "Build Image"
 RELATED_APP_FIELDS = ['features', 'build_infos']
 
 
+def is_available_for_current_application(app_context):
+    return True
+
+
 class Buildimage():
     _app = None
     _job = None
