@@ -59,19 +59,20 @@ else
     APP_PATH=ghost/$APP/$ENV/$ROLE
 fi
 
-IP=$(curl -s http://169.254.169.254/latest/meta-data/local-ipv4 | tr -s '.' '-')
+IP=$(curl -s http://169.254.169.254/latest/meta-data/local-ipv4)
 
-function zabbix_hostname(){
-    #Update Zabbix agent name
+function zabbix_hostname() {
+    # Update Zabbix agent Hostname
     sed -i "s/.*Hostname=.*/&-${IP}/g" /etc/zabbix/zabbix_agentd.conf --follow-symlinks
+    systemctl enable zabbix-agent 2> /dev/null || true
     service zabbix-agent restart
 }
 
 function instance_hostname() {
     MAX_NAME=$(($(getconf HOST_NAME_MAX)-16))
-    EC2_HOSTNAME=$(echo ${NAME:0:$MAX_NAME}-${IP}| tr -s '.' '-')
+    EC2_HOSTNAME=$(echo ${NAME:0:$MAX_NAME}-${IP} | tr -s '.' '-')
     salt-call --local network.mod_hostname "$EC2_HOSTNAME"
-    salt-call --local file.append /etc/hosts "$(echo $IP| tr -s '-' '.') $EC2_HOSTNAME"
+    salt-call --local file.append /etc/hosts "$IP $EC2_HOSTNAME"
 }
 
 if [ -z "$1" ] ; then
