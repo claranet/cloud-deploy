@@ -11,9 +11,9 @@ RELATED_APP_FIELDS = ['autoscale', 'environment_infos']
 
 def is_available_for_current_application(app_context):
     return (
-        app_context
-        and app_context.get('ami', None)
-        and app_context.get('autoscale', {}).get('name', None)
+        app_context is not None
+        and app_context.get('ami', None) is not None
+        and app_context.get('autoscale', {}).get('name', '') != ''
     )
 
 
