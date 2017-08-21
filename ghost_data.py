@@ -20,6 +20,8 @@ def close_db_connection():
 
 # Data Access
 def get_app(app_id):
+    if not app_id:
+        return None
     db = get_db_connection()
     app = db.apps.find_one({'_id': ObjectId(app_id)})
     close_db_connection()

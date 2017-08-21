@@ -19,6 +19,8 @@ def is_available_for_current_application(app_context):
     ghost_has_blue_green = ghost_has_blue_green_enabled()
     if not ghost_has_blue_green:
         return False
+    if not app_context:
+        return False
     app_blue_green, app_color = get_blue_green_from_app(app_context)
     return app_blue_green and app_color
 
