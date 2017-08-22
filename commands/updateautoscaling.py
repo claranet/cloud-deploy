@@ -9,10 +9,11 @@ COMMAND_DESCRIPTION = "Update the autoscaling group and its LaunchConfiguration"
 RELATED_APP_FIELDS = ['autoscale', 'environment_infos']
 
 
-def is_available_for_current_application(app_context):
+def is_available(app_context=None):
+    if not app_context:
+        return True
     return (
-        app_context is not None
-        and app_context.get('ami', None) is not None
+        app_context.get('ami', '') != ''
         and app_context.get('autoscale', {}).get('name', '') != ''
     )
 

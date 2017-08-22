@@ -9,7 +9,7 @@ COMMAND_DESCRIPTION = "Destroy all instances"
 RELATED_APP_FIELDS = []
 
 
-def is_available_for_current_application(app_context):
+def is_available(app_context=None):
     return True
 
 

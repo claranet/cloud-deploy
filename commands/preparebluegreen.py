@@ -17,12 +17,12 @@ COMMAND_DESCRIPTION = "Prepare the Blue/Green env before swap"
 RELATED_APP_FIELDS = ['blue_green']
 
 
-def is_available_for_current_application(app_context):
+def is_available(app_context=None):
     ghost_has_blue_green = ghost_has_blue_green_enabled()
     if not ghost_has_blue_green:
         return False
     if not app_context:
-        return False
+        return True
     app_blue_green, app_color = get_blue_green_from_app(app_context)
     return app_blue_green is not None and app_color is not None
 

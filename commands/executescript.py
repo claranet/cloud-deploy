@@ -15,7 +15,7 @@ COMMAND_DESCRIPTION = "Execute a script/commands on every instance"
 RELATED_APP_FIELDS = []
 
 
-def is_available_for_current_application(app_context):
+def is_available(app_context=None):
     return boolify(ghost_config.get('enable_executescript_command', True))
 
 

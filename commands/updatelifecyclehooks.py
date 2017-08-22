@@ -13,7 +13,7 @@ COMMAND_DESCRIPTION = "Update LifeCycle Hooks scripts"
 RELATED_APP_FIELDS = ['lifecycle_hooks']
 
 
-def is_available_for_current_application(app_context):
+def is_available(app_context=None):
     return True
 
 
