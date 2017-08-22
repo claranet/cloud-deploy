@@ -161,6 +161,10 @@ key_path: /home/admin/key/client_morea.pem
 # Optional, default:
 #ansible_galaxy_requirements_path: requirements.yml
 
+# Ansible global inventory url
+# Optional, default:
+#ansible_role_inventory_url: 
+
 # Salt additional pillar file to load
 # Optional, default:
 #salt_additional_pillar: None
