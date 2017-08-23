@@ -13,6 +13,10 @@ COMMAND_DESCRIPTION = "Update LifeCycle Hooks scripts"
 RELATED_APP_FIELDS = ['lifecycle_hooks']
 
 
+def is_available(app_context=None):
+    return True
+
+
 class Updatelifecyclehooks():
     _app = None
     _job = None

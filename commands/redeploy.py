@@ -12,6 +12,10 @@ COMMAND_DESCRIPTION = "Re-deploy an old module package"
 RELATED_APP_FIELDS = []
 
 
+def is_available(app_context=None):
+    return True
+
+
 class Redeploy():
     _app = None
     _job = None

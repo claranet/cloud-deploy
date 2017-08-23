@@ -14,6 +14,12 @@ COMMAND_DESCRIPTION = "Recreate all the instances, rolling update possible when 
 RELATED_APP_FIELDS = []
 
 
+def is_available(app_context=None):
+    if not app_context:
+        return True
+    return app_context.get('ami', '') != ''
+
+
 class Recreateinstances():
     _app = None
     _job = None

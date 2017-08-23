@@ -3,16 +3,28 @@ import traceback
 from fabric.colors import green as _green, yellow as _yellow, red as _red
 
 from ghost_log import log
-from ghost_aws import check_autoscale_exists, update_auto_scale, get_autoscaling_group_and_processes_to_suspend, suspend_autoscaling_group_processes, resume_autoscaling_group_processes
+from ghost_aws import check_autoscale_exists, update_auto_scale
+from ghost_aws import get_autoscaling_group_and_processes_to_suspend, suspend_autoscaling_group_processes, resume_autoscaling_group_processes
 from ghost_aws import create_userdata_launchconfig_update_asg
-from ghost_tools import GCallException, get_aws_connection_data, get_app_friendly_name, get_app_module_name_list, boolify, get_running_jobs
+from ghost_tools import GCallException, get_aws_connection_data, get_app_friendly_name, boolify, get_running_jobs
 from libs import load_balancing
 from settings import cloud_connections, DEFAULT_PROVIDER
 from libs.blue_green import get_blue_green_apps, check_app_manifest, get_blue_green_config, abort_if_other_bluegreen_job
+from libs.blue_green import ghost_has_blue_green_enabled, get_blue_green_from_app
 from libs.autoscaling import get_instances_from_autoscaling, get_autoscaling_group_object
 
 COMMAND_DESCRIPTION = "Prepare the Blue/Green env before swap"
 RELATED_APP_FIELDS = ['blue_green']
+
+
+def is_available(app_context=None):
+    ghost_has_blue_green = ghost_has_blue_green_enabled()
+    if not ghost_has_blue_green:
+        return False
+    if not app_context:
+        return True
+    app_blue_green, app_color = get_blue_green_from_app(app_context)
+    return app_blue_green is not None and app_color is not None
 
 
 class Preparebluegreen(object):

@@ -5,6 +5,7 @@ from settings import cloud_connections, DEFAULT_PROVIDER
 from ghost_log import log
 from ghost_tools import get_aws_connection_data, GCallException, boolify
 from ghost_tools import b64decode_utf8, get_ghost_env_variables
+from ghost_tools import config as ghost_config
 from libs.host_deployment_manager import HostDeploymentManager
 from libs.blue_green import get_blue_green_from_app
 from libs.ec2 import get_ec2_instance
@@ -12,6 +13,10 @@ from libs.deploy import launch_executescript
 
 COMMAND_DESCRIPTION = "Execute a script/commands on every instance"
 RELATED_APP_FIELDS = []
+
+
+def is_available(app_context=None):
+    return boolify(ghost_config.get('enable_executescript_command', True))
 
 
 class Executescript():
