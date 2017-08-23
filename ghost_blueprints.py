@@ -46,7 +46,8 @@ def list_commands(app_id=None):
 
 
 @commands_blueprint.route('/commands/fields', methods=['GET'])
-def list_commands_app_fields_impact():
+@commands_blueprint.route('/commands/fields/<app_id>', methods=['GET'])
+def list_commands_app_fields_impact(app_id=None):
     """
     Returns a mapping of the available commands and which App's fields are used:
 
@@ -62,4 +63,5 @@ def list_commands_app_fields_impact():
     >>> sorted(json.loads(list_commands_app_fields_impact().data))
     [[u'buildimage', [u'features', u'build_infos']], [u'createinstance', [u'environment_infos']], [u'deploy', [u'modules']], [u'destroyallinstances', []], [u'preparebluegreen', [u'blue_green']], [u'purgebluegreen', [u'blue_green']], [u'recreateinstances', []], [u'redeploy', []], [u'swapbluegreen', [u'blue_green']], [u'updateautoscaling', [u'autoscale', u'environment_infos']], [u'updatelifecyclehooks', [u'lifecycle_hooks']]]
     """
-    return jsonify([(name, app_fields) for (name, description, app_fields) in _get_commands()])
+    app_context = get_app(app_id)
+    return jsonify([(name, app_fields) for (name, description, app_fields) in _get_commands(app_context)])
