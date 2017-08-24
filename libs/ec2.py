@@ -182,11 +182,9 @@ def create_block_device(cloud_connection, region, rbd={}):
         ["ec2", "blockdevicemapping", "BlockDeviceMapping"],
         connection=conn
     )
-    if 'name' in rbd:
-        bdm[rbd['name']] = dev_sda1
-    else:
+    if not rbd.get('name'):
         rbd['name'] = "/dev/xvda"
-        bdm[rbd['name']] = dev_sda1
+    bdm[rbd['name']] = dev_sda1
     return bdm
 
 def generate_userdata(bucket_s3, s3_region, ghost_root_path):
