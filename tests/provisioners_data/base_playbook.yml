@@ -1,0 +1,6 @@
+---
+- name: Base playbook
+  hosts: all
+
+  roles:
+    - ansible-base-role

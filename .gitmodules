@@ -4,3 +4,6 @@
 [submodule "ghost-feature-presets"]
 	path = ghost-feature-presets
 	url = git@bitbucket.org:morea/ghost-feature-presets.git
+[submodule "ansible-playbook-ghost-common"]
+	path = ansible-playbook-ghost-common
+	url = git@bitbucket.org:morea/ansible-playbook-ghost-common.git
