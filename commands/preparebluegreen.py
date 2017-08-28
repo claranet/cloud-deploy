@@ -11,6 +11,7 @@ from ghost_tools import GCallException, get_aws_connection_data, get_app_friendl
 from libs import load_balancing
 from settings import cloud_connections, DEFAULT_PROVIDER
 from libs.blue_green import get_blue_green_apps, check_app_manifest, get_blue_green_config, abort_if_other_bluegreen_job
+from libs.blue_green import get_blue_green_copy_ami_config, get_blue_green_create_temporary_elb_config
 from libs.blue_green import ghost_has_blue_green_enabled, get_blue_green_from_app
 from libs.autoscaling import get_instances_from_autoscaling
 
@@ -66,12 +67,15 @@ class Preparebluegreen(object):
         return _yellow(notif)
 
     @staticmethod
-    def _get_notification_message_done(app, elb_name, elb_dns):
+    def _get_notification_message_done(app, elb_name=None, elb_dns=None):
         app_name = get_app_friendly_name(app)
         as_name = app['autoscale']['name']
-        notif = ("Blue/green preparation done for [{0}] by creating "
-                 "the temporary ELB [{1}/{2}] attached to the AutoScale '{3}'".format(
-                    app_name, elb_name, elb_dns, as_name))
+        if elb_name and elb_dns:
+            notif = ("Blue/green preparation done for [{0}] by creating "
+                     "the temporary ELB [{1}/{2}] attached to the AutoScale '{3}'".format(
+                        app_name, elb_name, elb_dns, as_name))
+        else:
+            notif = ("Blue/green preparation done for [{0}] with AutoScale '{1}'".format(app_name, as_name))
         return _green(notif)
 
     def _update_app_autoscale_options(self, app, ref_app, log_file):
@@ -90,8 +94,10 @@ class Preparebluegreen(object):
     def execute(self):
         """Execute all checks and preparations."""
         log(_green("STATE: Started"), self._log_file)
-        copy_ami_option = self._job['options'][0] if 'options' in self._job and len(
-            self._job['options']) > 0 else get_blue_green_config(self._config, 'preparebluegreen', 'copy_ami', False)
+        copy_ami_option = (
+            self._job['options'][0] if 'options' in self._job and len(self._job['options']) > 0
+            else get_blue_green_copy_ami_config(self._config)
+        )
         copy_ami_option = boolify(copy_ami_option)
 
         app_region = self._app['region']
@@ -194,21 +200,30 @@ class Preparebluegreen(object):
                 return
 
             # Create the temporary ELB: ghost-bluegreentemp-{original ELB name}, duplicated from the online ELB
-            online_elb = online_elbs[0]
-            temp_elb_name = "bgtmp-{0}".format(offline_app['_id'])[:31]  # ELB name is 32 char long max
-            log(_green(
-                "Creating the temporary ELB [{0}] by copying parameters from [{1}]".format(temp_elb_name, online_elb)),
-                self._log_file)
-            new_elb_dns = lb_mgr.copy_lb(temp_elb_name,
-                                         online_elb,
-                                         {'app_id': str(offline_app['_id']), 'bluegreen-temporary': 'true'},
-                                         self._log_file)
+            temp_elb_name, new_elb_dns = (None, None)
+            create_temporary_elb_option = (
+                self._job['options'][1] if 'options' in self._job and len(self._job['options']) > 1
+                else get_blue_green_create_temporary_elb_config(self._config)
+            )
+            if boolify(create_temporary_elb_option):
+                online_elb = online_elbs[0]
+                temp_elb_name = "bgtmp-{0}".format(offline_app['_id'])[:31]  # ELB name is 32 char long max
+                log(_green(
+                    "Creating the temporary ELB [{0}] by copying parameters from [{1}]".format(
+                        temp_elb_name, online_elb)),
+                    self._log_file)
+                new_elb_dns = lb_mgr.copy_lb(temp_elb_name,
+                                             online_elb,
+                                             {'app_id': str(offline_app['_id']), 'bluegreen-temporary': 'true'},
+                                             self._log_file)
 
-            # Register the temporary ELB into the AutoScale
-            log(_green(
-                "Attaching ELB [{0}] to the AutoScale [{1}]".format(temp_elb_name, offline_app['autoscale']['name'])),
-                self._log_file)
-            lb_mgr.register_lbs_into_autoscale(offline_app['autoscale']['name'], [], [temp_elb_name], self._log_file)
+                # Register the temporary ELB into the AutoScale
+                log(_green(
+                    "Attaching ELB [{0}] to the AutoScale [{1}]".format(
+                        temp_elb_name, offline_app['autoscale']['name'])),
+                    self._log_file)
+                lb_mgr.register_lbs_into_autoscale(
+                    offline_app['autoscale']['name'], [], [temp_elb_name], self._log_file)
 
             offline_app['autoscale']['min'] = online_app['autoscale']['min']
             offline_app['autoscale']['max'] = online_app['autoscale']['max']
