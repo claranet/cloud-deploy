@@ -9,6 +9,15 @@ COMMAND_DESCRIPTION = "Update the autoscaling group and its LaunchConfiguration"
 RELATED_APP_FIELDS = ['autoscale', 'environment_infos']
 
 
+def is_available(app_context=None):
+    if not app_context:
+        return True
+    return (
+        app_context.get('ami', '') != ''
+        and app_context.get('autoscale', {}).get('name', '') != ''
+    )
+
+
 class Updateautoscaling():
     _app = None
     _job = None
@@ -22,14 +31,14 @@ class Updateautoscaling():
         self._config = worker._config
         self._log_file = worker.log_file
         self._connection_data = get_aws_connection_data(
-                self._app.get('assumed_account_id', ''),
-                self._app.get('assumed_role_name', ''),
-                self._app.get('assumed_region_name', '')
-                )
+            self._app.get('assumed_account_id', ''),
+            self._app.get('assumed_role_name', ''),
+            self._app.get('assumed_region_name', '')
+        )
         self._cloud_connection = cloud_connections.get(self._app.get('provider', DEFAULT_PROVIDER))(
-                self._log_file,
-                **self._connection_data
-                )
+            self._log_file,
+            **self._connection_data
+        )
 
     def execute(self):
         log("Updating AutoScaling", self._log_file)
@@ -37,8 +46,10 @@ class Updateautoscaling():
         if ami_id:
             if self._app['autoscale']['name']:
                 try:
-                    if create_userdata_launchconfig_update_asg(ami_id, self._cloud_connection, self._app, self._config, self._log_file, update_as_params=True):
-                        self._worker.update_status("done", message="AutoScaling [%s] updated" % self._app['autoscale']['name'])
+                    if create_userdata_launchconfig_update_asg(ami_id, self._cloud_connection, self._app, self._config,
+                                                               self._log_file, update_as_params=True):
+                        self._worker.update_status("done",
+                                                   message="AutoScaling [%s] updated" % self._app['autoscale']['name'])
                     else:
                         self._worker.update_status("failed")
                 except:

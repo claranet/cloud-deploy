@@ -162,6 +162,7 @@ def test_ec2_instance_status(cloud_connection, aws_region, instance_ids, instanc
             return False
     return True
 
+
 def create_block_device(cloud_connection, region, rbd={}):
     conn = cloud_connection.get_connection(region, ["ec2"])
     dev_sda1 = cloud_connection.launch_service(
@@ -169,25 +170,23 @@ def create_block_device(cloud_connection, region, rbd={}):
         connection=conn,
         delete_on_termination=True
     )
-    if 'type' in rbd:
-        dev_sda1.volume_type = rbd['type']
-    else:
-        dev_sda1.volume_type = "gp2"
-    if 'size' in rbd:
-        dev_sda1.size = rbd['size']
-    else:
-        rbd['size'] = 10
-        dev_sda1.size = rbd['size']
+    # GP2 SSD by default
+    if not rbd.get('type'):
+        rbd['type'] = 'gp2'
+    dev_sda1.volume_type = rbd['type']
+    # 20GB Per default
+    if not rbd.get('size'):
+        rbd['size'] = 20
+    dev_sda1.size = rbd['size']
     bdm = cloud_connection.launch_service(
         ["ec2", "blockdevicemapping", "BlockDeviceMapping"],
         connection=conn
     )
-    if 'name' in rbd:
-        bdm[rbd['name']] = dev_sda1
-    else:
+    if not rbd.get('name'):
         rbd['name'] = "/dev/xvda"
-        bdm[rbd['name']] = dev_sda1
+    bdm[rbd['name']] = dev_sda1
     return bdm
+
 
 def generate_userdata(bucket_s3, s3_region, ghost_root_path):
     """ Generates an EC2 userdata script using the Ghost's "stage1" script.

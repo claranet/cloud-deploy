@@ -9,9 +9,20 @@ from settings import cloud_connections, DEFAULT_PROVIDER
 from ghost_aws import check_autoscale_exists, get_autoscaling_group_and_processes_to_suspend
 from ghost_aws import suspend_autoscaling_group_processes, resume_autoscaling_group_processes
 from libs.blue_green import get_blue_green_apps, check_app_manifest, get_blue_green_config, abort_if_other_bluegreen_job
+from libs.blue_green import ghost_has_blue_green_enabled, get_blue_green_from_app
 
 COMMAND_DESCRIPTION = "Swap the Blue/Green env"
 RELATED_APP_FIELDS = ['blue_green']
+
+
+def is_available(app_context=None):
+    ghost_has_blue_green = ghost_has_blue_green_enabled()
+    if not ghost_has_blue_green:
+        return False
+    if not app_context:
+        return True
+    app_blue_green, app_color = get_blue_green_from_app(app_context)
+    return app_blue_green is not None and app_color is not None
 
 
 class Swapbluegreen():
