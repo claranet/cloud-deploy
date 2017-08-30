@@ -73,6 +73,11 @@ function instance_hostname() {
     EC2_HOSTNAME=$(echo ${NAME:0:$MAX_NAME}-${IP} | tr -s '.' '-')
     salt-call --local network.mod_hostname "$EC2_HOSTNAME"
     salt-call --local file.append /etc/hosts "$IP $EC2_HOSTNAME"
+    if [ -d /etc/cloud/templates ] ; then
+        for f in /etc/cloud/templates/hosts.*.tmpl; do
+            salt-call --local file.append $f "$IP $EC2_HOSTNAME"
+        done
+    fi
 }
 
 if [ -z "$1" ] ; then
