@@ -30,6 +30,9 @@ features_provisioners:
     ansible:
         git_repo: git@bitbucket.org:morea/ansible-galaxy-requirements.git
         git_revision: master
+        # Base playbook files path, can be absolute or relative to ghost root dir
+        #base_playbook_file: ansible-playbook-ghost-common/ghost-common.yml
+        #base_playbook_requirements_file: ansible-playbook-ghost-common/requirements.yml
 
 
 # Endpoints

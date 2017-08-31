@@ -2,9 +2,7 @@ import json
 import tempfile
 import mock
 import os
-
 import shutil
-
 import yaml
 
 from libs.image_builder_aws import AWSImageBuilder
@@ -32,7 +30,12 @@ def test_build_image_ansible(packer_run_packer_cmd, gcall, provisioner_get_local
         "options": [False]  # Do not skip bootstrap
     }
     test_config = get_test_config(
-        features_provisioners={'ansible': {'git_revision': 'master', 'git_repo': 'my_ansible_repo'}})
+        features_provisioners={'ansible': {
+            'git_revision': 'master',
+            'git_repo': 'my_ansible_repo',
+            'base_playbook_file': 'tests/provisioners_data/base_playbook.yml',
+            'base_playbook_requirements_file': 'tests/provisioners_data/base_requirements.yml',
+        }})
     del test_config['features_provisioners']['salt']
 
     # Mocks
@@ -63,12 +66,15 @@ def test_build_image_ansible(packer_run_packer_cmd, gcall, provisioner_get_local
         with open(os.path.join(tmp_dir, 'requirement_app.yml'), 'r') as f2:
             requirement_app = yaml.load(f2)
             assert requirement_app == [
+                {"src": "base-role-src", "version": "base-role-version"},
                 {"name": "feature-ansible", "scm": "test-scm", "src": "test-src", "version": "test-version"}]
 
         with open(os.path.join(tmp_dir, 'main.yml'), 'r') as f3:
             playbook = yaml.load(f3)
             assert playbook == [
-                {"hosts": "all", "roles": [{"role": "feature-ansible", "feature-property": "property"}]}]
+                {"name": "Base playbook", "hosts": "all", "roles": ['ansible-base-role']},
+                {"name": "Ghost application features", "hosts": "all",
+                 "roles": [{"role": "feature-ansible", "feature-property": "property"}]}]
 
         # Verify packer config
         packer_config = json.load(f)
