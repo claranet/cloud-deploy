@@ -11,6 +11,10 @@ from ghost_tools import b64encode_utf8
 LOG_FILE = 'log_file'
 
 
+def void(*args, **kwargs):
+    pass
+
+
 def _dict_update_recursive(d, u):
     py2 = sys.version_info[0] < 3
     iter_func = u.items if py2 else u.iteritems
@@ -61,13 +65,19 @@ def get_test_application(**kwargs):
             ],
             "subnet_ids": [
                 "subnet-test"
-            ]
+            ],
+            "optional_volumes": []
         },
         "features": [
             {
                 "name": "feature-name",
                 "version": "feature-version"
-            }
+            },
+            {
+                "name": "feature-ansible",
+                "version": "feature-property=property",
+                "provisioner": "ansible"
+            }            
         ],
         "instance_type": "t2.medium",
         "lifecycle_hooks": {
@@ -100,6 +110,54 @@ def get_test_application(**kwargs):
         "user": "morea",
         "vpc_id": "vpc-test"
     }, kwargs)
+
+
+def get_test_config(**kwargs):
+    """
+    Factory that creates ghost configuration. Any propertiy can be overrided with kwargs
+    """
+    return _dict_update_recursive({
+            'bucket_s3': 's3.sandbox.ghost-packages.eu-central-1.laurent',
+            'blue_green': {
+                'purgebluegreen': {'destroy_temporary_elb': True},
+                'preparebluegreen': {'copy_ami': False, 'module_deploy_required': False},
+                'enabled': True,
+                'swapbluegreen': {
+                    'healthcheck_timeout': 2,
+                    'healthcheck_interval': 5,
+                    'registreation_timeout': 60,
+                    'healthcheck_healthy_threshold': 2}},
+            'bucket_region': 'eu-central-1',
+            'use_ssh_config': True,
+            'mongo_host': 'backend',
+            'ghost_base_url': 'http://localhost',
+            'ghost_root_path': os.path.dirname(os.path.dirname(__file__)),
+            'container': {
+                'debug': True,
+                'endpoint': '172.17.0.1',
+                'client_endpoint': '172.17.0.1'
+            },
+            'display_amis_from_aws_accounts': ['379101102735', '673060587306'],
+            'redis_host': 'queue',
+            'slack_configs': [{
+                'message_prefix': 'Ghost job triggered',
+                 'webhooks_endpoint': 'https://hooks.slack.com/services/XX_KEY_XX',
+                 'channel': '#ghost-deployments',
+                 'bot_name': 'Claranet Cloud Deploy'
+            }],
+            'key_path': '/usr/local/share/ghost/.ssh/demo-dev-laurent-eu-central-1.pem',
+            'deployment_package_retention': {'prod': 42, 'dev': 3},
+            'features_provisioners': {
+                'salt': {'git_revision': 'master', 'git_repo': 'git@bitbucket.org:morea/morea-salt-formulas.git'}},
+            'api_base_url': 'http://api:5000',
+            'ses_settings': {
+                'aws_secret_key': '***REMOVED***,
+                'mail_from': 'no-reply@morea.fr',
+                'aws_access_key': '***REMOVED***',
+                'region': 'eu-west-1'
+            }
+        },
+        kwargs)
 
 
 def mocked_logger(msg, file):
