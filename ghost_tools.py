@@ -557,17 +557,22 @@ def get_available_provisioners_from_config(last_config=None):
     return provisioners_config.keys()
 
 
-def get_ghost_env_variables(app, module, color, user):
+def get_ghost_env_variables(app, module=None, user=None):
     """
     Generate an environment variable dictionnary for fabric
     """
     ghost_env = {
         'GHOST_APP': app['name'],
-        'GHOST_ENV': app['env']
+        'GHOST_ENV': app['env'],
+        'GHOST_ROLE': app['role'],
     }
-    if color:
-        ghost_env['GHOST_ENV_COLOR'] = color
-    ghost_env['GHOST_ROLE'] = app['role']
+    if app.get('blue_green', {}.get('color', None)):
+        inverted_colors = {"blue": "green", "green" : "blue"}
+        color = app['blue_green']['color']
+        ghost_env.update({
+            'GHOST_ENV_COLOR': color,
+            'GHOST_ACTIVE_COLOR': color if app['blue_green']['is_online'] else inverted_colors[color]
+        })
     if module:
         ghost_env['GHOST_MODULE_NAME'] = module['name']
         ghost_env['GHOST_MODULE_PATH'] = module['path']

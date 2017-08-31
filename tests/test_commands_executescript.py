@@ -160,7 +160,7 @@ def test_executescript_cmd_single_host_deep(get_ghost_env_variables,
     assert get_ghost_env_variables.called == 1
 
     get_ghost_env_variables.assert_called_once_with(
-        test_app, None, None, worker.job['user']
+        test_app, None, worker.job['user']
     )
 
     get_ec2_instance.assert_called_once_with(
@@ -269,7 +269,7 @@ def test_executescript_cmd_deep(cloud_connections,
     assert HostDeploymentManager.called == 1
 
     get_ghost_env_variables.assert_called_once_with(
-        test_app, None, None, worker.job['user']
+        test_app, None, worker.job['user']
     )
 
     HostDeploymentManager.assert_called_once_with(

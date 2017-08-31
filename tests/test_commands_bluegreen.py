@@ -101,8 +101,10 @@ def test_swap_bluegreen_clb(get_blue_green_apps,
                             resume_autoscaling_group_processes,
                             load_balancing):
     # Set up mocks and variables
-    green_app = get_test_application(name="test-app-green", _id='id_green', autoscale={'name': 'autoscale-green'})
-    blue_app = get_test_application(name="test-app-blue", _id='id_blue', autoscale={'name': 'autoscale-blue'})
+    green_app = get_test_application(name="test-app-green", _id='id_green', autoscale={'name': 'autoscale-green'},
+                                     blue_green={"is_online": True, "color": "green"})
+    blue_app = get_test_application(name="test-app-blue", _id='id_blue', autoscale={'name': 'autoscale-blue'},
+                                    blue_green={"is_online": False, "color": "blue"})
 
     connection_mock = MagicMock()
     connection_pool = MagicMock()
@@ -150,6 +152,9 @@ def test_swap_bluegreen_clb(get_blue_green_apps,
         connection_pool, "eu-west-1", 'elb')
 
     assert get_blue_green_apps.called == 1
+
+    assert blue_app.get('blue_green').get('is_online') == False
+    assert green_app.get('blue_green').get('is_online') == True
 
     assert suspend_autoscaling_group_processes.call_count == 2
     suspend_autoscaling_group_processes.assert_has_calls([
