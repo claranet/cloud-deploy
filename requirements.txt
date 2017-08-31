@@ -58,6 +58,7 @@ py==1.4.34                # via tox
 pyasn1==0.3.2
 pycparser==2.18           # via cffi
 pycrypto==2.6.1           # via ansible
+pylxd=2.2.4
 pymongo==3.5.0
 pynacl==1.1.2             # via paramiko
 pyopenssl==17.2.0
