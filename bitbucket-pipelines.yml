@@ -9,6 +9,8 @@ image:
 pipelines:
   default:
     - step:
+        caches:
+          - pip
         script:
           - git --version
           - git status
