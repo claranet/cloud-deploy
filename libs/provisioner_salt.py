@@ -19,7 +19,7 @@ class FeaturesProvisionerSalt(FeaturesProvisioner):
         self._salt_state_top_path = os.path.join(self._salt_state_tree, 'top.sls')
         self._salt_pillar_top_path = os.path.join(self._salt_pillar_roots, 'top.sls')
         self._salt_pillar_features_path = os.path.join(self._salt_pillar_roots, 'features.sls')
-        self._salt_additional_pillar = self.global_config.get('salt_additional_pillar', '')
+        self._salt_additional_pillar = config.get('salt_additional_pillar', '')
 
     def build_provisioner_features_files(self, params, features):
         """ Build salt files only if features with salt provisioner """

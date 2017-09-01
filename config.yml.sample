@@ -36,12 +36,35 @@ features_provisioners:
     salt: # salt by default, might be ansible
         git_repo: git@bitbucket.org:morea/morea-salt-formulas.git # default value if type is 'salt'
         git_revision: master
+
+        # Salt additional pillar file to load
+        # Optional, default:
+        #salt_additional_pillar: None
+
     ansible:
         git_repo: git@bitbucket.org:morea/ansible-galaxy-requirements.git
         git_revision: master
+
         # Base playbook files path, can be absolute or relative to ghost root dir
         #base_playbook_file: ansible-playbook-ghost-common/ghost-common.yml
         #base_playbook_requirements_file: ansible-playbook-ghost-common/requirements.yml
+
+        # Ansible Galaxy requirements file name can add additional path for example (public/requirements.yml)
+        # Optional, default:
+        #ansible_galaxy_requirements_path: requirements.yml
+
+        # Ansible global inventory url
+        # Optional, default:
+        #ansible_role_inventory_url:
+
+
+# Packer should install recipe package (salt minion or ansible) when backing Image
+# Optional, default:
+#skip_provisioner_bootstrap: True
+
+# Provisioner log level (error, warning, info, debug, trace)
+# Optional, default:
+#provisioner_log_level: info
 
 
 # Endpoints
@@ -152,26 +175,6 @@ key_path: /home/admin/key/client_morea.pem
 # Pagination Limit for Eve
 # Optional, default:
 #eve_pagination_limit: 200
-
-# Packer should install recipe package (salt minion or ansible) when backing Image
-# Optional, default:
-#skip_provisioner_bootstrap: True
-
-# Ansible Galaxy requirements file name can add additional path for example (public/requirements.yml)
-# Optional, default:
-#ansible_galaxy_requirements_path: requirements.yml
-
-# Ansible global inventory url
-# Optional, default:
-#ansible_role_inventory_url: 
-
-# Salt additional pillar file to load
-# Optional, default:
-#salt_additional_pillar: None
-
-# Provisioner log level (error, warning, info, debug, trace)
-# Optional, default:
-#provisioner_log_level: info
 
 # LaunchConfiguration retention history per AutoScaling Group
 # Optional, default:

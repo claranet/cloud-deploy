@@ -24,8 +24,7 @@ class FeaturesProvisionerAnsible(FeaturesProvisioner):
         self._ansible_galaxy_role_path = os.path.join(self.local_repo_path, 'roles')
         self._ansible_requirement_app = os.path.join(self.local_repo_path, 'requirement_app.yml')
         self._ansible_galaxy_rq_path = os.path.join(self.local_repo_path,
-                                                    self.global_config.get('ansible_galaxy_requirements_path',
-                                                                           'requirements.yml'))
+                                                    config.get('ansible_galaxy_requirements_path', 'requirements.yml'))
         self._ansible_galaxy_command_path = os.path.join(sys.exec_prefix, ANSIBLE_GALAXY_DEFAULT_CMD_PATH)
         self._ansible_command_path = os.path.join(sys.exec_prefix, ANSIBLE_COMMAND)
         self._ansible_env_vars = ANSIBLE_ENV_VARS + ["ANSIBLE_ROLES_PATH={}".format(self.local_repo_path)]
