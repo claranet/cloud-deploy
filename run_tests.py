@@ -24,6 +24,7 @@ modules = [
   "libs.image_builder_aws",
   "libs.provisioner",
   "libs.provisioner_salt",
+  "libs.provisioner_ansible",
   "run",
   "run_rqworkers",
   "web_ui.app",

@@ -33,7 +33,7 @@ class AWSImageBuilder(ImageBuilder):
         ghost_vars.append('GHOST_ROLE=%s' % self._app['role'])
         return ghost_vars
 
-    def _format_packer_from_app(self, salt_skip_bootstrap_option):
+    def _format_packer_from_app(self, provisioner_skip_bootstrap_option):
         instance_tags = {}
         if 'instance_tags' in self._app['environment_infos']:
             instance_tags = {i['tag_name']: i['tag_value'] for i in self._app['environment_infos']['instance_tags']}
@@ -46,7 +46,7 @@ class AWSImageBuilder(ImageBuilder):
             'vpc_id': self._app['vpc_id'],
             'subnet_id': self._app['build_infos']['subnet_id'],
             'associate_public_ip_address': '1',
-            'skip_salt_bootstrap': salt_skip_bootstrap_option,
+            'skip_provisioner_bootstrap': provisioner_skip_bootstrap_option,
             'ami_block_device_mappings': [],
             'iam_instance_profile': self._app['environment_infos']['instance_profile'],
             'credentials': self._cloud_connection.get_credentials(),
@@ -55,7 +55,7 @@ class AWSImageBuilder(ImageBuilder):
             'custom_env_vars': self._app.get('env_vars', [])
         }
 
-        for opt_vol in self._app['environment_infos'].get('optional_volumes'):
+        for opt_vol in self._app['environment_infos'].get('optional_volumes', []):
             block = {
                 'device_name': opt_vol['device_name'],
                 'volume_type': opt_vol['volume_type'],
@@ -69,8 +69,8 @@ class AWSImageBuilder(ImageBuilder):
         return json.dumps(datas, sort_keys=True, indent=4, separators=(',', ': '))
 
     def start_builder(self):
-        skip_salt_bootstrap_option = self._job['options'][0] if 'options' in self._job and len(self._job['options']) > 0 else True
-        json_packer = self._format_packer_from_app(skip_salt_bootstrap_option)
+        provisioner_bootstrap_option = self._job['options'][0] if 'options' in self._job and len(self._job['options']) > 0 else True
+        json_packer = self._format_packer_from_app(provisioner_bootstrap_option)
         json_packer_for_log = json.loads(json_packer)
         del json_packer_for_log['credentials']
         log("Generating a new AMI", self._log_file)

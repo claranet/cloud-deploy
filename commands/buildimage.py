@@ -2,10 +2,11 @@ import traceback
 
 from ghost_log import log
 from ghost_aws import create_userdata_launchconfig_update_asg
-from ghost_tools import get_aws_connection_data
+from ghost_tools import get_aws_connection_data, GCallException
 from settings import cloud_connections, DEFAULT_PROVIDER
 from libs.deploy import touch_app_manifest
 from libs.image_builder_aws import AWSImageBuilder
+from libs.provisioner import GalaxyNoMatchingRolesException, GalaxyBadRequirementPathException, AnsibleBadBootstrapPathException
 
 COMMAND_DESCRIPTION = "Build Image"
 RELATED_APP_FIELDS = ['features', 'build_infos']
@@ -59,7 +60,11 @@ class Buildimage():
         self._worker.update_status("done")
 
     def execute(self):
-        ami_id, ami_name = self._aws_image_builder.start_builder()
+        try:
+            ami_id, ami_name = self._aws_image_builder.start_builder()
+        except (GalaxyNoMatchingRolesException, GalaxyBadRequirementPathException, AnsibleBadBootstrapPathException, GCallException) as e:
+            self._worker.update_status("aborted", message=str(e))
+            return
         if ami_id is not "ERROR":
             touch_app_manifest(self._app, self._config, self._log_file)
             log("Update app in MongoDB to update AMI: {0}".format(ami_id), self._log_file)
