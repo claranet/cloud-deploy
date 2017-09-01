@@ -1,3 +1,7 @@
+# Dockerfile used to build moreaghost/morea-ghost CI image for bitbucket pipeline
+# The main Dockerfile is also based on it.
+# Refer to https://confluence.fr.clara.net/display/MOR/Updating+the+docker+image+used+by+automated+unit+tests+execution for instructions
+
 FROM python:2.7
 
 RUN export DEBIAN_FRONTEND=noninteractive && \
