@@ -150,6 +150,7 @@ class Swapbluegreen(object):
                                                                             log_file)
         log(_green('Offline configuration : {0}'.format(str(elb_tempwarm_instances))), self._log_file)
 
+        elb_online, health_check_config = (None, None)
         try:
             log("Swapping using strategy '{0}'".format(swap_execution_strategy), self._log_file)
 
@@ -220,10 +221,6 @@ class Swapbluegreen(object):
                                                elb_online_instances.keys(), self._log_file)
             lb_mgr.register_lbs_into_autoscale(online_app['autoscale']['name'], elb_online_instances.keys(),
                                                elb_tempwarm_instances.keys(), self._log_file)
-            log(_green(
-                'Restoring original HealthCheck config on online ELB "{0}"'.format(elb_online['LoadBalancerName'])),
-                self._log_file)
-            lb_mgr.configure_health_check(elb_online['LoadBalancerName'], **health_check_config)
 
             # Update _is_online field in DB on both app
             self._update_app_is_online(online_app, False)  # no more online anymore
@@ -232,6 +229,11 @@ class Swapbluegreen(object):
             online_elb_name = elb_online_instances.keys()[0]
             return str(online_elb_name), lb_mgr.get_dns_name(online_elb_name)
         finally:
+            if elb_online and health_check_config:
+                log(_green(
+                    'Restoring original HealthCheck config on online ELB "{0}"'.format(elb_online['LoadBalancerName'])),
+                    self._log_file)
+                lb_mgr.configure_health_check(elb_online['LoadBalancerName'], **health_check_config)
             resume_autoscaling_group_processes(as_conn3, as_group_old, as_group_old_processes_to_suspend, log_file)
             resume_autoscaling_group_processes(as_conn3, as_group_new, as_group_new_processes_to_suspend, log_file)
 
