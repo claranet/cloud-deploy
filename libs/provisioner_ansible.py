@@ -5,7 +5,7 @@ import sys
 from fabric.colors import yellow as _yellow, red as _red
 
 from ghost_log import log
-from ghost_tools import gcall, GCallException, boolify
+from ghost_tools import gcall
 from .provisioner import FeaturesProvisioner, GalaxyNoMatchingRolesException, GalaxyBadRequirementPathException
 
 ANSIBLE_BASE_PLAYBOOK = {'name': 'Ghost application features', 'hosts': 'all', 'roles': []}

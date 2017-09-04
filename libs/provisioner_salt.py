@@ -10,6 +10,7 @@ from .provisioner import FeaturesProvisioner
 
 SALT_PILLAR_TOP = {'base': {'*': ['features']}}
 
+
 class FeaturesProvisionerSalt(FeaturesProvisioner):
     def __init__(self, log_file, unique_id, config, global_config):
         FeaturesProvisioner.__init__(self, log_file, 'salt', unique_id, config, global_config)
