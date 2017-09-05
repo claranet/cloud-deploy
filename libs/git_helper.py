@@ -34,7 +34,8 @@ def git_wait_lock(lock_path, log_file):
     # If an index.lock file exists in the mirror, wait until it disappears before trying to update the mirror
     while os.path.exists(lock_path):
         log('The git mirror is locked by another process, waiting 5s...', log_file)
-        time.sleep(5000)
+        # time.sleep(secs) https://docs.python.org/2/library/time.html#time.sleep
+        time.sleep(5)
 
 
 def git_remap_submodule(git_local_repo, submodule_repo, submodule_mirror, log_file):
