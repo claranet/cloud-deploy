@@ -3,19 +3,36 @@
 """
     Library to have common git operations
 """
+
 import os
 import time
 from ghost_log import log
 from sh import git
 
 
-def git_wait_lock(mirror_path, log_file):
+def git_set_lock(lock_path, log_file=None):
     """
-    Checks if an 'index.lock' file is present,
+    >>> git_set_lock('/tmp/lock-test')
+    >>> git_unset_lock('/tmp/lock-test')
+    """
+    if log_file:
+        log('Locking git mirror local directory with %s' % lock_path, log_file)
+    os.makedirs(lock_path)
+
+
+def git_unset_lock(lock_path, log_file=None):
+    if log_file:
+        log('Removing git mirror lock (%s)' % lock_path, log_file)
+    os.rmdir(lock_path)
+
+
+def git_wait_lock(lock_path, log_file):
+    """
+    Checks if the 'lock_path' directory is present,
     waits until it's gone
     """
     # If an index.lock file exists in the mirror, wait until it disappears before trying to update the mirror
-    while os.path.exists('{m}/index.lock'.format(m=mirror_path)):
+    while os.path.exists(lock_path):
         log('The git mirror is locked by another process, waiting 5s...', log_file)
         time.sleep(5000)
 
