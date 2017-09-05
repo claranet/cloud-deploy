@@ -595,13 +595,13 @@ def get_mirror_path_from_module(app_module):
     return "/ghost/.mirrors/{remote}".format(remote=app_module['git_repo'].strip())
 
 
-def get_lock_path_from_module(app_module):
+def get_lock_path_from_repo(git_repo):
     """
     >>> app_module = {'git_repo': 'git@bitbucket.org:morea/ghost.git'}
-    >>> get_lock_path_from_module(app_module)
+    >>> get_lock_path_from_repo(app_module['git_repo'])
     '/ghost/.mirrors/.locks/git@bitbucket.org:morea/ghost.git'
     >>> app_module = {'git_repo': ' git@bitbucket.org:morea/spaces.git '}
-    >>> get_lock_path_from_module(app_module)
+    >>> get_lock_path_from_repo(app_module['git_repo'])
     '/ghost/.mirrors/.locks/git@bitbucket.org:morea/spaces.git'
     """
-    return "/ghost/.mirrors/.locks/{remote}".format(remote=app_module['git_repo'].strip())
+    return "/ghost/.mirrors/.locks/{remote}".format(remote=git_repo.strip())

@@ -8,7 +8,7 @@ from ghost_tools import b64decode_utf8, boolify
 from ghost_tools import GCallException, gcall, get_app_module_name_list, clean_local_module_workspace, refresh_stage2
 from ghost_tools import get_aws_connection_data
 from ghost_tools import get_module_package_rev_from_manifest, keep_n_recent_elements_from_list
-from ghost_tools import get_mirror_path_from_module, get_lock_path_from_module
+from ghost_tools import get_mirror_path_from_module, get_lock_path_from_repo
 from ghost_log import log
 from settings import cloud_connections, DEFAULT_PROVIDER
 from libs.git_helper import git_wait_lock, git_set_lock, git_unset_lock
@@ -275,7 +275,7 @@ class Deploy():
         git_repo = module['git_repo'].strip()
         mirror_path = get_mirror_path_from_module(module)
         clone_path = get_buildpack_clone_path_from_module(self._app, module)
-        lock_path = get_lock_path_from_module(module)
+        lock_path = get_lock_path_from_repo(git_repo)
         revision = self._get_module_revision(module['name'])
 
         git_wait_lock(lock_path, self._log_file)

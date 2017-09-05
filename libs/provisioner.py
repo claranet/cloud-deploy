@@ -3,21 +3,26 @@ import sh
 from sh import git
 
 from ghost_log import log
-from libs.git_helper import git_wait_lock, git_remap_submodule
+from ghost_tools import get_lock_path_from_repo
+from libs.git_helper import git_wait_lock, git_remap_submodule, git_set_lock, git_unset_lock
 
 PROVISIONER_LOCAL_TREE="/tmp/ghost-features-provisioner"
 PROVISIONER_LOCAL_MIRROR="/ghost/.mirrors"
 ZABBIX_REPO="git@bitbucket.org:morea/zabbix.git"
 DEFAULT_PROVISIONER_TYPE="salt"
 
+
 class GalaxyNoMatchingRolesException(Exception):
     pass
+
 
 class GalaxyBadRequirementPathException(Exception):
     pass
 
+
 class AnsibleBadBootstrapPathException(Exception):
     pass
+
 
 class FeaturesProvisioner:
     def __init__(self, log_file, name, unique_id, config, global_config):
@@ -49,6 +54,7 @@ class FeaturesProvisioner:
 
         git_local_mirror = self._get_mirror_path(provisioner_git_repo)
         zabbix_repo = self.global_config.get('zabbix_repo', ZABBIX_REPO)
+        lock_path = get_lock_path_from_repo(provisioner_git_repo)
         log("Getting provisioner features from {r}".format(r=provisioner_git_repo), self._log_file)
         try:
             output=git("ls-remote", "--exit-code", provisioner_git_repo, provisioner_git_revision).strip()
@@ -57,21 +63,26 @@ class FeaturesProvisioner:
             log("Invalid provisioner repository or invalid credentials. Please check your yaml 'config.yml' file", self._log_file)
             raise
 
+        git_wait_lock(lock_path, self._log_file)
+
         # Creates the Provisioner local mirror
         if not os.path.exists(git_local_mirror):
+            git_set_lock(lock_path, self._log_file)
             log("Creating local mirror [{r}] for the first time".format(r=git_local_mirror), self._log_file)
             os.makedirs(git_local_mirror)
             os.chdir(git_local_mirror)
             git.init(['--bare'])
             git.remote(['add', self.name, provisioner_git_repo])
             git.remote(['add', 'zabbix', zabbix_repo])
+            git_unset_lock(lock_path, self._log_file)
 
         log("Fetching local mirror [{r}] remotes".format(r=git_local_mirror), self._log_file)
         os.chdir(git_local_mirror)
-
-        git_wait_lock(git_local_mirror, self._log_file)
-
+        git_set_lock(lock_path, self._log_file)
         git.fetch(['--all'])
+        git_unset_lock(lock_path, self._log_file)
+
+        git_wait_lock(lock_path, self._log_file)
 
         log("Cloning [{r}] repo with local mirror reference".format(r=provisioner_git_repo), self._log_file)
         git.clone(['--reference', git_local_mirror, provisioner_git_repo, '-b', provisioner_git_revision, '--single-branch', self.local_repo_path + '/'])
