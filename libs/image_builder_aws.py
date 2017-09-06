@@ -66,7 +66,9 @@ class AWSImageBuilder(ImageBuilder):
             if 'iops' in opt_vol:
                 block['iops'] = opt_vol['iops']
             datas['ami_block_device_mappings'].append(block)
-            datas['launch_block_device_mappings'].append(block)
+
+            if opt_vol['launch_block_device_mappings']:
+                datas['launch_block_device_mappings'].append(block)
 
         return json.dumps(datas, sort_keys=True, indent=4, separators=(',', ': '))
 
