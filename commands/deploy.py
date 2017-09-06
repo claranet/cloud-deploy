@@ -11,7 +11,7 @@ from ghost_tools import get_module_package_rev_from_manifest, keep_n_recent_elem
 from ghost_tools import get_mirror_path_from_module, get_lock_path_from_repo
 from ghost_log import log
 from settings import cloud_connections, DEFAULT_PROVIDER
-from libs.git_helper import git_wait_lock, git_set_lock, git_unset_lock
+from libs.git_helper import git_acquire_lock, git_release_lock
 from libs.host_deployment_manager import HostDeploymentManager
 from libs.deploy import execute_module_script_on_ghost
 from libs.deploy import get_path_from_app_with_color
@@ -278,26 +278,20 @@ class Deploy():
         lock_path = get_lock_path_from_repo(git_repo)
         revision = self._get_module_revision(module['name'])
 
-        git_wait_lock(lock_path, self._log_file)
+        git_acquire_lock(lock_path, self._log_file)
 
         if not os.path.exists(mirror_path):
-            git_set_lock(lock_path, self._log_file)
             gcall('git --no-pager clone --bare --mirror {r} {m}'.format(r=git_repo, m=mirror_path),
                   'Create local git mirror for remote {r}'.format(r=git_repo),
                   self._log_file)
-            git_unset_lock(lock_path, self._log_file)
-
-        git_wait_lock(lock_path, self._log_file)
 
         # Update existing git mirror
         os.chdir(mirror_path)
-        git_set_lock(lock_path, self._log_file)
         gcall('git --no-pager remote update',
               'Update local git mirror from remote {r}'.format(r=git_repo),
               self._log_file)
-        git_unset_lock(lock_path, self._log_file)
 
-        git_wait_lock(lock_path, self._log_file)
+        git_release_lock(lock_path, self._log_file)
 
         # Resolve HEAD symbolic reference to identify the default branch
         head = git('--no-pager', 'symbolic-ref', '--short', 'HEAD', _tty_out=False).strip()

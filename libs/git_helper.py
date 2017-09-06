@@ -10,32 +10,37 @@ from ghost_log import log
 from sh import git
 
 
-def git_set_lock(lock_path, log_file=None):
+def git_acquire_lock(lock_path, log_file=None):
     """
-    >>> git_set_lock('/tmp/lock-test')
-    >>> git_unset_lock('/tmp/lock-test')
+    >>> import os
+    >>> lock_test = '/tmp/lock-test'
+    >>> git_acquire_lock(lock_test)
+    >>> os.path.exists(lock_test)
+    True
+    >>> os.rmdir(lock_test)
     """
+    # If the lock directory exists, wait until it disappears before trying to update the mirror
+    while os.path.exists(lock_path):
+        if log_file:
+            log('The git mirror is locked by another process, waiting 5s...', log_file)
+        # time.sleep(secs) https://docs.python.org/2/library/time.html#time.sleep
+        time.sleep(5)
     if log_file:
         log('Locking git mirror local directory with %s' % lock_path, log_file)
     os.makedirs(lock_path)
 
 
-def git_unset_lock(lock_path, log_file=None):
+def git_release_lock(lock_path, log_file=None):
+    """
+    >>> import tempfile
+    >>> temp_dir = tempfile.mkdtemp()
+    >>> git_release_lock(temp_dir)
+    >>> os.path.exists(temp_dir)
+    False
+    """
     if log_file:
         log('Removing git mirror lock (%s)' % lock_path, log_file)
     os.rmdir(lock_path)
-
-
-def git_wait_lock(lock_path, log_file):
-    """
-    Checks if the 'lock_path' directory is present,
-    waits until it's gone
-    """
-    # If an index.lock file exists in the mirror, wait until it disappears before trying to update the mirror
-    while os.path.exists(lock_path):
-        log('The git mirror is locked by another process, waiting 5s...', log_file)
-        # time.sleep(secs) https://docs.python.org/2/library/time.html#time.sleep
-        time.sleep(5)
 
 
 def git_remap_submodule(git_local_repo, submodule_repo, submodule_mirror, log_file):
