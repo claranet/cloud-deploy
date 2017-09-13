@@ -55,7 +55,7 @@ features_provisioners:
 
         # Ansible global inventory url
         # Optional, default:
-        #ansible_role_inventory_url:
+        #ansible_role_inventory_url: http://claranet-ansible-inventory.s3-website-eu-west-1.amazonaws.com/requirements.json
 
 
 # Packer should install recipe package (salt minion or ansible) when backing Image
