@@ -8,12 +8,15 @@ from ghost_tools import b64decode_utf8, boolify
 from ghost_tools import GCallException, gcall, get_app_module_name_list, clean_local_module_workspace, refresh_stage2
 from ghost_tools import get_aws_connection_data
 from ghost_tools import get_module_package_rev_from_manifest, keep_n_recent_elements_from_list
+from ghost_tools import get_mirror_path_from_module
 from ghost_log import log
 from settings import cloud_connections, DEFAULT_PROVIDER
 from libs.git_helper import git_wait_lock
 from libs.host_deployment_manager import HostDeploymentManager
 from libs.deploy import execute_module_script_on_ghost
-from libs.deploy import get_path_from_app_with_color, get_buildpack_clone_path_from_module, update_app_manifest, rollback_app_manifest
+from libs.deploy import get_path_from_app_with_color
+from libs.deploy import get_buildpack_clone_path_from_module, get_intermediate_clone_path_from_module
+from libs.deploy import update_app_manifest, rollback_app_manifest
 
 COMMAND_DESCRIPTION = "Deploy module(s)"
 RELATED_APP_FIELDS = ['modules']
@@ -59,36 +62,6 @@ class Deploy():
                     if 'name' in item and item['name'] == module['name']:
                         result.append(item)
         return result
-
-    def _get_mirror_path_from_module(self, module):
-        """
-        >>> class worker:
-        ...     app = {}
-        ...     job = None
-        ...     log_file = None
-        ...     _config = None
-        >>> module = {'git_repo': 'git@bitbucket.org:morea/ghost.git'}
-        >>> Deploy(worker=worker())._get_mirror_path_from_module(module)
-        '/ghost/.mirrors/git@bitbucket.org:morea/ghost.git'
-        >>> module = {'git_repo': ' git@bitbucket.org:morea/spaces.git '}
-        >>> Deploy(worker=worker())._get_mirror_path_from_module(module)
-        '/ghost/.mirrors/git@bitbucket.org:morea/spaces.git'
-        """
-        return "/ghost/.mirrors/{remote}".format(remote=module['git_repo'].strip())
-
-    def _get_intermediate_clone_path_from_module(self, module):
-        """
-        >>> class worker:
-        ...     app = {'name': 'AppName', 'env': 'prod', 'role': 'webfront'}
-        ...     job = None
-        ...     log_file = None
-        ...     _config = None
-        >>> module = {'name': 'mod1', 'git_repo': 'git@bitbucket.org:morea/ghost.git'}
-        >>> Deploy(worker=worker())._get_intermediate_clone_path_from_module(module)
-        '/ghost/.tmp/AppName/prod/webfront/mod1'
-        """
-        clone_path = get_buildpack_clone_path_from_module(self._app, module)
-        return '{}/.tmp{}'.format(clone_path[:6], clone_path[6:])
 
     def _deploy_module(self, module, fabric_execution_strategy, safe_deployment_strategy):
         deploy_manager = HostDeploymentManager(self._cloud_connection, self._app, module, self._log_file,
@@ -300,7 +273,7 @@ class Deploy():
         ts = calendar.timegm(now.timetuple())
 
         git_repo = module['git_repo'].strip()
-        mirror_path = self._get_mirror_path_from_module(module)
+        mirror_path = get_mirror_path_from_module(module)
         clone_path = get_buildpack_clone_path_from_module(self._app, module)
         revision = self._get_module_revision(module['name'])
 
@@ -327,7 +300,7 @@ class Deploy():
         # If revision is a commit hash, a full intermediate clone is required before getting a shallow clone
         if self._is_commit_hash(revision):
             # Create intermediate clone from the local git mirror, chdir into it and fetch all commits
-            source_path = self._get_intermediate_clone_path_from_module(module)
+            source_path = get_intermediate_clone_path_from_module(self._app, module)
             gcall('rm -rf {p}'.format(p=source_path), 'Removing previous intermediate clone', self._log_file)
             os.makedirs(source_path)
             os.chdir(source_path)
