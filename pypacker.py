@@ -49,6 +49,7 @@ class Packer:
             'subnet_id': self.packer_config['subnet_id'],
             'associate_public_ip_address': self.packer_config['associate_public_ip_address'],
             'ami_block_device_mappings': self.packer_config['ami_block_device_mappings'],
+            'launch_block_device_mappings': self.packer_config['launch_block_device_mappings'],
             'ssh_pty': 'true',
             'iam_instance_profile': self.packer_config['iam_instance_profile'],
             'tags': self.packer_config['tags']

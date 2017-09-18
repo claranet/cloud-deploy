@@ -117,6 +117,7 @@ def test_build_image_ansible(packer_run_packer_cmd, gcall, provisioner_get_local
             "builders": [
                 {
                     "ami_block_device_mappings": [],
+                    "launch_block_device_mappings": [],
                     "source_ami": "ami-source",
                     "tags": {
                         "Name": "ec2.name.test",
