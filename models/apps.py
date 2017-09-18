@@ -206,7 +206,7 @@ apps_schema = {
                                                         '^subnet-[a-z0-9]*$'}},
                               'instance_profile':
                               {'type': 'string',
-                               'regex': '^[a-zA-Z0-9\+\=\,\.\@\-\_]{1,64}$'},
+                               'regex': '^[a-zA-Z0-9\+\=\,\.\@\-\_]{1,128}$'},
                               'key_name': {'type': 'string',
                                            'regex': '^[\x00-\x7F]{1,255}$'},
                               'public_ip_address': {'type': 'boolean', 'required': False, 'default':True},
