@@ -91,19 +91,8 @@ apps_schema = {
                     'required': False
                 },
                 'parameters': {
-                    'type': 'dict',
-                    'schema': {
-                        'name': {
-                            'type': 'string',
-                            'regex': '^[a-zA-Z0-9]*$',
-                            'required': False
-                        },
-                        'value': {
-                            'type': 'string',
-                            'regex': '^[a-zA-Z0-9]*$',
-                            'required': False
-                        }
-                    }
+                    'type': 'string',
+                    'required': False
                 }
             }
         }
