@@ -1,3 +1,4 @@
+import json
 import os
 import copy
 import yaml
@@ -156,14 +157,20 @@ class FeaturesProvisionerAnsible(FeaturesProvisioner):
         for ft in features:
             if ft.get('provisioner', self._default_provisioner) != self.name:
                 continue
-            values = ft.get('version', '').split('=', 1)  # Split only one time
             feature_name = ft['name'].encode('utf-8')
-            if len(values) == 2:
-                ft_param_key = values[0].encode('utf-8')
-                ft_param_val = values[1].encode('utf-8')
-                playbook[-1]['roles'].append({'role': feature_name, ft_param_key: ft_param_val})
+            if ft.get('parameters'):
+                role_params = json.loads(ft.get('parameters'))
+                role_params['role'] = feature_name
+                playbook[-1]['roles'].append(role_params)
             else:
-                playbook[-1]['roles'].append({'role': feature_name})
+                # Fallback to legacy code with a unique version/value argument
+                values = ft.get('version', '').split('=', 1)  # Split only one time
+                if len(values) == 2:
+                    ft_param_key = values[0].encode('utf-8')
+                    ft_param_val = values[1].encode('utf-8')
+                    playbook[-1]['roles'].append({'role': feature_name, ft_param_key: ft_param_val})
+                else:
+                    playbook[-1]['roles'].append({'role': feature_name})
         return playbook
 
     def format_provisioner_params(self, features):
