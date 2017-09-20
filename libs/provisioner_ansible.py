@@ -150,6 +150,13 @@ class FeaturesProvisionerAnsible(FeaturesProvisioner):
         >>> pprint.pprint(FeaturesProvisionerAnsible(None, None, {}, global_config).format_provisioner_features(features)[-1])
         {'hosts': 'all', 'name': 'Ghost application features', 'roles': []}
 
+        >>> features = [{'name': 'package', 'version': 'package_name=git_vim', 'provisioner': 'salt'},
+        ...             {'name': 'package', 'parameters': '{"package_name": ["curl", "vim"]}', 'provisioner': 'ansible'}]
+        >>> pprint.pprint(FeaturesProvisionerAnsible(None, None, {}, global_config).format_provisioner_features(features)[-1])
+        {'hosts': 'all',
+         'name': 'Ghost application features',
+         'roles': [{u'package_name': [u'curl', u'vim'], 'role': 'package'}]}
+
         """
         with open(self._ansible_base_playbook_file, 'r') as base_playbook:
             playbook = yaml.load(base_playbook)
