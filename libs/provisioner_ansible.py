@@ -49,7 +49,7 @@ class FeaturesProvisionerAnsible(FeaturesProvisioner):
             log("Ansible - Writing playbook: {0}".format(self._ansible_playbook_path), self._log_file)
             log(_yellow("Ansible - features: {0}".format(features[-1]['roles'])), self._log_file)
             try:
-                yaml.dump(features, stream_features, default_flow_style=False, explicit_start=True)
+                yaml.safe_dump(features, stream_features, default_flow_style=False, explicit_start=True, allow_unicode=True)
             except yaml.YAMLError as exc:
                 log(_red("Ansible - ERROR Writing playbook: {0}".format(exc)), self._log_file)
                 raise
