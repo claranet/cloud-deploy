@@ -19,6 +19,7 @@ modules = [
   "ghost_tools",
   "libs.blue_green",
   "libs.deploy",
+  "libs.git_helper",
   "libs.host_deployment_manager",
   "libs.image_builder",
   "libs.image_builder_aws",
