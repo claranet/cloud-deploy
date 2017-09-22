@@ -71,11 +71,12 @@ function zabbix_hostname() {
 function instance_hostname() {
     MAX_NAME=$(($(getconf HOST_NAME_MAX)-16))
     EC2_HOSTNAME=$(echo ${NAME:0:$MAX_NAME}-${IP} | tr -s '.' '-')
-    salt-call --local network.mod_hostname "$EC2_HOSTNAME"
-    salt-call --local file.append /etc/hosts "$IP $EC2_HOSTNAME"
+    echo "$EC2_HOSTNAME" > /etc/hostname
+    hostnamectl set-hostname "$EC2_HOSTNAME" 2> /dev/null || hostname "$EC2_HOSTNAME"
+    echo "$IP $EC2_HOSTNAME" >> /etc/hosts
     if [ -d /etc/cloud/templates ] ; then
         for f in /etc/cloud/templates/hosts.*.tmpl; do
-            salt-call --local file.append $f "$IP $EC2_HOSTNAME"
+            echo "$IP $EC2_HOSTNAME" >> "$f"
         done
     fi
 }
