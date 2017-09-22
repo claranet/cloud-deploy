@@ -1,22 +1,18 @@
 # -*- coding: utf-8 -*-
 
-import io
-import json
 import os
-import sys
 import time
 
-import yaml
+from pylxd import Client as LXDClient
 
 from ghost_log import log
 from ghost_tools import (gcall, GCallException, get_buildpack_clone_path_from_module,
                          get_local_repo_path, get_path_from_app_with_color,
                          get_provisioners_config)
-from pylxd import Client as LXDClient
-
 from .image_builder import ImageBuilder
 
 PROVISIONER_LOCAL_TREE = "/tmp/ghost-features-provisioner"
+
 
 class LXDImageBuilder(ImageBuilder):
     def __init__(self, app, job, db, log_file, config):
@@ -24,9 +20,10 @@ class LXDImageBuilder(ImageBuilder):
 
         self._client = LXDClient()
         self._container_name = self._ami_name.replace('.', '-')
-        self._container_config = self._config.get('container', {'endpoint': self._config.get('endpoint', 'localhost'),
-                                                                'debug': self._config.get('debug', False),
-                                                               })
+        self._container_config = self._config.get('container', {
+            'endpoint': self._config.get('endpoint', 'localhost'),
+            'debug': self._config.get('debug', False),
+        })
         provisioners_config = get_provisioners_config()
         self.provisioners = []
         for key, provisioner_config in provisioners_config.iteritems():
@@ -49,7 +46,13 @@ class LXDImageBuilder(ImageBuilder):
             if self._container_config['endpoint'] == "localhost":
                 config['source'] = {"type": "image", "fingerprint": alias}
             else:
-                config['source'] = {"type": "image", "protocol":"lxd", "mode":"pull", "fingerprint": alias, "server" : self._container_config['endpoint']}
+                config['source'] = {
+                    "type": "image",
+                    "protocol": "lxd",
+                    "mode": "pull",
+                    "fingerprint": alias,
+                    "server": self._container_config['endpoint']
+                }
         elif self._job["command"] == u"deploy":
             alias = self._app['build_infos']["container_image"]
             config['source'] = {"type": "image", "alias": alias}
@@ -82,11 +85,11 @@ class LXDImageBuilder(ImageBuilder):
         elif self._job['command'] == u"deploy":
             source_module = get_buildpack_clone_path_from_module(self._app, module)
             module_path = module['path']
-            devices = {'buildpack':{'path': module_path, 'source': source_module, 'type':'disk'}}
+            devices = {'buildpack': {'path': module_path, 'source': source_module, 'type': 'disk'}}
 
         self._client.profiles.create(self._container_name, devices=devices)
 
-    def _create_container(self,module=None, wait=10):
+    def _create_container(self, module=None, wait=10):
         """ Create a container with his profile and set time paramet to wait until network was up (default: 5 sec)
         """
         log("Create container {container_name}".format(container_name=self._container_name), self._log_file)
@@ -118,7 +121,7 @@ class LXDImageBuilder(ImageBuilder):
             filtered_images.append(image)
 
         if filtered_images and len(filtered_images) > retention:
-            filtered_images.sort(key=lambda img: img.uploaded_at, reverse = True)
+            filtered_images.sort(key=lambda img: img.uploaded_at, reverse=True)
             i = 0
             while i < retention:
                 filtered_images.pop(0)
@@ -158,12 +161,14 @@ class LXDImageBuilder(ImageBuilder):
         posthooks = self.container.execute(["sh", "/ghost/hook-post_buildimage"])
         self._container_log(posthooks)
 
-    def _execute_buildpack(self,script_path,module):
+    def _execute_buildpack(self,script_path, module):
         log("run deploy build pack", self._log_file)
         script = os.path.basename(script_path)
-        buildpack = self.container.execute(["sed", "2icd "+module['path'], "-i", "{module_path}/{script}".format(module_path=module['path'], script=script)])
+        buildpack = self.container.execute(["sed", "2icd "+module['path'], "-i",
+                                            "{module_path}/{script}".format(module_path=module['path'], script=script)])
         self._container_log(buildpack)
-        buildpack = self.container.execute(["sh", "{module_path}/{script}".format(module_path=module['path'], script=script)])
+        buildpack = self.container.execute(["sh", "{module_path}/{script}".format(module_path=module['path'],
+                                                                                  script=script)])
         self._container_log(buildpack)
         buildpack = self.container.execute(["chown", "-R", "1001:1002", "{module_path}".format(module_path=module['path'])])
         self._container_log(buildpack)
