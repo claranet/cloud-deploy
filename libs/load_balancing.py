@@ -661,7 +661,7 @@ class AwsAlbManager(AwsElbManager):
 
     def _list_objects_from_autoscale(self, as_name, filter_tag=None):
         if filter_tag and len(filter_tag) > 1:
-            raise LoadBalancerManagerException('Filter can only tag one tag')
+            raise LoadBalancerManagerException('Filter can only use one tag')
         conn = self._get_alb_connection()
         tg_arns = self._get_targetgroup_arns_from_autoscale(as_name)
         if len(tg_arns) > 0:
@@ -675,7 +675,8 @@ class AwsAlbManager(AwsElbManager):
                             filtered_arns.append(lb_tags['ResourceArn'])
                             break
                 lb_arns = filtered_arns
-            return conn.describe_load_balancers(LoadBalancerArns=lb_arns)['LoadBalancers']
+            if lb_arns:
+                return conn.describe_load_balancers(LoadBalancerArns=lb_arns)['LoadBalancers']
         return []
 
     def list_lbs_from_autoscale(self, as_name, log_file, filter_tag=None):
