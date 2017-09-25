@@ -1,9 +1,12 @@
-from fabric.colors import green as _green, yellow as _yellow, red as _red
-
 import time
+import os
+
+from fabric.colors import green as _green, yellow as _yellow, red as _red
 from ghost_log import log
 from ghost_tools import get_aws_connection_data, get_app_friendly_name, GCallException, get_running_jobs
+from ghost_tools import b64decode_utf8, get_ghost_env_variables, gcall
 from libs import load_balancing
+from libs.deploy import get_path_from_app_with_color
 from settings import cloud_connections, DEFAULT_PROVIDER
 
 from ghost_aws import check_autoscale_exists, get_autoscaling_group_and_processes_to_suspend
@@ -66,11 +69,29 @@ class Swapbluegreen(object):
             app_name, as_old, as_new, elb_name, elb_dns)
         return _green(notif)
 
+    @staticmethod
+    def _execute_swap_hook(online_app, to_deploy_app, script_name, script_message, log_file):
+        for status, app in (('active', online_app), ('inactive', to_deploy_app)):
+            script = app.get('blue_green', {}).get('hooks', {}).get(script_name, None)
+            if script:
+                script_path = os.path.join(get_path_from_app_with_color(app), script_name)
+                with open(script_path, 'w') as f:
+                    f.write(b64decode_utf8(script))
+
+                script_env = os.environ.copy()
+                script_env.update(get_ghost_env_variables(app))
+
+                gcall('bash {}'.format(script_path),
+                      '{}: Execute'.format(script_message.format(status=status)),
+                      log_file,
+                      env=script_env)
+
     def _update_app_is_online(self, app, is_online):
         """
         Updates the App DB object to set the 'is_online' attribute.
         This attribute should be at True when the ASG is mapped with the online ELB.
         """
+        app['blue_green']["is_online"] = is_online
         self._worker._db.apps.update({'_id': app['_id']}, {'$set': {'blue_green.is_online': is_online}})
         log("'{0}' has been set '{1}' for blue/green".format(app['_id'], 'online' if is_online else 'offline'),
             self._log_file)
@@ -310,6 +331,10 @@ class Swapbluegreen(object):
                 log(_green("AutoScale blue [{0}] and green [{1}] ready for swap".format(
                     online_app['autoscale']['name'], to_deploy_app['autoscale']['name'])), self._log_file)
 
+            self._execute_swap_hook(online_app, to_deploy_app,
+                                    'pre_swap', 'Pre swap script for current {status} application',
+                                    self._log_file)
+
             # Swap !
             elb_name, elb_dns = self._swap_asg(lb_mgr, swap_execution_strategy, online_app, to_deploy_app,
                                                self._log_file)
@@ -319,6 +344,10 @@ class Swapbluegreen(object):
                     message=self._get_notification_message_failed(
                         online_app, to_deploy_app, 'Unable to make blue-green swap'))
                 return
+
+            self._execute_swap_hook(online_app, to_deploy_app,
+                                    'post_swap', 'Post swap script for previously {status} application',
+                                    self._log_file)
 
             # All good
             done_notif = self._get_notification_message_done(

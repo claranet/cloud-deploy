@@ -42,7 +42,7 @@ def execute_module_script_on_ghost(app, module, script_name, script_friendly_nam
                 f.write(script_source)
 
         script_env = os.environ.copy()
-        script_env.update(get_ghost_env_variables(app, module, app.get('blue_green', {}).get('color', ''), None))
+        script_env.update(get_ghost_env_variables(app, module))
 
         gcall('bash %s' % script_path, '%s: Execute' % script_friendly_name, log_file, env=script_env)
         gcall('du -hs .', 'Display current build directory disk usage', log_file)

@@ -39,6 +39,9 @@ def get_test_application(**kwargs):
             "min": 2,
             "name": "as.test"
         },
+        "blue_green": {
+            "enable_blue_green": False
+        },
         "build_infos": {
             "source_ami": "ami-source",
             "ssh_username": "admin",
