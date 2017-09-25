@@ -53,6 +53,10 @@ if [ ! -d /var/lib/ghost ]; then
     mkdir /var/lib/ghost
 fi
 
+if [ ! -d /var/log/ghost ]; then
+    mkdir /var/log/ghost
+fi
+
 if [ ! -z "$COLOR" ]; then
     APP_PATH=ghost/$APP/$ENV/$ROLE/$COLOR
 else
@@ -93,7 +97,7 @@ function purge_latest_failed_deploy() {
 
     if [ -e $MODULE_FAILED ]; then
         MODULE_TO_DELETE=$(head -n 1 $MODULE_FAILED)
-        echo "Purging latest failed module: $MODULE_TO_DELETE" >> /tmp/$LOGFILE
+        echo "Purging latest failed module: $MODULE_TO_DELETE" >> /var/log/ghost/$LOGFILE
         rm -rf $MODULE_TO_DELETE
         # Remove deleted module from history
         sed -i 1d $MODULE_FAILED
@@ -113,7 +117,7 @@ function purge_oldest_succeed_deploy() {
         NUM_OF_DEPLOY=$(wc -l < $MODULE_SUCCEED)
         while [ $NUM_OF_DEPLOY -gt $MAX_DEPLOY_HISTORY ]; do
             MODULE_TO_DELETE=$(head -n 1 $MODULE_SUCCEED)
-            echo "Purging oldest succeed module: $MODULE_TO_DELETE" >> /tmp/$LOGFILE
+            echo "Purging oldest succeed module: $MODULE_TO_DELETE" >> /var/log/ghost/$LOGFILE
             rm -rf $MODULE_TO_DELETE
             # Remove deleted module from history
             sed -i 1d $MODULE_SUCCEED
@@ -150,13 +154,13 @@ function deploy_module() {
         mkdir -p $TARGETDIR
     fi
 
-    echo "--------------------------------" >> /tmp/$LOGFILE
-    echo "Deploying module $MODULE_NAME in $TARGET" >> /tmp/$LOGFILE
+    echo "--------------------------------" >> /var/log/ghost/$LOGFILE
+    echo "Deploying module $MODULE_NAME in $TARGET" >> /var/log/ghost/$LOGFILE
 
     $AWS_BIN s3 cp --only-show-errors s3://${S3_BUCKET}/${APP_PATH}/$MODULE_NAME/$MODULE_FILE /tmp/$MODULE_FILE --region "$S3_REGION"
 
     mkdir -p /ghost/$UUID
-    echo "Extracting module in /ghost/$UUID" >> /tmp/$LOGFILE
+    echo "Extracting module in /ghost/$UUID" >> /var/log/ghost/$LOGFILE
     tar xvzf /tmp/$MODULE_FILE -C /ghost/$UUID > /dev/null
     if [ $? -ne 0 ] || [ ! -f /tmp/$MODULE_FILE ]; then
         echo "Extracting module failed !"
@@ -171,9 +175,9 @@ function deploy_module() {
     fi
 
     if [ -e predeploy ]; then
-        echo "Executing predeploy script..." >> /tmp/$LOGFILE
+        echo "Executing predeploy script..." >> /var/log/ghost/$LOGFILE
         chmod +x predeploy
-        GHOST_MODULE_REPO=$GHOST_MODULE_REPO GHOST_MODULE_REV=$GHOST_MODULE_REV GHOST_MODULE_COMMIT=$GHOST_MODULE_COMMIT GHOST_MODULE_COMMIT_MESSAGE=$GHOST_MODULE_COMMIT_MESSAGE GHOST_MODULE_USER=$GHOST_MODULE_USER GHOST_APP=$APP GHOST_ENV=$ENV GHOST_ENV_COLOR=$COLOR GHOST_ROLE=$ROLE GHOST_MODULE_NAME=$MODULE_NAME GHOST_MODULE_PATH=$TARGET ./predeploy 2>&1 | tee -a /tmp/$LOGFILE
+        GHOST_MODULE_REPO=$GHOST_MODULE_REPO GHOST_MODULE_REV=$GHOST_MODULE_REV GHOST_MODULE_COMMIT=$GHOST_MODULE_COMMIT GHOST_MODULE_COMMIT_MESSAGE=$GHOST_MODULE_COMMIT_MESSAGE GHOST_MODULE_USER=$GHOST_MODULE_USER GHOST_APP=$APP GHOST_ENV=$ENV GHOST_ENV_COLOR=$COLOR GHOST_ROLE=$ROLE GHOST_MODULE_NAME=$MODULE_NAME GHOST_MODULE_PATH=$TARGET ./predeploy 2>&1 | tee -a /var/log/ghost/$LOGFILE
         local status=${PIPESTATUS[0]}
         if [ $status -ne 0 ]; then
             echo -e "${COLOR_RED}[${MODULE_NAME}:${GHOST_MODULE_REV}] Predeploy script exited with error code ${status} ${COLOR_CLR}"
@@ -185,7 +189,7 @@ function deploy_module() {
 
     # Clear folder if not a symlink (not a Ghost managed module)
     if ! [ -h $TARGET ]; then
-        echo "Clearing unmanaged folder..." >> /tmp/$LOGFILE
+        echo "Clearing unmanaged folder..." >> /var/log/ghost/$LOGFILE
         rm -rfv $TARGET
     fi
 
@@ -194,10 +198,10 @@ function deploy_module() {
     cd $TARGET
 
     if [ -e postdeploy ]; then
-        echo "Executing postdeploy script..." >> /tmp/$LOGFILE
+        echo "Executing postdeploy script..." >> /var/log/ghost/$LOGFILE
         chmod +x postdeploy
 
-        GHOST_MODULE_REPO=$GHOST_MODULE_REPO GHOST_MODULE_REV=$GHOST_MODULE_REV GHOST_MODULE_COMMIT=$GHOST_MODULE_COMMIT GHOST_MODULE_COMMIT_MESSAGE=$GHOST_MODULE_COMMIT_MESSAGE GHOST_MODULE_USER=$GHOST_MODULE_USER GHOST_APP=$APP GHOST_ENV=$ENV GHOST_ENV_COLOR=$COLOR GHOST_ROLE=$ROLE GHOST_MODULE_NAME=$MODULE_NAME GHOST_MODULE_PATH=$TARGET ./postdeploy 2>&1 | tee -a /tmp/$LOGFILE
+        GHOST_MODULE_REPO=$GHOST_MODULE_REPO GHOST_MODULE_REV=$GHOST_MODULE_REV GHOST_MODULE_COMMIT=$GHOST_MODULE_COMMIT GHOST_MODULE_COMMIT_MESSAGE=$GHOST_MODULE_COMMIT_MESSAGE GHOST_MODULE_USER=$GHOST_MODULE_USER GHOST_APP=$APP GHOST_ENV=$ENV GHOST_ENV_COLOR=$COLOR GHOST_ROLE=$ROLE GHOST_MODULE_NAME=$MODULE_NAME GHOST_MODULE_PATH=$TARGET ./postdeploy 2>&1 | tee -a /var/log/ghost/$LOGFILE
         local status=${PIPESTATUS[0]}
         if [ $status -ne 0 ]; then
             echo -e "${COLOR_RED}[${MODULE_NAME}:${GHOST_MODULE_REV}] Postdeploy script exited with error code ${status} ${COLOR_CLR}"
@@ -223,7 +227,7 @@ function find_module() {
 }
 
 function exit_deployment() {
-    echo "Removing Manifest file" >> /tmp/$LOGFILE
+    echo "Removing Manifest file" >> /var/log/ghost/$LOGFILE
     rm -f /tmp/MANIFEST
     echo "Unlocking $LOCK..."
     rmdir $LOCK
@@ -233,18 +237,18 @@ function exit_deployment() {
 
 function download_and_run_lifecycle_hook_script() {
     local script_name=$1
-    echo "Downloading custom vars script" >> /tmp/$LOGFILE
+    echo "Downloading custom vars script" >> /var/log/ghost/$LOGFILE
     $AWS_BIN s3 cp --quiet s3://${S3_BUCKET}/${APP_PATH}/custom_env_vars /tmp/ghost_custom_env_vars --region "$S3_REGION"
-    echo "Downloading ${script_name} script" >> /tmp/$LOGFILE
+    echo "Downloading ${script_name} script" >> /var/log/ghost/$LOGFILE
     $AWS_BIN s3 cp --quiet s3://${S3_BUCKET}/${APP_PATH}/${script_name} /tmp/ghost_${script_name} --region "$S3_REGION"
     if [ -e /tmp/ghost_${script_name} ]; then
         if [ -e /tmp/ghost_custom_env_vars ]; then
-            echo "Sourcing custom vars in env" >> /tmp/$LOGFILE
+            echo "Sourcing custom vars in env" >> /var/log/ghost/$LOGFILE
             source /tmp/ghost_custom_env_vars
         fi
-        echo "Executing /tmp/ghost_${script_name} script..." >> /tmp/$LOGFILE
+        echo "Executing /tmp/ghost_${script_name} script..." >> /var/log/ghost/$LOGFILE
         chmod +x /tmp/ghost_${script_name}
-        GHOST_APP=$APP GHOST_ENV=$ENV GHOST_ENV_COLOR=$COLOR GHOST_ROLE=$ROLE /tmp/ghost_${script_name} 2>&1 | tee -a /tmp/$LOGFILE
+        GHOST_APP=$APP GHOST_ENV=$ENV GHOST_ENV_COLOR=$COLOR GHOST_ROLE=$ROLE /tmp/ghost_${script_name} 2>&1 | tee -a /var/log/ghost/$LOGFILE
         local status=${PIPESTATUS[0]}
         if [ $status -ne 0 ]; then
             exit_deployment -5
@@ -255,11 +259,11 @@ function download_and_run_lifecycle_hook_script() {
     fi
 }
 
-echo "Downloading Manifest" >> /tmp/$LOGFILE
+echo "Downloading Manifest" >> /var/log/ghost/$LOGFILE
 $AWS_BIN s3 cp --only-show-errors s3://${S3_BUCKET}/${APP_PATH}/MANIFEST /tmp/ --region "$S3_REGION"
 
 if [ $? -ne 0 ]; then
-    echo "Manifest download error...Exiting" >> /tmp/$LOGFILE
+    echo "Manifest download error...Exiting" >> /var/log/ghost/$LOGFILE
     # init zabbix before quit
     exit_deployment -3
 fi
