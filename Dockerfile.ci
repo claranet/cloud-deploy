@@ -1,0 +1,15 @@
+# Dockerfile used to build moreaghost/morea-ghost CI image for bitbucket pipeline
+# The main Dockerfile is also based on it.
+# Refer to https://confluence.fr.clara.net/display/MOR/Updating+the+docker+image+used+by+automated+unit+tests+execution for instructions
+
+FROM python:2.7
+
+RUN export DEBIAN_FRONTEND=noninteractive && \
+    apt-get -y -q update && \
+    apt-get -y -q install unzip
+
+RUN wget https://releases.hashicorp.com/packer/0.12.2/packer_0.12.2_linux_amd64.zip && \
+    unzip -d /usr/local/bin packer_0.12.2_linux_amd64.zip && \
+    rm packer_0.12.2_linux_amd64.zip
+
+RUN pip install tox

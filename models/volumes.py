@@ -9,5 +9,6 @@ block = {'type': 'dict',
              'volume_size': {'type': 'integer',
                              'required': True},
              'iops': {'type': 'integer',
-                      'required': False}
+                      'required': False},
+             'launch_block_device_mappings': {'type': 'boolean', 'required': False}
          }}

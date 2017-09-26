@@ -1,6 +1,5 @@
 """Library pertaining to blue/green commands."""
 # -*- coding: utf-8 -*-
-#!/usr/bin/env python
 
 import sys
 from ghost_log import log
@@ -10,11 +9,13 @@ from settings import cloud_connections, DEFAULT_PROVIDER
 
 BLUE_GREEN_COMMANDS = ['preparebluegreen', 'swapbluegreen', 'purgebluegreen']
 
+
 def ghost_has_blue_green_enabled():
     """
     Return if Ghost has Blue/Green option enabled globally
     """
     return config.get('blue_green') and config.get('blue_green').get('enabled', False)
+
 
 def get_blue_green_config(config, command, key, default_value):
     """
@@ -28,8 +29,14 @@ def get_blue_green_config(config, command, key, default_value):
         return default_value
     return command_section.get(key, default_value)
 
-def get_blue_green_destroy_temporary_elb_config(config):
-    return get_blue_green_config(config, 'purgebluegreen', 'destroy_temporary_elb', True)
+
+def get_blue_green_copy_ami_config(config):
+    return get_blue_green_config(config, 'preparebluegreen', 'copy_ami', False)
+
+
+def get_blue_green_create_temporary_elb_config(config):
+    return get_blue_green_config(config, 'preparebluegreen', 'create_temporary_elb', True)
+
 
 def get_blue_green_from_app(app):
     """
@@ -60,6 +67,7 @@ def get_blue_green_from_app(app):
         return app['blue_green'], app['blue_green'].get('color', None)
     return None, None
 
+
 def get_blue_green_apps(app, apps_db, log_file):
     """
     Return app and alter_ego_app if at least one is online.
@@ -72,7 +80,8 @@ def get_blue_green_apps(app, apps_db, log_file):
         )
         # Both app online is inconsistent
         if app['blue_green']['is_online'] and alter_ego_app['blue_green']['is_online']:
-            log("ERROR: Both blue ({0}) and green ({1}) app are setted as 'online' which is not possible.".format(app['_id'], alter_ego_app['_id']), log_file)
+            log("ERROR: Both blue ({0}) and green ({1}) app are setted as 'online' which is not possible.".format(
+                app['_id'], alter_ego_app['_id']), log_file)
             return None, None
         if app['blue_green']['is_online']:
             return app, alter_ego_app
@@ -80,10 +89,12 @@ def get_blue_green_apps(app, apps_db, log_file):
             if alter_ego_app['blue_green']['is_online']:
                 return alter_ego_app, app
             else:
-                log("ERROR: Nor blue ({0}) and green ({1}) app are setted as 'online'".format(app['_id'], alter_ego_app['_id']), log_file)
+                log("ERROR: Nor blue ({0}) and green ({1}) app are setted as 'online'".format(
+                    app['_id'], alter_ego_app['_id']), log_file)
                 return None, None
     else:
         return None, None
+
 
 def check_app_manifest(app, config, log_file):
     key_path = get_path_from_app_with_color(app) + '/MANIFEST'
@@ -102,17 +113,20 @@ def check_app_manifest(app, config, log_file):
     nb_deployed_modules = len(deployed_modules)
     nb_app_modules = len(app['modules'])
     if not nb_deployed_modules == nb_app_modules:
-        log("ERROR: Configured modules in the app [{0}] doesn't match number of deployed modules according to the MANIFEST.' ".format(app['_id']), log_file)
+        log("ERROR: Configured modules in the app [{0}] doesn't match number "
+            "of deployed modules according to the MANIFEST.' ".format(app['_id']), log_file)
         return False
 
     for idx, up_module in enumerate(deployed_modules):
         mod = up_module.strip().split(':')
         # Deployed and app modules should be same
         if not mod[0] == app['modules'][idx]['name']:
-            log("ERROR: Deployed module name ({0}) doesn't match the configured module name ({1}) ".format(mod[0], app['modules'][idx]['name']), log_file)
+            log("ERROR: Deployed module name ({0}) doesn't match "
+                "the configured module name ({1}) ".format(mod[0], app['modules'][idx]['name']), log_file)
             return False
 
     return True
+
 
 def abort_if_other_bluegreen_job(running_jobs, _worker, _message, _log_file):
     """
@@ -120,7 +134,9 @@ def abort_if_other_bluegreen_job(running_jobs, _worker, _message, _log_file):
     """
     if len(running_jobs):
         for rjob in running_jobs:
-            log("Another job is running and should be finished before processing this current one: Job({id})/Command({cmd})/AppId({app})".format(id=rjob['_id'], cmd=rjob['command'], app=rjob['app_id']), _log_file)
+            log("Another job is running and should be finished before "
+                "processing this current one: Job({id})/Command({cmd})/AppId({app})".format(
+                    id=rjob['_id'], cmd=rjob['command'], app=rjob['app_id']), _log_file)
         _worker.update_status("aborted", message=_message)
         return True
     return False

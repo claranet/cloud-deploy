@@ -557,17 +557,22 @@ def get_available_provisioners_from_config(last_config=None):
     return provisioners_config.keys()
 
 
-def get_ghost_env_variables(app, module, color, user):
+def get_ghost_env_variables(app, module=None, user=None):
     """
     Generate an environment variable dictionnary for fabric
     """
     ghost_env = {
         'GHOST_APP': app['name'],
-        'GHOST_ENV': app['env']
+        'GHOST_ENV': app['env'],
+        'GHOST_ROLE': app['role'],
     }
-    if color:
-        ghost_env['GHOST_ENV_COLOR'] = color
-    ghost_env['GHOST_ROLE'] = app['role']
+    if app.get('blue_green', {}.get('color', None)):
+        inverted_colors = {"blue": "green", "green" : "blue"}
+        color = app['blue_green']['color']
+        ghost_env.update({
+            'GHOST_ENV_COLOR': color,
+            'GHOST_ACTIVE_COLOR': color if app['blue_green']['is_online'] else inverted_colors[color]
+        })
     if module:
         ghost_env['GHOST_MODULE_NAME'] = module['name']
         ghost_env['GHOST_MODULE_PATH'] = module['path']
@@ -581,3 +586,27 @@ def get_ghost_env_variables(app, module, color, user):
             for env_var in custom_env_vars
         })
     return ghost_env
+
+
+def get_mirror_path_from_module(app_module):
+    """
+    >>> app_module = {'git_repo': 'git@bitbucket.org:morea/ghost.git'}
+    >>> get_mirror_path_from_module(app_module)
+    '/ghost/.mirrors/git@bitbucket.org:morea/ghost.git'
+    >>> app_module = {'git_repo': ' git@bitbucket.org:morea/spaces.git '}
+    >>> get_mirror_path_from_module(app_module)
+    '/ghost/.mirrors/git@bitbucket.org:morea/spaces.git'
+    """
+    return "/ghost/.mirrors/{remote}".format(remote=app_module['git_repo'].strip())
+
+
+def get_lock_path_from_repo(git_repo):
+    """
+    >>> app_module = {'git_repo': 'git@bitbucket.org:morea/ghost.git'}
+    >>> get_lock_path_from_repo(app_module['git_repo'])
+    '/ghost/.mirrors/.locks/git@bitbucket.org:morea/ghost.git'
+    >>> app_module = {'git_repo': ' git@bitbucket.org:morea/spaces.git '}
+    >>> get_lock_path_from_repo(app_module['git_repo'])
+    '/ghost/.mirrors/.locks/git@bitbucket.org:morea/spaces.git'
+    """
+    return "/ghost/.mirrors/.locks/{remote}".format(remote=git_repo.strip())

@@ -251,6 +251,10 @@ def check_app_b64_scripts(updates):
             for script in ['pre_buildimage', 'post_buildimage', 'pre_bootstrap', 'post_bootstrap']:
                 if script in updates['lifecycle_hooks']:
                     b64decode_utf8(updates['lifecycle_hooks'][script])
+        if 'blue_green' in updates and 'hooks' in updates['blue_green']:
+            for script in ['pre_swap', 'post_swap']:
+                if script in updates['blue_green']['hooks']:
+                    b64decode_utf8(updates['blue_green']['hooks'][script])
         return True
     except binascii.Error:
         traceback.print_exc()

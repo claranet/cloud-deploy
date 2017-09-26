@@ -2,13 +2,9 @@
     Library to commonize functions on deploy and re-deploy commands
 """
 # -*- coding: utf-8 -*-
-#!/usr/bin/env python
 
 import io
-import os
 import os.path
-import sys
-import tempfile
 from copy import copy
 import sys
 import os
@@ -21,6 +17,7 @@ from ghost_tools import b64decode_utf8, get_ghost_env_variables
 from ghost_log import log
 from ghost_tools import GCallException, gcall
 from settings import cloud_connections, DEFAULT_PROVIDER
+
 
 def execute_module_script_on_ghost(app, module, script_name, script_friendly_name, clone_path, log_file):
     """ Executes the given script on the Ghost instance
@@ -45,11 +42,12 @@ def execute_module_script_on_ghost(app, module, script_name, script_friendly_nam
                 f.write(script_source)
 
         script_env = os.environ.copy()
-        script_env.update(get_ghost_env_variables(app, module, app.get('blue_green', {}).get('color', ''), None))
+        script_env.update(get_ghost_env_variables(app, module))
 
         gcall('bash %s' % script_path, '%s: Execute' % script_friendly_name, log_file, env=script_env)
         gcall('du -hs .', 'Display current build directory disk usage', log_file)
         gcall('rm -vf %s' % script_path, '%s: Done, cleaning temporary file' % script_friendly_name, log_file)
+
 
 def get_path_from_app(app):
     """
@@ -57,6 +55,7 @@ def get_path_from_app(app):
     '/ghost/AppName/prod/webfront'
     """
     return "/ghost/{name}/{env}/{role}".format(name=app['name'], env=app['env'], role=app['role'])
+
 
 def get_path_from_app_with_color(app):
     """
@@ -80,6 +79,7 @@ def get_path_from_app_with_color(app):
     else:
         return get_path_from_app(app)
 
+
 def get_buildpack_clone_path_from_module(app, module):
     """
     >>> app = {'name': 'AppName', 'env': 'prod', 'role': 'webfront'}
@@ -88,6 +88,18 @@ def get_buildpack_clone_path_from_module(app, module):
     '/ghost/AppName/prod/webfront/mod1'
     """
     return "{app_path}/{module}".format(app_path=get_path_from_app_with_color(app), module=module['name'])
+
+
+def get_intermediate_clone_path_from_module(app, module):
+    """
+    >>> app = {'name': 'AppName', 'env': 'prod', 'role': 'webfront'}
+    >>> module = {'name': 'mod1', 'git_repo': 'git@bitbucket.org:morea/ghost.git'}
+    >>> get_intermediate_clone_path_from_module(app, module)
+    '/ghost/.tmp/AppName/prod/webfront/mod1'
+    """
+    clone_path = get_buildpack_clone_path_from_module(app, module)
+    return '{}/.tmp{}'.format(clone_path[:6], clone_path[6:])
+
 
 def _get_app_manifest_from_s3(app, config, log_file):
     key_path = get_path_from_app_with_color(app) + '/MANIFEST'
@@ -98,6 +110,7 @@ def _get_app_manifest_from_s3(app, config, log_file):
 
     return key, key_path, bucket
 
+
 def touch_app_manifest(app, config, log_file):
     """
     Creates an empty app MANIFEST if it does not already exist
@@ -105,10 +118,12 @@ def touch_app_manifest(app, config, log_file):
     key, key_path, bucket = _get_app_manifest_from_s3(app, config, log_file)
 
     if key is None:
-        log("No MANIFEST existed for this app, created an empty one at {} to allow instance bootstrapping".format(key_path), log_file)
+        log("No MANIFEST existed for this app, created an empty one at {} to allow instance bootstrapping".format(
+            key_path), log_file)
         key = bucket.new_key(key_path)
         key.set_contents_from_string("")
         key.close()
+
 
 def rollback_app_manifest(app, config, old_manifest, log_file):
     """
@@ -119,6 +134,7 @@ def rollback_app_manifest(app, config, old_manifest, log_file):
     if old_manifest:
         key.set_contents_from_string(old_manifest)
     key.close()
+
 
 def update_app_manifest(app, config, module, package, log_file):
     """
@@ -132,7 +148,7 @@ def update_app_manifest(app, config, module, package, log_file):
     all_app_modules_list = get_app_module_name_list(app['modules'])
     data = ""
     old_manifest = None
-    if not key: # if the 'colored' MANIFEST doesn't' exist, maybe the legacy one exists and we should clone it
+    if not key:  # if the 'colored' MANIFEST doesn't' exist, maybe the legacy one exists and we should clone it
         legacy_key_path = get_path_from_app(app) + '/MANIFEST'
         legacy_key = bucket.get_key(legacy_key_path[1:])
         if legacy_key:
@@ -172,6 +188,7 @@ def update_app_manifest(app, config, module, package, log_file):
     key.set_contents_from_string(data)
     key.close()
     return old_manifest
+
 
 def get_key_path(config, region, account, key_name, log_file):
     """
@@ -320,9 +337,10 @@ def get_key_path(config, region, account, key_name, log_file):
                 key_path = key_path.get(key_name, '')
 
     # Uncomment the following line for debugging purposes locally (do not commit this change)
-    #log("Selected '{}' key path for '{}' keypair name in '{}' region of '{}' account".format(key_path, key_name, region, account), log_file)
+    # log("Selected '{}' key path for '{}' keypair name in '{}' region of '{}' account".format(key_path, key_name, region, account), log_file)
 
     return key_path
+
 
 def _get_fabric_params(app, fabric_execution_strategy, task, log_file):
     app_region = app['region']
@@ -348,6 +366,7 @@ def _get_fabric_params(app, fabric_execution_strategy, task, log_file):
 
     return task, app_ssh_username, key_filename, fabric_execution_strategy
 
+
 def _handle_fabric_errors(result, message):
     hosts_error = []
     for host, ret_code in result.items():
@@ -355,6 +374,7 @@ def _handle_fabric_errors(result, message):
             hosts_error.append(host)
     if len(hosts_error):
         raise GCallException("{0} on: {1}".format(message, ", ".join(hosts_error)))
+
 
 def launch_deploy(app, module, hosts_list, fabric_execution_strategy, log_file):
     """ Launch fabric tasks on remote hosts.
@@ -368,7 +388,8 @@ def launch_deploy(app, module, hosts_list, fabric_execution_strategy, log_file):
     # Clone the deploy task function to avoid modifying the original shared instance
     task = copy(deploy)
 
-    task, app_ssh_username, key_filename, fabric_execution_strategy = _get_fabric_params(app, fabric_execution_strategy, task, log_file)
+    task, app_ssh_username, key_filename, fabric_execution_strategy = _get_fabric_params(app, fabric_execution_strategy,
+                                                                                         task, log_file)
 
     bucket_region = config.get('bucket_region', app['region'])
     stage2 = render_stage2(config, bucket_region)
@@ -378,7 +399,9 @@ def launch_deploy(app, module, hosts_list, fabric_execution_strategy, log_file):
 
     _handle_fabric_errors(result, "Deploy error")
 
-def launch_executescript(app, script, context_path, sudoer_user, jobid, hosts_list, fabric_execution_strategy, log_file, ghost_env):
+
+def launch_executescript(app, script, context_path, sudoer_user, jobid, hosts_list, fabric_execution_strategy, log_file,
+                         ghost_env):
     """ Launch fabric tasks on remote hosts.
 
         :param  app:          dict: Ghost object which describe the application parameters.
@@ -394,9 +417,11 @@ def launch_executescript(app, script, context_path, sudoer_user, jobid, hosts_li
     # Clone the executescript task function to avoid modifying the original shared instance
     task = copy(executescript)
 
-    task, app_ssh_username, key_filename, fabric_execution_strategy = _get_fabric_params(app, fabric_execution_strategy, task, log_file)
+    task, app_ssh_username, key_filename, fabric_execution_strategy = _get_fabric_params(app, fabric_execution_strategy,
+                                                                                         task, log_file)
 
     log("Updating current instances in {}: {}".format(fabric_execution_strategy, hosts_list), log_file)
-    result = fab_execute(task, app_ssh_username, key_filename, context_path, sudoer_user, jobid, script, log_file, ghost_env, hosts=hosts_list)
+    result = fab_execute(task, app_ssh_username, key_filename, context_path, sudoer_user, jobid, script, log_file,
+                         ghost_env, hosts=hosts_list)
 
     _handle_fabric_errors(result, "Script execution error")

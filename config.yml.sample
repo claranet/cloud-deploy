@@ -183,6 +183,7 @@ blue_green:
     enabled: false
     preparebluegreen:
         copy_ami: false
+        create_temporary_elb: true
         module_deploy_required: false
     swapbluegreen:
         # Options to set on ELB HealthCheck when swapping
@@ -190,8 +191,6 @@ blue_green:
         healthcheck_timeout: 2
         registreation_timeout: 60
         healthcheck_healthy_threshold: 2
-    purgebluegreen:
-        destroy_temporary_elb: true
 
 # Slack notifications
 # List of Slack configurations used to notify on Job triggered

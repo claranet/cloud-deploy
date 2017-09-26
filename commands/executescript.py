@@ -96,7 +96,7 @@ class Executescript():
 
     def _exec_script(self, script, module_name, fabric_execution_strategy, safe_deployment_strategy):
         context_path, sudoer_uid, module = self._get_module_path_and_uid(module_name)
-        ghost_env_vars = get_ghost_env_variables(self._app, module, self._color, self._job['user'])
+        ghost_env_vars = get_ghost_env_variables(self._app, module, self._job['user'])
 
         deploy_manager = HostDeploymentManager(self._cloud_connection, self._app, module, self._log_file,
                                                self._app['safe-deployment'], fabric_execution_strategy,
@@ -111,7 +111,7 @@ class Executescript():
 
     def _exec_script_single_host(self, script, module_name, single_host_ip):
         context_path, sudoer_uid, module = self._get_module_path_and_uid(module_name)
-        ghost_env_vars = get_ghost_env_variables(self._app, module, self._color, self._job['user'])
+        ghost_env_vars = get_ghost_env_variables(self._app, module, self._job['user'])
 
         ec2_obj = get_ec2_instance(self._cloud_connection, self._app['region'], {
             'private-ip-address': single_host_ip,

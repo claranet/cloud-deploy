@@ -15,6 +15,7 @@ from tests.helpers import get_test_application, mocked_logger, LOG_FILE
 @mock.patch('commands.preparebluegreen.get_blue_green_apps')
 @mock.patch('commands.preparebluegreen.check_app_manifest', new=lambda a, b, c: True)
 @mock.patch('commands.preparebluegreen.check_autoscale_exists', new=lambda a, b, c: True)
+@mock.patch('commands.preparebluegreen.get_blue_green_create_temporary_elb_config', new=lambda a: True)
 @mock.patch('commands.preparebluegreen.log', new=mocked_logger)
 @mock.patch('ghost_tools.log', new=mocked_logger)
 @mock.patch('ghost_aws.log', new=mocked_logger)
@@ -100,8 +101,10 @@ def test_swap_bluegreen_clb(get_blue_green_apps,
                             resume_autoscaling_group_processes,
                             load_balancing):
     # Set up mocks and variables
-    green_app = get_test_application(name="test-app-green", _id='id_green', autoscale={'name': 'autoscale-green'})
-    blue_app = get_test_application(name="test-app-blue", _id='id_blue', autoscale={'name': 'autoscale-blue'})
+    green_app = get_test_application(name="test-app-green", _id='id_green', autoscale={'name': 'autoscale-green'},
+                                     blue_green={"is_online": True, "color": "green"})
+    blue_app = get_test_application(name="test-app-blue", _id='id_blue', autoscale={'name': 'autoscale-blue'},
+                                    blue_green={"is_online": False, "color": "blue"})
 
     connection_mock = MagicMock()
     connection_pool = MagicMock()
@@ -150,6 +153,9 @@ def test_swap_bluegreen_clb(get_blue_green_apps,
 
     assert get_blue_green_apps.called == 1
 
+    assert blue_app.get('blue_green').get('is_online') == False
+    assert green_app.get('blue_green').get('is_online') == True
+
     assert suspend_autoscaling_group_processes.call_count == 2
     suspend_autoscaling_group_processes.assert_has_calls([
         call(connection_mock, 'autoscale-green', ['suspend_process'], LOG_FILE),
@@ -179,7 +185,6 @@ def test_swap_bluegreen_clb(get_blue_green_apps,
 @mock.patch('commands.purgebluegreen.flush_instances_update_autoscale')
 @mock.patch('commands.purgebluegreen.suspend_autoscaling_group_processes')
 @mock.patch('commands.purgebluegreen.get_autoscaling_group_and_processes_to_suspend')
-@mock.patch('commands.purgebluegreen.get_blue_green_destroy_temporary_elb_config', new=lambda a: True)
 @mock.patch('commands.purgebluegreen.cloud_connections')
 @mock.patch('commands.purgebluegreen.get_blue_green_apps')
 @mock.patch('commands.purgebluegreen.check_autoscale_exists', new=lambda a, b, c: True)

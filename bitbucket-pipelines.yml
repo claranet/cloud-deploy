@@ -1,7 +1,7 @@
 # You can use a Docker image from Docker Hub or your own container
 # registry for your build environment.
 image:
-  name: moreaghost/morea-ghost:2017.07.03
+  name: moreaghost/morea-ghost:2017.09.01-2
   username: moreaghost
   password: ***REMOVED***
   email: ghost-devops@morea.fr
@@ -9,12 +9,12 @@ image:
 pipelines:
   default:
     - step:
+        caches:
+          - pip
         script:
           - git --version
           - git status
           - git submodule update --init
-          - pip install -r requirements.txt
-          - pip --version
           - tox --version
           - cp config.yml.sample config.yml
           - tox
