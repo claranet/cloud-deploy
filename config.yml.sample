@@ -83,6 +83,9 @@ api_base_url: http://localhost:5000
 redis_host: localhost
 mongo_host: localhost
 
+# Bootstrap monitoring API endpoint
+bootstrap_endpoint: https://status.cloudeploy.io/bootstrap
+
 # SSH Keys parameters
 # ===================
 #
