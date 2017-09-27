@@ -33,9 +33,6 @@ function exit_deployment() {
     echo "Unlocking $LOCK..."
     rmdir $LOCK
     echo "Unlocked $LOCK"
-    if [ -z $BOOTSTRAP_ENDPOINT ]; then
-        BOOTSTRAP_ENDPOINT=https://status.cloudeploy.io/bootstrap
-    fi
     BOOTSTRAP_PAYLOAD="{\"status\":\"${1}\",\"hostname\":\"${EC2_HOSTNAME}\"}"
     echo "Posting payload $BOOTSTRAP_PAYLOAD to $BOOTSTRAP_ENDPOINT" >> /var/log/ghost/$LOGFILE
     curl -H "Content-Type: application/json" -X POST -d $BOOTSTRAP_PAYLOAD $BOOTSTRAP_ENDPOINT
@@ -93,7 +90,13 @@ else
     APP_PATH=ghost/$APP/$ENV/$ROLE
 fi
 
+if [ -z $BOOTSTRAP_ENDPOINT ]; then
+    BOOTSTRAP_ENDPOINT=https://status.cloudeploy.io/bootstrap
+fi
+
 IP=$(curl -s http://169.254.169.254/latest/meta-data/local-ipv4)
+MAX_NAME=$(($(getconf HOST_NAME_MAX)-16))
+EC2_HOSTNAME=$(echo ${NAME:0:$MAX_NAME}-${IP} | tr -s '.' '-')
 
 set +e
 
@@ -103,9 +106,6 @@ function zabbix_hostname() {
     which systemctl 2> /dev/null && systemctl enable zabbix-agent || update-rc.d zabbix-agent enable 2 3 4 5
     service zabbix-agent restart
 }
-
-MAX_NAME=$(($(getconf HOST_NAME_MAX)-16))
-EC2_HOSTNAME=$(echo ${NAME:0:$MAX_NAME}-${IP} | tr -s '.' '-')
 
 function instance_hostname() {
     echo "$EC2_HOSTNAME" > /etc/hostname
