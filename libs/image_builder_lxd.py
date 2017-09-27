@@ -171,14 +171,15 @@ class LXDImageBuilder(ImageBuilder):
     def _execute_buildpack(self,script_path, module):
         log("run deploy build pack", self._log_file)
         script = os.path.basename(script_path)
-        buildpack = self.container.execute(["sed", "2icd "+module['path'], "-i",
+        self.container.execute(["sed", "2icd "+module['path'], "-i",
                                             "{module_path}/{script}".format(module_path=module['path'], script=script)])
-        self._container_log(buildpack)
         buildpack = self.container.execute(["sh", "{module_path}/{script}".format(module_path=module['path'],
                                                                                   script=script)])
         self._container_log(buildpack)
-        buildpack = self.container.execute(["chown", "-R", "1001:1002", "{module_path}".format(module_path=module['path'])])
-        self._container_log(buildpack)
+        self.container.execute(["chown", "-R", "1001:1002", "{module_path}".format(module_path=module['path'])])
+        if buildpack.stderr:
+            return False
+        return True
 
     def _container_log(self, cmd):
         if cmd.stdout:
@@ -204,8 +205,8 @@ class LXDImageBuilder(ImageBuilder):
 
     def deploy(self, script_path, module):
         self._create_container(module)
-        self._execute_buildpack(script_path, module)
+        buildpack_status = self._execute_buildpack(script_path, module)
         self.container.stop(wait=True)
         if not self._container_config['debug']:
             self._clean()
-        return self
+        return buildpack_status

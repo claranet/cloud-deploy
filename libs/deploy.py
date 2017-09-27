@@ -50,7 +50,8 @@ def execute_module_script_on_ghost(app, module, script_name, script_friendly_nam
 
         if script_name is 'build_pack' and app['build_infos']['container_image'] and lxd_is_available():
             container = LXDImageBuilder(app, job, None, log_file, config)
-            container.deploy(script_path, module)
+            if not container.deploy(script_path, module):
+                raise GCallException("ERROR: Buildpack execution on container failed")
         else :
             gcall('bash %s' % script_path, '%s: Execute' % script_friendly_name, log_file, env=script_env)
         
