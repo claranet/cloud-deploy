@@ -32,6 +32,14 @@ class ImageBuilder:
                                                               date=time.strftime("%Y%m%d-%H%M%S"),
                                                               color='.%s' % self._color if self._color else '')
 
+    def _format_ghost_env_vars(self):
+        ghost_vars = []
+        ghost_vars.append('GHOST_APP=%s' % self._app['name'])
+        ghost_vars.append('GHOST_ENV=%s' % self._app['env'])
+        ghost_vars.append('GHOST_ENV_COLOR=%s' % (self._color if self._color else ''))
+        ghost_vars.append('GHOST_ROLE=%s' % self._app['role'])
+        return ghost_vars    
+
     def _generate_buildimage_hook(self, hook_name):
         """ Generates a buildimage hook script
 

@@ -25,14 +25,6 @@ class AWSImageBuilder(ImageBuilder):
                 **self._connection_data
                 )
 
-    def _format_ghost_env_vars(self):
-        ghost_vars = []
-        ghost_vars.append('GHOST_APP=%s' % self._app['name'])
-        ghost_vars.append('GHOST_ENV=%s' % self._app['env'])
-        ghost_vars.append('GHOST_ENV_COLOR=%s' % (self._color if self._color else ''))
-        ghost_vars.append('GHOST_ROLE=%s' % self._app['role'])
-        return ghost_vars
-
     def _format_packer_from_app(self, provisioner_skip_bootstrap_option):
         instance_tags = {}
         if 'instance_tags' in self._app['environment_infos']:

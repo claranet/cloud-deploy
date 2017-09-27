@@ -130,8 +130,15 @@ class LXDImageBuilder(ImageBuilder):
             for image in filtered_images:
                 image.delete()
 
+    def _set_ghost_env_vars(self):
+        for var in self._format_ghost_env_vars():
+            self.container.execute(["export", var])
+        for var in  self._app.get('env_vars', []):
+            self.container.execute(["export", var])
+
     def _lxd_bootstrap(self):
         log("Bootstrap container", self._log_file)
+        self._set_ghost_env_vars()
         if self.skip_salt_bootstrap_option == "False":
             if 'salt' in self.provisioners :
                 salt_bootstrap = self.container.execute(["wget", "-O", "bootstrap-salt.sh", "https://bootstrap.saltstack.com"])
