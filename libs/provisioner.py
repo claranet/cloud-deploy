@@ -33,12 +33,15 @@ class FeaturesProvisioner:
         if not os.path.exists(PROVISIONER_LOCAL_TREE):
             os.makedirs(PROVISIONER_LOCAL_TREE)
 
-        self.local_repo_path = get_local_repo_path(PROVISIONER_LOCAL_TREE, self.name, self.unique)
+        self.local_repo_path = self._get_local_repo_path()
         if not os.path.exists(self.local_repo_path):
             os.makedirs(self.local_repo_path)
 
         if config:
             self._get_provisioner_repo()
+
+    def _get_local_repo_path(self):
+        return "{base}/{name}-{uid}".format(base=PROVISIONER_LOCAL_TREE, name=self.name, uid=self.unique)
 
     def _get_provisioner_repo(self):
         # Use the configured git repository, if any
