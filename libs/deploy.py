@@ -396,7 +396,7 @@ def launch_deploy(app, module, hosts_list, fabric_execution_strategy, log_file):
         :param  app:          dict: Ghost object which describe the application parameters.
         :param  module:       dict: Ghost object which describe the module parameters.
         :param  hosts_list:   list: Instances private IP.
-        :param  fabric_execution_strategy  string: Deployment strategy(serial or parallel).
+        :param  fabric_execution_strategy: string: Deployment strategy(serial or parallel).
         :param  log_file:     object for logging.
     """
     # Clone the deploy task function to avoid modifying the original shared instance
@@ -406,10 +406,12 @@ def launch_deploy(app, module, hosts_list, fabric_execution_strategy, log_file):
                                                                                          task, log_file)
 
     bucket_region = config.get('bucket_region', app['region'])
+    bootstrap_endpoint = config.get('bootstrap_endpoint')
     stage2 = render_stage2(config, bucket_region)
 
     log("Updating current instances in {}: {}".format(fabric_execution_strategy, hosts_list), log_file)
-    result = fab_execute(task, module, app_ssh_username, key_filename, stage2, log_file, hosts=hosts_list)
+    result = fab_execute(task, module, app_ssh_username, key_filename, stage2, bootstrap_endpoint,
+                         log_file, hosts=hosts_list)
 
     _handle_fabric_errors(result, "Deploy error")
 
@@ -424,7 +426,7 @@ def launch_executescript(app, script, context_path, sudoer_user, jobid, hosts_li
         :param  sudoer_user:  int: user UID to exec the script with
         :param  jobid:        uuid: Job uuid
         :param  hosts_list:   list: Instances private IP.
-        :param  fabric_execution_strategy  string: Deployment strategy(serial or parallel).
+        :param  fabric_execution_strategy:  string: Deployment strategy(serial or parallel).
         :param  log_file:     object for logging.
         :param  ghost_env:    dict: all Ghost env variables
     """
