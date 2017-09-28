@@ -30,9 +30,9 @@ COLOR_YELLOW='\033[00;33m'
 function exit_deployment() {
     echo "Removing Manifest file" >> $LOGFILE
     rm -f /tmp/MANIFEST
-    echo "Unlocking $LOCK..."
+    echo "Unlocking $LOCK..." | tee -a $LOGFILE
     rmdir $LOCK
-    echo "Unlocked $LOCK"
+    echo "Unlocked $LOCK" | tee -a $LOGFILE
     trap - EXIT
     notify_status $1
     if [ -z $1 ]; then
@@ -103,7 +103,7 @@ function notify_status() {
     else
         bootstrap_payload=$(printf '{"status":"%s","hostname":"%s"}' "$1" "$EC2_HOSTNAME")
     fi
-    echo "Posting payload $bootstrap_payload to $BOOTSTRAP_ENDPOINT" >> /var/log/ghost/$LOGFILE
+    echo "Posting payload $bootstrap_payload to $BOOTSTRAP_ENDPOINT" >> $LOGFILE
     curl -H "Content-Type: application/json" -X POST -d $bootstrap_payload $BOOTSTRAP_ENDPOINT
 }
 
