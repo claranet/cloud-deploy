@@ -15,6 +15,9 @@ PROVISIONER_LOCAL_TREE = "/tmp/ghost-features-provisioner"
 
 
 class LXDImageBuilder(ImageBuilder):
+    """
+    This class is designed to Build an lxc container using lxd
+    """
     def __init__(self, app, job, db, log_file, config):
         ImageBuilder.__init__(self, app, job, db, log_file, config)
 
@@ -139,34 +142,48 @@ class LXDImageBuilder(ImageBuilder):
     def _lxd_bootstrap(self):
         log("Bootstrap container", self._log_file)
         self._set_ghost_env_vars()
+        bootstrap_status = True
         if self.skip_salt_bootstrap_option == "False":
             if 'salt' in self.provisioners :
                 salt_bootstrap = self.container.execute(["wget", "-O", "bootstrap-salt.sh", "https://bootstrap.saltstack.com"])
                 self._container_log(salt_bootstrap)
+                self._container_execution_error(salt_bootstrap,"Salt bootstrap")
                 salt_bootstrap = self.container.execute(["sh", "bootstrap-salt.sh"])
                 self._container_log(salt_bootstrap)
+                self._container_execution_error(salt_bootstrap, "Salt bootstrap")
             if 'ansible' in self.provisioners :
                 ansible_bootstrap = self.container.execute(["pip", "install", "--yes","ansible"])
                 self._container_log(ansible_bootstrap)
+                self._container_execution_error(ansible_bootstrap, "ansible bootstrap")
+
 
     def _lxd_run_features_install(self):
         log("run features install", self._log_file)
+        features_status = True
         if 'salt' in self.provisioners:
             salt_call = self.container.execute(["salt-call", "state.highstate", "--local", "-l", "info"])
             self._container_log(salt_call)
+            self._container_execution_error(salt_call, "salt execution")
+
         if 'ansible' in self.provisioners:
             run_playbooks = self.container.execute(["ansible-playbook", "/srv/main.yml"])
             self._container_log(run_playbooks)
+            self._container_execution_error(run_playbooks, "ansible execution")
+
 
     def _lxd_run_hooks_pre(self):
         log("run build images pre build", self._log_file)
         prehooks = self.container.execute(["sh", "/ghost/hook-pre_buildimage"])
         self._container_log(prehooks)
+        self._container_execution_error(prehooks, "pre hooks")
 
+          
     def _lxd_run_hooks_post(self):
         log("run build images post build", self._log_file)
         posthooks = self.container.execute(["sh", "/ghost/hook-post_buildimage"])
         self._container_log(posthooks)
+        self._container_execution_error(posthooks, "post hooks")
+
 
     def _execute_buildpack(self,script_path, module):
         log("run deploy build pack", self._log_file)
@@ -177,31 +194,41 @@ class LXDImageBuilder(ImageBuilder):
                                                                                   script=script)])
         self._container_log(buildpack)
         self.container.execute(["chown", "-R", "1001:1002", "{module_path}".format(module_path=module['path'])])
-        if buildpack.stderr:
-            return False
-        return True
+        self._container_execution_error(buildpack, "buildpack")
+
+
+    def _container_execution_error(self, logs, step):
+        if logs.exit_code != 0:
+            raise Exception(False, step)
+
 
     def _container_log(self, cmd):
+        print cmd
         if cmd.stdout:
             log(cmd.stdout.encode('utf-8'), self._log_file)
         if cmd.stderr:
             log(cmd.stderr.encode('utf-8'), self._log_file)
 
+
     def _clean(self):
         self.container.delete(wait=True)
         self._delete_containers_profile()
 
+
     def build_image(self):
-        self._create_container()
-        self._lxd_bootstrap()
-        self._lxd_run_hooks_pre()
-        self._lxd_run_features_install()
-        self._lxd_run_hooks_post()
-        self.container.stop(wait=True)
-        self._publish_container()
-        if not self._container_config['debug']:
-            self._clean()
-        return self
+        try:
+            self._create_container()
+            self._lxd_bootstrap()
+            self._lxd_run_hooks_pre()
+            self._lxd_run_features_install()
+            self._lxd_run_hooks_post()
+        except Exception as msg:
+            raise(msg)
+        finally:
+            self.container.stop(wait=True)
+            self._publish_container()
+            if not self._container_config['debug']:
+                self._clean()
 
     def deploy(self, script_path, module):
         self._create_container(module)

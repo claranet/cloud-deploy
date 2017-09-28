@@ -74,11 +74,15 @@ class Buildimage():
             lxd_image_builder = None
             if self._app['build_infos']['source_container_image']:
                 log("Generating a new container", self._log_file)
-                lxd_image_builder = LXDImageBuilder(self._app, self._job, self._db, self._log_file, self._config)
-                lxd_image_builder = lxd_image_builder.build_image()
-                if lxd_image_builder:
-                    log("Update app in MongoDB to container source", self._log_file)
-                    self._update_container_source(self._job['_id'])
+                try:
+                    lxd_image_builder = LXDImageBuilder(self._app, self._job, self._db, self._log_file, self._config)
+                    lxd_image_builder = lxd_image_builder.build_image()
+                except Exception as msg:
+                    self._worker.update_status("failed")
+                    raise(msg)
+                
+                log(" Update app in MongoDB to update container source image", self._log_file)
+                self._update_container_source(self._job['_id'])
 
             touch_app_manifest(self._app, self._config, self._log_file)
             log("Update app in MongoDB to update AMI: {0}".format(ami_id), self._log_file)

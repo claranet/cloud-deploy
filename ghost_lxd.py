@@ -3,8 +3,8 @@ from flask import jsonify
 
 from libs.lxd import lxd_is_available, list_lxd_images
 
-lxd_blueprint = Blueprint('lxd_blueprint', __name__)
 
+lxd_blueprint = Blueprint('lxd_blueprint', __name__)
 
 @lxd_blueprint.route('/lxd/status', methods=['GET'])
 def lxd_status():
