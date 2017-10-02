@@ -203,7 +203,6 @@ class LXDImageBuilder(ImageBuilder):
 
 
     def _container_log(self, cmd):
-        print cmd
         if cmd.stdout:
             log(cmd.stdout.encode('utf-8'), self._log_file)
         if cmd.stderr:

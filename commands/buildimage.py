@@ -72,7 +72,7 @@ class Buildimage():
 
         if ami_id is not "ERROR":
             lxd_image_builder = None
-            if self._app['build_infos']['source_container_image']:
+            if self._app['build_infos'].get('source_container_image', None):
                 log("Generating a new container", self._log_file)
                 try:
                     lxd_image_builder = LXDImageBuilder(self._app, self._job, self._db, self._log_file, self._config)
