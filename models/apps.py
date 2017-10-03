@@ -195,8 +195,8 @@ apps_schema = {
             'ami_name': {'type': 'string',
                          'readonly': True},
             'source_container_image': {'type': 'string',
-                          'regex': '^[0-9[a-z]*',
-                          'required': True
+                          'regex': '^(().)*$',
+                          'required': False
                           },
             'container_image': {'type': 'string',
                           'readonly': True
