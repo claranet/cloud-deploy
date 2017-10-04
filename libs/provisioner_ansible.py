@@ -6,7 +6,7 @@ from fabric.colors import yellow as _yellow, red as _red
 
 from ghost_log import log
 from ghost_tools import gcall, GCallException, boolify
-from .provisioner import FeaturesProvisioner, GalaxyNoMatchingRolesException, GalaxyBadRequirementPathException, AnsibleBadBootstrapPathException
+from .provisioner import FeaturesProvisioner, GalaxyNoMatchingRolesException, GalaxyBadRequirementPathException
 
 ANSIBLE_BASE_PLAYBOOK = {'name': 'Ghost application features', 'hosts': 'all', 'roles': []}
 ANSIBLE_COMMAND = "bin/ansible-playbook"
@@ -22,8 +22,6 @@ class FeaturesProvisionerAnsible(FeaturesProvisioner):
         self._ansible_playbook_path = os.path.join(self.local_repo_path, 'main.yml')
         self._ansible_galaxy_role_path = os.path.join(self.local_repo_path, 'roles')
         self._ansible_requirement_app = os.path.join(self.local_repo_path, 'requirement_app.yml')
-        self._ansible_bootstrap_path = os.path.join(ghost_root_path,
-                                                    'scripts/ansible_bootstrap.sh')
         self._ansible_galaxy_rq_path = os.path.join(self.local_repo_path,
                                                     self.global_config.get('ansible_galaxy_requirements_path',
                                                                            'requirements.yml'))
@@ -104,30 +102,13 @@ class FeaturesProvisionerAnsible(FeaturesProvisioner):
                     features[-1]['roles']))
 
     def build_packer_provisioner_config(self, packer_config):
-        if os.path.exists(self._ansible_bootstrap_path):
-            if not boolify(packer_config.get('skip_provisioner_bootstrap', 'True')):
-                return [{
-                    'type': 'shell',
-                    'script': self._ansible_bootstrap_path,
-                    'execute_command' : "chmod +x {{ .Path }}; sudo bash -c '{{ .Vars }} {{ .Path }}'"
-                }, {
-                    'type': 'ansible',
-                    'playbook_file': self._ansible_playbook_path,
-                    'ansible_env_vars': self._ansible_env_vars,
-                    'user': packer_config.get('ssh_username', 'admin'),
-                    'command': self._ansible_command_path
-                }]
-            else:
-                return [{
-                    'type': 'ansible',
-                    'playbook_file': self._ansible_playbook_path,
-                    'ansible_env_vars': self._ansible_env_vars,
-                    'user': packer_config.get('ssh_username', 'admin'),
-                    'command': self._ansible_command_path
-                }]
-        else:
-            raise AnsibleBadBootstrapPathException("Ansible - ERROR: bootstrap path not found : {0}".format(
-                self._ansible_bootstrap_path))
+        return [{
+            'type': 'ansible',
+            'playbook_file': self._ansible_playbook_path,
+            'ansible_env_vars': self._ansible_env_vars,
+            'user': packer_config.get('ssh_username', 'admin'),
+            'command': self._ansible_command_path
+        }]
 
     def build_packer_provisioner_cleanup(self):
         return None
