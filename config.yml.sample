@@ -41,6 +41,10 @@ features_provisioners:
         # Optional, default:
         #salt_additional_pillar: None
 
+        # Salt global inventory url
+        # Optional, default:
+        #salt_inventory_url: http://inventory.cloudeploy.io/salt/morea-salt-formulas.json
+
     ansible:
         git_repo: git@bitbucket.org:morea/ansible-galaxy-requirements.git
         git_revision: master
@@ -55,7 +59,7 @@ features_provisioners:
 
         # Ansible global inventory url
         # Optional, default:
-        #ansible_role_inventory_url: http://claranet-ansible-inventory.s3-website-eu-west-1.amazonaws.com/requirements.json
+        #ansible_role_inventory_url: http://inventory.cloudeploy.io/ansible/requirements.json
 
 
 # Packer should install recipe package (salt minion or ansible) when backing Image
