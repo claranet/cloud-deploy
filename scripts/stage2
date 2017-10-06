@@ -18,7 +18,8 @@ echo "Locked $LOCK"
 
 S3_BUCKET={{ bucket_s3 }}
 S3_REGION={{ bucket_region }}
-LOGFILE=/var/log/ghost/$(date +%Y%m%d_%H%M%S)_deploy.txt
+LOGDIR=/var/log/ghost/
+LOGFILE=${LOGDIR}$(date +%Y%m%d_%H%M%S)_deploy.txt
 
 COLOR_CLR='\033[0m'
 
@@ -52,8 +53,8 @@ if [ ! -d /var/lib/ghost ]; then
     mkdir /var/lib/ghost
 fi
 
-if [ ! -d /var/log/ghost ]; then
-    mkdir /var/log/ghost
+if [ ! -d ${LOGDIR} ]; then
+    mkdir ${LOGDIR}
 fi
 
 if [ ! -z "$COLOR" ]; then

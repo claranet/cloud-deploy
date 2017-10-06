@@ -11,15 +11,16 @@ if [ $? -ne 0 ]; then
     AWS_BIN='/usr/local/bin/aws'
 fi
 
+LOGDIR=/var/log/ghost/
 STAGE2_PATH=/var/lib/ghost/stage2_bootstrap
-STAGE2_PATH_LOG=/var/log/ghost/stage2_bootstrap.log
+STAGE2_PATH_LOG=${LOGDIR}stage2_bootstrap.log
 
 if [ ! -d /var/lib/ghost ]; then
     mkdir /var/lib/ghost
 fi
 
-if [ ! -d /var/log/ghost ]; then
-    mkdir /var/log/ghost
+if [ ! -d ${LOGDIR} ]; then
+    mkdir ${LOGDIR}
 fi
 
 function download_stage2() {
