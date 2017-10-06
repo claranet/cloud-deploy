@@ -25,7 +25,7 @@ ROOT_PATH = os.path.dirname(os.path.realpath(__file__))
 MAIL_LOG_FROM_DEFAULT = 'no-reply@morea.fr'
 
 
-def format_html_mail_body(app, job):
+def format_html_mail_body(app, job, config):
     """
     Returns a formatted HTML mail body content
     """
@@ -61,7 +61,7 @@ td{{font-family:arial,helvetica,sans-serif;}}
         </tr>
         <tr>
             <td style="background-color:#858585"><span style="font-size:14px"><strong><span style="color:rgb(255, 255, 255)">Job ID</span></strong></span></td>
-            <td style="background-color:#d1d6da">{jobId}</td>
+            <td style="background-color:#d1d6da"><a href="{ghost_url}/web/jobs/{jobId}" target="_blank">{jobId}</a></td>
         </tr>
         <tr>
             <td style="background-color:#858585"><span style="font-size:14px"><strong><span style="color:rgb(255, 255, 255)">Job message</span></strong></span></td>
@@ -116,6 +116,7 @@ td{{font-family:arial,helvetica,sans-serif;}}
         message=job['message'],
         creation_date=job['_created'],
         end_date=job['_updated'],
+        ghost_url=config.get('ghost_base_url'),
     )
     return html_body
 
@@ -235,7 +236,7 @@ class Command:
         ses_settings = self._config['ses_settings']
         notif = Notification(aws_access_key=ses_settings['aws_access_key'],
                              aws_secret_key=ses_settings['aws_secret_key'], region=ses_settings['region'])
-        html_body = format_html_mail_body(self.app, self.job)
+        html_body = format_html_mail_body(self.app, self.job, self._config)
         log_path = self._get_log_path()
         log = {
             'original_log_path': log_path,
