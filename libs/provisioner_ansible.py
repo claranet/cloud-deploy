@@ -1,4 +1,3 @@
-import json
 import os
 import copy
 import yaml
@@ -166,7 +165,7 @@ class FeaturesProvisionerAnsible(FeaturesProvisioner):
                 continue
             feature_name = ft['name'].encode('utf-8')
             if ft.get('parameters'):
-                role_params = json.loads(ft.get('parameters'))
+                role_params = ft.get('parameters') or {}
                 role_params['role'] = feature_name
                 playbook[-1]['roles'].append(role_params)
             else:

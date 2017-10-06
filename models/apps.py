@@ -91,8 +91,9 @@ apps_schema = {
                     'required': False
                 },
                 'parameters': {
-                    'type': 'string',
-                    'required': False
+                    'type': 'dict',
+                    'allow_unknown': True,
+                    'schema': {},
                 }
             }
         }
