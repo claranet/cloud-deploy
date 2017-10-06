@@ -63,22 +63,23 @@ class FeaturesProvisioner:
             log("Invalid provisioner repository or invalid credentials. Please check your yaml 'config.yml' file", self._log_file)
             raise
 
-        git_acquire_lock(lock_path, self._log_file)
+        try:
+            git_acquire_lock(lock_path, self._log_file)
 
-        # Creates the Provisioner local mirror
-        if not os.path.exists(git_local_mirror):
-            log("Creating local mirror [{r}] for the first time".format(r=git_local_mirror), self._log_file)
-            os.makedirs(git_local_mirror)
+            # Creates the Provisioner local mirror
+            if not os.path.exists(git_local_mirror):
+                log("Creating local mirror [{r}] for the first time".format(r=git_local_mirror), self._log_file)
+                os.makedirs(git_local_mirror)
+                os.chdir(git_local_mirror)
+                git.init(['--bare'])
+                git.remote(['add', self.name, provisioner_git_repo])
+                git.remote(['add', 'zabbix', zabbix_repo])
+
+            log("Fetching local mirror [{r}] remotes".format(r=git_local_mirror), self._log_file)
             os.chdir(git_local_mirror)
-            git.init(['--bare'])
-            git.remote(['add', self.name, provisioner_git_repo])
-            git.remote(['add', 'zabbix', zabbix_repo])
-
-        log("Fetching local mirror [{r}] remotes".format(r=git_local_mirror), self._log_file)
-        os.chdir(git_local_mirror)
-        git.fetch(['--all'])
-
-        git_release_lock(lock_path, self._log_file)
+            git.fetch(['--all'])
+        finally:
+            git_release_lock(lock_path, self._log_file)
 
         log("Cloning [{r}] repo with local mirror reference".format(r=provisioner_git_repo), self._log_file)
         git.clone(['--reference', git_local_mirror, provisioner_git_repo, '-b', provisioner_git_revision, '--single-branch', self.local_repo_path + '/'])
