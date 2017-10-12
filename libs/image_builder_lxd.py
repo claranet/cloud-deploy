@@ -43,33 +43,35 @@ class LXDImageBuilder(ImageBuilder):
         """ Generate a container configuration according build image or deployment
         """
         config = {}
-        alias = self._app['build_infos']["source_container_image"]
         if self._job["command"] == u"buildimage":
-            alias = self._app['build_infos']["source_container_image"]
+            fingerprint = self._app['build_infos']["source_container_image"]
             if self._container_config['endpoint'] == "localhost":
-                config['source'] = {"type": "image", "fingerprint": alias}
+                config['source'] = {"type": "image", "fingerprint": fingerprint}
             else:
                 config['source'] = {
                     "type": "image",
                     "protocol": "lxd",
                     "mode": "pull",
-                    "fingerprint": alias,
+                    "fingerprint": fingerprint,
                     "server": self._container_config['endpoint']
                 }
         elif self._job["command"] == u"deploy":
             alias = self._app['build_infos']["container_image"]
             config['source'] = {"type": "image", "alias": alias}
+        else:
+            raise Exception("Incompatible command given to LXD Builder")
 
         config['name'] = self._container_name
         config['ephemeral'] = False
         config['config'] = {"security.privileged": 'True'}
         config['profiles'] = ["default", self._container_name]
+        log("Generated LXC container config {}".format(config), self._log_file)
         return config
 
     def _create_containers_profile(self, module=None):
         """ Generate Lxc profile to mount provisoner local tree and ghost application according build image or deployment
         """
-        log("Create container profile", self._log_file)
+        log("Creating container profile", self._log_file)
         if self._job['command'] == u"buildimage":
             devices = {}
             '''
@@ -90,7 +92,8 @@ class LXDImageBuilder(ImageBuilder):
             module_path = module['path']
             devices = {'buildpack': {'path': module_path, 'source': source_module, 'type': 'disk'}}
 
-        self._client.profiles.create(self._container_name, devices=devices)
+        profile = self._client.profiles.create(self._container_name, devices=devices)
+        log("Created container profile: {}".format(profile.name), self._log_file)
 
     def _create_container(self, module=None, wait=10):
         """ Create a container with his profile and set time paramet to wait until network was up (default: 5 sec)
@@ -98,6 +101,7 @@ class LXDImageBuilder(ImageBuilder):
         log("Create container {container_name}".format(container_name=self._container_name), self._log_file)
         self._create_containers_profile(module)
         self.container = self._client.containers.create(self._create_containers_config(), wait=True)
+        log("Created container, starting it")
         self.container.start(wait=True)
         time.sleep(wait)
         return self.container
