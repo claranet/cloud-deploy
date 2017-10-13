@@ -64,7 +64,7 @@ IP=$(curl -s http://169.254.169.254/latest/meta-data/local-ipv4)
 function zabbix_hostname() {
     # Update Zabbix agent Hostname
     sed -i "s/.*Hostname=.*/&-${IP}/g" /etc/zabbix/zabbix_agentd.conf --follow-symlinks
-    systemctl enable zabbix-agent 2> /dev/null || update-rc.d zabbix-agent enable 2 3 4 5
+    which systemctl 2> /dev/null && systemctl enable zabbix-agent || update-rc.d zabbix-agent enable 2 3 4 5
     service zabbix-agent restart
 }
 
@@ -72,7 +72,7 @@ function instance_hostname() {
     MAX_NAME=$(($(getconf HOST_NAME_MAX)-16))
     EC2_HOSTNAME=$(echo ${NAME:0:$MAX_NAME}-${IP} | tr -s '.' '-')
     echo "$EC2_HOSTNAME" > /etc/hostname
-    hostnamectl set-hostname "$EC2_HOSTNAME" 2> /dev/null || hostname "$EC2_HOSTNAME"
+    which hostnamectl 2> /dev/null && hostnamectl set-hostname "$EC2_HOSTNAME" || hostname "$EC2_HOSTNAME"
     echo "$IP $EC2_HOSTNAME" >> /etc/hosts
     if [ -d /etc/cloud/templates ] ; then
         for f in /etc/cloud/templates/hosts.*.tmpl; do
