@@ -419,6 +419,9 @@ GHOST_MODULE_USER="{user}"
             log("After all deploy script found for '{0}'. Executing it.".format(module['name']), self._log_file)
             execute_module_script_on_ghost(self._app, module, 'after_all_deploy', 'After all deploy', clone_path, self._log_file)
 
+        # Update ts again for deployment date
+        now = datetime.datetime.utcnow()
+        ts = calendar.timegm(now.timetuple())
         deployment = {
             'app_id': self._app['_id'],
             'job_id': self._job['_id'],
@@ -429,6 +432,6 @@ GHOST_MODULE_USER="{user}"
             'timestamp': ts,
             'package': pkg_name,
             'module_path': module['path'],
-            '_created': self._job['created'],
+            '_created': now,
         }
         return self._worker._db.deploy_histories.insert(deployment)
