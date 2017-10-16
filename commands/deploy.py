@@ -278,20 +278,21 @@ class Deploy():
         lock_path = get_lock_path_from_repo(git_repo)
         revision = self._get_module_revision(module['name'])
 
-        git_acquire_lock(lock_path, self._log_file)
+        try:
+            git_acquire_lock(lock_path, self._log_file)
 
-        if not os.path.exists(mirror_path):
-            gcall('git --no-pager clone --bare --mirror {r} {m}'.format(r=git_repo, m=mirror_path),
-                  'Create local git mirror for remote {r}'.format(r=git_repo),
+            if not os.path.exists(mirror_path):
+                gcall('git --no-pager clone --bare --mirror {r} {m}'.format(r=git_repo, m=mirror_path),
+                      'Create local git mirror for remote {r}'.format(r=git_repo),
+                      self._log_file)
+
+            # Update existing git mirror
+            os.chdir(mirror_path)
+            gcall('git --no-pager remote update',
+                  'Update local git mirror from remote {r}'.format(r=git_repo),
                   self._log_file)
-
-        # Update existing git mirror
-        os.chdir(mirror_path)
-        gcall('git --no-pager remote update',
-              'Update local git mirror from remote {r}'.format(r=git_repo),
-              self._log_file)
-
-        git_release_lock(lock_path, self._log_file)
+        finally:
+            git_release_lock(lock_path, self._log_file)
 
         # Resolve HEAD symbolic reference to identify the default branch
         head = git('--no-pager', 'symbolic-ref', '--short', 'HEAD', _tty_out=False).strip()
