@@ -91,12 +91,6 @@ def test_build_image_ansible(packer_run_packer_cmd, gcall, provisioner_get_local
                     "script": "/ghost/test-app/test/webfront/hook-pre_buildimage"
                 },
                 {
-                    "type": "shell",
-                    "execute_command": "chmod +x {{ .Path }}; sudo bash -c '{{ .Vars }} {{ .Path }}'",
-                    "script": os.path.join(os.path.dirname(os.path.dirname(os.path.join(__file__))),
-                                           "scripts/ansible_bootstrap.sh"),
-                },
-                {
                     "type": "ansible",
                     "playbook_file": os.path.join(tmp_dir, "main.yml"),
                     "ansible_env_vars": [ "ANSIBLE_HOST_KEY_CHECKING=False", "ANSIBLE_FORCE_COLOR=1", "PYTHONUNBUFFERED=1", "ANSIBLE_ROLES_PATH={}".format(tmp_dir)],

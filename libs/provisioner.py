@@ -20,10 +20,6 @@ class GalaxyBadRequirementPathException(Exception):
     pass
 
 
-class AnsibleBadBootstrapPathException(Exception):
-    pass
-
-
 class FeaturesProvisioner:
     def __init__(self, log_file, name, unique_id, config, global_config):
         self._log_file = log_file
