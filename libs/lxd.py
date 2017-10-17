@@ -7,13 +7,13 @@ def list_lxd_images(config=None):
     """
     if lxd_is_available():
         container_config = config.get('container', {'endpoint': config.get('endpoint', 'localhost')})
-        if container_config['endpoint'] == "localhost":
+        if container_config.get('endpoint', 'localhost') == "localhost":
             lxd = LXDClient()
         else:
-            lxd = LXDClient(endpoint=container_config['endpoint'], verify=True)
+            lxd = LXDClient(endpoint=container_config.get('endpoint', 'localhost'), verify=True)
         images = lxd.images.all()
 
-        return [('', 'Not use container')] + \
+        return [('', "Don't use containers")] + \
                [(image.fingerprint,
                  '{} - {}'.format(image.properties.get('description'), ','.join([a['name'] for a in image.aliases])))
                 for image in images]
