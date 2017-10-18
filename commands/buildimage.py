@@ -71,15 +71,14 @@ class Buildimage():
             return
 
         if ami_id is not "ERROR":
-            lxd_image_builder = None
             if self._app['build_infos'].get('source_container_image', None):
                 log("Generating a new container", self._log_file)
                 try:
                     lxd_image_builder = LXDImageBuilder(self._app, self._job, self._db, self._log_file, self._config)
-                    lxd_image_builder = lxd_image_builder.build_image()
+                    builder_result = lxd_image_builder.start_builder()
                 except Exception as msg:
                     self._worker.update_status("failed")
-                    raise(msg)
+                    raise msg
                 
                 log(" Update app in MongoDB to update container source image", self._log_file)
                 self._update_container_source(self._job['_id'])

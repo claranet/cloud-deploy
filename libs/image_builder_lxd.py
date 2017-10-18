@@ -6,8 +6,8 @@ import time
 from pylxd import Client as LXDClient
 
 from ghost_log import log
-from ghost_tools import gcall, GCallException, get_provisioners_config
-from .deploy import get_buildpack_clone_path_from_module, get_local_repo_path, get_path_from_app_with_color
+from ghost_tools import gcall, GCallException, get_provisioners_config, boolify
+from libs.deploy import get_buildpack_clone_path_from_module, get_local_repo_path, get_path_from_app_with_color
 from .image_builder import ImageBuilder
 
 PROVISIONER_LOCAL_TREE = "/tmp/ghost-features-provisioner"
@@ -17,6 +17,7 @@ class LXDImageBuilder(ImageBuilder):
     """
     This class is designed to Build an lxc container using lxd
     """
+
     def __init__(self, app, job, db, log_file, config):
         ImageBuilder.__init__(self, app, job, db, log_file, config)
 
@@ -36,7 +37,8 @@ class LXDImageBuilder(ImageBuilder):
             else:
                 log("Invalid provisioner type. Please check your yaml 'config.yml' file", self._log_file)
                 raise GCallException("Invalid features provisioner type")
-        self.skip_salt_bootstrap_option = self._job['options'][0] if 'options' in self._job and len(self._job['options']) > 0 else True
+        self.skip_salt_bootstrap_option = self._job['options'][0] if 'options' in self._job and len(
+            self._job['options']) > 0 else True
 
     def _create_containers_config(self):
         """ Generate a container configuration according build image or deployment
@@ -108,13 +110,15 @@ class LXDImageBuilder(ImageBuilder):
     def _delete_containers_profile(self):
         """ Delete the container profile
         """
-        gcall("lxc profile delete {container_name}".format(container_name=self._container_name), "Delete container profile", self._log_file)
+        gcall("lxc profile delete {container_name}".format(container_name=self._container_name),
+              "Delete container profile", self._log_file)
 
     def _publish_container(self):
         """ Publish container as image on registry local after build image
         """
         self._clean_lxd_images()
-        gcall("lxc publish {container_name} local: --alias={job_id} description={container_name} --force".format(job_id=self._job['_id'], container_name=self._container_name), "Publish Container as image", self._log_file)
+        gcall("lxc publish {container_name} local: --alias={job_id} description={container_name} --force".format(
+            job_id=self._job['_id'], container_name=self._container_name), "Publish Container as image", self._log_file)
 
     def _clean_lxd_images(self):
         """ Clean lxd image in local registry as aws ami with ami_retention parameter
@@ -139,30 +143,28 @@ class LXDImageBuilder(ImageBuilder):
     def _set_ghost_env_vars(self):
         for var in self._format_ghost_env_vars():
             self.container.execute(["export", var])
-        for var in  self._app.get('env_vars', []):
+        for var in self._app.get('env_vars', []):
             self.container.execute(["export", var])
 
     def _lxd_bootstrap(self):
         log("Bootstrap container", self._log_file)
         self._set_ghost_env_vars()
-        bootstrap_status = True
-        if self.skip_salt_bootstrap_option == "False":
-            if 'salt' in self.provisioners :
-                salt_bootstrap = self.container.execute(["wget", "-O", "bootstrap-salt.sh", "https://bootstrap.saltstack.com"])
+        if not boolify(self.skip_salt_bootstrap_option):
+            if 'salt' in self.provisioners:
+                salt_bootstrap = self.container.execute(
+                    ["wget", "-O", "bootstrap-salt.sh", "https://bootstrap.saltstack.com"])
                 self._container_log(salt_bootstrap)
-                self._container_execution_error(salt_bootstrap,"Salt bootstrap")
+                self._container_execution_error(salt_bootstrap, "Salt bootstrap")
                 salt_bootstrap = self.container.execute(["sh", "bootstrap-salt.sh"])
                 self._container_log(salt_bootstrap)
                 self._container_execution_error(salt_bootstrap, "Salt bootstrap")
-            if 'ansible' in self.provisioners :
-                ansible_bootstrap = self.container.execute(["pip", "install", "--yes","ansible"])
+            if 'ansible' in self.provisioners:
+                ansible_bootstrap = self.container.execute(["pip", "install", "--yes", "ansible"])
                 self._container_log(ansible_bootstrap)
-                self._container_execution_error(ansible_bootstrap, "ansible bootstrap")
-
+                self._container_execution_error(ansible_bootstrap, "Ansible bootstrap")
 
     def _lxd_run_features_install(self):
-        log("run features install", self._log_file)
-        features_status = True
+        log("Run features install", self._log_file)
         if 'salt' in self.provisioners:
             salt_call = self.container.execute(["salt-call", "state.highstate", "--local", "-l", "info"])
             self._container_log(salt_call)
@@ -173,37 +175,34 @@ class LXDImageBuilder(ImageBuilder):
             self._container_log(run_playbooks)
             self._container_execution_error(run_playbooks, "ansible execution")
 
-
     def _lxd_run_hooks_pre(self):
-        log("run build images pre build", self._log_file)
+        log("Run build images pre build", self._log_file)
         prehooks = self.container.execute(["sh", "/ghost/hook-pre_buildimage"])
         self._container_log(prehooks)
         self._container_execution_error(prehooks, "pre hooks")
 
-
     def _lxd_run_hooks_post(self):
-        log("run build images post build", self._log_file)
+        log("Run build images post build", self._log_file)
         posthooks = self.container.execute(["sh", "/ghost/hook-post_buildimage"])
         self._container_log(posthooks)
         self._container_execution_error(posthooks, "post hooks")
 
-
-    def _execute_buildpack(self,script_path, module):
-        log("run deploy build pack", self._log_file)
+    def _execute_buildpack(self, script_path, module):
+        log("Run deploy build pack", self._log_file)
         script = os.path.basename(script_path)
-        self.container.execute(["sed", "2icd "+module['path'], "-i",
-                                            "{module_path}/{script}".format(module_path=module['path'], script=script)])
+        self.container.execute(["sed", "2icd " + module['path'], "-i",
+                                "{module_path}/{script}".format(module_path=module['path'], script=script)])
         buildpack = self.container.execute(["sh", "{module_path}/{script}".format(module_path=module['path'],
                                                                                   script=script)])
         self._container_log(buildpack)
         self.container.execute(["chown", "-R", "1001:1002", "{module_path}".format(module_path=module['path'])])
         self._container_execution_error(buildpack, "buildpack")
+        return buildpack.exit_code
 
-
-    def _container_execution_error(self, logs, step):
+    @staticmethod
+    def _container_execution_error(logs, step):
         if logs.exit_code != 0:
             raise Exception(False, step)
-
 
     def _container_log(self, cmd):
         if cmd.stdout:
@@ -211,13 +210,11 @@ class LXDImageBuilder(ImageBuilder):
         if cmd.stderr:
             log(cmd.stderr.encode('utf-8'), self._log_file)
 
-
     def _clean(self):
         self.container.delete(wait=True)
         self._delete_containers_profile()
 
-
-    def build_image(self):
+    def start_builder(self):
         try:
             self._create_container()
             self._lxd_bootstrap()
@@ -225,12 +222,15 @@ class LXDImageBuilder(ImageBuilder):
             self._lxd_run_features_install()
             self._lxd_run_hooks_post()
         except Exception as msg:
-            raise(msg)
+            raise msg
         finally:
             self.container.stop(wait=True)
             self._publish_container()
             if not self._container_config['debug']:
                 self._clean()
+
+    def purge_old_images(self):
+        raise NotImplementedError
 
     def deploy(self, script_path, module):
         self._create_container(module)
