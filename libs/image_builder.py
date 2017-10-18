@@ -12,6 +12,7 @@ from .blue_green import get_blue_green_from_app
 AMI_BASE_FMT = "ami.{env}.{region}.{role}.{name}.{color}"
 AMI_FMT = AMI_BASE_FMT + "{date}"
 
+
 class ImageBuilder:
     """
     This class is the generic interface used by Buildimage command

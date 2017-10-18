@@ -6,9 +6,8 @@ import time
 from pylxd import Client as LXDClient
 
 from ghost_log import log
-from ghost_tools import (gcall, GCallException, get_buildpack_clone_path_from_module,
-                         get_local_repo_path, get_path_from_app_with_color,
-                         get_provisioners_config)
+from ghost_tools import gcall, GCallException, get_provisioners_config
+from .deploy import get_buildpack_clone_path_from_module, get_local_repo_path, get_path_from_app_with_color
 from .image_builder import ImageBuilder
 
 PROVISIONER_LOCAL_TREE = "/tmp/ghost-features-provisioner"
@@ -181,7 +180,7 @@ class LXDImageBuilder(ImageBuilder):
         self._container_log(prehooks)
         self._container_execution_error(prehooks, "pre hooks")
 
-          
+
     def _lxd_run_hooks_post(self):
         log("run build images post build", self._log_file)
         posthooks = self.container.execute(["sh", "/ghost/hook-post_buildimage"])

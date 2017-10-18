@@ -18,7 +18,6 @@ from ghost_tools import render_stage2, get_app_module_name_list
 from ghost_tools import b64decode_utf8, get_ghost_env_variables
 from ghost_log import log
 from ghost_tools import GCallException, gcall
-from ghost_tools import get_path_from_app, get_path_from_app_with_color, get_buildpack_clone_path_from_module
 from settings import cloud_connections, DEFAULT_PROVIDER
 
 def execute_module_script_on_ghost(app, module, script_name, script_friendly_name, clone_path, log_file, job, config):
@@ -435,3 +434,7 @@ def launch_executescript(app, script, context_path, sudoer_user, jobid, hosts_li
                          ghost_env, hosts=hosts_list)
 
     _handle_fabric_errors(result, "Script execution error")
+
+
+def get_local_repo_path(base_path, app_name, unique_id):
+    return "{base}/{name}-{uid}".format(base=base_path, name=app_name, uid=unique_id)

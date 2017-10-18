@@ -7,7 +7,7 @@ from ghost_aws import create_userdata_launchconfig_update_asg
 from settings import cloud_connections, DEFAULT_PROVIDER
 from ghost_tools import get_aws_connection_data
 from ghost_tools import b64decode_utf8
-from ghost_tools import get_path_from_app_with_color
+from libs.deploy import get_path_from_app_with_color
 
 COMMAND_DESCRIPTION = "Update LifeCycle Hooks scripts"
 RELATED_APP_FIELDS = ['lifecycle_hooks']
