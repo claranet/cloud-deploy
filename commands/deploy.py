@@ -419,5 +419,18 @@ GHOST_MODULE_USER="{user}"
             log("After all deploy script found for '{0}'. Executing it.".format(module['name']), self._log_file)
             execute_module_script_on_ghost(self._app, module, 'after_all_deploy', 'After all deploy', clone_path, self._log_file)
 
-        deployment = {'app_id': self._app['_id'], 'job_id': self._job['_id'], 'module': module['name'], 'revision': revision, 'commit': commit, 'commit_message': commit_message, 'timestamp': ts, 'package': pkg_name, 'module_path': module['path']}
+        now = datetime.datetime.utcnow()
+        deployment = {
+            'app_id': self._app['_id'],
+            'job_id': self._job['_id'],
+            'module': module['name'],
+            'revision': revision,
+            'commit': commit,
+            'commit_message': commit_message,
+            'timestamp': ts,
+            'package': pkg_name,
+            'module_path': module['path'],
+            '_created': now,
+            '_updated': now,
+        }
         return self._worker._db.deploy_histories.insert(deployment)
