@@ -4,7 +4,7 @@ from ghost_log import log
 from ghost_aws import create_userdata_launchconfig_update_asg
 from ghost_tools import get_aws_connection_data, GCallException
 from settings import cloud_connections, DEFAULT_PROVIDER
-from libs.deploy import touch_app_manifest
+from libs.deploy import touch_app_manifest, get_path_from_app_with_color
 from libs.image_builder_aws import AWSImageBuilder
 from libs.provisioner import GalaxyNoMatchingRolesException, GalaxyBadRequirementPathException
 from libs.image_builder_lxd import LXDImageBuilder
@@ -42,7 +42,6 @@ class Buildimage():
 
     def _get_notification_message_done(self, ami_id):
         """
-        >>> from bson.objectid import ObjectId
         >>> class worker:
         ...   app = {'name': 'AppName', 'env': 'prod', 'role': 'webfront', 'region': 'eu-west-1'}
         ...   job = None
@@ -75,6 +74,7 @@ class Buildimage():
                 log("Generating a new container", self._log_file)
                 try:
                     lxd_image_builder = LXDImageBuilder(self._app, self._job, self._db, self._log_file, self._config)
+                    lxd_image_builder.set_source_hooks(get_path_from_app_with_color(self._app))
                     builder_result = lxd_image_builder.start_builder()
                 except Exception as msg:
                     self._worker.update_status("failed")
@@ -86,7 +86,7 @@ class Buildimage():
             touch_app_manifest(self._app, self._config, self._log_file)
             log("Update app in MongoDB to update AMI: {0}".format(ami_id), self._log_file)
             self._update_app_ami(ami_id, ami_name)
-            if (self._aws_image_builder.purge_old_images()):
+            if self._aws_image_builder.purge_old_images():
                 log("Old AMIs removed for this app", self._log_file)
             else:
                 log("Purge old AMIs failed", self._log_file)

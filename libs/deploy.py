@@ -20,6 +20,7 @@ from ghost_log import log
 from ghost_tools import GCallException, gcall
 from settings import cloud_connections, DEFAULT_PROVIDER
 
+
 def execute_module_script_on_ghost(app, module, script_name, script_friendly_name, clone_path, log_file, job, config):
     """ Executes the given script on the Ghost instance
 
@@ -48,8 +49,9 @@ def execute_module_script_on_ghost(app, module, script_name, script_friendly_nam
         script_env.update(get_ghost_env_variables(app, module))
 
         if script_name is 'build_pack' and app['build_infos']['container_image'] and lxd_is_available():
+            source_module = get_buildpack_clone_path_from_module(app, module)
             container = LXDImageBuilder(app, job, None, log_file, config)
-            if not container.deploy(script_path, module):
+            if not container.deploy(script_path, module, source_module):
                 raise GCallException("ERROR: Buildpack execution on container failed")
         else :
             gcall('bash %s' % script_path, '%s: Execute' % script_friendly_name, log_file, env=script_env)
@@ -434,7 +436,3 @@ def launch_executescript(app, script, context_path, sudoer_user, jobid, hosts_li
                          ghost_env, hosts=hosts_list)
 
     _handle_fabric_errors(result, "Script execution error")
-
-
-def get_local_repo_path(base_path, app_name, unique_id):
-    return "{base}/{name}-{uid}".format(base=base_path, name=app_name, uid=unique_id)

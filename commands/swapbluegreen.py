@@ -271,7 +271,7 @@ class Swapbluegreen(object):
                     message=self._get_notification_message_aborted(to_deploy_app, "Please run `Buildimage` first"))
                 return
             # Check if modules have been deployed
-            if not check_app_manifest(to_deploy_app, self._config, self._log_file):
+            if not check_app_manifest(to_deploy_app, self._config, self._log_file, get_path_from_app_with_color(to_deploy_app)):
                 self._worker.update_status(
                     "aborted",
                     message=self._get_notification_message_aborted(to_deploy_app, "Please deploy your app's modules"))

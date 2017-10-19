@@ -612,3 +612,7 @@ def get_lock_path_from_repo(git_repo):
     '/ghost/.mirrors/.locks/git@bitbucket.org:morea/spaces.git'
     """
     return "/ghost/.mirrors/.locks/{remote}".format(remote=git_repo.strip())
+
+
+def get_local_repo_path(base_path, app_name, unique_id):
+    return "{base}/{name}-{uid}".format(base=base_path, name=app_name, uid=unique_id)
