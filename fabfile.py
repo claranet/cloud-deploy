@@ -27,7 +27,7 @@ STAGE2_PATH = '/var/lib/ghost/stage2_deploy'
 def deploy(app_module, ssh_username, key_filename, stage2, log_file):
     with settings(show('debug'), warn_only=True, user=ssh_username, key_filename=key_filename):
         sudo('rm -rvf {s}'.format(s=STAGE2_PATH), stdout=log_file)
-        put(StringIO(stage2), STAGE2_PATH, use_sudo=True, mode=0754)
+        put(StringIO(stage2), STAGE2_PATH, use_sudo=True, mode=0755)
         result = sudo('{s} {n}'.format(s=STAGE2_PATH, n=app_module['name']), stdout=log_file)
         return result.return_code
 
@@ -36,8 +36,8 @@ def deploy(app_module, ssh_username, key_filename, stage2, log_file):
 def executescript(ssh_username, key_filename, context_path, sudoer_user, jobid, hot_script, log_file, ghost_env):
     with settings(show('debug'), warn_only=True, user=ssh_username, key_filename=key_filename):
         working_dir = '/ghost/{j}'.format(j=jobid)
-        sudo('mkdir -p "{w}"'.format(w=working_dir), stdout=log_file)
-        put(StringIO(hot_script), '{w}/ghost-execute-script'.format(w=working_dir), use_sudo=True, mode=0754)
+        sudo('mkdir -p "{w}" && chmod 755 "{w}"'.format(w=working_dir), stdout=log_file)
+        put(StringIO(hot_script), '{w}/ghost-execute-script'.format(w=working_dir), use_sudo=True, mode=0755)
         with shell_env(**ghost_env):
             result = sudo('cd "{c}" && {w}/ghost-execute-script'.format(c=context_path,
                                                                         w=working_dir),
