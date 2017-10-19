@@ -11,13 +11,25 @@ if [ $? -ne 0 ]; then
     AWS_BIN='/usr/local/bin/aws'
 fi
 
+LOGDIR=/var/log/ghost/
+STAGE2_PATH=/var/lib/ghost/stage2_bootstrap
+STAGE2_PATH_LOG=${LOGDIR}stage2_bootstrap.log
+
+if [ ! -d /var/lib/ghost ]; then
+    mkdir /var/lib/ghost
+fi
+
+if [ ! -d ${LOGDIR} ]; then
+    mkdir ${LOGDIR}
+fi
+
 function download_stage2() {
-    $AWS_BIN s3 cp s3://$S3_BUCKET/ghost/stage2 /tmp/stage2  --region "$S3_REGION"
-    chmod +x /tmp/stage2
+    $AWS_BIN s3 cp s3://$S3_BUCKET/ghost/stage2 $STAGE2_PATH --region "$S3_REGION"
+    chmod +x $STAGE2_PATH
 }
 
 function execute_stage2() {
-	/tmp/stage2 > /tmp/log_bootstrap_stage2.txt 2>&1
+	$STAGE2_PATH > $STAGE2_PATH_LOG 2>&1
 }
 
 download_stage2
