@@ -101,7 +101,7 @@ class LXDImageBuilder(ImageBuilder):
         log("Create container {container_name}".format(container_name=self._container_name), self._log_file)
         self._create_containers_profile(module, source_module)
         self.container = self._client.containers.create(self._create_containers_config(), wait=True)
-        log("Created container, starting it")
+        log("Created container, starting it", self._log_file)
         self.container.start(wait=True)
         time.sleep(wait)
         return self.container
@@ -216,7 +216,7 @@ class LXDImageBuilder(ImageBuilder):
         self._create_container(module, source_module)
         buildpack_status = self._execute_buildpack(script_path, module)
         self.container.stop(wait=True)
-        if not self._container_config['debug']:
+        if not self._container_config.get('debug'):
             self._clean()
         return buildpack_status
 
@@ -232,7 +232,9 @@ class LXDImageBuilder(ImageBuilder):
             self.container.stop(wait=True)
             self._publish_container()
         finally:
-            if not self._container_config['debug']:
+            if not self._container_config.get('debug'):
+                if str(self.container.state()).lower() == 'running':
+                    self.container.stop(wait=True)
                 self._clean()
 
     def purge_old_images(self):
