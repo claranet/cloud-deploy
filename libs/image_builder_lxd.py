@@ -233,7 +233,8 @@ class LXDImageBuilder(ImageBuilder):
             self._publish_container()
         finally:
             if not self._container_config.get('debug'):
-                if str(self.container.state()).lower() == 'running':
+                log("Container state: {}".format(str(self.container.state().status).lower()), self._log_file)
+                if str(self.container.state().status).lower() != 'stopped':
                     self.container.stop(wait=True)
                 self._clean()
 
