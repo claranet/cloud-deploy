@@ -8,8 +8,7 @@ from pylxd import Client as LXDClient
 from ghost_log import log
 from ghost_tools import gcall, GCallException, get_provisioners_config, get_local_repo_path, boolify
 from .image_builder import ImageBuilder
-
-PROVISIONER_LOCAL_TREE = "/tmp/ghost-features-provisioner"
+from .provisioner import PROVISIONER_LOCAL_TREE
 
 
 class LXDImageBuilder(ImageBuilder):
@@ -18,7 +17,7 @@ class LXDImageBuilder(ImageBuilder):
     """
 
     def __init__(self, app, job, db, log_file, config):
-        ImageBuilder.__init__(self, app, job, db, log_file, config)
+        super(LXDImageBuilder, self).__init__(app, job, db, log_file, config)
 
         self._client = LXDClient()
         self._source_hooks_path = ''

@@ -80,7 +80,7 @@ class Buildimage():
                     self._worker.update_status("failed")
                     raise msg
                 
-                log(" Update app in MongoDB to update container source image", self._log_file)
+                log("Update app in MongoDB to update container source image", self._log_file)
                 self._update_container_source(self._job['_id'])
 
             touch_app_manifest(self._app, self._config, self._log_file)

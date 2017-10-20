@@ -48,12 +48,12 @@ def execute_module_script_on_ghost(app, module, script_name, script_friendly_nam
         script_env = os.environ.copy()
         script_env.update(get_ghost_env_variables(app, module))
 
-        if script_name is 'build_pack' and app['build_infos']['container_image'] and lxd_is_available():
+        if app['build_infos'].get('container_image') and lxd_is_available():
             source_module = get_buildpack_clone_path_from_module(app, module)
             container = LXDImageBuilder(app, job, None, log_file, config)
             if not container.deploy(script_path, module, source_module):
-                raise GCallException("ERROR: Buildpack execution on container failed")
-        else :
+                raise GCallException("ERROR: %s execution on container failed" % script_name)
+        else:
             gcall('bash %s' % script_path, '%s: Execute' % script_friendly_name, log_file, env=script_env)
         
         gcall('du -hs .', 'Display current build directory disk usage', log_file)
