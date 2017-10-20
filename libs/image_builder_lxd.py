@@ -17,7 +17,7 @@ class LXDImageBuilder(ImageBuilder):
     """
 
     def __init__(self, app, job, db, log_file, config):
-        super(LXDImageBuilder, self).__init__(app, job, db, log_file, config)
+        ImageBuilder.__init__(self, app, job, db, log_file, config)
 
         # Always use localhost to publish built Images and run containers
         self._client = LXDClient()
@@ -229,11 +229,9 @@ class LXDImageBuilder(ImageBuilder):
             self._lxd_run_hooks('hook-pre_buildimage')
             self._lxd_run_features_install()
             self._lxd_run_hooks('hook-post_buildimage')
-        except Exception as msg:
-            raise msg
-        finally:
             self.container.stop(wait=True)
             self._publish_container()
+        finally:
             if not self._container_config['debug']:
                 self._clean()
 

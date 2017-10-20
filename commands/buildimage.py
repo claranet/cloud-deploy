@@ -76,10 +76,12 @@ class Buildimage():
                     lxd_image_builder = LXDImageBuilder(self._app, self._job, self._db, self._log_file, self._config)
                     lxd_image_builder.set_source_hooks(get_path_from_app_with_color(self._app))
                     builder_result = lxd_image_builder.start_builder()
-                except Exception as msg:
+                except Exception as e:
+                    traceback.print_exc(self._log_file)
+                    log("An error occured during container process ({})".format(e), self._log_file)
                     self._worker.update_status("failed")
-                    raise msg
-                
+                    return
+
                 log("Update app in MongoDB to update container source image", self._log_file)
                 self._update_container_source(self._job['_id'])
 
