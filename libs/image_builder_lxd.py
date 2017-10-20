@@ -157,10 +157,6 @@ class LXDImageBuilder(ImageBuilder):
                 salt_bootstrap = self.container.execute(["sh", "bootstrap-salt.sh"])
                 self._container_log(salt_bootstrap)
                 self._container_execution_error(salt_bootstrap, "Salt bootstrap")
-            if 'ansible' in self.provisioners:
-                ansible_bootstrap = self.container.execute(["pip", "install", "--yes", "ansible"])
-                self._container_log(ansible_bootstrap)
-                self._container_execution_error(ansible_bootstrap, "Ansible bootstrap")
 
     def _lxd_run_features_install(self):
         log("Run features install", self._log_file)
