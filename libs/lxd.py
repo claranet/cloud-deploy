@@ -6,11 +6,12 @@ def list_lxd_images(config=None):
     Retrieve images on local registry
     """
     if lxd_is_available():
-        container_config = config.get('container', {'endpoint': config.get('endpoint', 'localhost')})
+        container_config = config.get('container', {'endpoint': config.get('endpoint',
+                                                                           'https://lxd.ghost.morea.fr:8443')})
         if container_config.get('endpoint', 'localhost') == "localhost":
             lxd = LXDClient()
         else:
-            lxd = LXDClient(endpoint=container_config.get('endpoint', 'localhost'), verify=True)
+            lxd = LXDClient(endpoint=container_config.get('endpoint', 'https://lxd.ghost.morea.fr:8443'), verify=True)
         images = lxd.images.all()
 
         return [('', "Don't use containers")] + \

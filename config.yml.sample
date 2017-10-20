@@ -23,11 +23,13 @@ bucket_s3: ghost-eu-west-1-***REMOVED***
 bucket_region: eu-west-1
 
 # Container options
-# * Set a lxd endpoint to download lxd image from another registry (localhost by default)
+# * Set a LXD endpoint to download LXC image from another registry (https://lxd.ghost.morea.fr:8443 by default)
 #
-#    container:
-#      endpoint: localhost # Also works with remote LXD compliant endpoints, e.g. https://cloud-images.ubuntu.com/daily
-#      debug: False        # Use True to prevent destruction of containers after a buildimage or a deployment
+#container:
+## Also works with remote LXD compliant endpoints, e.g. https://cloud-images.ubuntu.com/daily
+#    endpoint: https://lxd.ghost.morea.fr:8443
+## Use True to prevent destruction of containers after a buildimage or a deployment
+#    debug: False
 
 # Configuration manager options
 features_provisioners:

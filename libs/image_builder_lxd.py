@@ -19,11 +19,13 @@ class LXDImageBuilder(ImageBuilder):
     def __init__(self, app, job, db, log_file, config):
         super(LXDImageBuilder, self).__init__(app, job, db, log_file, config)
 
+        # Always use localhost to publish built Images and run containers
         self._client = LXDClient()
+
         self._source_hooks_path = ''
         self._container_name = self._ami_name.replace('.', '-')
         self._container_config = self._config.get('container', {
-            'endpoint': self._config.get('endpoint', 'localhost'),
+            'endpoint': self._config.get('endpoint', 'https://lxd.ghost.morea.fr:8443'),
             'debug': self._config.get('debug', False),
         })
         provisioners_config = get_provisioners_config()
