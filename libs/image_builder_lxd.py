@@ -75,13 +75,15 @@ class LXDImageBuilder(ImageBuilder):
         """
         log("Creating container profile", self._log_file)
         devices = {}
+        devices['venv'] = {'path': self._config.get('ghost_venv'), 'source': self._config.get('ghost_venv'), 'type': 'disk'}
+
         if self._job['command'] == u"buildimage":
             if 'salt' in self.provisioners:
                 source_formulas = get_local_repo_path(PROVISIONER_LOCAL_TREE, 'salt', self._job['_id'])
-                devices['salt'] = {'path': '/srv', 'source': source_formulas, 'type': 'disk'}
+                devices['salt'] = {'path': '/srv/salt', 'source': source_formulas, 'type': 'disk'}
             if 'ansible' in self.provisioners:
                 source_formulas = get_local_repo_path(PROVISIONER_LOCAL_TREE, 'ansible', self._job['_id'])
-                devices['ansible'] = {'path': '/srv/', 'source': source_formulas, 'type': 'disk'}
+                devices['ansible'] = {'path': '/srv/ansible', 'source': source_formulas, 'type': 'disk'}
 
             devices['hooks'] = {'path': '/ghost', 'source': self._source_hooks_path, 'type': 'disk'}
 
@@ -153,20 +155,20 @@ class LXDImageBuilder(ImageBuilder):
                 salt_bootstrap = self.container.execute(
                     ["wget", "-O", "bootstrap-salt.sh", "https://bootstrap.saltstack.com"])
                 self._container_log(salt_bootstrap)
-                self._container_execution_error(salt_bootstrap, "Salt bootstrap")
+                self._container_execution_error(salt_bootstrap, "Salt Download")
                 salt_bootstrap = self.container.execute(["sh", "bootstrap-salt.sh"])
                 self._container_log(salt_bootstrap)
-                self._container_execution_error(salt_bootstrap, "Salt bootstrap")
+                self._container_execution_error(salt_bootstrap, "Salt Install")
 
     def _lxd_run_features_install(self):
         log("Run features install", self._log_file)
         if 'salt' in self.provisioners:
-            salt_call = self.container.execute(["salt-call", "state.highstate", "--local", "-l", "info"])
+            salt_call = self.container.execute(["salt-call", "state.highstate", "--file-root=/srv/salt/salt", "--pillar-root=/srv/salt/pillar ", "--local", "-l", "info"])
             self._container_log(salt_call)
             self._container_execution_error(salt_call, "salt execution")
 
         if 'ansible' in self.provisioners:
-            run_playbooks = self.container.execute(["ansible-playbook", "/srv/main.yml"])
+            run_playbooks = self.container.execute(["{}/bin/ansible-playbook".format(self._config.get('ghost_venv')), "-i", "localhost,", "--connection=local", "/srv/ansible/main.yml"])
             self._container_log(run_playbooks)
             self._container_execution_error(run_playbooks, "ansible execution")
 
