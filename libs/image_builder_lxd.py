@@ -88,8 +88,7 @@ class LXDImageBuilder(ImageBuilder):
             devices['hooks'] = {'path': '/ghost', 'source': self._source_hooks_path, 'type': 'disk'}
 
         elif self._job['command'] == u"deploy":
-            module_path = module['path']
-            devices = {'buildpack': {'path': module_path, 'source': source_module, 'type': 'disk'}}
+            devices['module'] = {'path': module['path'], 'source': source_module, 'type': 'disk'}
 
         else:
             raise Exception("Incompatible command given to LXD Builder")
@@ -97,7 +96,7 @@ class LXDImageBuilder(ImageBuilder):
         profile = self._client.profiles.create(self._container_name, devices=devices)
         log("Created container profile: {}".format(profile.name), self._log_file)
 
-    def _create_container(self, module=None, wait=10, source_module=None):
+    def _create_container(self, module=None, source_module=None, wait=10):
         """ Create a container with his profile and set time parameter to wait until network was up (default: 5 sec)
         """
         log("Create container {container_name}".format(container_name=self._container_name), self._log_file)
@@ -188,7 +187,6 @@ class LXDImageBuilder(ImageBuilder):
         self._container_log(buildpack)
         self.container.execute(["chown", "-R", "1001:1002", "{module_path}".format(module_path=module['path'])])
         self._container_execution_error(buildpack, "buildpack")
-        return buildpack.exit_code
 
     @staticmethod
     def _container_execution_error(logs, step):
@@ -212,11 +210,11 @@ class LXDImageBuilder(ImageBuilder):
 
     def deploy(self, script_path, module, source_module):
         self._create_container(module, source_module)
-        buildpack_status = self._execute_buildpack(script_path, module)
+        self._execute_buildpack(script_path, module)
         self.container.stop(wait=True)
         if not self._container_config.get('debug'):
             self._clean()
-        return buildpack_status
+        return True
 
     # Parent class implementation
 
