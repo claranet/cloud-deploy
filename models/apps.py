@@ -222,7 +222,7 @@ apps_schema = {
                                'schema': {
                                    'size': {'type': 'integer', 'min': 20},
                                    'name': {'type': 'string',
-                                            'regex': '^$|^/[a-z0-9]+/[a-z0-9]+$'}
+                                            'regex': '^$|^(/[a-z0-9]+/)|[a-z0-9]+$'}
                                }},
                               'instance_tags':
                               {'type': 'list',
