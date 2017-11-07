@@ -162,7 +162,6 @@ def test_ec2_instance_status(cloud_connection, aws_region, instance_ids, instanc
             return False
     return True
 
-
 def create_block_device(cloud_connection, region, app, rbd={}):
     conn = cloud_connection.get_connection(region, ["ec2"])
     dev_sda1 = cloud_connection.launch_service(
@@ -188,6 +187,9 @@ def create_block_device(cloud_connection, region, app, rbd={}):
     return bdm
 
 def get_ami_root_block_device_mapping(conn, app):
+    """
+    """
+    
     image = conn.get_all_images(image_ids=app['ami'])
     path = image[0].block_device_mapping.keys()[0]
     return path
