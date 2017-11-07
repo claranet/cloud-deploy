@@ -163,6 +163,14 @@ def test_ec2_instance_status(cloud_connection, aws_region, instance_ids, instanc
     return True
 
 def create_block_device(cloud_connection, region, app, rbd={}):
+    """ Create all block device
+
+        :param cloud_connection: The app Cloud Connection object
+        :param aws_region  string: The region to use
+        :param app  string: The ghost "app" object
+        :param rbd list: device mapping configuration
+        :return the EC2 instance service object blockdevicemapping
+    """
     conn = cloud_connection.get_connection(region, ["ec2"])
     dev_sda1 = cloud_connection.launch_service(
         ["ec2", "blockdevicemapping", "EBSBlockDeviceType"],
@@ -187,9 +195,12 @@ def create_block_device(cloud_connection, region, app, rbd={}):
     return bdm
 
 def get_ami_root_block_device_mapping(conn, app):
+    """ Get ami root_block_device to mount
+
+        :param cloud connection object
+        :param app string: The ghost "app" object
+        :return root block device path 
     """
-    """
-    
     image = conn.get_all_images(image_ids=app['ami'])
     path = image[0].block_device_mapping.keys()[0]
     return path
@@ -222,7 +233,6 @@ def create_ec2_instance(cloud_connection, app, app_color, config, private_ip_add
 
         :return the EC2 instance object with all its details
     """
-
     log(_yellow(" INFO: Creating User-Data"), log_file)
     ghost_root_path = config.get('ghost_root_path', '/usr/local/share/ghost/')
     userdata = generate_userdata(config['bucket_s3'], config.get('bucket_region', app['region']), ghost_root_path)
