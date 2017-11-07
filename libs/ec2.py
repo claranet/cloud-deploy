@@ -163,7 +163,7 @@ def test_ec2_instance_status(cloud_connection, aws_region, instance_ids, instanc
     return True
 
 
-def create_block_device(cloud_connection, region, rbd={}):
+def create_block_device(cloud_connection, region, app, rbd={}):
     conn = cloud_connection.get_connection(region, ["ec2"])
     dev_sda1 = cloud_connection.launch_service(
         ["ec2", "blockdevicemapping", "EBSBlockDeviceType"],
@@ -183,10 +183,14 @@ def create_block_device(cloud_connection, region, rbd={}):
         connection=conn
     )
     if not rbd.get('name'):
-        rbd['name'] = "/dev/xvda"
+        rbd['name'] = get_ami_root_block_device_mapping(conn, app)
     bdm[rbd['name']] = dev_sda1
     return bdm
 
+def get_ami_root_block_device_mapping(conn, app):
+    image = conn.get_all_images(image_ids=app['ami'])
+    path = image[0].block_device_mapping.keys()[0]
+    return path
 
 def generate_userdata(bucket_s3, s3_region, ghost_root_path):
     """ Generates an EC2 userdata script using the Ghost's "stage1" script.
@@ -240,9 +244,9 @@ def create_ec2_instance(cloud_connection, app, app_color, config, private_ip_add
                 interface
                 )
         if 'root_block_device' in app['environment_infos']:
-            bdm = create_block_device(cloud_connection, app['region'], app['environment_infos']['root_block_device'])
+            bdm = create_block_device(cloud_connection, app['region'], app, app['environment_infos']['root_block_device'])
         else:
-            bdm = create_block_device(cloud_connection, app['region'], {})
+            bdm = create_block_device(cloud_connection, app['region'], app, {})
         reservation = conn.run_instances(image_id=app['ami'], \
                 key_name=app['environment_infos']['key_name'], \
                 network_interfaces=interfaces, \
