@@ -167,7 +167,7 @@ def create_block_device(cloud_connection, region, app, rbd={}):
 
         :param cloud_connection: The app Cloud Connection object
         :param aws_region  string: The region to use
-        :param app  string: The ghost "app" object
+        :param app string: The ghost "app" object
         :param rbd list: device mapping configuration
         :return the EC2 instance service object blockdevicemapping
     """
@@ -198,11 +198,14 @@ def get_ami_root_block_device_mapping(conn, app):
     """ Get ami root_block_device to mount
 
         :param cloud connection object
-        :param app string: The ghost "app" object
+        :param app  string: The ghost "app" object
         :return root block device path 
     """
     image = conn.get_all_images(image_ids=app['ami'])
-    path = image[0].block_device_mapping.keys()[0]
+    try:
+        path = image[0].block_device_mapping.keys()[0]
+    except: 
+        raise Exception("AMI root block device is not found")
     return path
 
 def generate_userdata(bucket_s3, s3_region, ghost_root_path):
