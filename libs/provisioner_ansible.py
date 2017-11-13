@@ -12,7 +12,7 @@ ANSIBLE_BASE_PLAYBOOK = {'name': 'Ghost application features', 'hosts': 'all', '
 ANSIBLE_COMMAND = "bin/ansible-playbook"
 ANSIBLE_GALAXY_DEFAULT_CMD_PATH = "bin/ansible-galaxy"
 ANSIBLE_ENV_VARS = ["ANSIBLE_HOST_KEY_CHECKING=False", "ANSIBLE_FORCE_COLOR=1", "PYTHONUNBUFFERED=1"]
-ANSIBLE_LOG_LEVEL = {"info": "-v", "profile": "-vv", "debug": "-vvv", "trace": "-vvvv", "garbage": "-vvvv", "all": "-vvvv"}
+ANSIBLE_LOG_LEVEL_MAP = {"info": "-v", "profile": "-vv", "debug": "-vvv", "trace": "-vvvv", "garbage": "-vvvv", "all": "-vvvv"}
 
 
 class FeaturesProvisionerAnsible(FeaturesProvisioner):
@@ -105,24 +105,17 @@ class FeaturesProvisionerAnsible(FeaturesProvisioner):
                     features[-1]['roles']))
 
     def build_packer_provisioner_config(self, packer_config):
-        _log_level = ANSIBLE_LOG_LEVEL.get(self._provisioner_log_level, None)
+        _log_level = ANSIBLE_LOG_LEVEL_MAP.get(self._provisioner_log_level, None)
+        _provisioner_config = [{
+                'type': 'ansible',
+                'playbook_file': self._ansible_playbook_path,
+                'ansible_env_vars': self._ansible_env_vars,
+                'user': packer_config.get('ssh_username', 'admin'),
+                'command': self._ansible_command_path,
+            }]
         if _log_level is not None:
-            return [{
-                'type': 'ansible',
-                'playbook_file': self._ansible_playbook_path,
-                'ansible_env_vars': self._ansible_env_vars,
-                'user': packer_config.get('ssh_username', 'admin'),
-                'command': self._ansible_command_path,
-                'extra_arguments': [_log_level]
-            }]
-        else:
-            return [{
-                'type': 'ansible',
-                'playbook_file': self._ansible_playbook_path,
-                'ansible_env_vars': self._ansible_env_vars,
-                'user': packer_config.get('ssh_username', 'admin'),
-                'command': self._ansible_command_path,
-            }]
+            _provisioner_config[0]['extra_arguments'] = [_log_level]
+        return _provisioner_config
 
     def build_packer_provisioner_cleanup(self):
         return None
