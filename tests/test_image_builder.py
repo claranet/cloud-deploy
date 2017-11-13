@@ -96,6 +96,7 @@ def test_build_image_ansible(packer_run_packer_cmd, gcall, provisioner_get_local
                     "ansible_env_vars": [ "ANSIBLE_HOST_KEY_CHECKING=False", "ANSIBLE_FORCE_COLOR=1", "PYTHONUNBUFFERED=1", "ANSIBLE_ROLES_PATH={}".format(tmp_dir)],
                     "user": "admin",
                     "command": os.path.join(venv_dir, "ansible-playbook"),
+                    "extra_arguments": ['-v'],
                 },
                 {
                     "type": "shell",
