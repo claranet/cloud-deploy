@@ -74,8 +74,11 @@ class LXDImageBuilder(ImageBuilder):
         """ Generate Lxc profile to mount provisoner local tree and ghost application according build image or deployment
         """
         log("Creating container profile", self._log_file)
-        devices = {}
-        devices['venv'] = {'path': self._config.get('ghost_venv'), 'source': self._config.get('ghost_venv'), 'type': 'disk'}
+        devices = {
+            'venv': {'path': self._config.get('ghost_venv'),
+                     'source': self._config.get('ghost_venv'),
+                     'type': 'disk'}
+        }
 
         if self._job['command'] == u"buildimage":
             if 'salt' in self.provisioners:
@@ -162,12 +165,16 @@ class LXDImageBuilder(ImageBuilder):
     def _lxd_run_features_install(self):
         log("Run features install", self._log_file)
         if 'salt' in self.provisioners:
-            salt_call = self.container.execute(["salt-call", "state.highstate", "--file-root=/srv/salt/salt", "--pillar-root=/srv/salt/pillar ", "--local", "-l", "info"])
+            salt_call = self.container.execute(
+                ["salt-call", "state.highstate", "--file-root=/srv/salt/salt", "--pillar-root=/srv/salt/pillar ",
+                 "--local", "-l", "info"])
             self._container_log(salt_call)
             self._container_execution_error(salt_call, "salt execution")
 
         if 'ansible' in self.provisioners:
-            run_playbooks = self.container.execute(["{}/bin/ansible-playbook".format(self._config.get('ghost_venv')), "-i", "localhost,", "--connection=local", "/srv/ansible/main.yml"])
+            run_playbooks = self.container.execute(
+                ["{}/bin/ansible-playbook".format(self._config.get('ghost_venv')), "-i", "localhost,",
+                 "--connection=local", "/srv/ansible/main.yml"])
             self._container_log(run_playbooks)
             self._container_execution_error(run_playbooks, "ansible execution")
 
