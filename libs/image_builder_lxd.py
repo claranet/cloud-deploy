@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import os
+import sys
 import time
 
 from pylxd import Client as LXDClient
@@ -9,6 +10,7 @@ from ghost_log import log
 from ghost_tools import gcall, GCallException, get_provisioners_config, get_local_repo_path, boolify
 from .image_builder import ImageBuilder
 from .provisioner import PROVISIONER_LOCAL_TREE
+from .provisioner_ansible import ANSIBLE_COMMAND
 
 
 class LXDImageBuilder(ImageBuilder):
@@ -28,6 +30,7 @@ class LXDImageBuilder(ImageBuilder):
             'endpoint': self._config.get('endpoint', 'https://lxd.ghost.morea.fr:8443'),
             'debug': self._config.get('debug', False),
         })
+        self._config['ghost_venv'] = sys.exec_prefix
         provisioners_config = get_provisioners_config()
         self.provisioners = []
         for key, provisioner_config in provisioners_config.iteritems():
@@ -75,8 +78,8 @@ class LXDImageBuilder(ImageBuilder):
         """
         log("Creating container profile", self._log_file)
         devices = {
-            'venv': {'path': self._config.get('ghost_venv'),
-                     'source': self._config.get('ghost_venv'),
+            'venv': {'path': self._config['ghost_venv'],
+                     'source': self._config['ghost_venv'],
                      'type': 'disk'}
         }
 
@@ -173,7 +176,7 @@ class LXDImageBuilder(ImageBuilder):
 
         if 'ansible' in self.provisioners:
             run_playbooks = self.container.execute(
-                ["{}/bin/ansible-playbook".format(self._config.get('ghost_venv')), "-i", "localhost,",
+                [os.path.join(self._config['ghost_venv'], ANSIBLE_COMMAND), "-i", "localhost,",
                  "--connection=local", "/srv/ansible/main.yml"])
             self._container_log(run_playbooks)
             self._container_execution_error(run_playbooks, "ansible execution")
