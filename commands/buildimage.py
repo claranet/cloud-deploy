@@ -3,6 +3,7 @@ import traceback
 from ghost_log import log
 from ghost_aws import create_userdata_launchconfig_update_asg
 from ghost_tools import get_aws_connection_data, GCallException
+from libs.lxd import lxd_is_available
 from settings import cloud_connections, DEFAULT_PROVIDER
 from libs.deploy import touch_app_manifest, get_path_from_app_with_color
 from libs.image_builder_aws import AWSImageBuilder
@@ -70,7 +71,7 @@ class Buildimage():
             return
 
         if ami_id is not "ERROR":
-            if self._app['build_infos'].get('source_container_image', None):
+            if lxd_is_available() and self._app['build_infos'].get('source_container_image', None):
                 log("Generating a new container", self._log_file)
                 try:
                     lxd_image_builder = LXDImageBuilder(self._app, self._job, self._db, self._log_file, self._config)

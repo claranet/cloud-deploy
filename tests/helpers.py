@@ -45,7 +45,8 @@ def get_test_application(**kwargs):
         "build_infos": {
             "source_ami": "ami-source",
             "ssh_username": "admin",
-            "subnet_id": "subnet-test"
+            "subnet_id": "subnet-test",
+            "source_container_image": "lxd-container-image-test"
         },
         "env": "test",
         "env_vars": [],
@@ -137,8 +138,8 @@ def get_test_config(**kwargs):
             'ghost_root_path': os.path.dirname(os.path.dirname(__file__)),
             'container': {
                 'debug': True,
-                'endpoint': '172.17.0.1',
-                'client_endpoint': '172.17.0.1'
+                'endpoint': 'http://lxd-image-endpoint:1234',
+                'client_endpoint': 'http://lxd-client-endpoint:5678'
             },
             'display_amis_from_aws_accounts': ['379101102735', '673060587306'],
             'redis_host': 'queue',
