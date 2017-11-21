@@ -53,7 +53,7 @@ def ansi_to_html(text):
     '<span style="color: rgb(0, 255, 0)">Some green text</span>'
 
     >>> ansi_to_html('^[[34mSome blue text')
-    '<span style="color: rgb(0, 0, 255)">Some blue text</span>'
+    '<span style="color: rgb(0, 175, 255)">Some blue text</span>'
 
     >>> ansi_to_html('^[[31;1mSome bold red text')
     '<span style="color: rgb(128, 0, 0); font-weight: bolder">Some bold red text</span>'
