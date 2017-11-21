@@ -203,11 +203,11 @@ def get_ami_root_block_device_mapping(conn, app):
         :param app  string: The ghost "app" object
         :return root block device path 
     """
-    image = conn.get_all_images(image_ids=app['ami'])
     try:
+        image = conn.get_all_images(image_ids=app['ami'])
         path = image[0].block_device_mapping.keys()[0]
-    except: 
-        raise Exception("AMI root block device is not found")
+    except Exception as e:
+        raise Exception("AMI root block device is not found: {}".format(str(e)))
     return path
 
 
