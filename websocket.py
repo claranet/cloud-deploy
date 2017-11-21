@@ -11,13 +11,13 @@ from settings import cloud_connections, DEFAULT_PROVIDER
 from ghost_tools import config, get_job_log_remote_path
 from ghost_aws import download_file_from_s3
 
-LOG_ROOT='/var/log/ghost'
+LOG_ROOT = '/var/log/ghost'
 
 COLOR_DICT = {
     '31': [(255, 0, 0), (128, 0, 0)],
     '32': [(0, 255, 0), (0, 128, 0)],
     '33': [(255, 255, 0), (128, 128, 0)],
-    '34': [(0, 0, 255), (0, 0, 128)],
+    '34': [(0, 175, 255), (0, 0, 128)],
     '35': [(255, 0, 255), (128, 0, 128)],
     '36': [(0, 255, 255), (0, 128, 128)],
 }
