@@ -106,16 +106,16 @@ class FeaturesProvisionerAnsible(FeaturesProvisioner):
 
     def build_packer_provisioner_config(self, packer_config):
         _log_level = ANSIBLE_LOG_LEVEL_MAP.get(self._provisioner_log_level, None)
-        _provisioner_config = [{
-                'type': 'ansible',
-                'playbook_file': self._ansible_playbook_path,
-                'ansible_env_vars': self._ansible_env_vars,
-                'user': packer_config.get('ssh_username', 'admin'),
-                'command': self._ansible_command_path,
-            }]
+        _provisioner_config = {
+            'type': 'ansible',
+            'playbook_file': self._ansible_playbook_path,
+            'ansible_env_vars': self._ansible_env_vars,
+            'user': packer_config.get('ssh_username', 'admin'),
+            'command': self._ansible_command_path,
+        }
         if _log_level is not None:
-            _provisioner_config[0]['extra_arguments'] = [_log_level]
-        return _provisioner_config
+            _provisioner_config['extra_arguments'] = [_log_level]
+        return [_provisioner_config]
 
     def build_packer_provisioner_cleanup(self):
         return None
