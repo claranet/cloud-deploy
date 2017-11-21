@@ -200,7 +200,7 @@ def get_ami_root_block_device_mapping(conn, ami_id):
     """ Get ami root_block_device to mount
 
         :param cloud connection object
-        :param app  string: The ghost "app" object
+        :param ami-id string: the ami id of application 
         :return root block device path 
     """
     try:
