@@ -191,12 +191,12 @@ def create_block_device(cloud_connection, region, app, rbd={}):
         connection=conn
     )
     if not rbd.get('name'):
-        rbd['name'] = get_ami_root_block_device_mapping(conn, app)
+        rbd['name'] = get_ami_root_block_device_mapping(conn, app['ami'])
     bdm[rbd['name']] = dev_sda1
     return bdm
 
 
-def get_ami_root_block_device_mapping(conn, app):
+def get_ami_root_block_device_mapping(conn, ami_id):
     """ Get ami root_block_device to mount
 
         :param cloud connection object
@@ -204,7 +204,7 @@ def get_ami_root_block_device_mapping(conn, app):
         :return root block device path 
     """
     try:
-        image = conn.get_all_images(image_ids=app['ami'])
+        image = conn.get_all_images(image_ids=ami_id)
         path = image[0].block_device_mapping.keys()[0]
     except Exception as e:
         raise Exception("AMI root block device is not found: {}".format(str(e)))
