@@ -191,7 +191,7 @@ def create_block_device(cloud_connection, region, app, rbd={}):
         connection=conn
     )
     if not rbd.get('name'):
-        rbd['name'] = get_ami_root_block_device_mapping(conn, app['ami'])
+        rbd['name'] = get_ami_root_block_device_mapping(conn, app['ami']) if app.get('ami') else "/dev/xvda"
     bdm[rbd['name']] = dev_sda1
     return bdm
 
