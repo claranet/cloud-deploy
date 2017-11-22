@@ -330,6 +330,8 @@ def ghost_app_object_copy(app, user):
                 del copy_module['initialized']
             if 'last_deployment' in copy_module:
                 del copy_module['last_deployment']
+    if 'autoscale' in copy_app and 'current' in copy_app['autoscale']:
+        del copy_app['autoscale']['current']
     # Remove RO fields
     if 'blue_green' in copy_app and 'alter_ego_id' in copy_app['blue_green']:
         del copy_app['blue_green']['alter_ego_id']
