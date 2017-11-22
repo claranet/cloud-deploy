@@ -13,6 +13,7 @@ from ghost_tools import GCallException
 
 from .blue_green import get_blue_green_from_app
 
+
 def find_ec2_pending_instances(cloud_connection, ghost_app, ghost_env, ghost_role, region, as_group, ghost_color=None):
     """ Return a list of dict info only for the instances in pending state.
 
@@ -162,8 +163,15 @@ def test_ec2_instance_status(cloud_connection, aws_region, instance_ids, instanc
             return False
     return True
 
+def create_block_device(cloud_connection, region, app, rbd={}):
+    """ Create all block device
 
-def create_block_device(cloud_connection, region, rbd={}):
+        :param cloud_connection: The app Cloud Connection object
+        :param aws_region  string: The region to use
+        :param app string: The ghost "app" object
+        :param rbd list: device mapping configuration
+        :return the EC2 instance service object blockdevicemapping
+    """
     conn = cloud_connection.get_connection(region, ["ec2"])
     dev_sda1 = cloud_connection.launch_service(
         ["ec2", "blockdevicemapping", "EBSBlockDeviceType"],
@@ -183,9 +191,24 @@ def create_block_device(cloud_connection, region, rbd={}):
         connection=conn
     )
     if not rbd.get('name'):
-        rbd['name'] = "/dev/xvda"
+        rbd['name'] = get_ami_root_block_device_mapping(conn, app['ami']) if app.get('ami') else "/dev/xvda"
     bdm[rbd['name']] = dev_sda1
     return bdm
+
+
+def get_ami_root_block_device_mapping(conn, ami_id):
+    """ Get ami root_block_device to mount
+
+        :param cloud connection object
+        :param ami-id string: the ami id of application 
+        :return root block device path 
+    """
+    try:
+        image = conn.get_all_images(image_ids=ami_id)
+        path = image[0].block_device_mapping.keys()[0]
+    except Exception as e:
+        raise Exception("AMI root block device is not found: {}".format(str(e)))
+    return path
 
 
 def generate_userdata(bucket_s3, s3_region, ghost_root_path):
@@ -194,7 +217,7 @@ def generate_userdata(bucket_s3, s3_region, ghost_root_path):
         :return The formatted stage1 script
     """
     jinja_templates_path = '%s/scripts' % ghost_root_path
-    if (os.path.exists('%s/stage1' % jinja_templates_path)):
+    if os.path.exists('%s/stage1' % jinja_templates_path):
         loader = FileSystemLoader(jinja_templates_path)
         jinja_env = Environment(loader=loader)
         template = jinja_env.get_template('stage1')
@@ -202,6 +225,7 @@ def generate_userdata(bucket_s3, s3_region, ghost_root_path):
         return userdata
     else:
         return ""
+
 
 def create_ec2_instance(cloud_connection, app, app_color, config, private_ip_address, subnet_id, log_file):
     """ Creates an EC2 instance and return its ID.
@@ -216,7 +240,6 @@ def create_ec2_instance(cloud_connection, app, app_color, config, private_ip_add
 
         :return the EC2 instance object with all its details
     """
-
     log(_yellow(" INFO: Creating User-Data"), log_file)
     ghost_root_path = config.get('ghost_root_path', '/usr/local/share/ghost/')
     userdata = generate_userdata(config['bucket_s3'], config.get('bucket_region', app['region']), ghost_root_path)
@@ -227,7 +250,6 @@ def create_ec2_instance(cloud_connection, app, app_color, config, private_ip_add
         log(" CONF: Region: {0}".format(app['region']), log_file)
 
         conn = cloud_connection.get_connection(app['region'], ["ec2"])
-        image = app['ami']
         interface = cloud_connection.launch_service(
                 ["ec2", "networkinterface", "NetworkInterfaceSpecification"],
                 subnet_id=subnet_id,
@@ -240,17 +262,19 @@ def create_ec2_instance(cloud_connection, app, app_color, config, private_ip_add
                 interface
                 )
         if 'root_block_device' in app['environment_infos']:
-            bdm = create_block_device(cloud_connection, app['region'], app['environment_infos']['root_block_device'])
+            bdm = create_block_device(cloud_connection, app['region'], app, app['environment_infos']['root_block_device'])
         else:
-            bdm = create_block_device(cloud_connection, app['region'], {})
-        reservation = conn.run_instances(image_id=app['ami'], \
-                key_name=app['environment_infos']['key_name'], \
-                network_interfaces=interfaces, \
-                instance_type=app['instance_type'], \
-                instance_profile_name=app['environment_infos']['instance_profile'], \
-                user_data=userdata, block_device_map=bdm)
+            bdm = create_block_device(cloud_connection, app['region'], app, {})
+        reservation = conn.run_instances(
+            image_id=app['ami'],
+            key_name=app['environment_infos']['key_name'],
+            network_interfaces=interfaces,
+            instance_type=app['instance_type'],
+            instance_profile_name=app['environment_infos']['instance_profile'],
+            user_data=userdata, block_device_map=bdm
+        )
 
-        #Getting instance metadata
+        # Getting instance metadata
         instance = reservation.instances[0]
         if instance.id:
             # Checking if instance is ready before tagging
