@@ -10,7 +10,7 @@ from ghost_log import log
 from ghost_tools import gcall, GCallException, get_provisioners_config, get_local_repo_path, boolify
 from .image_builder import ImageBuilder
 from .provisioner import PROVISIONER_LOCAL_TREE
-from .provisioner_ansible import ANSIBLE_COMMAND
+from .provisioner_ansible import ANSIBLE_COMMAND, ANSIBLE_LOG_LEVEL_MAP
 
 
 class LXDImageBuilder(ImageBuilder):
@@ -43,6 +43,9 @@ class LXDImageBuilder(ImageBuilder):
                 raise GCallException("Invalid features provisioner type")
         self.skip_salt_bootstrap_option = self._job['options'][0] if 'options' in self._job and len(
             self._job['options']) > 0 else True
+        self._ansible_log_level = self._config.get('provisioner_log_level', 'info')
+        self._salt_log_level = self._config.get('provisioner_log_level', 'info')
+
 
     def _create_containers_config(self):
         """ Generate a container configuration according build image or deployment
@@ -170,14 +173,15 @@ class LXDImageBuilder(ImageBuilder):
         if 'salt' in self.provisioners:
             salt_call = self.container.execute(
                 ["salt-call", "state.highstate", "--file-root=/srv/salt/salt", "--pillar-root=/srv/salt/pillar ",
-                 "--local", "-l", "info"])
+                 "--local", "-l", self._salt_log_level])
             self._container_log(salt_call)
             self._container_execution_error(salt_call, "salt execution")
 
         if 'ansible' in self.provisioners:
+            _log_level = ANSIBLE_LOG_LEVEL_MAP.get(self._ansible_log_level, None)
             run_playbooks = self.container.execute(
                 [os.path.join(self._config['ghost_venv'], ANSIBLE_COMMAND), "-i", "localhost,",
-                 "--connection=local", "/srv/ansible/main.yml"])
+                 "--connection=local", "/srv/ansible/main.yml", _log_level])
             self._container_log(run_playbooks)
             self._container_execution_error(run_playbooks, "ansible execution")
 

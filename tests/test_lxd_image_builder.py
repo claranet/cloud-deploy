@@ -83,7 +83,7 @@ def test_build_image(lxd_client_cls, gcall_lxd):
 
     lxd_container_mock.execute.assert_any_call(
             [os.path.join(venv_bin_dir, "ansible-playbook"), "-i", "localhost,",
-             "--connection=local", "/srv/ansible/main.yml"])
+             "--connection=local", "/srv/ansible/main.yml", "-v"])
     lxd_container_mock.execute.assert_any_call(
         ["salt-call", "state.highstate", "--file-root=/srv/salt/salt",
          "--pillar-root=/srv/salt/pillar ", "--local", "-l", "info"])
