@@ -1,6 +1,6 @@
-# ********************************************** #
-# Claranet Cloud Deploy - sample Configuratation #
-# ********************************************** #
+# ******************************************** #
+# Claranet Cloud Deploy - sample Configuration #
+# ******************************************** #
 
 # Mandatory parameters
 # ====================
@@ -156,7 +156,7 @@ key_path: /home/admin/key/client_morea.pem
 # Optional, default:
 #salt_additional_pillar: None
 
-# Provisioner log level
+# Provisioner log level (error, warning, info, debug, trace)
 # Optional, default:
 #provisioner_log_level: info
 

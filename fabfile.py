@@ -27,6 +27,7 @@ STAGE2_PATH = '/var/lib/ghost/stage2_deploy'
 def deploy(app_module, ssh_username, key_filename, stage2, log_file):
     with settings(show('debug'), warn_only=True, user=ssh_username, key_filename=key_filename):
         sudo('rm -rvf {s}'.format(s=STAGE2_PATH), stdout=log_file)
+        sudo('mkdir -p "{w}" && chmod 755 "{w}"'.format(w=os.path.dirname(STAGE2_PATH)), stdout=log_file)
         put(StringIO(stage2), STAGE2_PATH, use_sudo=True, mode=0755)
         result = sudo('{s} {n}'.format(s=STAGE2_PATH, n=app_module['name']), stdout=log_file)
         return result.return_code

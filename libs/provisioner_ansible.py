@@ -12,6 +12,7 @@ ANSIBLE_BASE_PLAYBOOK = {'name': 'Ghost application features', 'hosts': 'all', '
 ANSIBLE_COMMAND = "bin/ansible-playbook"
 ANSIBLE_GALAXY_DEFAULT_CMD_PATH = "bin/ansible-galaxy"
 ANSIBLE_ENV_VARS = ["ANSIBLE_HOST_KEY_CHECKING=False", "ANSIBLE_FORCE_COLOR=1", "PYTHONUNBUFFERED=1"]
+ANSIBLE_LOG_LEVEL_MAP = {"info": "-v", "profile": "-vv", "debug": "-vvv", "trace": "-vvvv", "garbage": "-vvvv", "all": "-vvvv"}
 
 
 class FeaturesProvisionerAnsible(FeaturesProvisioner):
@@ -35,6 +36,8 @@ class FeaturesProvisionerAnsible(FeaturesProvisioner):
         self._ansible_base_requirements_file = os.path.join(
             ghost_root_path,
             config.get('base_playbook_requirements_file', 'ansible-playbook-ghost-common/requirements.yml'))
+
+        self._provisioner_log_level = self.global_config.get('provisioner_log_level', 'info')
 
     def build_provisioner_features_files(self, params, features):
         self._build_ansible_galaxy_requirement(features)
@@ -102,13 +105,17 @@ class FeaturesProvisionerAnsible(FeaturesProvisioner):
                     features[-1]['roles']))
 
     def build_packer_provisioner_config(self, packer_config):
-        return [{
+        _log_level = ANSIBLE_LOG_LEVEL_MAP.get(self._provisioner_log_level, None)
+        _provisioner_config = {
             'type': 'ansible',
             'playbook_file': self._ansible_playbook_path,
             'ansible_env_vars': self._ansible_env_vars,
             'user': packer_config.get('ssh_username', 'admin'),
-            'command': self._ansible_command_path
-        }]
+            'command': self._ansible_command_path,
+        }
+        if _log_level is not None:
+            _provisioner_config['extra_arguments'] = [_log_level]
+        return [_provisioner_config]
 
     def build_packer_provisioner_cleanup(self):
         return None

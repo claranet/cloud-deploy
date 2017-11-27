@@ -134,9 +134,9 @@ def create_launch_config(cloud_connection, app, userdata, ami_id):
     launchconfig_name = _format_launchconfig_name(app, app_color)
     conn_as = cloud_connection.get_connection(app['region'], ["ec2", "autoscale"])
     if 'root_block_device' in app['environment_infos']:
-        bdm = create_block_device(cloud_connection, app['region'], app['environment_infos']['root_block_device'])
+        bdm = create_block_device(cloud_connection, app['region'], app, app['environment_infos']['root_block_device'])
     else:
-        bdm = create_block_device(cloud_connection, app['region'])
+        bdm = create_block_device(cloud_connection, app['region'], app)
     instance_monitoring = app.get('instance_monitoring', False)
     launch_config = cloud_connection.launch_service(
         ["ec2", "autoscale", "LaunchConfiguration"],
