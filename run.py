@@ -27,6 +27,7 @@ from ghost_api import ghost_api_delete_alter_ego_app, ghost_api_clean_bluegreen_
 from ghost_api import check_app_feature_provisioner, check_app_module_path, check_app_b64_scripts
 from ghost_api import initialize_app_modules, check_and_set_app_fields_state
 from ghost_api import ALL_COMMAND_FIELDS
+from ghost_lxd import lxd_blueprint
 from libs.blue_green import BLUE_GREEN_COMMANDS, get_blue_green_from_app, ghost_has_blue_green_enabled
 from ghost_aws import normalize_application_tags
 
@@ -333,6 +334,7 @@ ghost.ghost_redis_connection = Redis(host=REDIS_HOST)
 
 # Register non-mongodb resources as plain Flask blueprints (they won't appear in /docs)
 ghost.register_blueprint(commands_blueprint)
+ghost.register_blueprint(lxd_blueprint)
 
 if __name__ == '__main__':
     ghost.run(host='0.0.0.0')

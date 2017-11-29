@@ -14,6 +14,7 @@ from libs.blue_green import get_blue_green_apps, check_app_manifest, get_blue_gr
 from libs.blue_green import get_blue_green_copy_ami_config, get_blue_green_create_temporary_elb_config
 from libs.blue_green import ghost_has_blue_green_enabled, get_blue_green_from_app
 from libs.autoscaling import get_instances_from_autoscaling
+from libs.deploy import get_path_from_app_with_color
 
 COMMAND_DESCRIPTION = "Prepare the Blue/Green env before swap"
 RELATED_APP_FIELDS = ['blue_green']
@@ -175,7 +176,7 @@ class Preparebluegreen(object):
 
             # Check if modules have been deployed
             if get_blue_green_config(self._config, 'preparebluegreen', 'module_deploy_required', False):
-                if not check_app_manifest(offline_app, self._config, self._log_file):
+                if not check_app_manifest(offline_app, self._config, self._log_file, get_path_from_app_with_color(offline_app)):
                     self._worker.update_status(
                         "aborted",
                         message=self._get_notification_message_aborted(

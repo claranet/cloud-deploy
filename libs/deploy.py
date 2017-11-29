@@ -9,6 +9,8 @@ from copy import copy
 import sys
 import os
 import tempfile
+from libs.image_builder_lxd import LXDImageBuilder
+from libs.lxd import lxd_is_available
 from fabric.api import execute as fab_execute
 from fabfile import deploy, executescript
 from ghost_tools import config
@@ -19,7 +21,7 @@ from ghost_tools import GCallException, gcall
 from settings import cloud_connections, DEFAULT_PROVIDER
 
 
-def execute_module_script_on_ghost(app, module, script_name, script_friendly_name, clone_path, log_file):
+def execute_module_script_on_ghost(app, module, script_name, script_friendly_name, clone_path, log_file, job, config):
     """ Executes the given script on the Ghost instance
 
         :param app: Ghost application
@@ -28,6 +30,8 @@ def execute_module_script_on_ghost(app, module, script_name, script_friendly_nam
         :param script_friendly_name: string: the friendly name of the script for logs
         :param clone_path: string: working directory of the current module
         :param log_file: string: Log file path
+        :param job: Ghost job
+        :param config: Ghost config
     """
     # Execute script if available
     if script_name in module:
@@ -44,7 +48,14 @@ def execute_module_script_on_ghost(app, module, script_name, script_friendly_nam
         script_env = os.environ.copy()
         script_env.update(get_ghost_env_variables(app, module))
 
-        gcall('bash %s' % script_path, '%s: Execute' % script_friendly_name, log_file, env=script_env)
+        if app['build_infos'].get('container_image') and lxd_is_available():
+            source_module = get_buildpack_clone_path_from_module(app, module)
+            container = LXDImageBuilder(app, job, None, log_file, config)
+            if not container.deploy(script_path, module, source_module):
+                raise GCallException("ERROR: %s execution on container failed" % script_name)
+        else:
+            gcall('bash %s' % script_path, '%s: Execute' % script_friendly_name, log_file, env=script_env)
+        
         gcall('du -hs .', 'Display current build directory disk usage', log_file)
         gcall('rm -vf %s' % script_path, '%s: Done, cleaning temporary file' % script_friendly_name, log_file)
 

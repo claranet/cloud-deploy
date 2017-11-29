@@ -9,6 +9,7 @@ from ghost_log import log
 
 from .image_builder import ImageBuilder
 
+
 class AWSImageBuilder(ImageBuilder):
     """
     This class is designed to Build an AWS AMI using Packer
@@ -25,19 +26,11 @@ class AWSImageBuilder(ImageBuilder):
                 **self._connection_data
                 )
 
-    def _format_ghost_env_vars(self):
-        ghost_vars = []
-        ghost_vars.append('GHOST_APP=%s' % self._app['name'])
-        ghost_vars.append('GHOST_ENV=%s' % self._app['env'])
-        ghost_vars.append('GHOST_ENV_COLOR=%s' % (self._color if self._color else ''))
-        ghost_vars.append('GHOST_ROLE=%s' % self._app['role'])
-        return ghost_vars
-
     def _format_packer_from_app(self, provisioner_skip_bootstrap_option):
         instance_tags = {}
         if 'instance_tags' in self._app['environment_infos']:
             instance_tags = {i['tag_name']: i['tag_value'] for i in self._app['environment_infos']['instance_tags']}
-        datas = {
+        data = {
             'region': self._app['region'],
             'ami_name': self._ami_name,
             'source_ami': self._app['build_infos']['source_ami'],
@@ -65,12 +58,12 @@ class AWSImageBuilder(ImageBuilder):
             }
             if 'iops' in opt_vol:
                 block['iops'] = opt_vol['iops']
-            datas['ami_block_device_mappings'].append(block)
+            data['ami_block_device_mappings'].append(block)
 
             if 'launch_block_device_mappings' in opt_vol:
-                datas['launch_block_device_mappings'].append(block)
+                data['launch_block_device_mappings'].append(block)
 
-        return json.dumps(datas, sort_keys=True, indent=4, separators=(',', ': '))
+        return json.dumps(data, sort_keys=True, indent=4, separators=(',', ': '))
 
     def start_builder(self):
         provisioner_bootstrap_option = self._job['options'][0] if 'options' in self._job and len(self._job['options']) > 0 else True
@@ -91,7 +84,7 @@ class AWSImageBuilder(ImageBuilder):
         ami_name_format = self._ami_name
 
         for image in images:
-            #log(image.name, self._log_file)
+            # log(image.name, self._log_file)
             if ami_name_format in image.name:
                 filtered_images.append(image)
 
@@ -105,8 +98,7 @@ class AWSImageBuilder(ImageBuilder):
             for image in filtered_images:
                 image.deregister()
 
-        #Check if the purge works : current_version and current_version -1,2,3,4 are not removed.
-        images = []
+        # Check if the purge works : current_version and current_version -1,2,3,4 are not removed.
         filtered_images = []
         images = conn.get_all_images(owners="self")
 
@@ -114,7 +106,4 @@ class AWSImageBuilder(ImageBuilder):
             if ami_name_format in image.name:
                 filtered_images.append(image)
 
-        if len(filtered_images) <= retention:
-            return True
-        else:
-            return False
+        return len(filtered_images) <= retention
