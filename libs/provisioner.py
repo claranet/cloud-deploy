@@ -96,7 +96,7 @@ class FeaturesProvisioner:
     def build_provisioner_features_files(self, params, features):
         raise NotImplementedError
 
-    def build_packer_provisioner_config(self, packer_config):
+    def build_packer_provisioner_config(self, features_infos, options):
         raise NotImplementedError
 
     def build_packer_provisioner_cleanup(self):

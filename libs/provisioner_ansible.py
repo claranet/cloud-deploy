@@ -38,7 +38,22 @@ class FeaturesProvisionerAnsible(FeaturesProvisioner):
 
         self._provisioner_log_level = self.global_config.get('provisioner_log_level', 'info')
 
-    def build_provisioner_features_files(self, params, features):
+    def build_packer_provisioner_config(self, features, options):
+        features = self._format_provisioner_features(features)
+        self.build_provisioner_features_files(features)
+        _log_level = ANSIBLE_LOG_LEVEL_MAP.get(self._provisioner_log_level, None)
+        _provisioner_config = {
+            'type': 'ansible',
+            'playbook_file': self._ansible_playbook_path,
+            'ansible_env_vars': self._ansible_env_vars,
+            'user': options,
+            'command': self._ansible_command_path,
+        }
+        if _log_level is not None:
+            _provisioner_config['extra_arguments'] = [_log_level]
+        return [_provisioner_config]
+
+    def build_provisioner_features_files(self, features):
         self._build_ansible_galaxy_requirement(features)
         self._build_ansible_playbook(features)
 
@@ -103,23 +118,10 @@ class FeaturesProvisionerAnsible(FeaturesProvisioner):
                 "Ansible - ERROR: No roles match galaxy requirements for one or more features {0}".format(
                     features[-1]['roles']))
 
-    def build_packer_provisioner_config(self, packer_config):
-        _log_level = ANSIBLE_LOG_LEVEL_MAP.get(self._provisioner_log_level, None)
-        _provisioner_config = {
-            'type': 'ansible',
-            'playbook_file': self._ansible_playbook_path,
-            'ansible_env_vars': self._ansible_env_vars,
-            'user': packer_config.get('ssh_username', 'admin'),
-            'command': self._ansible_command_path,
-        }
-        if _log_level is not None:
-            _provisioner_config['extra_arguments'] = [_log_level]
-        return [_provisioner_config]
-
-    def build_packer_provisioner_cleanup(self):
+    def _build_packer_provisioner_cleanup(self):
         return None
 
-    def format_provisioner_features(self, features):
+    def _format_provisioner_features(self, features):
         """ Generates the role dictionnary object with all required features and their options
 
         >>> features = [{'name': 'package', 'version': 'package_name=git_vim', 'provisioner': 'ansible'},

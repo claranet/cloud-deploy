@@ -12,6 +12,7 @@ SALT_PILLAR_TOP = {'base': {'*': ['features']}}
 
 
 class FeaturesProvisionerSalt(FeaturesProvisioner):
+    """ """
     def __init__(self, log_file, unique_id, config, global_config):
         FeaturesProvisioner.__init__(self, log_file, 'salt', unique_id, config, global_config)
         self._salt_state_tree = os.path.join(self.local_repo_path, 'salt')
@@ -22,36 +23,37 @@ class FeaturesProvisionerSalt(FeaturesProvisioner):
         self._salt_pillar_features_path = os.path.join(self._salt_pillar_roots, 'features.sls')
         self._salt_additional_pillar = config.get('salt_additional_pillar', '')
 
-    def build_provisioner_features_files(self, params, features):
-        """ Build salt files only if features with salt provisioner """
-        self._enabled_packer_salt_config = self._test_not_empty_salt_features(features)
-        if self._enabled_packer_salt_config:
-            self._build_salt_top(features)
-            self._build_salt_pillar(params)
+    def build_packer_provisioner_config(self, features, options):
+        features = self._format_provisioner_features(features)
+        enabled_packer_salt_config = self._test_not_empty_salt_features(features)
 
-    def build_packer_provisioner_config(self, packer_config):
-        if self._enabled_packer_salt_config:
-            return [{
+        if enabled_packer_salt_config:
+            self._build_provisioner_features_files(features)
+            _provisionner_config = {
                 'type': 'salt-masterless',
                 'local_state_tree': self._salt_state_tree,
                 'local_pillar_roots': self._salt_pillar_roots,
-                'skip_bootstrap': packer_config['skip_provisioner_bootstrap'],
+                'skip_bootstrap': options,
                 'log_level': self._provisioner_log_level,
-            }]
-        else:
-            return None
-
-    def build_packer_provisioner_cleanup(self):
-        if self._enabled_packer_salt_config:
-            return {
-                'type': 'shell',
-                'inline': [
-                    "sudo rm -rf /srv/salt || echo 'Salt - no cleanup salt'",
-                    "sudo rm -rf /srv/pillar || echo 'Salt - no cleanup pillar'"
-                ]
             }
         else:
             return None
+        return [_provisionner_config]
+
+    def _build_provisioner_features_files(self, features):
+        """ Build salt files only if features with salt provisioner """
+        provisioner_params = self._format_provisioner_params(features)
+        self._build_salt_top(features)
+        self._build_salt_pillar(provisioner_params)
+
+    def _build_packer_provisioner_cleanup(self):
+        return {
+            'type': 'shell',
+            'inline': [
+                "sudo rm -rf /srv/salt || echo 'Salt - no cleanup salt'",
+                "sudo rm -rf /srv/pillar || echo 'Salt - no cleanup pillar'"
+            ]
+        }
 
     def _test_not_empty_salt_features(self, features):
         """ Test is features set
@@ -93,7 +95,7 @@ class FeaturesProvisionerSalt(FeaturesProvisioner):
             log(_yellow('Salt - pillar: features.sls: {0}'.format(features)), self._log_file)
             yaml.dump(features, stream_features, default_flow_style=False)
 
-    def format_provisioner_features(self, features):
+    def _format_provisioner_features(self, features):
         """ Generates the formula dictionnary object with all required features
 
         >>> features = [{'name': 'pkg', 'version': 'git_vim'}, {'name': 'pkg', 'version': 'package=lsof'}, {'name': 'pkg', 'version': 'package=curl'}]
@@ -123,7 +125,7 @@ class FeaturesProvisionerSalt(FeaturesProvisioner):
                 top.append(i['name'].encode('utf-8'))
         return top
 
-    def format_provisioner_params(self, features):
+    def _format_provisioner_params(self, features):
         """ Generates the pillar dictionnary object with all required features and their options
 
         >>> features = [{'name': 'pkg', 'version': 'git_vim'}, {'name': 'pkg', 'version': 'package=lsof'}, {'name': 'pkg', 'version': 'package=curl'}]
