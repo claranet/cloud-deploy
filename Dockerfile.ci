@@ -16,4 +16,8 @@ RUN pip install tox
 
 RUN adduser --disabled-password --gecos "" --home /usr/local/share/ghost ghost
 
+RUN mkdir -p /ghost /var/log/ghost /var/lib/ghost
+
+RUN chown ghost:ghost /ghost /var/log/ghost /var/lib/ghost
+
 USER ghost
