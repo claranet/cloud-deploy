@@ -39,6 +39,9 @@ class Buildimage():
             self._log_file,
             **self._connection_data
         )
+        job = {}
+        job["id"] = self._job['id']
+        job["options"] = self._job['options']
         self._aws_image_builder = AWSImageBuilder(self._app, self._job, self._db, self._log_file, self._config)
 
     def _get_notification_message_done(self, ami_id):

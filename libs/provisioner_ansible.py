@@ -17,8 +17,8 @@ ANSIBLE_LOG_LEVEL_MAP = {"info": "-v", "profile": "-vv", "debug": "-vvv", "trace
 
 class FeaturesProvisionerAnsible(FeaturesProvisioner):
     """ Build features with ansible """
-    def __init__(self, log_file, unique_id, config, global_config):
-        FeaturesProvisioner.__init__(self, log_file, 'ansible', unique_id, config, global_config)
+    def __init__(self, log_file, unique_id, options, config, global_config):
+        FeaturesProvisioner.__init__(self, log_file, 'ansible', unique_id, options, config, global_config)
         ghost_root_path = global_config.get('ghost_root_path', '/usr/local/share/ghost')
         self._ansible_playbook_path = os.path.join(self.local_repo_path, 'main.yml')
         self._ansible_galaxy_role_path = os.path.join(self.local_repo_path, 'roles')
@@ -38,7 +38,7 @@ class FeaturesProvisionerAnsible(FeaturesProvisioner):
 
         self._provisioner_log_level = self.global_config.get('provisioner_log_level', 'info')
 
-    def build_packer_provisioner_config(self, features, options):
+    def build_packer_provisioner_config(self, features):
         features = self._format_provisioner_features(features)
         self.build_provisioner_features_files(features)
         _log_level = ANSIBLE_LOG_LEVEL_MAP.get(self._provisioner_log_level, None)
@@ -46,7 +46,7 @@ class FeaturesProvisionerAnsible(FeaturesProvisioner):
             'type': 'ansible',
             'playbook_file': self._ansible_playbook_path,
             'ansible_env_vars': self._ansible_env_vars,
-            'user': options,
+            'user': self._options,
             'command': self._ansible_command_path,
         }
         if _log_level is not None:

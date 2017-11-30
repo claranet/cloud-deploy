@@ -21,7 +21,7 @@ class GalaxyBadRequirementPathException(Exception):
 
 
 class FeaturesProvisioner:
-    def __init__(self, log_file, name, unique_id, config, global_config):
+    def __init__(self, log_file, name, unique_id, options, config, global_config):
         self._log_file = log_file
         self.name = name
         self.unique = unique_id
@@ -39,6 +39,7 @@ class FeaturesProvisioner:
 
         if config:
             self._get_provisioner_repo()
+            self._options = options
 
     def _get_local_repo_path(self):
         return get_local_repo_path(PROVISIONER_LOCAL_TREE, self.name, self.unique)

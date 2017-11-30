@@ -36,7 +36,7 @@ class ImageBuilder:
                                                               name=self._app['name'],
                                                               date=time.strftime("%Y%m%d-%H%M%S"),
                                                               color='.%s' % self._color if self._color else '')
-        self.unique = str(job)
+        self.unique = str(job['id'])
         self._provisioners = []
 
     def _format_ghost_env_vars(self):
@@ -102,9 +102,9 @@ class ImageBuilder:
         provisioners_config = get_provisioners_config(self._config.get['provisionners'])
         for key, provisioner_config in provisioners_config.iteritems():
             if key == 'salt':
-                self._provisioners.append(FeaturesProvisionerSalt(self._log_file, self.unique, provisioner_config, self._config))
+                self._provisioners.append(FeaturesProvisionerSalt(self._log_file, self.unique, self._job['options'], provisioner_config, self._config))
             elif key == 'ansible':
-                self._provisioners.append(FeaturesProvisionerAnsible(self._log_file, self.unique, provisioner_config, self._config))
+                self._provisioners.append(FeaturesProvisionerAnsible(self._log_file, self.unique, self._app['build_infos']["ssh_username"], provisioner_config, self._config))
             else:
                 log("Invalid provisioner type. Please check your yaml 'config.yml' file", self._log_file)
                 raise GCallException("Invalid features provisioner type")
@@ -118,7 +118,7 @@ class ImageBuilder:
         }]
         
         for provisioner in self._provisioners:
-            provisioner_packer_config = provisioner.build_packer_provisioner_config()
+            provisioner_packer_config = provisioner.build_packer_provisioner_config(self._app['features'])
             if provisioner_packer_config:
                 provisioners.extend(provisioner_packer_config)
 

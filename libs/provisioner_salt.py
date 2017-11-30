@@ -13,8 +13,8 @@ SALT_PILLAR_TOP = {'base': {'*': ['features']}}
 
 class FeaturesProvisionerSalt(FeaturesProvisioner):
     """ """
-    def __init__(self, log_file, unique_id, config, global_config):
-        FeaturesProvisioner.__init__(self, log_file, 'salt', unique_id, config, global_config)
+    def __init__(self, log_file, unique_id, options, config, global_config):
+        FeaturesProvisioner.__init__(self, log_file, 'salt', unique_id, options, config, global_config)
         self._salt_state_tree = os.path.join(self.local_repo_path, 'salt')
         self._salt_pillar_roots = os.path.join(self.local_repo_path, 'pillar')
         self._provisioner_log_level = self.global_config.get('provisioner_log_level', 'info')
@@ -23,7 +23,7 @@ class FeaturesProvisionerSalt(FeaturesProvisioner):
         self._salt_pillar_features_path = os.path.join(self._salt_pillar_roots, 'features.sls')
         self._salt_additional_pillar = config.get('salt_additional_pillar', '')
 
-    def build_packer_provisioner_config(self, features, options):
+    def build_packer_provisioner_config(self, features):
         features = self._format_provisioner_features(features)
         enabled_packer_salt_config = self._test_not_empty_salt_features(features)
 
@@ -33,7 +33,7 @@ class FeaturesProvisionerSalt(FeaturesProvisioner):
                 'type': 'salt-masterless',
                 'local_state_tree': self._salt_state_tree,
                 'local_pillar_roots': self._salt_pillar_roots,
-                'skip_bootstrap': options,
+                'skip_bootstrap': self._options,
                 'log_level': self._provisioner_log_level,
             }
         else:
