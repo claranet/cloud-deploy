@@ -8,7 +8,6 @@ services:
      - '6379'
     networks:
       - dbs
-    user: redis
 
   backend:
     image: mongo
@@ -16,7 +15,6 @@ services:
       - '27017'
     networks:
       - dbs
-    user: mongodb
 
   worker:
     build:
@@ -34,7 +32,6 @@ services:
       - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
       - REDIS_HOST=queue
       - MONGO_HOST=backend
-    user: ghost
 
   api:
     build:
@@ -55,7 +52,6 @@ services:
       - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
       - REDIS_HOST=queue
       - MONGO_HOST=backend
-    user: ghost
 
   web-ui:
     build:
@@ -74,7 +70,6 @@ services:
       - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
       - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
       - API_BASE_URL=http://api:5000
-    user: ghost
 
   nginx:
     image: nginx:latest
@@ -85,7 +80,6 @@ services:
       - '80:80'
     networks:
       - front
-    user: www-data
 
 networks:
   dbs:

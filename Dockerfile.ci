@@ -15,3 +15,5 @@ RUN wget https://releases.hashicorp.com/packer/1.1.2/packer_1.1.2_linux_amd64.zi
 RUN pip install tox
 
 RUN adduser --disabled-password --gecos "" --home /usr/local/share/ghost --no-create-home ghost
+
+USER ghost
