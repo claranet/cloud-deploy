@@ -73,11 +73,11 @@ class FeaturesProvisionerAnsible(FeaturesProvisioner):
 
         >>> features = [{'hosts': 'all', 'roles': [{'role': 'package', 'package_name': ['git_vim']}, {'role': 'package', 'package_name': ['curl']}, {'role': 'apache2', 'hostname': 'localhost'}]}]
         >>> import pprint
-        >>> pprint.pprint(sorted(FeaturesProvisionerAnsible(None, None, {}, {})._get_ansible_roles(features)))
+        >>> pprint.pprint(sorted(FeaturesProvisionerAnsible(None, None, {}, {}, {})._get_ansible_roles(features)))
         ['apache2', 'package']
 
         >>> features = [{'hosts': 'all', 'roles': []}]
-        >>> pprint.pprint(sorted(FeaturesProvisionerAnsible(None, None, {}, {})._get_ansible_roles(features)))
+        >>> pprint.pprint(sorted(FeaturesProvisionerAnsible(None, None, {}, {}, {})._get_ansible_roles(features)))
         []
 
         """
@@ -118,7 +118,7 @@ class FeaturesProvisionerAnsible(FeaturesProvisioner):
                 "Ansible - ERROR: No roles match galaxy requirements for one or more features {0}".format(
                     features[-1]['roles']))
 
-    def _build_packer_provisioner_cleanup(self):
+    def build_packer_provisioner_cleanup(self):
         return None
 
     def _format_provisioner_features(self, features):
@@ -128,7 +128,7 @@ class FeaturesProvisionerAnsible(FeaturesProvisioner):
         ...             {'name': 'package', 'version': 'package_name=curl', 'provisioner': 'ansible'}]
         >>> global_config = {'ghost_root_path': os.path.dirname(os.path.dirname(__file__))}
         >>> import pprint
-        >>> pprint.pprint(FeaturesProvisionerAnsible(None, None, {}, global_config).format_provisioner_features(features)[-1])
+        >>> pprint.pprint(FeaturesProvisionerAnsible(None, None, {}, {}, {})._format_provisioner_features(features)[-1])
         {'hosts': 'all',
          'name': 'Ghost application features',
          'roles': [{'package_name': 'git_vim', 'role': 'package'},
@@ -136,19 +136,19 @@ class FeaturesProvisionerAnsible(FeaturesProvisioner):
 
         >>> features = [{'name': 'package', 'version': 'package_name=git_vim', 'provisioner': 'salt'},
         ...             {'name': 'package', 'version': 'package_name=curl', 'provisioner': 'ansible'}]
-        >>> pprint.pprint(FeaturesProvisionerAnsible(None, None, {}, global_config).format_provisioner_features(features)[-1])
+        >>> pprint.pprint(FeaturesProvisionerAnsible(None, None, {}, {}, {})._format_provisioner_features(features)[-1])
         {'hosts': 'all',
          'name': 'Ghost application features',
          'roles': [{'package_name': 'curl', 'role': 'package'}]}
 
         >>> features = [{'name': 'package', 'version': 'package_name=git_vim', 'provisioner': 'salt'},
         ...             {'name': 'package', 'version': 'package_name=curl', 'provisioner': 'salt'}]
-        >>> pprint.pprint(FeaturesProvisionerAnsible(None, None, {}, global_config).format_provisioner_features(features)[-1])
+        >>> pprint.pprint(FeaturesProvisionerAnsible(None, None, {}, {}, {})._format_provisioner_features(features)[-1])
         {'hosts': 'all', 'name': 'Ghost application features', 'roles': []}
 
         >>> features = [{'name': 'package', 'version': 'package_name=git_vim'},
         ...             {'name': 'package', 'version': 'package_name=curl'}]
-        >>> pprint.pprint(FeaturesProvisionerAnsible(None, None, {}, global_config).format_provisioner_features(features)[-1])
+        >>> pprint.pprint(FeaturesProvisionerAnsible(None, None, {}, {}, {})._format_provisioner_features(features)[-1])
         {'hosts': 'all', 'name': 'Ghost application features', 'roles': []}
 
         >>> features = [{'name': 'package', 'version': 'package_name=git_vim', 'provisioner': 'salt'},

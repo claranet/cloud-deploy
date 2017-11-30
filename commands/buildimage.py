@@ -7,7 +7,7 @@ from libs.lxd import lxd_is_available
 from settings import cloud_connections, DEFAULT_PROVIDER
 from libs.deploy import touch_app_manifest, get_path_from_app_with_color
 from libs.image_builder_aws import AWSImageBuilder
-from libs.provisioner import GalaxyNoMatchingRolesException, GalaxyBadRequirementPathException
+from libs.provisioners.provisioner_ansible import GalaxyNoMatchingRolesException, GalaxyBadRequirementPathException
 from libs.image_builder_lxd import LXDImageBuilder
 
 COMMAND_DESCRIPTION = "Build Image"
@@ -16,7 +16,6 @@ RELATED_APP_FIELDS = ['features', 'build_infos']
 
 def is_available(app_context=None):
     return True
-
 
 class Buildimage():
     _app = None
@@ -42,15 +41,14 @@ class Buildimage():
         job = {}
         job["id"] = self._job['id']
         job["options"] = self._job['options']
-        self._aws_image_builder = AWSImageBuilder(self._app, self._job, self._db, self._log_file, self._config)
 
     def _get_notification_message_done(self, ami_id):
         """
         >>> class worker:
         ...   app = {'name': 'AppName', 'env': 'prod', 'role': 'webfront', 'region': 'eu-west-1'}
-        ...   job = None
+        ...   job = { 'id': "012345678901234567890123" , "options" : "True" }
         ...   log_file = None
-        ...   _config = None
+        ...   _config = {}
         ...   _db = None
         >>> Buildimage(worker=worker())._get_notification_message_done('')
         'Build image OK: []'
@@ -68,7 +66,8 @@ class Buildimage():
 
     def execute(self):
         try:
-            ami_id, ami_name = self._aws_image_builder.start_builder()
+            aws_image_builder = AWSImageBuilder(self._app, self._job, self._db, self._log_file, self._config)
+            ami_id, ami_name = aws_image_builder.start_builder()
         except (GalaxyNoMatchingRolesException, GalaxyBadRequirementPathException, GCallException) as e:
             self._worker.update_status("aborted", message=str(e))
             return

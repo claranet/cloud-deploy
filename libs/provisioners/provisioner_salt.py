@@ -23,17 +23,17 @@ class FeaturesProvisionerSalt(FeaturesProvisioner):
         self._salt_pillar_features_path = os.path.join(self._salt_pillar_roots, 'features.sls')
         self._salt_additional_pillar = config.get('salt_additional_pillar', '')
 
-    def build_packer_provisioner_config(self, features):
-        features = self._format_provisioner_features(features)
+    def build_packer_provisioner_config(self, features_config):
+        features = self._format_provisioner_features(features_config)
         enabled_packer_salt_config = self._test_not_empty_salt_features(features)
 
         if enabled_packer_salt_config:
-            self._build_provisioner_features_files(features)
+            self._build_provisioner_features_files(features_config)
             _provisionner_config = {
                 'type': 'salt-masterless',
                 'local_state_tree': self._salt_state_tree,
                 'local_pillar_roots': self._salt_pillar_roots,
-                'skip_bootstrap': self._options,
+                'skip_bootstrap': self._options[0],
                 'log_level': self._provisioner_log_level,
             }
         else:
@@ -46,7 +46,7 @@ class FeaturesProvisionerSalt(FeaturesProvisioner):
         self._build_salt_top(features)
         self._build_salt_pillar(provisioner_params)
 
-    def _build_packer_provisioner_cleanup(self):
+    def build_packer_provisioner_cleanup(self):
         return {
             'type': 'shell',
             'inline': [
@@ -60,11 +60,11 @@ class FeaturesProvisionerSalt(FeaturesProvisioner):
 
         >>> features = []
         >>> import pprint
-        >>> pprint.pprint(FeaturesProvisionerSalt(None, None, {}, {})._test_not_empty_salt_features(features))
+        >>> pprint.pprint(FeaturesProvisionerSalt(None, None, {}, {}, {})._test_not_empty_salt_features(features))
         False
 
         >>> features = ['pkg']
-        >>> pprint.pprint(FeaturesProvisionerSalt(None, None, {}, {})._test_not_empty_salt_features(features))
+        >>> pprint.pprint(FeaturesProvisionerSalt(None, None, {}, {}, {})._test_not_empty_salt_features(features))
         True
 
         """
@@ -99,15 +99,15 @@ class FeaturesProvisionerSalt(FeaturesProvisioner):
         """ Generates the formula dictionnary object with all required features
 
         >>> features = [{'name': 'pkg', 'version': 'git_vim'}, {'name': 'pkg', 'version': 'package=lsof'}, {'name': 'pkg', 'version': 'package=curl'}]
-        >>> FeaturesProvisionerSalt(None, None, {}, {}).format_provisioner_features(features)
+        >>> FeaturesProvisionerSalt(None, None, {}, {}, {})._format_provisioner_features(features)
         ['pkg']
 
         >>> features = [{'name': 'pkg', 'version': 'git_vim', 'provisioner': 'salt'}, {'name': 'pkg', 'version': 'package=lsof', 'provisioner': 'salt'}, {'name': 'pkg', 'version': 'package=curl', 'provisioner': 'salt'}]
-        >>> FeaturesProvisionerSalt(None, None, {}, {}).format_provisioner_features(features)
+        >>> FeaturesProvisionerSalt(None, None, {}, {}, {})._format_provisioner_features(features)
         ['pkg']
 
         >>> features = []
-        >>> FeaturesProvisionerSalt(None, None, {}, {}).format_provisioner_features(features)
+        >>> FeaturesProvisionerSalt(None, None, {}, {}, {})._format_provisioner_features(features)
         []
 
         """
@@ -130,23 +130,23 @@ class FeaturesProvisionerSalt(FeaturesProvisioner):
 
         >>> features = [{'name': 'pkg', 'version': 'git_vim'}, {'name': 'pkg', 'version': 'package=lsof'}, {'name': 'pkg', 'version': 'package=curl'}]
         >>> import pprint
-        >>> pprint.pprint(FeaturesProvisionerSalt(None, None, {}, {}).format_provisioner_params(features).items())
+        >>> pprint.pprint(FeaturesProvisionerSalt(None, None, {}, {}, {})._format_provisioner_params(features).items())
         [('pkg', {'package': ['lsof', 'curl'], 'version': 'git_vim'})]
 
         >>> features = [{'name': 'pkg', 'version': 'git_vim', 'provisioner': 'salt'}, {'name': 'pkg', 'version': 'package=lsof', 'provisioner': 'salt'}, {'name': 'pkg', 'version': 'package=curl', 'provisioner': 'salt'}]
-        >>> pprint.pprint(FeaturesProvisionerSalt(None, None, {}, {}).format_provisioner_params(features).items())
+        >>> pprint.pprint(FeaturesProvisionerSalt(None, None, {}, {}, {})._format_provisioner_params(features).items())
         [('pkg', {'package': ['lsof', 'curl'], 'version': 'git_vim'})]
 
         >>> features = [{'name': 'pkg', 'version': 'git_vim', 'provisioner': 'ansible'}, {'name': 'pkg', 'version': 'package=lsof', 'provisioner': 'salt'}, {'name': 'pkg', 'version': 'package=curl', 'provisioner': 'salt'}]
-        >>> pprint.pprint(FeaturesProvisionerSalt(None, None, {}, {}).format_provisioner_params(features).items())
+        >>> pprint.pprint(FeaturesProvisionerSalt(None, None, {}, {}, {})._format_provisioner_params(features).items())
         [('pkg', {'package': ['lsof', 'curl']})]
 
         >>> features = [{'name': 'pkg', 'version': 'git_vim', 'provisioner': 'ansible'}, {'name': 'pkg', 'version': 'package=lsof', 'provisioner': 'ansible'}, {'name': 'pkg', 'version': 'package=curl', 'provisioner': 'ansible'}]
-        >>> pprint.pprint(FeaturesProvisionerSalt(None, None, {}, {}).format_provisioner_params(features).items())
+        >>> pprint.pprint(FeaturesProvisionerSalt(None, None, {}, {}, {})._format_provisioner_params(features).items())
         []
 
         >>> features = []
-        >>> pprint.pprint(FeaturesProvisionerSalt(None, None, {}, {}).format_provisioner_params(features).items())
+        >>> pprint.pprint(FeaturesProvisionerSalt(None, None, {}, {}, {})._format_provisioner_params(features).items())
         []
 
         """

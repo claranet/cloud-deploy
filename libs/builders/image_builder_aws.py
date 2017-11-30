@@ -10,7 +10,6 @@ from ghost_log import log
 from .ec2 import get_ami_root_block_device_mapping
 from .image_builder import ImageBuilder
 
-PACKER_JSON_PATH = "/tmp/packer/"
 
 class AWSImageBuilder(ImageBuilder):
     """
@@ -28,7 +27,8 @@ class AWSImageBuilder(ImageBuilder):
             self._log_file,
             **self._connection_data
         )
-        self.packer_file_path = PACKER_JSON_PATH + self.unique + ".json"
+
+        self._packer_file_path_aws = self.packer_file_path + "/aws_builder.json"
 
 
     def _format_packer_from_app(self):
@@ -87,27 +87,27 @@ class AWSImageBuilder(ImageBuilder):
             if 'launch_block_device_mappings' in opt_vol:
                 data['launch_block_device_mappings'].append(block)
 
-        return json.dumps(data, sort_keys=True, indent=4, separators=(',', ': '))
+        return data
 
     def _build_packer_json(self):
-        packer_json = {}
+        packer = {}
         builders = [self._format_packer_from_app()]
-        packer_json['builders'] = builders
-        packer_json['provisioners'] = self._get_provisionners()
+        packer['builders'] = builders
+        packer['provisioners'] = self._get_packer_provisionners
         log('packer file path: {0}'.format(self.packer_file_path), self._log_file)
-        stream = file(self.packer_file_path, 'w')
+        stream = file(self._packer_file_path_aws, 'w')
         log("Writing Packer definition to: {0}".format(self.packer_file_path), self._log_file)
-        json.dump(packer_json, stream, sort_keys=True, indent=4, separators=(',', ': '))
+        json.dump(packer, stream, sort_keys=True, indent=4, separators=(',', ': '))
+        return packer
 
     def start_builder(self):
-        json_packer = self._build_packer_json()
-        json_packer_for_log = json.loads(json_packer)
-        del json_packer_for_log['credentials']
+        packer = self._build_packer_json()
+        credentials = packer['builders'][0]['credentials']
+        del packer['builders'][0]['credentials']
         log("Generating a new AMI", self._log_file)
-        log("Packer options : %s" % json.dumps(json_packer_for_log, sort_keys=True, indent=4, separators=(',', ': ')),
-            self._log_file)
-        pack = Packer(json_packer, self._config, self._log_file, self._job['_id'])
-        ami_id = pack.build_image(self.packer_file_path)
+        log("Packer options : %s" %json.dumps(packer, sort_keys=True, indent=4, separators=(',', ': ')), self._log_file)
+        pack = Packer(credentials, self._log_file)
+        ami_id = pack.build_image(self._packer_file_path_aws)
         return ami_id, self._ami_name
 
     def purge_old_images(self):

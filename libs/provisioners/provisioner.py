@@ -3,8 +3,9 @@ import sh
 from sh import git
 
 from ghost_log import log
-from ghost_tools import get_lock_path_from_repo, get_local_repo_path
+from ghost_tools import get_lock_path_from_repo, get_local_repo_path, GCallException, get_provisioners_config
 from libs.git_helper import git_remap_submodule, git_acquire_lock, git_release_lock
+
 
 PROVISIONER_LOCAL_TREE="/tmp/ghost-features-provisioner"
 PROVISIONER_LOCAL_MIRROR="/ghost/.mirrors"

@@ -29,6 +29,8 @@ def test_build_image_ansible(packer_run_packer_cmd, gcall, provisioner_get_local
         "instance_type": "test_instance_type",
         "options": [False]  # Do not skip bootstrap
     }
+    job["id"] = "012345678901234567890123"
+
     test_config = get_test_config(
         features_provisioners={'ansible': {
             'git_revision': 'master',
@@ -158,6 +160,7 @@ def test_build_image_ansible_debug(packer_run_packer_cmd, gcall, provisioner_get
         "instance_type": "test_instance_type",
         "options": [False]  # Do not skip bootstrap
     }
+    job["id"] = "012345678901234567890123"
     test_config = get_test_config(
         features_provisioners={'ansible': {
             'git_revision': 'master',

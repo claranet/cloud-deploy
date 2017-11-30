@@ -5,16 +5,16 @@ import os
 import io
 
 from ghost_log import log
-from ghost_tools import b64decode_utf8, GCallException, get_provisioners_config
+from ghost_tools import b64decode_utf8, GCallException
 
-from libs.provisioner_salt import FeaturesProvisionerSalt
-from libs.provisioner_ansible import FeaturesProvisionerAnsible
+from libs.provisioners import get_provisioners
 
 from .blue_green import get_blue_green_from_app
 
 
 AMI_BASE_FMT = "ami.{env}.{region}.{role}.{name}.{color}"
 AMI_FMT = AMI_BASE_FMT + "{date}"
+PACKER_JSON_PATH = "/tmp/packer/"
 
 
 class ImageBuilder:
@@ -37,7 +37,10 @@ class ImageBuilder:
                                                               date=time.strftime("%Y%m%d-%H%M%S"),
                                                               color='.%s' % self._color if self._color else '')
         self.unique = str(job['id'])
-        self._provisioners = []
+        self.packer_file_path = PACKER_JSON_PATH + self.unique
+        if not os.path.exists(self.packer_file_path):
+            os.makedirs(self.packer_file_path)
+
 
     def _format_ghost_env_vars(self):
         ghost_vars = []
@@ -56,7 +59,7 @@ class ImageBuilder:
                 'name': 'AppName', 'env': 'prod', 'role': 'webfront', 'region': 'eu-west-1',\
                 'lifecycle_hooks': {'pre_buildimage': u'', 'post_buildimage': b64encode_utf8(u'echo Custom post-buildimage script')}\
             }
-        >>> job = None
+        >>> job = {"id" : "012345678901234567890123"}
         >>> log_file = StringIO()
         >>> _config = None
         >>> _db = None
@@ -97,42 +100,35 @@ class ImageBuilder:
         hooks['post_buildimage'] = self._generate_buildimage_hook('post_buildimage')
         return hooks
 
-    def _get_provisionners(self):
+    @property
+    def _get_packer_provisionners(self):
 
-        provisioners_config = get_provisioners_config(self._config.get['provisionners'])
-        for key, provisioner_config in provisioners_config.iteritems():
-            if key == 'salt':
-                self._provisioners.append(FeaturesProvisionerSalt(self._log_file, self.unique, self._job['options'], provisioner_config, self._config))
-            elif key == 'ansible':
-                self._provisioners.append(FeaturesProvisionerAnsible(self._log_file, self.unique, self._app['build_infos']["ssh_username"], provisioner_config, self._config))
-            else:
-                log("Invalid provisioner type. Please check your yaml 'config.yml' file", self._log_file)
-                raise GCallException("Invalid features provisioner type")
-        
-        formatted_env_vars = self._format_ghost_env_vars() + ['%s=%s' % (envvar['var_key'], envvar['var_value']) for envvar in self._app['custom_env_vars']]
+        provisioners = get_provisioners(self._config, self._log_file, self.unique, self._job["options"], self._app)
+        formatted_env_vars = self._format_ghost_env_vars() + ['%s=%s' % (envvar['var_key'], envvar['var_value']) for envvar in self._app['env_vars']]
+
         hooks = self._get_buildimage_hooks()
-        provisioners = [{
+        ret = [{
             'type': 'shell',
             'environment_vars': formatted_env_vars,
             'script': hooks['pre_buildimage']
         }]
-        
-        for provisioner in self._provisioners:
+
+        for provisioner in provisioners:
             provisioner_packer_config = provisioner.build_packer_provisioner_config(self._app['features'])
             if provisioner_packer_config:
-                provisioners.extend(provisioner_packer_config)
+                ret.extend(provisioner_packer_config)
 
-        provisioners.append({
+        ret.append({
             'type': 'shell',
             'environment_vars': formatted_env_vars,
             'script': hooks['post_buildimage']
         })
 
-        for provisioner in self._provisioners:
+        for provisioner in provisioners:
             cleanup_section = provisioner.build_packer_provisioner_cleanup()
-            if provisioner.build_packer_provisioner_config() and cleanup_section:
-                provisioners.append(cleanup_section)
-        return provisioners
+            if cleanup_section:
+                ret.append(cleanup_section)
+        return ret
     
     def start_builder(self):
         raise NotImplementedError

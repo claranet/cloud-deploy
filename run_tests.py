@@ -23,9 +23,9 @@ modules = [
     "libs.host_deployment_manager",
     "libs.image_builder",
     "libs.image_builder_aws",
-    "libs.provisioner",
-    "libs.provisioner_salt",
-    "libs.provisioner_ansible",
+    "libs.provisioners",
+    "libs.provisioners.provisioner_salt",
+    "libs.provisioners.provisioner_ansible",
     "run",
     "run_rqworkers",
 ]
