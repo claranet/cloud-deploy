@@ -10,6 +10,7 @@ from ghost_log import log
 from .ec2 import get_ami_root_block_device_mapping
 from .image_builder import ImageBuilder
 
+PACKER_JSON_PATH = "/tmp/packer/"
 
 class AWSImageBuilder(ImageBuilder):
     """
@@ -27,12 +28,16 @@ class AWSImageBuilder(ImageBuilder):
             self._log_file,
             **self._connection_data
         )
+        self.packer_file_path = PACKER_JSON_PATH + self.unique + ".json"
 
-    def _format_packer_from_app(self, provisioner_skip_bootstrap_option):
+
+    def _format_packer_from_app(self):
+        provisioner_bootstrap_option = self._job['options'][0] if 'options' in self._job and len(self._job['options']) > 0 else True
         instance_tags = {}
         if 'instance_tags' in self._app['environment_infos']:
             instance_tags = {i['tag_name']: i['tag_value'] for i in self._app['environment_infos']['instance_tags']}
         data = {
+            'type': 'amazon-ebs',
             'region': self._app['region'],
             'ami_name': self._ami_name,
             'source_ami': self._app['build_infos']['source_ami'],
@@ -42,7 +47,7 @@ class AWSImageBuilder(ImageBuilder):
             'vpc_id': self._app['vpc_id'],
             'subnet_id': self._app['build_infos']['subnet_id'],
             'associate_public_ip_address': True,
-            'skip_provisioner_bootstrap': provisioner_skip_bootstrap_option,
+            'skip_provisioner_bootstrap': provisioner_bootstrap_option,
             'ami_block_device_mappings': [],
             'launch_block_device_mappings': [],
             'iam_instance_profile': self._app['environment_infos']['instance_profile'],
@@ -84,18 +89,25 @@ class AWSImageBuilder(ImageBuilder):
 
         return json.dumps(data, sort_keys=True, indent=4, separators=(',', ': '))
 
+    def _build_packer_json(self):
+        packer_json = {}
+        builders = [self._format_packer_from_app()]
+        packer_json['builders'] = builders
+        packer_json['provisioners'] = self._get_provisionners()
+        log('packer file path: {0}'.format(self.packer_file_path), self._log_file)
+        stream = file(self.packer_file_path, 'w')
+        log("Writing Packer definition to: {0}".format(self.packer_file_path), self._log_file)
+        json.dump(packer_json, stream, sort_keys=True, indent=4, separators=(',', ': '))
+
     def start_builder(self):
-        provisioner_bootstrap_option = (self._job['options'][0]
-                                        if 'options' in self._job and len(self._job['options']) > 0
-                                        else True)
-        json_packer = self._format_packer_from_app(provisioner_bootstrap_option)
+        json_packer = self._build_packer_json()
         json_packer_for_log = json.loads(json_packer)
         del json_packer_for_log['credentials']
         log("Generating a new AMI", self._log_file)
         log("Packer options : %s" % json.dumps(json_packer_for_log, sort_keys=True, indent=4, separators=(',', ': ')),
             self._log_file)
         pack = Packer(json_packer, self._config, self._log_file, self._job['_id'])
-        ami_id = pack.build_image(self._app['features'], self._get_buildimage_hooks())
+        ami_id = pack.build_image(self.packer_file_path)
         return ami_id, self._ami_name
 
     def purge_old_images(self):

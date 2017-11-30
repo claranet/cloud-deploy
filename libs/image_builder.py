@@ -5,9 +5,13 @@ import os
 import io
 
 from ghost_log import log
-from ghost_tools import b64decode_utf8
+from ghost_tools import b64decode_utf8, GCallException, get_provisioners_config
+
+from libs.provisioner_salt import FeaturesProvisionerSalt
+from libs.provisioner_ansible import FeaturesProvisionerAnsible
 
 from .blue_green import get_blue_green_from_app
+
 
 AMI_BASE_FMT = "ami.{env}.{region}.{role}.{name}.{color}"
 AMI_FMT = AMI_BASE_FMT + "{date}"
@@ -32,6 +36,8 @@ class ImageBuilder:
                                                               name=self._app['name'],
                                                               date=time.strftime("%Y%m%d-%H%M%S"),
                                                               color='.%s' % self._color if self._color else '')
+        self.unique = str(job)
+        self._provisioners = []
 
     def _format_ghost_env_vars(self):
         ghost_vars = []
@@ -91,6 +97,43 @@ class ImageBuilder:
         hooks['post_buildimage'] = self._generate_buildimage_hook('post_buildimage')
         return hooks
 
+    def _get_provisionners(self):
+
+        provisioners_config = get_provisioners_config(self._config.get['provisionners'])
+        for key, provisioner_config in provisioners_config.iteritems():
+            if key == 'salt':
+                self._provisioners.append(FeaturesProvisionerSalt(self._log_file, self.unique, provisioner_config, self._config))
+            elif key == 'ansible':
+                self._provisioners.append(FeaturesProvisionerAnsible(self._log_file, self.unique, provisioner_config, self._config))
+            else:
+                log("Invalid provisioner type. Please check your yaml 'config.yml' file", self._log_file)
+                raise GCallException("Invalid features provisioner type")
+        
+        formatted_env_vars = self._format_ghost_env_vars() + ['%s=%s' % (envvar['var_key'], envvar['var_value']) for envvar in self._app['custom_env_vars']]
+        hooks = self._get_buildimage_hooks()
+        provisioners = [{
+            'type': 'shell',
+            'environment_vars': formatted_env_vars,
+            'script': hooks['pre_buildimage']
+        }]
+        
+        for provisioner in self._provisioners:
+            provisioner_packer_config = provisioner.build_packer_provisioner_config()
+            if provisioner_packer_config:
+                provisioners.extend(provisioner_packer_config)
+
+        provisioners.append({
+            'type': 'shell',
+            'environment_vars': formatted_env_vars,
+            'script': hooks['post_buildimage']
+        })
+
+        for provisioner in self._provisioners:
+            cleanup_section = provisioner.build_packer_provisioner_cleanup()
+            if provisioner.build_packer_provisioner_config() and cleanup_section:
+                provisioners.append(cleanup_section)
+        return provisioners
+    
     def start_builder(self):
         raise NotImplementedError
 
