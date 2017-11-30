@@ -1,6 +1,6 @@
 # Dockerfile used by docker-compose to run Ghost
 
-FROM moreaghost/morea-ghost:2017.11.30
+FROM moreaghost/morea-ghost:2017.11.30-2
 
 COPY requirements.txt requirements.txt
 
