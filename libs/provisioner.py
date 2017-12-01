@@ -3,7 +3,7 @@ import sh
 from sh import git
 
 from ghost_log import log
-from ghost_tools import get_lock_path_from_repo
+from ghost_tools import get_lock_path_from_repo, get_local_repo_path
 from libs.git_helper import git_remap_submodule, git_acquire_lock, git_release_lock
 
 PROVISIONER_LOCAL_TREE="/tmp/ghost-features-provisioner"
@@ -41,7 +41,7 @@ class FeaturesProvisioner:
             self._get_provisioner_repo()
 
     def _get_local_repo_path(self):
-        return "{base}/{name}-{uid}".format(base=PROVISIONER_LOCAL_TREE, name=self.name, uid=self.unique)
+        return get_local_repo_path(PROVISIONER_LOCAL_TREE, self.name, self.unique)
 
     def _get_provisioner_repo(self):
         # Use the configured git repository, if any

@@ -12,6 +12,7 @@ from .blue_green import get_blue_green_from_app
 AMI_BASE_FMT = "ami.{env}.{region}.{role}.{name}.{color}"
 AMI_FMT = AMI_BASE_FMT + "{date}"
 
+
 class ImageBuilder:
     """
     This class is the generic interface used by Buildimage command
@@ -31,6 +32,14 @@ class ImageBuilder:
                                                               name=self._app['name'],
                                                               date=time.strftime("%Y%m%d-%H%M%S"),
                                                               color='.%s' % self._color if self._color else '')
+
+    def _format_ghost_env_vars(self):
+        ghost_vars = []
+        ghost_vars.append('GHOST_APP=%s' % self._app['name'])
+        ghost_vars.append('GHOST_ENV=%s' % self._app['env'])
+        ghost_vars.append('GHOST_ENV_COLOR=%s' % (self._color if self._color else ''))
+        ghost_vars.append('GHOST_ROLE=%s' % self._app['role'])
+        return ghost_vars    
 
     def _generate_buildimage_hook(self, hook_name):
         """ Generates a buildimage hook script

@@ -25,6 +25,7 @@ ndg-httpsclient
 pip-tools
 psutil
 pyasn1
+pylxd
 pymongo
 pyopenssl
 PyYAML

@@ -6,6 +6,7 @@
 
 import doctest
 import importlib
+from pylxd import Client as LXDClient
 
 modules = [
   "command",
