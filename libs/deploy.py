@@ -9,7 +9,7 @@ from copy import copy
 import sys
 import os
 import tempfile
-from libs.image_builder_lxd import LXDImageBuilder
+from libs.builders.image_builder_lxd import LXDImageBuilder
 from libs.lxd import lxd_is_available
 from fabric.api import execute as fab_execute
 from fabfile import deploy, executescript

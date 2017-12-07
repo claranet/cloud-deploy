@@ -2,17 +2,16 @@ import mock
 import os
 
 from ghost_tools import get_local_repo_path
-from libs.image_builder_lxd import LXDImageBuilder
-from libs.provisioner import PROVISIONER_LOCAL_TREE
+from libs.builders.image_builder_lxd import LXDImageBuilder
 from tests.helpers import LOG_FILE, mocked_logger, get_test_application, get_test_config, void
 
 
-@mock.patch('libs.image_builder_lxd.log', new=mocked_logger)
-@mock.patch('libs.image_builder.log', new=mocked_logger)
+@mock.patch('libs.builders.image_builder_lxd.log', new=mocked_logger)
+@mock.patch('libs.builders.image_builder.log', new=mocked_logger)
 @mock.patch('ghost_tools.log', new=mocked_logger)
-@mock.patch('libs.image_builder_lxd.time.sleep', new=void)  # Avoid waiting
-@mock.patch('libs.image_builder_lxd.gcall')
-@mock.patch('libs.image_builder_lxd.LXDClient')
+@mock.patch('libs.builders.image_builder_lxd.time.sleep', new=void)  # Avoid waiting
+@mock.patch('libs.builders.image_builder_lxd.gcall')
+@mock.patch('libs.builders.image_builder_lxd.LXDClient')
 def test_build_image(lxd_client_cls, gcall_lxd):
     # Application context
     app = get_test_application()
@@ -122,12 +121,12 @@ def test_build_image(lxd_client_cls, gcall_lxd):
     )
 
 
-@mock.patch('libs.image_builder_lxd.log', new=mocked_logger)
-@mock.patch('libs.image_builder.log', new=mocked_logger)
+@mock.patch('libs.builders.image_builder_lxd.log', new=mocked_logger)
+@mock.patch('libs.builders.image_builder.log', new=mocked_logger)
 @mock.patch('ghost_tools.log', new=mocked_logger)
-@mock.patch('libs.image_builder_lxd.time.sleep', new=void)  # Avoid waiting
-@mock.patch('libs.image_builder_lxd.gcall')
-@mock.patch('libs.image_builder_lxd.LXDClient')
+@mock.patch('libs.builders.image_builder_lxd.time.sleep', new=void)  # Avoid waiting
+@mock.patch('libs.builders.image_builder_lxd.gcall')
+@mock.patch('libs.builders.image_builder_lxd.LXDClient')
 def test_purge(lxd_client_cls, gcall_lxd):
     # Application context
     app = get_test_application()

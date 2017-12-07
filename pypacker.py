@@ -3,27 +3,22 @@ from subprocess32 import Popen, PIPE
 import json
 import os
 
-from ghost_tools import GCallException, get_provisioners_config
+from ghost_tools import GCallException
 from ghost_log import log
 
 
-PACKER_JSON_PATH="/tmp/packer/"
 PACKER_LOGDIR="/var/log/ghost/packer"
 
 
 class Packer:
-    def __init__(self, credentials, config, log_file, job_id):
+    def __init__(self, credentials, log_file):
         self._log_file = log_file
+        credentials = json.dumps(credentials, sort_keys=True, indent=4, separators=(',', ': '))
         self.packer_config = json.loads(credentials)
-        self.packer_json_path = PACKER_JSON_PATH
-        if self.packer_config['credentials']['aws_access_key']:
+        if self.packer_config['aws_access_key']:
             self._assumed_role = True
         else:
             self._assumed_role = False
-
-        self.unique = str(job_id)
-        if not os.path.exists(PACKER_JSON_PATH):
-            os.makedirs(PACKER_JSON_PATH)
 
     def _run_packer_cmd(self, cmd):
         result = ""
@@ -32,10 +27,10 @@ class Packer:
             os.makedirs(PACKER_LOGDIR)
         packer_env['TMPDIR'] = PACKER_LOGDIR
         if self._assumed_role:
-            packer_env['AWS_ACCESS_KEY_ID'] = self.packer_config['credentials']['aws_access_key']
-            packer_env['AWS_SECRET_ACCESS_KEY'] = self.packer_config['credentials']['aws_secret_key']
-            packer_env['AWS_SESSION_TOKEN'] = self.packer_config['credentials']['token']
-            packer_env['AWS_SECURITY_TOKEN'] = self.packer_config['credentials']['token']
+            packer_env['AWS_ACCESS_KEY_ID'] = self.packer_config['aws_access_key']
+            packer_env['AWS_SECRET_ACCESS_KEY'] = self.packer_config['aws_secret_key']
+            packer_env['AWS_SESSION_TOKEN'] = self.packer_config['token']
+            packer_env['AWS_SECURITY_TOKEN'] = self.packer_config['token']
         process = Popen(cmd, stdout=PIPE, env=packer_env)
         while True:
             output = process.stdout.readline()

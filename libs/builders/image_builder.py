@@ -9,7 +9,7 @@ from ghost_tools import b64decode_utf8, GCallException
 
 from libs.provisioners import get_provisioners
 
-from .blue_green import get_blue_green_from_app
+from libs.blue_green import get_blue_green_from_app
 
 
 AMI_BASE_FMT = "ami.{env}.{region}.{role}.{name}.{color}"

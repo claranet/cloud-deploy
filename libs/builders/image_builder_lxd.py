@@ -8,9 +8,9 @@ from pylxd import Client as LXDClient
 
 from ghost_log import log
 from ghost_tools import gcall, GCallException, get_provisioners_config, get_local_repo_path, boolify
-from .image_builder import ImageBuilder
-from .provisioners.provisioner import PROVISIONER_LOCAL_TREE
-from .provisioners.provisioner_ansible import ANSIBLE_COMMAND, ANSIBLE_LOG_LEVEL_MAP
+from libs.builders.image_builder import ImageBuilder
+from libs.provisioners.provisioner import PROVISIONER_LOCAL_TREE
+from libs.provisioners.provisioner_ansible import ANSIBLE_COMMAND, ANSIBLE_LOG_LEVEL_MAP
 
 
 class LXDImageBuilder(ImageBuilder):

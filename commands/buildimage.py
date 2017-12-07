@@ -6,9 +6,11 @@ from ghost_tools import get_aws_connection_data, GCallException
 from libs.lxd import lxd_is_available
 from settings import cloud_connections, DEFAULT_PROVIDER
 from libs.deploy import touch_app_manifest, get_path_from_app_with_color
-from libs.image_builder_aws import AWSImageBuilder
+
+from libs.builders.image_builder_aws import AWSImageBuilder
+from libs.builders.image_builder_lxd import LXDImageBuilder
+
 from libs.provisioners.provisioner_ansible import GalaxyNoMatchingRolesException, GalaxyBadRequirementPathException
-from libs.image_builder_lxd import LXDImageBuilder
 
 COMMAND_DESCRIPTION = "Build Image"
 RELATED_APP_FIELDS = ['features', 'build_infos']
@@ -38,15 +40,19 @@ class Buildimage():
             self._log_file,
             **self._connection_data
         )
-        job = {}
-        job["id"] = self._job['id']
-        job["options"] = self._job['options']
+        self.job = {}
+        self.job["id"] = self._job['_id']
+        self.job["instance_type"] = self._job['instance_type']
+        self.job["options"] = self._job['options']
+        self._aws_image_builder = AWSImageBuilder(self._app, self.job, self._db, self._log_file, self._config)
+        if lxd_is_available() and self._app['build_infos'].get('source_container_image', None):
+            self._lxd_image_builder = LXDImageBuilder(self._app, self.job, self._db, self._log_file, self._config)
 
     def _get_notification_message_done(self, ami_id):
         """
         >>> class worker:
-        ...   app = {'name': 'AppName', 'env': 'prod', 'role': 'webfront', 'region': 'eu-west-1'}
-        ...   job = { 'id': "012345678901234567890123" , "options" : "True" }
+        ...   app = { '_id': "987654321098765432109876" ,'name': 'AppName', 'env': 'prod', 'role': 'webfront', 'region': 'eu-west-1' }
+        ...   job = { '_id': "012345678901234567890123" , "options" : "True" , "instance_type" : None}
         ...   log_file = None
         ...   _config = {}
         ...   _db = None
@@ -66,48 +72,46 @@ class Buildimage():
 
     def execute(self):
         try:
-            aws_image_builder = AWSImageBuilder(self._app, self._job, self._db, self._log_file, self._config)
-            ami_id, ami_name = aws_image_builder.start_builder()
+            ami_id, ami_name = self._aws_image_builder.start_builder()
+            if ami_id is "ERROR":
+                log("ERROR: ami_id not found. The packer process had maybe fail.", self._log_file)
+                self._worker.update_status("failed")
+                return
         except (GalaxyNoMatchingRolesException, GalaxyBadRequirementPathException, GCallException) as e:
             self._worker.update_status("aborted", message=str(e))
             return
 
-        if ami_id is not "ERROR":
-            if lxd_is_available() and self._app['build_infos'].get('source_container_image', None):
-                log("Generating a new container", self._log_file)
-                try:
-                    lxd_image_builder = LXDImageBuilder(self._app, self._job, self._db, self._log_file, self._config)
-                    lxd_image_builder.set_source_hooks(get_path_from_app_with_color(self._app))
-                    builder_result = lxd_image_builder.start_builder()
-                except Exception as e:
-                    traceback.print_exc(self._log_file)
-                    log("An error occured during container process ({})".format(e), self._log_file)
-                    self._worker.update_status("failed")
-                    return
-
-                log("Update app in MongoDB to update container source image", self._log_file)
-                self._update_container_source(self._job['_id'])
-
-            touch_app_manifest(self._app, self._config, self._log_file)
-            log("Update app in MongoDB to update AMI: {0}".format(ami_id), self._log_file)
-            self._update_app_ami(ami_id, ami_name)
-            if self._aws_image_builder.purge_old_images():
-                log("Old AMIs removed for this app", self._log_file)
-            else:
-                log("Purge old AMIs failed", self._log_file)
-            if self._app['autoscale']['name']:
-                try:
-                    if create_userdata_launchconfig_update_asg(ami_id, self._cloud_connection, self._app, self._config,
-                                                               self._log_file):
-                        self._worker.update_status("done", message=self._get_notification_message_done(ami_id))
-                    else:
-                        self._worker.update_status("failed")
-                except:
-                    traceback.print_exc(self._log_file)
-                    self._worker.update_status("failed")
-            else:
-                log("No autoscaling group name was set", self._log_file)
-                self._worker.update_status("done")
+        touch_app_manifest(self._app, self._config, self._log_file)
+        log("Update app in MongoDB to update AMI: {0}".format(ami_id), self._log_file)
+        self._update_app_ami(ami_id, ami_name)
+        if self._aws_image_builder.purge_old_images():
+            log("Old AMIs removed for this app", self._log_file)
         else:
-            log("ERROR: ami_id not found. The packer process had maybe fail.", self._log_file)
-            self._worker.update_status("failed")
+            log("Purge old AMIs failed", self._log_file)
+
+        if lxd_is_available() and self._app['build_infos'].get('source_container_image', None):
+            log("Generating a new container", self._log_file)
+            try:
+                self._lxd_image_builder.set_source_hooks(get_path_from_app_with_color(self._app))
+                builder_result = self._lxd_image_builder.start_builder()
+            except Exception as e:
+                traceback.print_exc(self._log_file)
+                log("An error occured during container process ({})".format(e), self._log_file)
+                self._worker.update_status("failed")
+                return
+            log("Update app in MongoDB to update container source image", self._log_file)
+            self._update_container_source(self.job["id"])
+
+        if self._app['autoscale']['name']:
+            try:
+                if create_userdata_launchconfig_update_asg(ami_id, self._cloud_connection, self._app, self._config,
+                                                           self._log_file):
+                    self._worker.update_status("done", message=self._get_notification_message_done(ami_id))
+                else:
+                    self._worker.update_status("failed")
+            except:
+                traceback.print_exc(self._log_file)
+                self._worker.update_status("failed")
+        else:
+            log("No autoscaling group name was set", self._log_file)
+            self._worker.update_status("done")

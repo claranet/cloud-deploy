@@ -72,7 +72,7 @@ def test_buildimage_ami_error(awsimagebuilder_mock, lxdimagebuilder_mock, lxd_is
     cmd.execute()
 
     assert awsimagebuilder_mock.call_count == 1
-    assert lxdimagebuilder_mock.call_count == 0
+    assert lxdimagebuilder_mock.call_count == 1
 
 
 @mock.patch('commands.buildimage.lxd_is_available')

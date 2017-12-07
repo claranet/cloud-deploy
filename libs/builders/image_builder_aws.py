@@ -7,8 +7,8 @@ from ghost_tools import get_aws_connection_data
 from settings import cloud_connections, DEFAULT_PROVIDER
 from ghost_log import log
 
-from .ec2 import get_ami_root_block_device_mapping
-from .image_builder import ImageBuilder
+from libs.ec2 import get_ami_root_block_device_mapping
+from libs.builders.image_builder import ImageBuilder
 
 
 class AWSImageBuilder(ImageBuilder):
@@ -32,7 +32,6 @@ class AWSImageBuilder(ImageBuilder):
 
 
     def _format_packer_from_app(self):
-        provisioner_bootstrap_option = self._job['options'][0] if 'options' in self._job and len(self._job['options']) > 0 else True
         instance_tags = {}
         if 'instance_tags' in self._app['environment_infos']:
             instance_tags = {i['tag_name']: i['tag_value'] for i in self._app['environment_infos']['instance_tags']}
@@ -47,14 +46,10 @@ class AWSImageBuilder(ImageBuilder):
             'vpc_id': self._app['vpc_id'],
             'subnet_id': self._app['build_infos']['subnet_id'],
             'associate_public_ip_address': True,
-            'skip_provisioner_bootstrap': provisioner_bootstrap_option,
             'ami_block_device_mappings': [],
             'launch_block_device_mappings': [],
             'iam_instance_profile': self._app['environment_infos']['instance_profile'],
-            'credentials': self._cloud_connection.get_credentials(),
             'tags': instance_tags,
-            'ghost_env_vars': self._format_ghost_env_vars(),
-            'custom_env_vars': self._app.get('env_vars', []),
             'security_group_ids': self._app['environment_infos']['security_groups']
         }
 
@@ -102,8 +97,7 @@ class AWSImageBuilder(ImageBuilder):
 
     def start_builder(self):
         packer = self._build_packer_json()
-        credentials = packer['builders'][0]['credentials']
-        del packer['builders'][0]['credentials']
+        credentials = self._cloud_connection.get_credentials()
         log("Generating a new AMI", self._log_file)
         log("Packer options : %s" %json.dumps(packer, sort_keys=True, indent=4, separators=(',', ': ')), self._log_file)
         pack = Packer(credentials, self._log_file)

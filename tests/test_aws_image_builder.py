@@ -5,19 +5,19 @@ import os
 import shutil
 import yaml
 
-from libs.image_builder_aws import AWSImageBuilder
-from pypacker import PACKER_JSON_PATH
+from libs.builders.image_builder_aws import AWSImageBuilder
+from libs.builders.image_builder import PACKER_JSON_PATH
 from tests.helpers import LOG_FILE, mocked_logger, get_test_application, get_test_config, void
 
 
 @mock.patch('pypacker.log', new=mocked_logger)
-@mock.patch('libs.image_builder_aws.log', new=mocked_logger)
-@mock.patch('libs.image_builder.log', new=mocked_logger)
-@mock.patch('libs.provisioner.log', new=mocked_logger)
-@mock.patch('libs.provisioner_ansible.log', new=mocked_logger)
-@mock.patch('libs.provisioner.FeaturesProvisioner._get_provisioner_repo', new=void)  # We do not test git mirroring here
-@mock.patch('libs.provisioner.FeaturesProvisioner._get_local_repo_path')
-@mock.patch('libs.provisioner_ansible.gcall')
+@mock.patch('libs.builders.image_builder_aws.log', new=mocked_logger)
+@mock.patch('libs.builders.image_builder.log', new=mocked_logger)
+@mock.patch('libs.provisioners.provisioner.log', new=mocked_logger)
+@mock.patch('libs.provisioners.provisioner_ansible.log', new=mocked_logger)
+@mock.patch('libs.provisioners.provisioner.FeaturesProvisioner._get_provisioner_repo', new=void)  # We do not test git mirroring here
+@mock.patch('libs.provisioners.provisioner.FeaturesProvisioner._get_local_repo_path')
+@mock.patch('libs.provisioners.provisioner_ansible.gcall')
 @mock.patch('pypacker.Packer._run_packer_cmd')
 def test_build_image_ansible(packer_run_packer_cmd, gcall, provisioner_get_local_repo_path):
     # Application context
@@ -63,7 +63,7 @@ def test_build_image_ansible(packer_run_packer_cmd, gcall, provisioner_get_local
         "{0}ansible-galaxy install -r {1}/requirement_app.yml -p {1}/roles".format(venv_dir, tmp_dir),
         'Ansible -  ansible-galaxy command', LOG_FILE)
 
-    with open(os.path.join(PACKER_JSON_PATH, job['_id'] + '.json'), 'r') as f:
+    with open(os.path.join(PACKER_JSON_PATH, job['id'] + '/aws_builder.json'), 'r') as f:
         # Verify generated ansible files
         with open(os.path.join(tmp_dir, 'requirement_app.yml'), 'r') as f2:
             requirement_app = yaml.load(f2)
@@ -80,18 +80,40 @@ def test_build_image_ansible(packer_run_packer_cmd, gcall, provisioner_get_local
 
         # Verify packer config
         packer_config = json.load(f)
+        del packer_config["builders"][0]["ami_name"]
+        packer_config["builders"][0][u"ami_name"] = u"ami.test.eu-west-1.webfront.test-app."
+        print packer_config
         assert packer_config == {
-            "provisioners": [
+            'builders': [
                 {
-                    "type": "shell",
-                    "environment_vars": [
-                        "GHOST_APP=test-app",
-                        "GHOST_ENV=test",
-                        "GHOST_ENV_COLOR=",
-                        "GHOST_ROLE=webfront",
-                        "EMPTY_ENV="
+                    'ami_block_device_mappings': [],
+                    'ami_name': 'ami.test.eu-west-1.webfront.test-app.',
+                    'associate_public_ip_address': '1',
+                    'iam_instance_profile': 'iam.profile.test',
+                    'instance_type': 'test_instance_type',
+                    'launch_block_device_mappings': [],
+                    'region': 'eu-west-1',
+                    'source_ami': 'ami-source',
+                    'ssh_username': 'admin',
+                    'subnet_id': 'subnet-test',
+                    'tags': {
+                        'Name': 'ec2.name.test',
+                        'tag-name': 'tag-value'
+                    },
+                    'type': 'amazon-ebs',
+                    'vpc_id': 'vpc-test'
+                }
+            ],
+            'provisioners': [
+                {
+                    'environment_vars': [
+                        'GHOST_APP=test-app',
+                        'GHOST_ENV=test',
+                        'GHOST_ENV_COLOR=',
+                        'GHOST_ROLE=webfront'
                     ],
-                    "script": "/ghost/test-app/test/webfront/hook-pre_buildimage"
+                    'script': '/ghost/test-app/test/webfront/hook-pre_buildimage',
+                    'type': 'shell'
                 },
                 {
                     "type": "ansible",
@@ -102,53 +124,27 @@ def test_build_image_ansible(packer_run_packer_cmd, gcall, provisioner_get_local
                     "extra_arguments": ['-v'],
                 },
                 {
-                    "type": "shell",
-                    "environment_vars": [
-                        "GHOST_APP=test-app",
-                        "GHOST_ENV=test",
-                        "GHOST_ENV_COLOR=",
-                        "GHOST_ROLE=webfront",
-                        "EMPTY_ENV="
+                    'environment_vars': [
+                        'GHOST_APP=test-app',
+                        'GHOST_ENV=test',
+                        'GHOST_ENV_COLOR=',
+                        'GHOST_ROLE=webfront'
                     ],
-                    "script": "/ghost/test-app/test/webfront/hook-post_buildimage"
-                }
-            ],
-            "builders": [
-                {
-                    "ami_block_device_mappings": [],
-                    "launch_block_device_mappings": [],
-                    "source_ami": "ami-source",
-                    "tags": {
-                        "Name": "ec2.name.test",
-                        "tag-name": "tag-value",
-                    },
-                    "subnet_id": "subnet-test",
-                    "ssh_username": "admin",
-                    "ssh_interface": "private_ip",
-                    "region": "eu-west-1",
-                    "security_group_ids": [
-                        "sg-test"
-                    ],
-                    "ami_name": ami_name,
-                    "iam_instance_profile": "iam.profile.test",
-                    "instance_type": "test_instance_type",
-                    "associate_public_ip_address": True,
-                    "vpc_id": "vpc-test",
-                    "type": "amazon-ebs",
-                    "ssh_pty": True
+                    'script': '/ghost/test-app/test/webfront/hook-post_buildimage',
+                    'type': 'shell'
                 }
             ]
         }
 
 
 @mock.patch('pypacker.log', new=mocked_logger)
-@mock.patch('libs.image_builder_aws.log', new=mocked_logger)
-@mock.patch('libs.image_builder.log', new=mocked_logger)
-@mock.patch('libs.provisioner.log', new=mocked_logger)
-@mock.patch('libs.provisioner_ansible.log', new=mocked_logger)
-@mock.patch('libs.provisioner.FeaturesProvisioner._get_provisioner_repo', new=void)  # We do not test git mirroring here
-@mock.patch('libs.provisioner.FeaturesProvisioner._get_local_repo_path')
-@mock.patch('libs.provisioner_ansible.gcall')
+@mock.patch('libs.builders.image_builder_aws.log', new=mocked_logger)
+@mock.patch('libs.builders.image_builder.log', new=mocked_logger)
+@mock.patch('libs.provisioners.provisioner.log', new=mocked_logger)
+@mock.patch('libs.provisioners.provisioner_ansible.log', new=mocked_logger)
+@mock.patch('libs.provisioners.provisioner.FeaturesProvisioner._get_provisioner_repo', new=void)  # We do not test git mirroring here
+@mock.patch('libs.provisioners.provisioner.FeaturesProvisioner._get_local_repo_path')
+@mock.patch('libs.provisioners.provisioner_ansible.gcall')
 @mock.patch('pypacker.Packer._run_packer_cmd')
 def test_build_image_ansible_debug(packer_run_packer_cmd, gcall, provisioner_get_local_repo_path):
     # Application context
@@ -194,7 +190,7 @@ def test_build_image_ansible_debug(packer_run_packer_cmd, gcall, provisioner_get
         "{0}ansible-galaxy install -r {1}/requirement_app.yml -p {1}/roles".format(venv_dir, tmp_dir),
         'Ansible -  ansible-galaxy command', LOG_FILE)
 
-    with open(os.path.join(PACKER_JSON_PATH, job['_id'] + '.json'), 'r') as f:
+    with open(os.path.join(PACKER_JSON_PATH, job['id'] + '/aws_builder.json'), 'r') as f:
         # Verify generated ansible files
         with open(os.path.join(tmp_dir, 'requirement_app.yml'), 'r') as f2:
             requirement_app = yaml.load(f2)
@@ -211,18 +207,41 @@ def test_build_image_ansible_debug(packer_run_packer_cmd, gcall, provisioner_get
 
         # Verify packer config
         packer_config = json.load(f)
+        del packer_config["builders"][0]["ami_name"]
+        packer_config["builders"][0][u"ami_name"] = u"ami.test.eu-west-1.webfront.test-app."
+        print packer_config
+
         assert packer_config == {
-            "provisioners": [
+            'builders': [
                 {
-                    "type": "shell",
-                    "environment_vars": [
-                        "GHOST_APP=test-app",
-                        "GHOST_ENV=test",
-                        "GHOST_ENV_COLOR=",
-                        "GHOST_ROLE=webfront",
-                        "EMPTY_ENV="
+                    'ami_block_device_mappings': [],
+                    'ami_name': 'ami.test.eu-west-1.webfront.test-app.',
+                    'associate_public_ip_address': '1',
+                    'iam_instance_profile': 'iam.profile.test',
+                    'instance_type': 'test_instance_type',
+                    'launch_block_device_mappings': [],
+                    'region': 'eu-west-1',
+                    'source_ami': 'ami-source',
+                    'ssh_username': 'admin',
+                    'subnet_id': 'subnet-test',
+                    'tags': {
+                        'Name': 'ec2.name.test',
+                        'tag-name': 'tag-value'
+                    },
+                    'type': 'amazon-ebs',
+                    'vpc_id': 'vpc-test'
+                }
+            ],
+            'provisioners': [
+                {
+                    'environment_vars': [
+                        'GHOST_APP=test-app',
+                        'GHOST_ENV=test',
+                        'GHOST_ENV_COLOR=',
+                        'GHOST_ROLE=webfront'
                     ],
-                    "script": "/ghost/test-app/test/webfront/hook-pre_buildimage"
+                    'script': '/ghost/test-app/test/webfront/hook-pre_buildimage',
+                    'type': 'shell'
                 },
                 {
                     "type": "ansible",
@@ -233,53 +252,28 @@ def test_build_image_ansible_debug(packer_run_packer_cmd, gcall, provisioner_get
                     "extra_arguments": ['-vvv'],
                 },
                 {
-                    "type": "shell",
-                    "environment_vars": [
-                        "GHOST_APP=test-app",
-                        "GHOST_ENV=test",
-                        "GHOST_ENV_COLOR=",
-                        "GHOST_ROLE=webfront",
-                        "EMPTY_ENV="
+                    'environment_vars': [
+                        'GHOST_APP=test-app',
+                        'GHOST_ENV=test',
+                        'GHOST_ENV_COLOR=',
+                        'GHOST_ROLE=webfront'
                     ],
-                    "script": "/ghost/test-app/test/webfront/hook-post_buildimage"
-                }
-            ],
-            "builders": [
-                {
-                    "ami_block_device_mappings": [],
-                    "launch_block_device_mappings": [],
-                    "source_ami": "ami-source",
-                    "tags": {
-                        "Name": "ec2.name.test",
-                        "tag-name": "tag-value",
-                    },
-                    "subnet_id": "subnet-test",
-                    "ssh_username": "admin",
-                    "ssh_interface": "private_ip",
-                    "region": "eu-west-1",
-                    "security_group_ids": [
-                        "sg-test"
-                    ],
-                    "ami_name": ami_name,
-                    "iam_instance_profile": "iam.profile.test",
-                    "instance_type": "test_instance_type",
-                    "associate_public_ip_address": True,
-                    "vpc_id": "vpc-test",
-                    "type": "amazon-ebs",
-                    "ssh_pty": True
+                    'script': '/ghost/test-app/test/webfront/hook-post_buildimage',
+                    'type': 'shell'
                 }
             ]
         }
 
 
 @mock.patch('pypacker.log', new=mocked_logger)
-@mock.patch('libs.image_builder_aws.log', new=mocked_logger)
-@mock.patch('libs.image_builder.log', new=mocked_logger)
-@mock.patch('libs.provisioner.log', new=mocked_logger)
-@mock.patch('libs.provisioner.FeaturesProvisioner._get_provisioner_repo', new=void)  # We do not test git mirroring here
-@mock.patch('libs.provisioner.FeaturesProvisioner._get_local_repo_path')
-@mock.patch('libs.provisioner_salt.FeaturesProvisionerSalt._build_salt_top', new=void)
-@mock.patch('libs.provisioner_salt.FeaturesProvisionerSalt._build_salt_pillar', new=void)
+@mock.patch('libs.builders.image_builder_aws.log', new=mocked_logger)
+@mock.patch('libs.builders.image_builder.log', new=mocked_logger)
+@mock.patch('libs.provisioners.provisioner.log', new=mocked_logger)
+@mock.patch('libs.provisioners.provisioner_ansible.log', new=mocked_logger)
+@mock.patch('libs.provisioners.provisioner.FeaturesProvisioner._get_provisioner_repo', new=void)  # We do not test git mirroring here
+@mock.patch('libs.provisioners.provisioner.FeaturesProvisioner._get_local_repo_path')
+@mock.patch('libs.provisioners.provisioner_salt.FeaturesProvisionerSalt._build_salt_top', new=void)
+@mock.patch('libs.provisioners.provisioner_salt.FeaturesProvisionerSalt._build_salt_pillar', new=void)
 @mock.patch('pypacker.Packer._run_packer_cmd')
 def test_build_image_root_block_device(packer_run_packer_cmd, provisioner_get_local_repo_path):
     # Application context
