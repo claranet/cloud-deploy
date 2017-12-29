@@ -30,8 +30,9 @@ def deploy(app_module, ssh_username, key_filename, stage2, bootstrap_endpoint, l
         sudo('rm -rvf {s}'.format(s=STAGE2_PATH), stdout=log_file)
         sudo('mkdir -p "{w}" && chmod 755 "{w}"'.format(w=os.path.dirname(STAGE2_PATH)), stdout=log_file)
         put(StringIO(stage2), STAGE2_PATH, use_sudo=True, mode=0755)
-        result = sudo('BOOTSTRAP_ENDPOINT={b} {s} {n}'.format(b=bootstrap_endpoint, s=STAGE2_PATH, n=app_module['name']), stdout=log_file)
-        return result.return_code
+        res = sudo('BOOTSTRAP_ENDPOINT={b} {s} {n}'.format(b=bootstrap_endpoint, s=STAGE2_PATH, n=app_module['name']),
+                   stdout=log_file)
+        return res.return_code
 
 
 @task
