@@ -5,7 +5,7 @@ import sys
 from fabric.colors import yellow as _yellow, red as _red
 
 from ghost_log import log
-from ghost_tools import gcall, GCallException, boolify
+from ghost_tools import gcall
 from .provisioner import FeaturesProvisioner, GalaxyNoMatchingRolesException, GalaxyBadRequirementPathException
 
 ANSIBLE_BASE_PLAYBOOK = {'name': 'Ghost application features', 'hosts': 'all', 'roles': []}
@@ -24,8 +24,7 @@ class FeaturesProvisionerAnsible(FeaturesProvisioner):
         self._ansible_galaxy_role_path = os.path.join(self.local_repo_path, 'roles')
         self._ansible_requirement_app = os.path.join(self.local_repo_path, 'requirement_app.yml')
         self._ansible_galaxy_rq_path = os.path.join(self.local_repo_path,
-                                                    self.global_config.get('ansible_galaxy_requirements_path',
-                                                                           'requirements.yml'))
+                                                    config.get('ansible_galaxy_requirements_path', 'requirements.yml'))
         self._ansible_galaxy_command_path = os.path.join(sys.exec_prefix, ANSIBLE_GALAXY_DEFAULT_CMD_PATH)
         self._ansible_command_path = os.path.join(sys.exec_prefix, ANSIBLE_COMMAND)
         self._ansible_env_vars = ANSIBLE_ENV_VARS + ["ANSIBLE_ROLES_PATH={}".format(self.local_repo_path)]
@@ -49,7 +48,7 @@ class FeaturesProvisionerAnsible(FeaturesProvisioner):
             log("Ansible - Writing playbook: {0}".format(self._ansible_playbook_path), self._log_file)
             log(_yellow("Ansible - features: {0}".format(features[-1]['roles'])), self._log_file)
             try:
-                yaml.dump(features, stream_features, default_flow_style=False, explicit_start=True)
+                yaml.safe_dump(features, stream_features, default_flow_style=False, explicit_start=True, allow_unicode=True)
             except yaml.YAMLError as exc:
                 log(_red("Ansible - ERROR Writing playbook: {0}".format(exc)), self._log_file)
                 raise
@@ -150,6 +149,13 @@ class FeaturesProvisionerAnsible(FeaturesProvisioner):
         >>> pprint.pprint(FeaturesProvisionerAnsible(None, None, {}, global_config).format_provisioner_features(features)[-1])
         {'hosts': 'all', 'name': 'Ghost application features', 'roles': []}
 
+        >>> features = [{'name': 'package', 'version': 'package_name=git_vim', 'provisioner': 'salt'},
+        ...             {'name': 'package', 'parameters': {"package_name": ["curl", "vim"]}, 'provisioner': 'ansible'}]
+        >>> pprint.pprint(FeaturesProvisionerAnsible(None, None, {}, global_config).format_provisioner_features(features)[-1])
+        {'hosts': 'all',
+         'name': 'Ghost application features',
+         'roles': [{'package_name': ['curl', 'vim'], 'role': 'package'}]}
+
         """
         with open(self._ansible_base_playbook_file, 'r') as base_playbook:
             playbook = yaml.load(base_playbook)
@@ -157,14 +163,20 @@ class FeaturesProvisionerAnsible(FeaturesProvisioner):
         for ft in features:
             if ft.get('provisioner', self._default_provisioner) != self.name:
                 continue
-            values = ft.get('version', '').split('=', 1)  # Split only one time
             feature_name = ft['name'].encode('utf-8')
-            if len(values) == 2:
-                ft_param_key = values[0].encode('utf-8')
-                ft_param_val = values[1].encode('utf-8')
-                playbook[-1]['roles'].append({'role': feature_name, ft_param_key: ft_param_val})
+            if ft.get('parameters'):
+                role_params = ft.get('parameters') or {}
+                role_params['role'] = feature_name
+                playbook[-1]['roles'].append(role_params)
             else:
-                playbook[-1]['roles'].append({'role': feature_name})
+                # Fallback to legacy code with a unique version/value argument
+                values = ft.get('version', '').split('=', 1)  # Split only one time
+                if len(values) == 2:
+                    ft_param_key = values[0].encode('utf-8')
+                    ft_param_val = values[1].encode('utf-8')
+                    playbook[-1]['roles'].append({'role': feature_name, ft_param_key: ft_param_val})
+                else:
+                    playbook[-1]['roles'].append({'role': feature_name})
         return playbook
 
     def format_provisioner_params(self, features):

@@ -11,6 +11,7 @@ from libs.provisioner_ansible import FeaturesProvisionerAnsible
 PACKER_JSON_PATH="/tmp/packer/"
 PACKER_LOGDIR="/var/log/ghost/packer"
 
+
 class Packer:
     def __init__(self, packer_config, config, log_file, job_id):
         self._log_file = log_file
