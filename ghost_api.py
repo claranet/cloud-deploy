@@ -180,58 +180,67 @@ def check_app_module_path(updates):
     :return: bool
 
     >>> check_app_module_path({})
-    True
 
     >>> check_app_module_path({'modules': []})
-    True
 
     >>> check_app_module_path({'modules': [{'name': 'empty'}]})
-    False
+    Traceback (most recent call last):
+    ...
+    GhostAPIInputError
 
     >>> app = {'_id': 1111, 'env': 'prod', 'name': 'app1', 'role': 'webfront', 'modules': [
     ...     {'name': 'mod1', 'path': '/tmp/test'}, {'name': 'mod2', 'path': '/srv/ok'}]}
     >>> check_app_module_path(app)
-    True
 
     >>> app = {'_id': 1111, 'env': 'prod', 'name': 'app1', 'role': 'webfront', 'modules': [
     ...     {'name': 'mod1', 'path': '/tmp/test/'}, {'name': 'mod2', 'path': '/srv/ok//'}]}
     >>> check_app_module_path(app)
-    True
 
     >>> app = {'_id': 1111, 'env': 'prod', 'name': 'app1', 'role': 'webfront', 'modules': [
     ...     {'name': 'mod1', 'path': '/tmp/'}, {'name': 'mod2', 'path': '/srv/ok//'}]}
     >>> check_app_module_path(app)
-    False
+    Traceback (most recent call last):
+    ...
+    GhostAPIInputError
 
     >>> app = {'_id': 1111, 'env': 'prod', 'name': 'app1', 'role': 'webfront', 'modules': [
     ...     {'name': 'mod1', 'path': '/'}, {'name': 'mod2', 'path': '/srv/ok//'}]}
     >>> check_app_module_path(app)
-    False
+    Traceback (most recent call last):
+    ...
+    GhostAPIInputError
 
     >>> app = {'_id': 1111, 'env': 'prod', 'name': 'app1', 'role': 'webfront', 'modules': [
     ...     {'name': 'mod1', 'path': '/ghost/x'}, {'name': 'mod2', 'path': '/ghost'}]}
     >>> check_app_module_path(app)
-    False
+    Traceback (most recent call last):
+    ...
+    GhostAPIInputError
 
     >>> app = {'_id': 1111, 'env': 'prod', 'name': 'app1', 'role': 'webfront', 'modules': [
     ...     {'name': 'mod1', 'path': '/ghost/x'}, {'name': 'mod2', 'path': '/ghost////'}]}
     >>> check_app_module_path(app)
-    False
+    Traceback (most recent call last):
+    ...
+    GhostAPIInputError
 
     >>> app = {'_id': 1111, 'env': 'prod', 'name': 'app1', 'role': 'webfront', 'modules': [
     ...     {'name': 'mod1', 'path': '/root/x/..'}, {'name': 'mod2', 'path': '/srv/ok'}]}
     >>> check_app_module_path(app)
-    False
+    Traceback (most recent call last):
+    ...
+    GhostAPIInputError
 
     >>> app = {'_id': 1111, 'env': 'prod', 'name': 'app1', 'role': 'webfront', 'modules': [
     ...     {'name': 'mod1', 'path': '/root/x/.//'}, {'name': 'mod2', 'path': '/srv/ok'}]}
     >>> check_app_module_path(app)
-    True
 
     >>> app = {'_id': 1111, 'env': 'prod', 'name': 'app1', 'role': 'webfront', 'modules': [
     ...     {'name': 'mod1', 'path': '/root/x/.//..//////'}, {'name': 'mod2', 'path': '/srv/ok'}]}
     >>> check_app_module_path(app)
-    False
+    Traceback (most recent call last):
+    ...
+    GhostAPIInputError
     """
     if 'modules' in updates:
         for mod in updates['modules']:
