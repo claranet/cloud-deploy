@@ -7,3 +7,6 @@
 [submodule "ansible-playbook-ghost-common"]
 	path = ansible-playbook-ghost-common
 	url = git@bitbucket.org:morea/ansible-playbook-ghost-common.git
+[submodule "web_ui"]
+	path = web_ui
+	url = git@bitbucket.org:morea/ghost-ui
