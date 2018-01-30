@@ -18,6 +18,7 @@ FORBIDDEN_PATH = ['/', '/tmp', '/var', '/etc', '/ghost', '/root', '/home', '/hom
 COMMAND_FIELDS = ['autoscale', 'blue_green', 'build_infos', 'environment_infos', 'lifecycle_hooks']
 ALL_COMMAND_FIELDS = ['modules', 'features'] + COMMAND_FIELDS
 
+
 class GhostAPIInputError(Exception):
     """Exception raised for errors in the input.
 
@@ -28,6 +29,7 @@ class GhostAPIInputError(Exception):
 
     def __init__(self, message):
         self.message = message
+
 
 def ghost_api_bluegreen_is_enabled(app):
     """
@@ -169,8 +171,9 @@ def check_app_feature_provisioner(updates):
         provisioners_available = get_available_provisioners_from_config()
         for ft in updates['features']:
             if 'provisioner' in ft and not ft['provisioner'] in provisioners_available:
-                raise GhostAPIInputError('Provisioner "{p}" set for feature "{f}" is not available or not compatible.'.format(
-                    p=ft['provisioner'], f=ft['name']))
+                raise GhostAPIInputError(
+                    'Provisioner "{p}" set for feature "{f}" is not available or not compatible.'.format(
+                        p=ft['provisioner'], f=ft['name']))
 
 
 def check_app_module_path(updates):
@@ -247,7 +250,9 @@ def check_app_module_path(updates):
             if not 'path' in mod:
                 raise GhostAPIInputError('Module "{m} has path empty"'.format(m=mod['name']))
             if os.path.abspath(mod['path']) in FORBIDDEN_PATH:
-                raise GhostAPIInputError('Module "{m}" use a forbidden path : "{p}"'.format(m=mod['name'], p=mod['path']))
+                raise GhostAPIInputError(
+                    'Module "{m}" use a forbidden path : "{p}"'.format(m=mod['name'], p=mod['path']))
+
 
 def check_app_b64_scripts(updates):
     """
@@ -286,6 +291,7 @@ def ghost_api_app_data_input_validator(app):
     check_app_b64_scripts(app)
     check_app_module_path(app)
     check_app_feature_provisioner(app)
+
 
 def initialize_app_modules(updates, original):
     modules_edited = False
