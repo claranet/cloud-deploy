@@ -21,7 +21,7 @@ from models.jobs import jobs, CANCELLABLE_JOB_STATUSES, DELETABLE_JOB_STATUSES
 from models.deployments import deployments
 
 from ghost_tools import get_rq_name_from_app, boolify
-from ghost_blueprints import commands_blueprint, version_blueprint
+from ghost_blueprints import commands_blueprint, job_logs_blueprint, version_blueprint
 from ghost_api import ghost_api_bluegreen_is_enabled, ghost_api_enable_green_app
 from ghost_api import ghost_api_delete_alter_ego_app, ghost_api_clean_bluegreen_app
 from ghost_api import initialize_app_modules, check_and_set_app_fields_state
@@ -383,6 +383,7 @@ ghost.ghost_redis_connection = Redis(host=REDIS_HOST)
 ghost.register_blueprint(commands_blueprint)
 ghost.register_blueprint(lxd_blueprint)
 ghost.register_blueprint(version_blueprint)
+ghost.register_blueprint(job_logs_blueprint)
 
 if __name__ == '__main__':
     ghost.run(host='0.0.0.0')
