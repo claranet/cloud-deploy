@@ -229,6 +229,7 @@ def create_ws(app):
         if data and data.get('log_id'):
             log_id = data.get('log_id')
             last_pos = data.get('last_pos', 0)
+            formatter = HtmlLogFormatter if data.get('raw_mode') is not True else RawLogFormatter
 
             if check_log_id(log_id) is None:
                 socketio.close_room(request.sid)
