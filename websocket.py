@@ -2,6 +2,7 @@
 
 import chardet
 import os
+import base64
 
 from flask import request
 from flask_socketio import SocketIO
@@ -31,6 +32,38 @@ LOG_LINE_REGEX = re.compile(r'\d+/\d+/\d+ \d+:\d+:\d+ .*: .*')
 
 BOLD_TEMPLATE = '<span style="color: rgb{}; font-weight: bolder">{}</span>'
 LIGHT_TEMPLATE = '<span style="color: rgb{}">{}</span>'
+
+
+class HtmlLogFormatter():
+    @staticmethod
+    def format_line(log_line, idx):
+        clean_line = ansi_to_html(log_line).replace('\r\n', '\n').replace('\r', '\n').replace('\n', '<br/>').replace('%!(PACKER_COMMA)', '&#44;')
+        if LOG_LINE_REGEX.match(log_line) is not None:
+            return '%s<div class="panel panel-default"><em class="panel-heading"><span class="timeinterval"><i class="glyphicon glyphicon-time"></i></span><span class="command-title">%s</span></em><div class="panel-body">' % ('</div></div>' if idx > 0 else '', clean_line)
+        else:
+            return '<samp>%s</samp>' % clean_line
+
+    @staticmethod
+    def format_data(lines, last_pos):
+        return {'html': ''.join(lines), 'last_pos': last_pos}
+
+    @staticmethod
+    def format_error(error_message):
+        return {'html': error_message, 'last_pos': 0}
+
+
+class RawLogFormatter():
+    @staticmethod
+    def format_line(log_line, idx):
+        return log_line
+
+    @staticmethod
+    def format_data(lines, last_pos):
+        return {'raw': base64.b64encode(''.join(lines)), 'last_pos': last_pos}
+
+    @staticmethod
+    def format_error(error_message):
+        return {'raw': None, 'error': error_message, 'last_pos': 0}
 
 
 def ansi_to_html(text):
@@ -132,7 +165,7 @@ def encode_line(line):
 def create_ws(app):
     socketio = SocketIO(app)
 
-    def follow(filename, last_pos, sid):
+    def follow(filename, last_pos, sid, formatter=RawLogFormatter):
         print 'SocketIO: starting loop for ' + sid
         try:
             hub = gevent.get_hub()
@@ -159,19 +192,11 @@ def create_ws(app):
                     for idx, line in enumerate(readlines):
                         line = encode_line(line)
                         for sub_line in line.split("\\n"):
-                            clean_line = ansi_to_html(sub_line).replace('\r\n', '\n').replace('\r', '\n').replace('\n', '<br/>').replace('%!(PACKER_COMMA)', '&#44;')
-                            if LOG_LINE_REGEX.match(sub_line) is not None:
-                                lines.append('%s<div class="panel panel-default"><em class="panel-heading"><span class="timeinterval"><i class="glyphicon glyphicon-time"></i></span><span class="command-title">%s</span></em><div class="panel-body">'
-                                    % ('</div></div>' if idx > 0 else '', clean_line))
-                            else:
-                                lines.append('<samp>%s</samp>' % clean_line)
+                            lines.append(formatter.format_line(sub_line, idx))
 
                 # Send new data to WebSocket client, if any
                 if new_pos != last_pos:
-                    data = {
-                        'html': ''.join(lines),
-                        'last_pos': last_pos,
-                    }
+                    data = formatter.format_data(lines, last_pos)
                     socketio.emit('job', data, room=sid)
 
                 # Update last_pos for next iteration
@@ -186,11 +211,7 @@ def create_ws(app):
                         continue
 
         except IOError:
-            data = {
-                'html': 'ERROR: failed to read log file.',
-                'last_pos': 0,
-            }
-            socketio.emit('job', data, room=sid)
+            socketio.emit('job', formatter.format_error('ERROR: failed to read log file.'), room=sid)
         print 'SocketIO: ending loop for ' + sid
 
     @socketio.on('connect')
@@ -207,26 +228,23 @@ def create_ws(app):
         if data and data.get('log_id'):
             log_id = data.get('log_id')
             last_pos = data.get('last_pos', 0)
+            formatter = HtmlLogFormatter if data.get('raw_mode') is not True else RawLogFormatter
 
             if check_log_id(log_id) is None:
                 socketio.close_room(request.sid)
             else:
                 filename = os.path.join(LOG_ROOT, log_id + '.txt')
                 if not os.path.isfile(filename):
-                    cloud_connection = cloud_connections.get(DEFAULT_PROVIDER)(None)
-                    bucket_name = config['bucket_s3']
-                    region = config.get('bucket_region', 'eu-west-1')
-
                     remote_log_path = get_job_log_remote_path(log_id)
-                    download_file_from_s3(cloud_connection, bucket_name, region, remote_log_path, filename)
+                    download_file_from_s3(cloud_connections.get(DEFAULT_PROVIDER)(None), config['bucket_s3'],
+                                          config.get('bucket_region', 'eu-west-1'), remote_log_path, filename)
+                if not os.path.isfile(filename):
+                    socketio.emit('job', formatter.format_error('No log file yet.'), room=request.sid)
+                    return
 
                 # Spawn the follow loop in another thread to end this request and avoid CLOSED_WAIT connections leaking
-                gevent.spawn(follow, filename, last_pos, request.sid)
+                gevent.spawn(follow, filename, last_pos, request.sid, formatter)
         else:
-            data = {
-                'html': 'No log file yet.',
-                'last_pos': 0,
-            }
-            socketio.emit('job', data, room=request.sid)
+            socketio.close_room(request.sid)
 
     return socketio
