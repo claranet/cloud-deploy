@@ -211,7 +211,7 @@ def create_ws(app):
                         continue
 
         except IOError:
-            socketio.emit('job', formatter.format_error('ERROR: failed to read log file.'), room=sid)
+            socketio.emit('job', formatter.format_error('Failed to read log file.'), room=sid)
         print 'SocketIO: ending loop for ' + sid
 
     @socketio.on('connect')
@@ -225,10 +225,10 @@ def create_ws(app):
     @socketio.on('job_logging')
     def handle_message(data):
         print 'SocketIO: request from ' + request.sid
+        formatter = HtmlLogFormatter if data.get('raw_mode') is not True else RawLogFormatter
         if data and data.get('log_id'):
             log_id = data.get('log_id')
             last_pos = data.get('last_pos', 0)
-            formatter = HtmlLogFormatter if data.get('raw_mode') is not True else RawLogFormatter
 
             if check_log_id(log_id) is None:
                 socketio.close_room(request.sid)
@@ -245,6 +245,6 @@ def create_ws(app):
                 # Spawn the follow loop in another thread to end this request and avoid CLOSED_WAIT connections leaking
                 gevent.spawn(follow, filename, last_pos, request.sid, formatter)
         else:
-            socketio.close_room(request.sid)
+            socketio.emit('job', formatter.format_error('Undefined log_id.'), room=request.sid)
 
     return socketio
