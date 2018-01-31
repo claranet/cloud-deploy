@@ -96,6 +96,6 @@ def job_logs(job_id=None):
         download_file_from_s3(cloud_connections.get(DEFAULT_PROVIDER)(None), config['bucket_s3'],
                               config.get('bucket_region', 'eu-west-1'), remote_log_path, filename)
     if not os.path.isfile(filename):
-        abort(404)
+        abort(404, description='No log file yet.')
 
     return send_from_directory(LOG_ROOT, job_id + '.txt', as_attachment=True)
