@@ -46,7 +46,8 @@ class AWSImageBuilder(ImageBuilder):
             'credentials': self._cloud_connection.get_credentials(),
             'tags': instance_tags,
             'ghost_env_vars': self._format_ghost_env_vars(),
-            'custom_env_vars': self._app.get('env_vars', [])
+            'custom_env_vars': self._app.get('env_vars', []),
+            'security_group_ids': self._app['environment_infos']['security_groups']
         }
 
         for opt_vol in self._app['environment_infos'].get('optional_volumes', []):

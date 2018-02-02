@@ -53,7 +53,8 @@ class Packer:
             'launch_block_device_mappings': self.packer_config['launch_block_device_mappings'],
             'ssh_pty': 'true',
             'iam_instance_profile': self.packer_config['iam_instance_profile'],
-            'tags': self.packer_config['tags']
+            'tags': self.packer_config['tags'],
+            'security_group_ids': self.packer_config['security_group_ids']
         }]
 
         formatted_env_vars = self.packer_config['ghost_env_vars'] + ['%s=%s' % (envvar['var_key'], envvar.get('var_value', '')) for envvar in self.packer_config['custom_env_vars']]
