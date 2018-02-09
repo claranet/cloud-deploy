@@ -56,7 +56,7 @@ class Packer:
             'tags': self.packer_config['tags']
         }]
 
-        formatted_env_vars = self.packer_config['ghost_env_vars'] + ['%s=%s' % (envvar.get('var_key'), envvar.get('var_value')) for envvar in self.packer_config['custom_env_vars']]
+        formatted_env_vars = self.packer_config['ghost_env_vars'] + ['%s=%s' % (envvar['var_key'], envvar.get('var_value', '')) for envvar in self.packer_config['custom_env_vars']]
         provisioners = [{
             'type': 'shell',
             'environment_vars': formatted_env_vars,
