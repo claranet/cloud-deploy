@@ -99,7 +99,8 @@ class Redeploy():
                 raise e
 
             # After all deploy exec
-            execute_module_script_on_ghost(self._app, module, 'after_all_deploy', 'After all deploy', clone_path, self._log_file)
+            execute_module_script_on_ghost(self._app, module, 'after_all_deploy', 'After all deploy',
+                                           clone_path, self._log_file, self._job, self._config)
         else:
             raise GCallException("Redeploy on deployment ID: {0} failed".format(deploy_id))
 
