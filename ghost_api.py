@@ -42,7 +42,7 @@ def ghost_api_bluegreen_is_enabled(app):
 def ghost_api_check_green_app_exists(apps_db, app):
     """
     Check if the Alter Ego application exists
-    ie: the blue one or the green one (depending of the current app color) 
+    ie: the blue one or the green one (depending of the current app color)
     """
     name = app.get('name')
     role = app.get('role')
@@ -179,8 +179,7 @@ def check_app_feature_provisioner(updates):
 def check_app_module_path(updates):
     """
     Check if all modules path are allowed
-    :param updates:
-    :return: bool
+    :param updates: Modules configurations
 
     >>> check_app_module_path({})
 
@@ -257,8 +256,7 @@ def check_app_module_path(updates):
 def check_app_b64_scripts(updates):
     """
     Trigger a base64 decode on every script given to the API in order to verify their validity
-    :param updates:
-    :return: bool
+    :param updates: Modules configurations
     """
     if 'modules' in updates:
         for mod in updates['modules']:
