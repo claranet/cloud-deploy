@@ -11,6 +11,7 @@ with open(os.path.dirname(os.path.realpath(__file__)) + '/config.yml', 'r') as c
 
 env.abort_on_prompts = True
 env.use_ssh_config = config.get('use_ssh_config', False)
+env.disable_known_hosts = True
 
 env.connection_attempts = 10
 env.timeout = 30
