@@ -162,7 +162,7 @@ function deploy_module() {
 
     mkdir -p /ghost/$UUID
     echo "Extracting module in /ghost/$UUID" >> $LOGFILE
-    tar xvzf /tmp/$MODULE_FILE -C /ghost/$UUID > /dev/null
+    tar --warning=no-timestamp -xvzf /tmp/$MODULE_FILE -C /ghost/$UUID > /dev/null
     if [ $? -ne 0 ] || [ ! -f /tmp/$MODULE_FILE ]; then
         echo "Extracting module failed !"
         exit_deployment -11
