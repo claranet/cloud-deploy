@@ -154,7 +154,7 @@ class FeaturesProvisionerAnsible(FeaturesProvisioner):
 
         >>> features = [{'name': 'package', 'version': 'package_name=git_vim', 'provisioner': 'salt'},
         ...             {'name': 'package', 'parameters': {"package_name": ["curl", "vim"]}, 'provisioner': 'ansible'}]
-        >>> pprint.pprint(FeaturesProvisionerAnsible(None, None, {}, global_config).format_provisioner_features(features)[-1])
+        >>> pprint.pprint(FeaturesProvisionerAnsible(None, None, {}, {}, global_config)._format_provisioner_features(features)[-1])
         {'hosts': 'all',
          'name': 'Ghost application features',
          'roles': [{'package_name': ['curl', 'vim'], 'role': 'package'}]}
