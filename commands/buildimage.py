@@ -89,7 +89,7 @@ class Buildimage():
         else:
             log("Purge old AMIs failed", self._log_file)
 
-        if lxd_is_available() and self._app.get('build_infos', {}).get('source_container_image', None):
+        if self._lxd_image_builder:
             log("Generating a new container", self._log_file)
             try:
                 self._lxd_image_builder.set_source_hooks(get_path_from_app_with_color(self._app))
