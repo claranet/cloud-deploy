@@ -45,7 +45,7 @@ class Buildimage():
         self.job["instance_type"] = self._job['instance_type']
         self.job["options"] = self._job['options']
         self._aws_image_builder = AWSImageBuilder(self._app, self.job, self._db, self._log_file, self._config)
-        if lxd_is_available() and self._app['build_infos'].get('source_container_image', None):
+        if lxd_is_available() and self._app.get('build_infos', {}).get('source_container_image', None):
             self._lxd_image_builder = LXDImageBuilder(self._app, self.job, self._db, self._log_file, self._config)
 
     def _get_notification_message_done(self, ami_id):
@@ -89,7 +89,7 @@ class Buildimage():
         else:
             log("Purge old AMIs failed", self._log_file)
 
-        if lxd_is_available() and self._app['build_infos'].get('source_container_image', None):
+        if lxd_is_available() and self._app.get('build_infos', {}).get('source_container_image', None):
             log("Generating a new container", self._log_file)
             try:
                 self._lxd_image_builder.set_source_hooks(get_path_from_app_with_color(self._app))
