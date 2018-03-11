@@ -2,9 +2,6 @@ from boto.ec2.instancetype import InstanceType
 
 import json
 
-with open('aws_data_instance_types.json') as data_file:
-    data = json.load(data_file)
-
 instance_types = {}
 
 # Instance types from China (cn-north-1) region are not available like in others
@@ -45,18 +42,39 @@ instance_types['cn-north-1'] = {
     InstanceType(name='i2.2xlarge',  cores='8',  memory='61',    disk='2 x 800 SSD'),
     InstanceType(name='i2.4xlarge',  cores='16', memory='122',   disk='4 x 800 SSD'),
     InstanceType(name='i2.8xlarge',  cores='32', memory='244',   disk='8 x 800 SSD'),
-} # yapf: disable
+ } # yapf: disable
 
-for region_data in data:
-    region = region_data['region']
-    instance_types[region] = []
+def load_instance_data(instance_types, filename):
+    """
+    >>> instance_types = {}
+    >>> instance_types['cn-north-1'] = { InstanceType(name='t1.micro', cores='1', memory='0.613', disk='EBS only'), }
+    >>> load_instance_data(instance_types, 'aws_data_instance_types.json')
+    >>> load_instance_data(instance_types, 'aws_data_instance_types_previous.json')
+    >>> { type.name: type for type in instance_types["cn-north-1"] }['t1.micro']
+    InstanceType:t1.micro-1,0.613,EBS only
+    >>> { type.name: type for type in instance_types["us-east-1"] }['t2.nano']
+    InstanceType:t2.nano-1,0.5,ebsonly
+    >>> { type.name: type for type in instance_types["us-east-1"] }['m3.medium']
+    InstanceType:m3.medium-1,3.75,1 x 4 SSD
+    >>> { type.name: type for type in instance_types["us-east-1"] }['c5.large']
+    InstanceType:c5.large-2,4,ebsonly
+    """
 
-    instanceTypes = region_data['instanceTypes']
-    for generation in instanceTypes:
-        generation_type = generation['type']
-        for size in generation['sizes']:
-            instance_types[region].append(InstanceType(name=size['size'],
-                                                       cores=size['vCPU'],
-                                                       memory=size[
-                                                           'memoryGiB'],
-                                                       disk=size['storageGB']))
+    with open(filename) as data_file:
+        data = json.load(data_file)
+    for region_data in data:
+        region = region_data['region']
+        if not region in instance_types:
+            instance_types[region] = []
+
+        instanceTypes = region_data['instanceTypes']
+        for generation in instanceTypes:
+            for size in generation['sizes']:
+                instance_types[region].append(InstanceType(name=size['size'],
+                                                        cores=size['vCPU'],
+                                                        memory=size[
+                                                            'memoryGiB'],
+                                                        disk=size['storageGB']))
+
+load_instance_data(instance_types, 'aws_data_instance_types.json')
+load_instance_data(instance_types, 'aws_data_instance_types_previous.json')
