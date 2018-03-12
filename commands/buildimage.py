@@ -45,6 +45,7 @@ class Buildimage():
         self.job["instance_type"] = self._job['instance_type']
         self.job["options"] = self._job['options']
         self._aws_image_builder = AWSImageBuilder(self._app, self.job, self._db, self._log_file, self._config)
+        self._lxd_image_builder = None
         if lxd_is_available() and self._app.get('build_infos', {}).get('source_container_image', None):
             self._lxd_image_builder = LXDImageBuilder(self._app, self.job, self._db, self._log_file, self._config)
 

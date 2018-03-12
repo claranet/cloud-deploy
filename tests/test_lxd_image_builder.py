@@ -1,7 +1,6 @@
 import mock
 import os
 
-from ghost_tools import get_local_repo_path
 from libs.builders.image_builder_lxd import LXDImageBuilder
 from tests.helpers import LOG_FILE, mocked_logger, get_test_application, get_test_config, void
 
