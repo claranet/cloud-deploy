@@ -46,7 +46,6 @@ class LXDImageBuilder(ImageBuilder):
         self._ansible_log_level = self._config.get('provisioner_log_level', 'info')
         self._salt_log_level = self._config.get('provisioner_log_level', 'info')
 
-
     def _create_containers_config(self):
         """ Generate a container configuration according build image or deployment
         """

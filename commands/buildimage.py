@@ -1,16 +1,17 @@
 import traceback
 
-from ghost_log import log
 from ghost_aws import create_userdata_launchconfig_update_asg
+from ghost_log import log
 from ghost_tools import get_aws_connection_data, GCallException
-from libs.lxd import lxd_is_available
-from settings import cloud_connections, DEFAULT_PROVIDER
-from libs.deploy import touch_app_manifest, get_path_from_app_with_color
 
 from libs.builders.image_builder_aws import AWSImageBuilder
 from libs.builders.image_builder_lxd import LXDImageBuilder
+from libs.deploy import touch_app_manifest, get_path_from_app_with_color
+from libs.lxd import lxd_is_available
 
 from libs.provisioners.provisioner_ansible import GalaxyNoMatchingRolesException, GalaxyBadRequirementPathException
+
+from settings import cloud_connections, DEFAULT_PROVIDER
 
 COMMAND_DESCRIPTION = "Build Image"
 RELATED_APP_FIELDS = ['features', 'build_infos']
@@ -18,6 +19,7 @@ RELATED_APP_FIELDS = ['features', 'build_infos']
 
 def is_available(app_context=None):
     return True
+
 
 class Buildimage():
     _app = None
@@ -40,10 +42,9 @@ class Buildimage():
             self._log_file,
             **self._connection_data
         )
-        self.job = {}
-        self.job["id"] = self._job['_id']
-        self.job["instance_type"] = self._job['instance_type']
-        self.job["options"] = self._job['options']
+        self.job = {"id": self._job['_id'],
+                    "instance_type": self._job['instance_type'],
+                    "options": self._job['options']}
         self._aws_image_builder = AWSImageBuilder(self._app, self.job, self._db, self._log_file, self._config)
         self._lxd_image_builder = None
         if lxd_is_available() and self._app.get('build_infos', {}).get('source_container_image', None):
@@ -69,7 +70,7 @@ class Buildimage():
         self._worker.update_status("done")
 
     def _update_container_source(self, container):
-        self._db.apps.update({'_id': self._app['_id']},{'$set': {'build_infos.container_image': str(container) }})
+        self._db.apps.update({'_id': self._app['_id']}, {'$set': {'build_infos.container_image': str(container)}})
 
     def execute(self):
         try:
@@ -94,7 +95,7 @@ class Buildimage():
             log("Generating a new container", self._log_file)
             try:
                 self._lxd_image_builder.set_source_hooks(get_path_from_app_with_color(self._app))
-                builder_result = self._lxd_image_builder.start_builder()
+                self._lxd_image_builder.start_builder()
             except Exception as e:
                 traceback.print_exc(self._log_file)
                 log("An error occured during container process ({})".format(e), self._log_file)

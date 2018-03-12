@@ -30,7 +30,6 @@ class AWSImageBuilder(ImageBuilder):
 
         self._packer_file_path_aws = self.packer_file_path + "/aws_builder.json"
 
-
     def _format_packer_from_app(self):
         instance_tags = {}
         if 'instance_tags' in self._app['environment_infos']:
@@ -99,7 +98,8 @@ class AWSImageBuilder(ImageBuilder):
         packer = self._build_packer_json()
         credentials = self._cloud_connection.get_credentials()
         log("Generating a new AMI", self._log_file)
-        log("Packer options : %s" %json.dumps(packer, sort_keys=True, indent=4, separators=(',', ': ')), self._log_file)
+        log("Packer options : %s" % json.dumps(packer, sort_keys=True, indent=4, separators=(',', ': ')),
+            self._log_file)
         pack = Packer(credentials, self._log_file)
         ami_id = pack.build_image(self._packer_file_path_aws)
         return ami_id, self._ami_name

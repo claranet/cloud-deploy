@@ -5,12 +5,11 @@ import os
 import io
 
 from ghost_log import log
-from ghost_tools import b64decode_utf8, GCallException
+from ghost_tools import b64decode_utf8
 
 from libs.provisioners import get_provisioners
 
 from libs.blue_green import get_blue_green_from_app
-
 
 AMI_BASE_FMT = "ami.{env}.{region}.{role}.{name}.{color}"
 AMI_FMT = AMI_BASE_FMT + "{date}"
@@ -22,6 +21,7 @@ class ImageBuilder:
     This class is the generic interface used by Buildimage command
     in order to create the desired Image
     """
+
     def __init__(self, app, job, db, log_file, config):
 
         self._app = app
@@ -31,16 +31,16 @@ class ImageBuilder:
         self._config = config
 
         blue_green, self._color = get_blue_green_from_app(self._app)
-        self._ami_name = AMI_FMT.format(env=self._app['env'], region=self._app['region'],
-                                                              role=self._app['role'],
-                                                              name=self._app['name'],
-                                                              date=time.strftime("%Y%m%d-%H%M%S"),
-                                                              color='.%s' % self._color if self._color else '')
+        self._ami_name = AMI_FMT.format(env=self._app['env'],
+                                        region=self._app['region'],
+                                        role=self._app['role'],
+                                        name=self._app['name'],
+                                        date=time.strftime("%Y%m%d-%H%M%S"),
+                                        color='.%s' % self._color if self._color else '')
         self.unique = str(job['id'])
         self.packer_file_path = PACKER_JSON_PATH + self.unique
         if not os.path.exists(self.packer_file_path):
             os.makedirs(self.packer_file_path)
-
 
     def _format_ghost_env_vars(self):
         ghost_vars = []
@@ -48,7 +48,7 @@ class ImageBuilder:
         ghost_vars.append('GHOST_ENV=%s' % self._app['env'])
         ghost_vars.append('GHOST_ENV_COLOR=%s' % (self._color if self._color else ''))
         ghost_vars.append('GHOST_ROLE=%s' % self._app['role'])
-        return ghost_vars    
+        return ghost_vars
 
     def _generate_buildimage_hook(self, hook_name):
         """ Generates a buildimage hook script
@@ -83,7 +83,9 @@ class ImageBuilder:
             hook_source = u"echo No {hook_name} script".format(hook_name=hook_name)
         else:
             hook_source = b64decode_utf8(self._app['lifecycle_hooks'][hook_name])
-        app_path = "/ghost/{name}/{env}/{role}".format(name=self._app['name'], env=self._app['env'], role=self._app['role'])
+        app_path = "/ghost/{name}/{env}/{role}".format(name=self._app['name'],
+                                                       env=self._app['env'],
+                                                       role=self._app['role'])
         if not os.path.exists(app_path):
             os.makedirs(app_path)
         hook_file_path = "{app_path}/hook-{hook_name}".format(app_path=app_path, hook_name=hook_name)
@@ -104,7 +106,8 @@ class ImageBuilder:
     def _get_packer_provisionners(self):
 
         provisioners = get_provisioners(self._config, self._log_file, self.unique, self._job["options"], self._app)
-        formatted_env_vars = self._format_ghost_env_vars() + ['%s=%s' % (envvar['var_key'], envvar['var_value']) for envvar in self._app['env_vars']]
+        formatted_env_vars = self._format_ghost_env_vars() + ['%s=%s' % (envvar['var_key'], envvar['var_value']) for
+                                                              envvar in self._app['env_vars']]
 
         hooks = self._get_buildimage_hooks()
         ret = [{
@@ -129,7 +132,7 @@ class ImageBuilder:
             if cleanup_section:
                 ret.append(cleanup_section)
         return ret
-    
+
     def start_builder(self):
         raise NotImplementedError
 
