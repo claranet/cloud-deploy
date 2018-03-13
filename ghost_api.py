@@ -264,7 +264,7 @@ def check_app_b64_scripts(updates):
                 if script in mod:
                     try:
                         b64decode_utf8(mod[script])
-                    except binascii.Error:
+                    except (binascii.Error, UnicodeDecodeError):
                         raise GhostAPIInputError('Error decoding script "{s}" in module: "{m}"'.format(
                             s=script, m=mod["name"]))
     if 'lifecycle_hooks' in updates:
@@ -272,7 +272,7 @@ def check_app_b64_scripts(updates):
             if script in updates['lifecycle_hooks']:
                 try:
                     b64decode_utf8(updates['lifecycle_hooks'][script])
-                except binascii.Error:
+                except (binascii.Error, UnicodeDecodeError):
                     raise GhostAPIInputError(
                         'Error decoding a script in lifecycle hook: {h}'.format(h=script))
     if 'blue_green' in updates and 'hooks' in updates['blue_green']:
@@ -281,7 +281,7 @@ def check_app_b64_scripts(updates):
                 try:
                     b64decode_utf8(
                         updates['blue_green']['hooks'][script])
-                except binascii.Error:
+                except (binascii.Error, UnicodeDecodeError):
                     raise GhostAPIInputError('Error decoding a script in blue/green hook: {h}'.format(h=script))
 
 
