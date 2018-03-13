@@ -1,12 +1,12 @@
 [submodule "ghost-doc"]
 	path = ghost-doc
-	url = git@bitbucket.org:morea/ghost-doc.git
+	url = git@github.com:claranet/cloud-deploy-docs.git
 [submodule "ghost-feature-presets"]
 	path = ghost-feature-presets
-	url = git@bitbucket.org:morea/ghost-feature-presets.git
+	url = git@github.com:claranet/cloud-deploy-presets.git
 [submodule "ansible-playbook-ghost-common"]
 	path = ansible-playbook-ghost-common
-	url = git@bitbucket.org:morea/ansible-playbook-ghost-common.git
+	url = git@github.com:claranet/cloud-deploy-ansible-playbook-common.git
 [submodule "web_ui"]
 	path = web_ui
 	url = git@bitbucket.org:morea/ghost-ui
