@@ -9,6 +9,7 @@ import importlib
 from pylxd import Client as LXDClient
 
 modules = [
+  "aws_data",
   "command",
   "commands.buildimage",
   "commands.deploy",
