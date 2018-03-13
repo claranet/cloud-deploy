@@ -29,7 +29,7 @@ def list_commands(app_id=None):
     """
     Returns a mapping of the available commands and their descriptions:
 
-    >>> from web_ui.tests import create_test_app_context; create_test_app_context()
+    >>> from tests.helpers import create_test_app_context; create_test_app_context()
     >>> import json
     >>> config['enable_executescript_command'] = 'true'
     >>> config['blue_green'] = {'enabled': True}
@@ -51,7 +51,7 @@ def list_commands_app_fields_impact(app_id=None):
     """
     Returns a mapping of the available commands and which App's fields are used:
 
-    >>> from web_ui.tests import create_test_app_context; create_test_app_context()
+    >>> from tests.helpers import create_test_app_context; create_test_app_context()
     >>> import json
     >>> config['enable_executescript_command'] = 'true'
     >>> config['blue_green'] = {'enabled': True}
