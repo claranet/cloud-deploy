@@ -25,10 +25,11 @@ class FeaturesProvisionerSalt(FeaturesProvisioner):
 
     def build_packer_provisioner_config(self, features_config):
         features = self._format_provisioner_features(features_config)
+        provisioner_params = self._format_provisioner_params(features_config)
         enabled_packer_salt_config = self._test_not_empty_salt_features(features)
 
         if enabled_packer_salt_config:
-            self._build_provisioner_features_files(features_config)
+            self._build_provisioner_features_files(features, provisioner_params)
             _provisionner_config = {
                 'type': 'salt-masterless',
                 'local_state_tree': self._salt_state_tree,
@@ -40,9 +41,8 @@ class FeaturesProvisionerSalt(FeaturesProvisioner):
             return None
         return [_provisionner_config]
 
-    def _build_provisioner_features_files(self, features):
+    def _build_provisioner_features_files(self, features, provisioner_params):
         """ Build salt files only if features with salt provisioner """
-        provisioner_params = self._format_provisioner_params(features)
         self._build_salt_top(features)
         self._build_salt_pillar(provisioner_params)
 
