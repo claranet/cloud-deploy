@@ -80,40 +80,19 @@ def test_build_image_ansible(packer_run_packer_cmd, gcall, provisioner_get_local
 
         # Verify packer config
         packer_config = json.load(f)
-        del packer_config["builders"][0]["ami_name"]
-        packer_config["builders"][0][u"ami_name"] = u"ami.test.eu-west-1.webfront.test-app."
         print packer_config
-        assert packer_config == {
-            'builders': [
+        packer_config_reference = {
+            "provisioners": [
                 {
-                    'ami_block_device_mappings': [],
-                    'ami_name': 'ami.test.eu-west-1.webfront.test-app.',
-                    'associate_public_ip_address': '1',
-                    'iam_instance_profile': 'iam.profile.test',
-                    'instance_type': 'test_instance_type',
-                    'launch_block_device_mappings': [],
-                    'region': 'eu-west-1',
-                    'source_ami': 'ami-source',
-                    'ssh_username': 'admin',
-                    'subnet_id': 'subnet-test',
-                    'tags': {
-                        'Name': 'ec2.name.test',
-                        'tag-name': 'tag-value'
-                    },
-                    'type': 'amazon-ebs',
-                    'vpc_id': 'vpc-test'
-                }
-            ],
-            'provisioners': [
-                {
-                    'environment_vars': [
-                        'GHOST_APP=test-app',
-                        'GHOST_ENV=test',
-                        'GHOST_ENV_COLOR=',
-                        'GHOST_ROLE=webfront'
+                    "type": "shell",
+                    "environment_vars": [
+                        "GHOST_APP=test-app",
+                        "GHOST_ENV=test",
+                        "GHOST_ENV_COLOR=",
+                        "GHOST_ROLE=webfront",
+                        "EMPTY_ENV="
                     ],
-                    'script': '/ghost/test-app/test/webfront/hook-pre_buildimage',
-                    'type': 'shell'
+                    "script": "/ghost/test-app/test/webfront/hook-pre_buildimage"
                 },
                 {
                     "type": "ansible",
@@ -124,17 +103,44 @@ def test_build_image_ansible(packer_run_packer_cmd, gcall, provisioner_get_local
                     "extra_arguments": ['-v'],
                 },
                 {
-                    'environment_vars': [
-                        'GHOST_APP=test-app',
-                        'GHOST_ENV=test',
-                        'GHOST_ENV_COLOR=',
-                        'GHOST_ROLE=webfront'
+                    "type": "shell",
+                    "environment_vars": [
+                        "GHOST_APP=test-app",
+                        "GHOST_ENV=test",
+                        "GHOST_ENV_COLOR=",
+                        "GHOST_ROLE=webfront",
+                        "EMPTY_ENV="
                     ],
-                    'script': '/ghost/test-app/test/webfront/hook-post_buildimage',
-                    'type': 'shell'
+                    "script": "/ghost/test-app/test/webfront/hook-post_buildimage"
+                }
+            ],
+            "builders": [
+                {
+                    "ami_block_device_mappings": [],
+                    "launch_block_device_mappings": [],
+                    "source_ami": "ami-source",
+                    "tags": {
+                        "Name": "ec2.name.test",
+                        "tag-name": "tag-value",
+                    },
+                    "subnet_id": "subnet-test",
+                    "ssh_username": "admin",
+                    "ssh_interface": "private_ip",
+                    "region": "eu-west-1",
+                    "security_group_ids": [
+                        "sg-test"
+                    ],
+                    "ami_name": ami_name,
+                    "iam_instance_profile": "iam.profile.test",
+                    "instance_type": "test_instance_type",
+                    "associate_public_ip_address": True,
+                    "vpc_id": "vpc-test",
+                    "type": "amazon-ebs",
+                    "ssh_pty": True
                 }
             ]
         }
+        assert packer_config == packer_config_reference
 
 
 @mock.patch('pypacker.log', new=mocked_logger)
@@ -207,41 +213,20 @@ def test_build_image_ansible_debug(packer_run_packer_cmd, gcall, provisioner_get
 
         # Verify packer config
         packer_config = json.load(f)
-        del packer_config["builders"][0]["ami_name"]
-        packer_config["builders"][0][u"ami_name"] = u"ami.test.eu-west-1.webfront.test-app."
         print packer_config
 
         assert packer_config == {
-            'builders': [
+            "provisioners": [
                 {
-                    'ami_block_device_mappings': [],
-                    'ami_name': 'ami.test.eu-west-1.webfront.test-app.',
-                    'associate_public_ip_address': '1',
-                    'iam_instance_profile': 'iam.profile.test',
-                    'instance_type': 'test_instance_type',
-                    'launch_block_device_mappings': [],
-                    'region': 'eu-west-1',
-                    'source_ami': 'ami-source',
-                    'ssh_username': 'admin',
-                    'subnet_id': 'subnet-test',
-                    'tags': {
-                        'Name': 'ec2.name.test',
-                        'tag-name': 'tag-value'
-                    },
-                    'type': 'amazon-ebs',
-                    'vpc_id': 'vpc-test'
-                }
-            ],
-            'provisioners': [
-                {
-                    'environment_vars': [
-                        'GHOST_APP=test-app',
-                        'GHOST_ENV=test',
-                        'GHOST_ENV_COLOR=',
-                        'GHOST_ROLE=webfront'
+                    "type": "shell",
+                    "environment_vars": [
+                        "GHOST_APP=test-app",
+                        "GHOST_ENV=test",
+                        "GHOST_ENV_COLOR=",
+                        "GHOST_ROLE=webfront",
+                        "EMPTY_ENV="
                     ],
-                    'script': '/ghost/test-app/test/webfront/hook-pre_buildimage',
-                    'type': 'shell'
+                    "script": "/ghost/test-app/test/webfront/hook-pre_buildimage"
                 },
                 {
                     "type": "ansible",
@@ -252,14 +237,40 @@ def test_build_image_ansible_debug(packer_run_packer_cmd, gcall, provisioner_get
                     "extra_arguments": ['-vvv'],
                 },
                 {
-                    'environment_vars': [
-                        'GHOST_APP=test-app',
-                        'GHOST_ENV=test',
-                        'GHOST_ENV_COLOR=',
-                        'GHOST_ROLE=webfront'
+                    "type": "shell",
+                    "environment_vars": [
+                        "GHOST_APP=test-app",
+                        "GHOST_ENV=test",
+                        "GHOST_ENV_COLOR=",
+                        "GHOST_ROLE=webfront",
+                        "EMPTY_ENV="
                     ],
-                    'script': '/ghost/test-app/test/webfront/hook-post_buildimage',
-                    'type': 'shell'
+                    "script": "/ghost/test-app/test/webfront/hook-post_buildimage"
+                }
+            ],
+            "builders": [
+                {
+                    "ami_block_device_mappings": [],
+                    "launch_block_device_mappings": [],
+                    "source_ami": "ami-source",
+                    "tags": {
+                        "Name": "ec2.name.test",
+                        "tag-name": "tag-value",
+                    },
+                    "subnet_id": "subnet-test",
+                    "ssh_username": "admin",
+                    "ssh_interface": "private_ip",
+                    "region": "eu-west-1",
+                    "security_group_ids": [
+                        "sg-test"
+                    ],
+                    "ami_name": ami_name,
+                    "iam_instance_profile": "iam.profile.test",
+                    "instance_type": "test_instance_type",
+                    "associate_public_ip_address": True,
+                    "vpc_id": "vpc-test",
+                    "type": "amazon-ebs",
+                    "ssh_pty": True
                 }
             ]
         }
@@ -317,10 +328,10 @@ def test_build_image_root_block_device(packer_run_packer_cmd, provisioner_get_lo
     assert ami_id == "test_ami_id"
     assert ami_name.startswith("ami.test.eu-west-1.webfront.test-app.")
 
-    with open(os.path.join(PACKER_JSON_PATH, job['_id'] + '.json'), 'r') as f:
+    with open(os.path.join(PACKER_JSON_PATH, job['id'] + '/aws_builder.json'), 'r') as f:
         # Verify packer config
         packer_config = json.load(f)
-        assert packer_config == {
+        packer_config_reference = {
             "provisioners": [
                 {
                     "type": "shell",
@@ -399,3 +410,4 @@ def test_build_image_root_block_device(packer_run_packer_cmd, provisioner_get_lo
                 }
             ]
         }
+        assert packer_config == packer_config_reference
