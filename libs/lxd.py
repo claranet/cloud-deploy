@@ -1,10 +1,11 @@
 from pylxd import Client as LXDClient
 
 
-def list_lxd_images(config={}):
+def list_lxd_images(config=None):
     """
     Retrieve images on local registry
     """
+    config = config or {}
     if lxd_is_available(config):
         container_config = config.get('container', {'endpoint': config.get('endpoint',
                                                                            'https://lxd.ghost.morea.fr:8443')})
@@ -22,10 +23,11 @@ def list_lxd_images(config={}):
         return [('', 'Container Image list is unavailable, check your LXD parameters in config.yml')]
 
 
-def lxd_is_available(config={}):
+def lxd_is_available(config=None):
     """
-    Test if lxd is available on system
+    Test if lxd is available on system and test if remote lxd endpoint is available
     """
+    config = config or {}
     try:
         lxd_local = LXDClient()
         container_config = config.get('container', {'endpoint': config.get('endpoint',
