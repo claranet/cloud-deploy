@@ -1,10 +1,40 @@
-# Requirements
+# Claranet Cloud Deploy
 
+- Documentation: [https://docs.cloud-deploy.io/](https://docs.cloud-deploy.io/)
+- Related repositories: [Claranet Github](https://github.com/claranet?utf8=%E2%9C%93&q=cloud-deploy&type=&language=)
+- Cloud Deploy CLI: [Casper](https://github.com/claranet/casper)
+
+![Cloud Deploy](https://www.cloudeploy.io/ghost/full_logo.png)
+
+Cloud Deploy (Ghost Project) aims to deploy applications in the Cloud, in a secure and reliable way. Actual version support only AWS.
+
+Key features:
+
+- Developed in Python.
+- Designed for continuous deployment.
+- Create, configure and update AWS EC2 instances.
+- Used to deploy client application code
+- Cloud Deploy core build within a REST API that any REST client could use it
+- A Web User Interface, available only for Claranet customers or with Enterprise license
+- [Casper](https://docs.cloud-deploy.io/rst/cli.html#cli): CLI client
+
+## Requirements
+
+### Python:
 * virtualenv
 * pip >= 9.0.1 (in local virtualenv)
 * pip-tools >= 1.9.0 (in local virtualenv)
 
-## Dev
+### Packages:
+* MongoDB
+* Redis
+* Supervisor
+* Nginx
+
+Compatible with Debian.
+
+## Development
+
 Installing requirements:
 
     $ pip install -r requirements.txt
@@ -27,44 +57,26 @@ Running unit tests directly (dependencies should be provided by the system or an
 
     $ ./run_tests.py
 
-# Deployment
+## Deployment
 
-## docker-compose
+### Locally via docker-compose:
 
     $ export AWS_ACCESS_KEY_ID=AKIAI*******
     $ export AWS_SECRET_ACCESS_KEY=********************
     $ docker-compose build
     $ docker-compose up
 
-## Sur instance EC2:
-* utiliser morea-salt-formulas
-* Role IAM avec Policy :
+### On an AWS EC2 instance:
 
-    {
-      "Version": "2012-10-17",
-      "Statement": [
-        {
-          "Effect": "Allow",
-          "Action": [
-            "s3:Get*",
-            "s3:List*",
-            "ec2:DescribeTags"
-          ],
-          "Resource": "*"
-        }
-      ]
-    }
+* Ask Claranet who can provide VM image or Ansible/SaltStack playbook and formula.
 
-## Sur bastion:
-* utiliser morea-salt-formulas
-
-# Configuration:
-## accounts:
+## Configuration:
+### Accounts:
 * copy accounts.yml.dist as accounts.yml
-* add account with 'python auth.py user password'
-* restart ghost process
+* add account with `python auth.py user password`
+* restart `ghost` (API/Core) process to reload accounts
 
-# Example data
+## Example data
     JOB
     {
         command: "deploy",
@@ -91,7 +103,7 @@ Running unit tests directly (dependencies should be provided by the system or an
         "autoscale": {"min": 1, "max": 2, "current": 1}
     }
 
-# Updating AWS data
+## Updating AWS data
 Requires curl, nodejs and jq:
 
     (echo 'function callback(data) { console.log(JSON.stringify(data)); }'; curl -s 'http://a0.awsstatic.com/pricing/1/ec2/linux-od.min.js') | nodejs | jq -r '.config.regions' > aws_data_instance_types.json
