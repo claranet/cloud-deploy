@@ -1,11 +1,11 @@
 from pylxd import Client as LXDClient
 
 
-def list_lxd_images(config=None):
+def list_lxd_images(config={}):
     """
     Retrieve images on local registry
     """
-    if lxd_is_available():
+    if lxd_is_available(config):
         container_config = config.get('container', {'endpoint': config.get('endpoint',
                                                                            'https://lxd.ghost.morea.fr:8443')})
         if container_config.get('endpoint', 'localhost') == "localhost":
@@ -22,12 +22,17 @@ def list_lxd_images(config=None):
         return [('', 'Container Image list is unavailable, check your LXD parameters in config.yml')]
 
 
-def lxd_is_available():
+def lxd_is_available(config={}):
     """
     Test if lxd is available on system
     """
     try:
-        lxd = LXDClient()
+        container_config = config.get('container', {'endpoint': config.get('endpoint',
+                                                                           'https://lxd.ghost.morea.fr:8443')})
+        if container_config.get('endpoint', 'localhost') == "localhost":
+            lxd = LXDClient()
+        else:
+            lxd = LXDClient(endpoint=container_config.get('endpoint', 'https://lxd.ghost.morea.fr:8443'), verify=True)
     except:
         return False
     return True
