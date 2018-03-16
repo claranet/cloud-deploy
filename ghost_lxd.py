@@ -4,6 +4,7 @@ from flask import jsonify
 from ghost_tools import config
 from libs.lxd import lxd_is_available, list_lxd_images
 
+
 lxd_blueprint = Blueprint('lxd_blueprint', __name__)
 
 

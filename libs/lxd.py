@@ -1,6 +1,8 @@
 from pylxd import Client as LXDClient
 
 
+DEFAULT_LXD_REMOTE_ENDPOINT = 'https://lxd.ghost.morea.fr:8443'
+
 def list_lxd_images(config=None):
     """
     Retrieve images on local registry
@@ -8,11 +10,11 @@ def list_lxd_images(config=None):
     config = config or {}
     if lxd_is_available(config):
         container_config = config.get('container', {'endpoint': config.get('endpoint',
-                                                                           'https://lxd.ghost.morea.fr:8443')})
+                                                                           DEFAULT_LXD_REMOTE_ENDPOINT)})
         if container_config.get('endpoint', 'localhost') == "localhost":
             lxd = LXDClient()
         else:
-            lxd = LXDClient(endpoint=container_config.get('endpoint', 'https://lxd.ghost.morea.fr:8443'), verify=True)
+            lxd = LXDClient(endpoint=container_config.get('endpoint', DEFAULT_LXD_REMOTE_ENDPOINT), verify=True)
         images = lxd.images.all()
 
         return [('', "Don't use containers")] + \
@@ -31,9 +33,9 @@ def lxd_is_available(config=None):
     try:
         lxd_local = LXDClient()
         container_config = config.get('container', {'endpoint': config.get('endpoint',
-                                                                           'https://lxd.ghost.morea.fr:8443')})
+                                                                           DEFAULT_LXD_REMOTE_ENDPOINT)})
         if container_config.get('endpoint', 'localhost') != "localhost":
-            lxd = LXDClient(endpoint=container_config.get('endpoint', 'https://lxd.ghost.morea.fr:8443'), verify=True)
+            lxd = LXDClient(endpoint=container_config.get('endpoint', DEFAULT_LXD_REMOTE_ENDPOINT), verify=True)
     except:
         return False
     return True
