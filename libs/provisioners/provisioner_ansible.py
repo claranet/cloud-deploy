@@ -12,11 +12,13 @@ ANSIBLE_BASE_PLAYBOOK = {'name': 'Ghost application features', 'hosts': 'all', '
 ANSIBLE_COMMAND = "bin/ansible-playbook"
 ANSIBLE_GALAXY_DEFAULT_CMD_PATH = "bin/ansible-galaxy"
 ANSIBLE_ENV_VARS = ["ANSIBLE_HOST_KEY_CHECKING=False", "ANSIBLE_FORCE_COLOR=1", "PYTHONUNBUFFERED=1"]
-ANSIBLE_LOG_LEVEL_MAP = {"info": "-v", "profile": "-vv", "debug": "-vvv", "trace": "-vvvv", "garbage": "-vvvv", "all": "-vvvv"}
+ANSIBLE_LOG_LEVEL_MAP = {"info": "-v", "profile": "-vv", "debug": "-vvv", "trace": "-vvvv", "garbage": "-vvvv",
+                         "all": "-vvvv"}
 
 
 class FeaturesProvisionerAnsible(FeaturesProvisioner):
     """ Build features with ansible """
+
     def __init__(self, log_file, unique_id, options, config, global_config):
         FeaturesProvisioner.__init__(self, log_file, 'ansible', unique_id, options, config, global_config)
         ghost_root_path = global_config.get('ghost_root_path', '/usr/local/share/ghost')
@@ -40,7 +42,7 @@ class FeaturesProvisionerAnsible(FeaturesProvisioner):
 
     def build_packer_provisioner_config(self, features):
         features = self._format_provisioner_features(features)
-        self.build_provisioner_features_files(features)
+        self.build_provisioner_features_files(features, None)
         _log_level = ANSIBLE_LOG_LEVEL_MAP.get(self._provisioner_log_level, None)
         _provisioner_config = {
             'type': 'ansible',
@@ -53,7 +55,7 @@ class FeaturesProvisionerAnsible(FeaturesProvisioner):
             _provisioner_config['extra_arguments'] = [_log_level]
         return [_provisioner_config]
 
-    def build_provisioner_features_files(self, features):
+    def build_provisioner_features_files(self, features, provisioner_params):
         self._build_ansible_galaxy_requirement(features)
         self._build_ansible_playbook(features)
 
@@ -63,7 +65,8 @@ class FeaturesProvisionerAnsible(FeaturesProvisioner):
             log("Ansible - Writing playbook: {0}".format(self._ansible_playbook_path), self._log_file)
             log(_yellow("Ansible - features: {0}".format(features[-1]['roles'])), self._log_file)
             try:
-                yaml.safe_dump(features, stream_features, default_flow_style=False, explicit_start=True, allow_unicode=True)
+                yaml.safe_dump(features, stream_features, default_flow_style=False, explicit_start=True,
+                               allow_unicode=True)
             except yaml.YAMLError as exc:
                 log(_red("Ansible - ERROR Writing playbook: {0}".format(exc)), self._log_file)
                 raise
@@ -108,9 +111,9 @@ class FeaturesProvisionerAnsible(FeaturesProvisioner):
                 yaml.dump(requirement_app, stream_requirement_app, default_flow_style=False)
             log("Ansible - Getting roles from : {0}".format(self._ansible_galaxy_rq_path), self._log_file)
             gcall("{} install -r {} -p {}".format(
-                    self._ansible_galaxy_command_path,
-                    self._ansible_requirement_app,
-                    self._ansible_galaxy_role_path),
+                self._ansible_galaxy_command_path,
+                self._ansible_requirement_app,
+                self._ansible_galaxy_role_path),
                 'Ansible -  ansible-galaxy command',
                 self._log_file)
         else:
@@ -120,7 +123,6 @@ class FeaturesProvisionerAnsible(FeaturesProvisioner):
 
     def build_packer_provisioner_cleanup(self):
         return None
-
 
     def _format_provisioner_features(self, features):
         """ Generates the role dictionnary object with all required features and their options
@@ -181,6 +183,3 @@ class FeaturesProvisionerAnsible(FeaturesProvisioner):
                 else:
                     playbook[-1]['roles'].append({'role': feature_name})
         return playbook
-
-    def format_provisioner_params(self, features):
-        return None
