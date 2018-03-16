@@ -27,11 +27,10 @@ def lxd_is_available(config={}):
     Test if lxd is available on system
     """
     try:
+        lxd_local = LXDClient()
         container_config = config.get('container', {'endpoint': config.get('endpoint',
                                                                            'https://lxd.ghost.morea.fr:8443')})
-        if container_config.get('endpoint', 'localhost') == "localhost":
-            lxd = LXDClient()
-        else:
+        if container_config.get('endpoint', 'localhost') != "localhost":
             lxd = LXDClient(endpoint=container_config.get('endpoint', 'https://lxd.ghost.morea.fr:8443'), verify=True)
     except:
         return False
