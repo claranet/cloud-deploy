@@ -6,17 +6,17 @@
 
 ![Cloud Deploy](https://www.cloudeploy.io/ghost/full_logo.png)
 
-Cloud Deploy (Ghost Project) aims to deploy applications in the Cloud, in a secure and reliable way. Actual version support only AWS.
+Cloud Deploy (Ghost Project) aims to deploy applications in the Cloud, in a secure and reliable way. Current version supports only AWS.
 
 Key features:
 
 - Developed in Python.
 - Designed for continuous deployment.
 - Create, configure and update AWS EC2 instances.
-- Used to deploy client application code
-- Cloud Deploy core build within a REST API that any REST client could use it
-- A Web User Interface, available only for Claranet customers or with Enterprise license
-- [Casper](https://docs.cloud-deploy.io/rst/cli.html#cli): CLI client
+- Used to deploy customer application code.
+- Cloud Deploy core is built with a REST API that any REST client can use.
+- A Web User Interface, available only for Claranet customers or with Enterprise license.
+- [Casper](https://docs.cloud-deploy.io/rst/cli.html#cli): CLI client.
 
 ## Requirements
 
@@ -31,7 +31,10 @@ Key features:
 * Supervisor
 * Nginx
 
-Compatible with Debian.
+### Dependencies and tools
+* Cloud Deploy uses [Packer](https://www.packer.io/) to bake VM images
+* Compatible with [SaltStack](https://saltstack.com/) and [Ansible](https://www.ansible.com/) to provision requirements in VM images
+* Uses [Fabric](http://www.fabfile.org/) for SSH connections and live deployment
 
 ## Development
 
@@ -66,42 +69,11 @@ Running unit tests directly (dependencies should be provided by the system or an
     $ docker-compose build
     $ docker-compose up
 
-### On an AWS EC2 instance:
-
-* Ask Claranet who can provide VM image or Ansible/SaltStack playbook and formula.
-
 ## Configuration:
 ### Accounts:
 * copy accounts.yml.dist as accounts.yml
 * add account with `python auth.py user password`
 * restart `ghost` (API/Core) process to reload accounts
-
-## Example data
-    JOB
-    {
-        command: "deploy",
-        parameters: [options: "hard", app_id: APPLICATION_ID, modules: [name: "php5", rev: "staging"]],
-        status: "launched"
-    }
-
-    APP
-    {
-***REMOVED***
-***REMOVED***
-***REMOVED***
-        ],
-        "env": "staging",
-        "features": [{"name": "php5-fpm", "version": "5.5"}, {"name": "nginx", "version": "1.4.2"], // version optionnel, name = SaltStack state
-        "role" : "webserver",
-***REMOVED***
-        "log_notifications" : [
-            "ingenieurs@morea.fr",
-            "wbb-notification@void.fr"
-        ],
-        "ami": "ami_id", // Stored by Packer
-        "instance_type": "t2.small"
-        "autoscale": {"min": 1, "max": 2, "current": 1}
-    }
 
 ## Updating AWS data
 Requires curl, nodejs and jq:
