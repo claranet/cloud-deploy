@@ -305,6 +305,7 @@ class Deploy():
         if self._is_commit_hash(revision):
             # Create intermediate clone from the local git mirror, chdir into it and fetch all commits
             source_path = get_intermediate_clone_path_from_module(self._app, module)
+            gcall('chmod -R u+rwx {p}'.format(p=source_path), 'Update rights on previous intermediate clone', self._log_file)
             gcall('rm -rf {p}'.format(p=source_path), 'Removing previous intermediate clone', self._log_file)
             os.makedirs(source_path)
             os.chdir(source_path)
@@ -332,6 +333,7 @@ class Deploy():
             gcall('rm -rf {p}'.format(p=source_path), 'Removing intermediate clone', self._log_file)
         else:
             # Create clone from the local git mirror, chdir into it, fetch requested revision and retrieve submodules
+            gcall('chmod -R u+rwx {p}'.format(p=clone_path), 'Update rights on previous clone', self._log_file)
             gcall('rm -rf {p}'.format(p=clone_path), 'Removing previous clone', self._log_file)
             os.makedirs(clone_path)
             os.chdir(clone_path)
