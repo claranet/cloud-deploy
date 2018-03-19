@@ -3,7 +3,6 @@ import os
 import sys
 import traceback
 import yaml
-import traceback
 import logging
 from sh import head, tail
 
@@ -248,6 +247,7 @@ class Command:
                                 body_text=body, body_html=html_body, attachments=[log])
                 pass
         except:
+            sys.stdout = sys.stderr = self.log_file = open(log_path, 'a', 1)
             logging.exception("An exception occurred when trying to send the Job mail notification.")
             traceback.print_exc()
 
@@ -286,6 +286,8 @@ class Command:
                 self.update_status("aborted",
                                    "Job was already in '{}' status (not in 'init' status)".format(self.job['status']))
         except:
+            log_path = self._get_log_path()
+            sys.stdout = sys.stderr = self.log_file = open(log_path, 'a', 1)
             message = sys.exc_info()[0]
             log(message, self.log_file)
             traceback.print_exc(file=self.log_file)
@@ -297,4 +299,5 @@ class Command:
             self._close_log_file()
             self._mail_log_action(subject, body)
             self._push_log_to_s3()
+            self._close_log_file()
             self._disconnect_db()
