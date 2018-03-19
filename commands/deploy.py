@@ -398,7 +398,7 @@ GHOST_MODULE_USER="{user}"
         module_metadata = module_metadata.format(**metavars)
         custom_env_vars = self._app.get('env_vars', None)
         if custom_env_vars and len(custom_env_vars):
-            module_metadata = module_metadata + u''.join([u'export {key}="{val}" \n'.format(key=env_var['var_key'], val=env_var['var_value']) for env_var in custom_env_vars])
+            module_metadata = module_metadata + u''.join([u'export {key}="{val}" \n'.format(key=env_var['var_key'], val=env_var.get('var_value', '')) for env_var in custom_env_vars])
         with io.open(clone_path + '/.ghost-metadata', mode='w', encoding='utf-8') as f:
             f.write(module_metadata)
         gcall('du -hs .', 'Display current build directory disk usage', self._log_file)

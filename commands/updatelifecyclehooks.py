@@ -46,7 +46,7 @@ class Updatelifecyclehooks():
         env_vars_source = u"""# Specific app environment variables
 
 """
-        env_vars_source = env_vars_source + u''.join([u'export {key}="{val}" \n'.format(key=env_var['var_key'], val=env_var['var_value']) for env_var in custom_env_vars])
+        env_vars_source = env_vars_source + u''.join([u'export {key}="{val}" \n'.format(key=env_var['var_key'], val=env_var.get('var_value', '')) for env_var in custom_env_vars])
 
         k = bucket.new_key(key_name)
         k.set_contents_from_string(env_vars_source)
