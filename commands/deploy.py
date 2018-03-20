@@ -288,7 +288,7 @@ class Deploy():
 
             # Update existing git mirror
             os.chdir(mirror_path)
-            gcall('git --no-pager remote update',
+            gcall('git --no-pager fetch --all --tags --prune',
                   'Update local git mirror from remote {r}'.format(r=git_repo),
                   self._log_file)
         finally:
