@@ -229,7 +229,13 @@ class Command:
         bucket = self._config['bucket_s3']
         region = self._config.get('bucket_region', self.app['region'])
         key_path = get_job_log_remote_path(self._worker_job.id)
-        push_file_to_s3(cloud_connection, bucket, region, key_path, log_path)
+        try:
+            push_file_to_s3(cloud_connection, bucket, region, key_path, log_path)
+        except:
+            sys.stdout = sys.stderr = self.log_file = open(log_path, 'a', 1)
+            logging.exception("An exception occurred when trying to push job log to s3.")
+            traceback.print_exc()
+            self._close_log_file()
 
     def _mail_log_action(self, subject, body):
         ses_settings = self._config['ses_settings']
@@ -250,6 +256,7 @@ class Command:
             sys.stdout = sys.stderr = self.log_file = open(log_path, 'a', 1)
             logging.exception("An exception occurred when trying to send the Job mail notification.")
             traceback.print_exc()
+            self._close_log_file()
 
     def _slack_notification_action(self, slack_msg):
         log_path = self._get_log_path()
@@ -258,11 +265,15 @@ class Command:
         ghost_base_url = self._config.get('ghost_base_url')
         job_log_tail = ''.join(tail('-n', '5', log_path))
         job_log = '[...]\n' + job_log_tail
-        if slack_configs and len(slack_configs):
-            for slack_conf in slack_configs:
-                slack_conf['ghost_base_url'] = ghost_base_url
-                notif.send_slack_notification(slack_conf, slack_msg, self.app, self.job,
-                                              job_log)  # , self.log_file) # Log file for debug purpose only
+        try:
+            if slack_configs and len(slack_configs):
+                for slack_conf in slack_configs:
+                    slack_conf['ghost_base_url'] = ghost_base_url
+                    notif.send_slack_notification(slack_conf, slack_msg, self.app, self.job,
+                                                  job_log)  # , self.log_file) # Log file for debug purpose only
+        except:
+            logging.exception("An exception occurred when trying to send the Slack notifications.")
+            traceback.print_exc()
 
     def execute(self, job_id):
         with Connection(Redis(host=REDIS_HOST)):
@@ -286,8 +297,6 @@ class Command:
                 self.update_status("aborted",
                                    "Job was already in '{}' status (not in 'init' status)".format(self.job['status']))
         except:
-            log_path = self._get_log_path()
-            sys.stdout = sys.stderr = self.log_file = open(log_path, 'a', 1)
             message = sys.exc_info()[0]
             log(message, self.log_file)
             traceback.print_exc(file=self.log_file)
@@ -299,5 +308,4 @@ class Command:
             self._close_log_file()
             self._mail_log_action(subject, body)
             self._push_log_to_s3()
-            self._close_log_file()
             self._disconnect_db()
