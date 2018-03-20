@@ -49,7 +49,11 @@ def get_test_application(**kwargs):
             "source_container_image": "lxd-container-image-test"
         },
         "env": "test",
-        "env_vars": [],
+        "env_vars": [
+            {
+                "var_key": "EMPTY_ENV"
+            }
+        ],
         "environment_infos": {
             "instance_profile": "iam.profile.test",
             "public_ip_address": False,

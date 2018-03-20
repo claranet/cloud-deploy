@@ -86,7 +86,8 @@ def test_build_image_ansible(packer_run_packer_cmd, gcall, provisioner_get_local
                         "GHOST_APP=test-app",
                         "GHOST_ENV=test",
                         "GHOST_ENV_COLOR=",
-                        "GHOST_ROLE=webfront"
+                        "GHOST_ROLE=webfront",
+                        "EMPTY_ENV="
                     ],
                     "script": "/ghost/test-app/test/webfront/hook-pre_buildimage"
                 },
@@ -104,7 +105,8 @@ def test_build_image_ansible(packer_run_packer_cmd, gcall, provisioner_get_local
                         "GHOST_APP=test-app",
                         "GHOST_ENV=test",
                         "GHOST_ENV_COLOR=",
-                        "GHOST_ROLE=webfront"
+                        "GHOST_ROLE=webfront",
+                        "EMPTY_ENV="
                     ],
                     "script": "/ghost/test-app/test/webfront/hook-post_buildimage"
                 }
@@ -210,7 +212,8 @@ def test_build_image_ansible_debug(packer_run_packer_cmd, gcall, provisioner_get
                         "GHOST_APP=test-app",
                         "GHOST_ENV=test",
                         "GHOST_ENV_COLOR=",
-                        "GHOST_ROLE=webfront"
+                        "GHOST_ROLE=webfront",
+                        "EMPTY_ENV="
                     ],
                     "script": "/ghost/test-app/test/webfront/hook-pre_buildimage"
                 },
@@ -228,7 +231,8 @@ def test_build_image_ansible_debug(packer_run_packer_cmd, gcall, provisioner_get
                         "GHOST_APP=test-app",
                         "GHOST_ENV=test",
                         "GHOST_ENV_COLOR=",
-                        "GHOST_ROLE=webfront"
+                        "GHOST_ROLE=webfront",
+                        "EMPTY_ENV="
                     ],
                     "script": "/ghost/test-app/test/webfront/hook-post_buildimage"
                 }
