@@ -176,6 +176,7 @@ def pre_insert_app(items):
     role = app.get('role')
     env = app.get('env')
     app['environment_infos']['instance_tags'] = normalize_application_tags(app, app)
+    app['modules'] = app.get('modules', [])
 
     try:
         ghost_api_app_data_input_validator(app)
