@@ -30,11 +30,6 @@ modules = [
   "libs.provisioner_ansible",
   "run",
   "run_rqworkers",
-  "web_ui.app",
-  "web_ui.forms.form_aws_helper",
-  "web_ui.forms.form_helper",
-  "web_ui.ghost_client",
-  "web_ui.websocket"
 ]
 
 runner = doctest.DocTestRunner(verbose=True)
