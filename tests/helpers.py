@@ -159,9 +159,9 @@ def get_test_config(**kwargs):
                 'salt': {'git_revision': 'master', 'git_repo': 'git@github.com:claranet/salt-formulas.git'}},
             'api_base_url': 'http://api:5000',
             'ses_settings': {
-                'aws_secret_key': 'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX',
+                'aws_secret_key': 'wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY',
                 'mail_from': 'no-reply@cloud-deploy.io',
-                'aws_access_key': 'XXXXXXXXXXXXXXXXXXXX',
+                'aws_access_key': 'AKIAIOSFODNN7EXAMPLE',
                 'region': 'eu-west-1'
             }
         },
