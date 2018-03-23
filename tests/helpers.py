@@ -97,7 +97,7 @@ def get_test_application(**kwargs):
         "modules": [
             {
                 "gid": 33,
-                "git_repo": "git@bitbucket.org:morea/ghost.dummy.git",
+                "git_repo": "git@github.com:claranet/cloud-deploy.dummy.git",
                 "name": "dummy",
                 "path": "/var/www/dummy",
                 "scope": "code",
@@ -112,7 +112,7 @@ def get_test_application(**kwargs):
             "wait_after_deploy": 10,
             "wait_before_deploy": 10
         },
-        "user": "morea",
+        "user": "claranet",
         "vpc_id": "vpc-test"
     }, kwargs)
 
@@ -122,7 +122,7 @@ def get_test_config(**kwargs):
     Factory that creates ghost configuration. Any propertiy can be overrided with kwargs
     """
     return _dict_update_recursive({
-            'bucket_s3': 's3.sandbox.ghost-packages.eu-central-1.laurent',
+            'bucket_s3': 's3.cloud-deploy-packages',
             'blue_green': {
                 'purgebluegreen': {'destroy_temporary_elb': True},
                 'preparebluegreen': {'copy_ami': False, 'module_deploy_required': False},
@@ -142,7 +142,7 @@ def get_test_config(**kwargs):
                 'endpoint': 'http://lxd-image-endpoint:1234',
                 'client_endpoint': 'http://lxd-client-endpoint:5678'
             },
-            'display_amis_from_aws_accounts': ['379101102735', '673060587306'],
+            'display_amis_from_aws_accounts': ['123456789012', '987654321098'],
             'redis_host': 'queue',
             'slack_configs': [{
                 'message_prefix': 'Ghost job triggered',
@@ -150,15 +150,15 @@ def get_test_config(**kwargs):
                  'channel': '#ghost-deployments',
                  'bot_name': 'Claranet Cloud Deploy'
             }],
-            'key_path': '/usr/local/share/ghost/.ssh/demo-dev-laurent-eu-central-1.pem',
+            'key_path': '/usr/local/share/ghost/.ssh/my_key.pem',
             'deployment_package_retention': {'prod': 42, 'dev': 3},
             'features_provisioners': {
-                'salt': {'git_revision': 'master', 'git_repo': 'git@bitbucket.org:morea/morea-salt-formulas.git'}},
+                'salt': {'git_revision': 'master', 'git_repo': 'git@github.com:claranet/salt-formulas.git'}},
             'api_base_url': 'http://api:5000',
             'ses_settings': {
-                'aws_secret_key': '***REMOVED***,
-                'mail_from': 'no-reply@morea.fr',
-                'aws_access_key': '***REMOVED***',
+                'aws_secret_key': 'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX',
+                'mail_from': 'no-reply@cloud-deploy.io',
+                'aws_access_key': 'XXXXXXXXXXXXXXXXXXXX',
                 'region': 'eu-west-1'
             }
         },
