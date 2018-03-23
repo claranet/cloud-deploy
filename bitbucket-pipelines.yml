@@ -15,6 +15,9 @@ pipelines:
           - git --version
           - git status
           - git submodule update --init
+          - git clone https://github.com/awslabs/git-secrets ./git-secrets
+          - PATH=$PATH:./git-secrets git secrets --register-aws
+          - PATH=$PATH:./git-secrets git secrets --scan
           - tox --version
           - cp config.yml.sample config.yml
           - tox
