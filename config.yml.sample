@@ -9,17 +9,17 @@
 ghost_root_path: /usr/local/share/ghost
 
 # Web Ghost URL
-ghost_base_url: https://demo.ghost.morea.fr
+ghost_base_url: https://customer.cloud-deploy.io
 
 # AWS SES credentials used to send mail notifications
 ses_settings:
     aws_access_key: XXXXXXXXXXXXXXXXXX
     aws_secret_key: XXXXXXXXXXXXXXXXXX
-    mail_from: no-reply@morea.fr
+    mail_from: no-reply@cloud-deploy.io
     region: eu-west-1
 
 # AWS S3 bucket used to store all Ghost produced artefacts
-bucket_s3: ghost-eu-west-1-***REMOVED***
+bucket_s3: ghost-packages-eu-west-1-123456
 bucket_region: eu-west-1
 
 # Container options
