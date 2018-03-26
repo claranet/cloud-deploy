@@ -1,19 +1,19 @@
-from datetime import datetime
+import logging
 import os
 import sys
 import traceback
 import yaml
-import logging
-from sh import head, tail
 
+from bson.objectid import ObjectId
+from datetime import datetime
+from pymongo import MongoClient
 from redis import Redis
 from rq import get_current_job, Connection
-from pymongo import MongoClient
-from bson.objectid import ObjectId
+from sh import tail
 
+from ghost_aws import push_file_to_s3
 from ghost_log import log
 from ghost_tools import get_job_log_remote_path, GHOST_JOB_STATUSES_COLORS
-from ghost_aws import push_file_to_s3
 
 from notification import Notification
 from settings import cloud_connections, DEFAULT_PROVIDER
