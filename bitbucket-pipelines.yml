@@ -12,12 +12,26 @@ pipelines:
         caches:
           - pip
         script:
-          - git --version
-          - git status
-          - git submodule update --init
-          - git clone https://github.com/awslabs/git-secrets ./git-secrets
-          - PATH=$PATH:./git-secrets git secrets --register-aws
-          - PATH=$PATH:./git-secrets git secrets --scan
-          - tox --version
-          - cp config.yml.sample config.yml
-          - tox
+          - ./bitbucket-pipelines.sh
+
+  branches:
+    master:
+      - step:
+          caches:
+            - pip
+          script:
+            - ./bitbucket-pipelines.sh history
+
+    dev:
+      - step:
+          caches:
+            - pip
+          script:
+            - ./bitbucket-pipelines.sh history
+
+    GHOST-547_enable_git-secret_scan:
+      - step:
+          caches:
+            - pip
+          script:
+            - ./bitbucket-pipelines.sh history
