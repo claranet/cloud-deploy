@@ -584,7 +584,7 @@ def get_ghost_env_variables(app, module=None, user=None):
     custom_env_vars = app.get('env_vars', None)
     if custom_env_vars and len(custom_env_vars):
         ghost_env.update({
-            env_var['var_key'].encode('ascii', 'ignore'): env_var['var_value'].encode('ascii', 'ignore')
+            env_var['var_key'].encode('ascii', 'ignore'): env_var.get('var_value', '').encode('ascii', 'ignore')
             for env_var in custom_env_vars
         })
     return ghost_env
