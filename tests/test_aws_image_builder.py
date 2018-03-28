@@ -122,14 +122,18 @@ def test_build_image_ansible(packer_run_packer_cmd, gcall, provisioner_get_local
                     },
                     "subnet_id": "subnet-test",
                     "ssh_username": "admin",
+                    "ssh_private_ip": True,
                     "region": "eu-west-1",
+                    "security_group_ids": [
+                        "sg-test"
+                    ],
                     "ami_name": ami_name,
                     "iam_instance_profile": "iam.profile.test",
                     "instance_type": "test_instance_type",
-                    "associate_public_ip_address": "1",
+                    "associate_public_ip_address": True,
                     "vpc_id": "vpc-test",
                     "type": "amazon-ebs",
-                    "ssh_pty": "true"
+                    "ssh_pty": True
                 }
             ]
         }
@@ -248,14 +252,18 @@ def test_build_image_ansible_debug(packer_run_packer_cmd, gcall, provisioner_get
                     },
                     "subnet_id": "subnet-test",
                     "ssh_username": "admin",
+                    "ssh_private_ip": True,
                     "region": "eu-west-1",
+                    "security_group_ids": [
+                        "sg-test"
+                    ],
                     "ami_name": ami_name,
                     "iam_instance_profile": "iam.profile.test",
                     "instance_type": "test_instance_type",
-                    "associate_public_ip_address": "1",
+                    "associate_public_ip_address": True,
                     "vpc_id": "vpc-test",
                     "type": "amazon-ebs",
-                    "ssh_pty": "true"
+                    "ssh_pty": True
                 }
             ]
         }
