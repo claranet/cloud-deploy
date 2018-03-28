@@ -42,13 +42,11 @@ class Buildimage():
             self._log_file,
             **self._connection_data
         )
-        self.job = {"id": self._job['_id'],
-                    "instance_type": self._job['instance_type'],
-                    "options": self._job['options']}
-        self._aws_image_builder = AWSImageBuilder(self._app, self.job, self._db, self._log_file, self._config)
+        self._job['id'] = self._job['_id']
+        self._aws_image_builder = AWSImageBuilder(self._app, self._job, self._db, self._log_file, self._config)
         self._lxd_image_builder = None
         if lxd_is_available() and self._app.get('build_infos', {}).get('source_container_image', None):
-            self._lxd_image_builder = LXDImageBuilder(self._app, self.job, self._db, self._log_file, self._config)
+            self._lxd_image_builder = LXDImageBuilder(self._app, self._job, self._db, self._log_file, self._config)
 
     def _get_notification_message_done(self, ami_id):
         """
@@ -102,7 +100,7 @@ class Buildimage():
                 self._worker.update_status("failed")
                 return
             log("Update app in MongoDB to update container source image", self._log_file)
-            self._update_container_source(self.job["id"])
+            self._update_container_source(self._job["id"])
 
         if self._app['autoscale']['name']:
             try:
