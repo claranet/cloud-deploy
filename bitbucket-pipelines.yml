@@ -29,7 +29,7 @@ pipelines:
           script:
             - ./bitbucket-pipelines.sh history
 
-    GHOST-547_enable_git-secret_scan:
+    stable:
       - step:
           caches:
             - pip
