@@ -218,8 +218,6 @@ class Command:
         # but may also serve in other cases.
         sys.stdout = sys.stderr = self.log_file = open(log_path, 'a', 1)
 
-        self._db.jobs.update({'_id': self.job['_id']}, {'$set': {'log_id': self._worker_job.id}})
-
     def _close_log_file(self):
         self.log_file.close()
 
@@ -232,7 +230,7 @@ class Command:
         try:
             push_file_to_s3(cloud_connection, bucket, region, key_path, log_path)
         except:
-            sys.stdout = sys.stderr = self.log_file = open(log_path, 'a', 1)
+            self._init_log_file()
             logging.exception("An exception occurred when trying to push job log to s3.")
             traceback.print_exc()
             self._close_log_file()
@@ -253,7 +251,7 @@ class Command:
                                 body_text=body, body_html=html_body, attachments=[log])
                 pass
         except:
-            sys.stdout = sys.stderr = self.log_file = open(log_path, 'a', 1)
+            self._init_log_file()
             logging.exception("An exception occurred when trying to send the Job mail notification.")
             traceback.print_exc()
             self._close_log_file()
@@ -282,6 +280,7 @@ class Command:
         self.job = self._db.jobs.find_one({'_id': ObjectId(job_id)})
         self.app = self._db.apps.find_one({'_id': ObjectId(self.job['app_id'])})
         self._init_log_file()
+        self._db.jobs.update({'_id': self.job['_id']}, {'$set': {'log_id': self._worker_job.id}})
         klass_name = self.job['command'].title()
         mod = __import__('commands.' + self.job['command'], fromlist=[klass_name, 'RELATED_APP_FIELDS'])
         command = getattr(mod, klass_name)(self)
