@@ -12,9 +12,26 @@ pipelines:
         caches:
           - pip
         script:
-          - git --version
-          - git status
-          - git submodule update --init
-          - tox --version
-          - cp config.yml.sample config.yml
-          - tox
+          - ./bitbucket-pipelines.sh
+
+  branches:
+    master:
+      - step:
+          caches:
+            - pip
+          script:
+            - ./bitbucket-pipelines.sh history
+
+    dev:
+      - step:
+          caches:
+            - pip
+          script:
+            - ./bitbucket-pipelines.sh history
+
+    stable:
+      - step:
+          caches:
+            - pip
+          script:
+            - ./bitbucket-pipelines.sh history
