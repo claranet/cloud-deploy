@@ -120,8 +120,12 @@ def create_ws(app):
 
                     # Decorate lines
                     for idx, line in enumerate(readlines):
+                        try:
+                            line = line.encode('utf-8')
+                        except UnicodeDecodeError:
+                            line = line.decode('iso-8859-1').encode('utf-8')
                         for sub_line in line.split("\\n"):
-                            clean_line = ansi_to_html(unicode(sub_line, errors='ignore')).replace('\r\n', '\n').replace('\r', '\n').replace('\n', '<br/>').replace('%!(PACKER_COMMA)', '&#44;')
+                            clean_line = ansi_to_html(sub_line).replace('\r\n', '\n').replace('\r', '\n').replace('\n', '<br/>').replace('%!(PACKER_COMMA)', '&#44;')
                             if LOG_LINE_REGEX.match(sub_line) is not None:
                                 lines.append('%s<div class="panel panel-default"><em class="panel-heading"><span class="timeinterval"><i class="glyphicon glyphicon-time"></i></span><span class="command-title">%s</span></em><div class="panel-body">'
                                     % ('</div></div>' if idx > 0 else '', clean_line))
