@@ -565,10 +565,24 @@ def get_ghost_env_variables(app, module=None, user=None):
 
     >>> sorted(get_ghost_env_variables({'name':'name', 'env':'env', 'role':'role', 'blue_green':{'test':''}}).items())
     [('GHOST_APP', 'name'), ('GHOST_ENV', 'env'), ('GHOST_ROLE', 'role')]
+
     >>> sorted(get_ghost_env_variables({'name':'name', 'env':'env', 'role':'role', 'blue_green':{'color':'blue'}}).items())
-    [('GHOST_ACTIVE_COLOR', 'blue'), ('GHOST_APP', 'name'), ('GHOST_ENV', 'env'), ('GHOST_ENV_COLOR', 'blue'), ('GHOST_ROLE', 'role')]
+    [('GHOST_ACTIVE_COLOR', 'green'), ('GHOST_APP', 'name'), ('GHOST_ENV', 'env'), ('GHOST_ENV_COLOR', 'blue'), ('GHOST_ROLE', 'role')]
+
     >>> sorted(get_ghost_env_variables({'name':'name', 'env':'env', 'role':'role', 'blue_green':{'color':'blue', 'is_online': False}}).items())
     [('GHOST_ACTIVE_COLOR', 'green'), ('GHOST_APP', 'name'), ('GHOST_ENV', 'env'), ('GHOST_ENV_COLOR', 'blue'), ('GHOST_ROLE', 'role')]
+
+    >>> sorted(get_ghost_env_variables({'name':'name', 'env':'env', 'role':'role'}, {'name':'name'}).items())
+    [('GHOST_APP', 'name'), ('GHOST_ENV', 'env'), ('GHOST_ROLE', 'role')]
+
+    >>> sorted(get_ghost_env_variables({'name':'name', 'env':'env', 'role':'role'}, {'name':'name', 'path':'path', 'git_repo':'git_repo'}).items())
+    [('GHOST_APP', 'name'), ('GHOST_ENV', 'env'), ('GHOST_MODULE_NAME', 'name'), ('GHOST_MODULE_PATH', 'path'), ('GHOST_MODULE_REPO', 'git_repo'), ('GHOST_ROLE', 'role')]
+
+    >>> sorted(get_ghost_env_variables({'name':'name', 'env':'env', 'role':'role', 'env_vars':[{'var_key':'EMPTY_ENV'}]}).items())
+    [('EMPTY_ENV', ''), ('GHOST_APP', 'name'), ('GHOST_ENV', 'env'), ('GHOST_ROLE', 'role')]
+
+    >>> sorted(get_ghost_env_variables({'name':'name', 'env':'env', 'role':'role', 'env_vars':[{'var_key':'TEST_ENV', 'var_value':'VALUE'}]}).items())
+    [('GHOST_APP', 'name'), ('GHOST_ENV', 'env'), ('GHOST_ROLE', 'role'), ('TEST_ENV', 'VALUE')]
     """
     ghost_env = {
         'GHOST_APP': app['name'],
@@ -580,9 +594,9 @@ def get_ghost_env_variables(app, module=None, user=None):
         color = app['blue_green']['color']
         ghost_env.update({
             'GHOST_ENV_COLOR': color,
-            'GHOST_ACTIVE_COLOR': color if app['blue_green'].get('is_online', True) else inverted_colors[color]
+            'GHOST_ACTIVE_COLOR': color if app['blue_green'].get('is_online', False) else inverted_colors[color]
         })
-    if module:
+    if module and {'name', 'path', 'git_repo'} <= set(module):
         ghost_env['GHOST_MODULE_NAME'] = module['name']
         ghost_env['GHOST_MODULE_PATH'] = module['path']
         ghost_env['GHOST_MODULE_REPO'] = module['git_repo'].strip()
