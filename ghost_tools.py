@@ -568,12 +568,12 @@ def get_ghost_env_variables(app, module=None, user=None):
         'GHOST_ENV': app['env'],
         'GHOST_ROLE': app['role'],
     }
-    if app.get('blue_green', {}.get('color', None)):
+    if app.get('blue_green', {}).get('color', None):
         inverted_colors = {"blue": "green", "green" : "blue"}
         color = app['blue_green']['color']
         ghost_env.update({
             'GHOST_ENV_COLOR': color,
-            'GHOST_ACTIVE_COLOR': color if app['blue_green']['is_online'] else inverted_colors[color]
+            'GHOST_ACTIVE_COLOR': color if app['blue_green'].get('is_online', True) else inverted_colors[color]
         })
     if module:
         ghost_env['GHOST_MODULE_NAME'] = module['name']
