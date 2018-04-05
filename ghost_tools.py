@@ -572,11 +572,17 @@ def get_ghost_env_variables(app, module=None, user=None):
     >>> sorted(get_ghost_env_variables({'name':'name', 'env':'env', 'role':'role', 'blue_green':{'color':'blue', 'is_online': False}}).items())
     [('GHOST_ACTIVE_COLOR', 'green'), ('GHOST_APP', 'name'), ('GHOST_ENV', 'env'), ('GHOST_ENV_COLOR', 'blue'), ('GHOST_ROLE', 'role')]
 
+    >>> sorted(get_ghost_env_variables({'name':'name', 'env':'env', 'role':'role', 'blue_green':{'color':'blue', 'is_online': True}}).items())
+    [('GHOST_ACTIVE_COLOR', 'blue'), ('GHOST_APP', 'name'), ('GHOST_ENV', 'env'), ('GHOST_ENV_COLOR', 'blue'), ('GHOST_ROLE', 'role')]
+
     >>> sorted(get_ghost_env_variables({'name':'name', 'env':'env', 'role':'role'}, {'name':'name'}).items())
     [('GHOST_APP', 'name'), ('GHOST_ENV', 'env'), ('GHOST_ROLE', 'role')]
 
     >>> sorted(get_ghost_env_variables({'name':'name', 'env':'env', 'role':'role'}, {'name':'name', 'path':'path', 'git_repo':'git_repo'}).items())
     [('GHOST_APP', 'name'), ('GHOST_ENV', 'env'), ('GHOST_MODULE_NAME', 'name'), ('GHOST_MODULE_PATH', 'path'), ('GHOST_MODULE_REPO', 'git_repo'), ('GHOST_ROLE', 'role')]
+
+    >>> sorted(get_ghost_env_variables({'name':'name', 'env':'env', 'role':'role'}, {'name':'name', 'path':'path', 'git_repo':'git_repo'}, 'user').items())
+    [('GHOST_APP', 'name'), ('GHOST_ENV', 'env'), ('GHOST_MODULE_NAME', 'name'), ('GHOST_MODULE_PATH', 'path'), ('GHOST_MODULE_REPO', 'git_repo'), ('GHOST_MODULE_USER', 'user'), ('GHOST_ROLE', 'role')]
 
     >>> sorted(get_ghost_env_variables({'name':'name', 'env':'env', 'role':'role', 'env_vars':[{'var_key':'EMPTY_ENV'}]}).items())
     [('EMPTY_ENV', ''), ('GHOST_APP', 'name'), ('GHOST_ENV', 'env'), ('GHOST_ROLE', 'role')]
