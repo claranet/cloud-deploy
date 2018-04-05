@@ -562,6 +562,13 @@ def get_available_provisioners_from_config(last_config=None):
 def get_ghost_env_variables(app, module=None, user=None):
     """
     Generate an environment variable dictionnary for fabric
+
+    >>> sorted(get_ghost_env_variables({'name':'name', 'env':'env', 'role':'role', 'blue_green':{'test':''}}).items())
+    [('GHOST_APP', 'name'), ('GHOST_ENV', 'env'), ('GHOST_ROLE', 'role')]
+    >>> sorted(get_ghost_env_variables({'name':'name', 'env':'env', 'role':'role', 'blue_green':{'color':'blue'}}).items())
+    [('GHOST_ACTIVE_COLOR', 'blue'), ('GHOST_APP', 'name'), ('GHOST_ENV', 'env'), ('GHOST_ENV_COLOR', 'blue'), ('GHOST_ROLE', 'role')]
+    >>> sorted(get_ghost_env_variables({'name':'name', 'env':'env', 'role':'role', 'blue_green':{'color':'blue', 'is_online': False}}).items())
+    [('GHOST_ACTIVE_COLOR', 'green'), ('GHOST_APP', 'name'), ('GHOST_ENV', 'env'), ('GHOST_ENV_COLOR', 'blue'), ('GHOST_ROLE', 'role')]
     """
     ghost_env = {
         'GHOST_APP': app['name'],
