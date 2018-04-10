@@ -65,7 +65,7 @@ class Deploy():
 
     def _deploy_module(self, module, fabric_execution_strategy, safe_deployment_strategy):
         deploy_manager = HostDeploymentManager(self._cloud_connection, self._app, module, self._log_file,
-                                               self._app.get('safe-deployment', ''), fabric_execution_strategy)
+                                               self._app.get('safe-deployment', {}), fabric_execution_strategy)
         deploy_manager.deployment(safe_deployment_strategy)
 
     def _purge_s3_package(self, path, bucket, module, pkg_name, deployment_package_retention=42):
