@@ -556,36 +556,6 @@
             ]
           },
           {
-            "size": "g2.2xlarge",
-            "vCPU": "8",
-            "ECU": "26",
-            "memoryGiB": "15",
-            "storageGB": "60 SSD",
-            "valueColumns": [
-              {
-                "name": "linux",
-                "prices": {
-                  "USD": "0.65"
-                }
-              }
-            ]
-          },
-          {
-            "size": "g2.8xlarge",
-            "vCPU": "32",
-            "ECU": "104",
-            "memoryGiB": "60",
-            "storageGB": "2 x 120 SSD",
-            "valueColumns": [
-              {
-                "name": "linux",
-                "prices": {
-                  "USD": "2.6"
-                }
-              }
-            ]
-          },
-          {
             "size": "g3.4xlarge",
             "vCPU": "16",
             "ECU": "47",
@@ -1395,6 +1365,96 @@
       {
         "type": "computeCurrentGen",
         "sizes": [
+          {
+            "size": "c5.large",
+            "vCPU": "2",
+            "ECU": "8",
+            "memoryGiB": "4",
+            "storageGB": "ebsonly",
+            "valueColumns": [
+              {
+                "name": "linux",
+                "prices": {
+                  "USD": "0.085"
+                }
+              }
+            ]
+          },
+          {
+            "size": "c5.xlarge",
+            "vCPU": "4",
+            "ECU": "16",
+            "memoryGiB": "8",
+            "storageGB": "ebsonly",
+            "valueColumns": [
+              {
+                "name": "linux",
+                "prices": {
+                  "USD": "0.17"
+                }
+              }
+            ]
+          },
+          {
+            "size": "c5.2xlarge",
+            "vCPU": "8",
+            "ECU": "31",
+            "memoryGiB": "16",
+            "storageGB": "ebsonly",
+            "valueColumns": [
+              {
+                "name": "linux",
+                "prices": {
+                  "USD": "0.34"
+                }
+              }
+            ]
+          },
+          {
+            "size": "c5.4xlarge",
+            "vCPU": "16",
+            "ECU": "62",
+            "memoryGiB": "32",
+            "storageGB": "ebsonly",
+            "valueColumns": [
+              {
+                "name": "linux",
+                "prices": {
+                  "USD": "0.68"
+                }
+              }
+            ]
+          },
+          {
+            "size": "c5.9xlarge",
+            "vCPU": "36",
+            "ECU": "139",
+            "memoryGiB": "72",
+            "storageGB": "ebsonly",
+            "valueColumns": [
+              {
+                "name": "linux",
+                "prices": {
+                  "USD": "1.53"
+                }
+              }
+            ]
+          },
+          {
+            "size": "c5.18xlarge",
+            "vCPU": "72",
+            "ECU": "278",
+            "memoryGiB": "144",
+            "storageGB": "ebsonly",
+            "valueColumns": [
+              {
+                "name": "linux",
+                "prices": {
+                  "USD": "3.06"
+                }
+              }
+            ]
+          },
           {
             "size": "c4.large",
             "vCPU": "2",
@@ -2511,36 +2571,6 @@
             ]
           },
           {
-            "size": "g2.2xlarge",
-            "vCPU": "8",
-            "ECU": "26",
-            "memoryGiB": "15",
-            "storageGB": "60 SSD",
-            "valueColumns": [
-              {
-                "name": "linux",
-                "prices": {
-                  "USD": "0.65"
-                }
-              }
-            ]
-          },
-          {
-            "size": "g2.8xlarge",
-            "vCPU": "32",
-            "ECU": "104",
-            "memoryGiB": "60",
-            "storageGB": "2 x 120 SSD",
-            "valueColumns": [
-              {
-                "name": "linux",
-                "prices": {
-                  "USD": "2.6"
-                }
-              }
-            ]
-          },
-          {
             "size": "g3.4xlarge",
             "vCPU": "16",
             "ECU": "47",
@@ -3520,36 +3550,6 @@
       {
         "type": "gpuCurrentGen",
         "sizes": [
-          {
-            "size": "g2.2xlarge",
-            "vCPU": "8",
-            "ECU": "26",
-            "memoryGiB": "15",
-            "storageGB": "60 SSD",
-            "valueColumns": [
-              {
-                "name": "linux",
-                "prices": {
-                  "USD": "0.702"
-                }
-              }
-            ]
-          },
-          {
-            "size": "g2.8xlarge",
-            "vCPU": "32",
-            "ECU": "104",
-            "memoryGiB": "60",
-            "storageGB": "2 x 120 SSD",
-            "valueColumns": [
-              {
-                "name": "linux",
-                "prices": {
-                  "USD": "2.808"
-                }
-              }
-            ]
-          },
           {
             "size": "g3.4xlarge",
             "vCPU": "16",
@@ -5146,36 +5146,6 @@
                 "name": "linux",
                 "prices": {
                   "USD": "26.44"
-                }
-              }
-            ]
-          },
-          {
-            "size": "g2.2xlarge",
-            "vCPU": "8",
-            "ECU": "26",
-            "memoryGiB": "15",
-            "storageGB": "60 SSD",
-            "valueColumns": [
-              {
-                "name": "linux",
-                "prices": {
-                  "USD": "0.702"
-                }
-              }
-            ]
-          },
-          {
-            "size": "g2.8xlarge",
-            "vCPU": "32",
-            "ECU": "104",
-            "memoryGiB": "60",
-            "storageGB": "2 x 120 SSD",
-            "valueColumns": [
-              {
-                "name": "linux",
-                "prices": {
-                  "USD": "2.808"
                 }
               }
             ]
@@ -7131,6 +7101,96 @@
             ]
           },
           {
+            "size": "m5.large",
+            "vCPU": "2",
+            "ECU": "10",
+            "memoryGiB": "8",
+            "storageGB": "ebsonly",
+            "valueColumns": [
+              {
+                "name": "linux",
+                "prices": {
+                  "USD": "0.115"
+                }
+              }
+            ]
+          },
+          {
+            "size": "m5.xlarge",
+            "vCPU": "4",
+            "ECU": "15",
+            "memoryGiB": "16",
+            "storageGB": "ebsonly",
+            "valueColumns": [
+              {
+                "name": "linux",
+                "prices": {
+                  "USD": "0.23"
+                }
+              }
+            ]
+          },
+          {
+            "size": "m5.2xlarge",
+            "vCPU": "8",
+            "ECU": "31",
+            "memoryGiB": "32",
+            "storageGB": "ebsonly",
+            "valueColumns": [
+              {
+                "name": "linux",
+                "prices": {
+                  "USD": "0.46"
+                }
+              }
+            ]
+          },
+          {
+            "size": "m5.4xlarge",
+            "vCPU": "16",
+            "ECU": "61",
+            "memoryGiB": "64",
+            "storageGB": "ebsonly",
+            "valueColumns": [
+              {
+                "name": "linux",
+                "prices": {
+                  "USD": "0.92"
+                }
+              }
+            ]
+          },
+          {
+            "size": "m5.12xlarge",
+            "vCPU": "48",
+            "ECU": "173",
+            "memoryGiB": "192",
+            "storageGB": "ebsonly",
+            "valueColumns": [
+              {
+                "name": "linux",
+                "prices": {
+                  "USD": "2.76"
+                }
+              }
+            ]
+          },
+          {
+            "size": "m5.24xlarge",
+            "vCPU": "96",
+            "ECU": "345",
+            "memoryGiB": "384",
+            "storageGB": "ebsonly",
+            "valueColumns": [
+              {
+                "name": "linux",
+                "prices": {
+                  "USD": "5.52"
+                }
+              }
+            ]
+          },
+          {
             "size": "m4.large",
             "vCPU": "2",
             "ECU": "6.5",
@@ -7225,6 +7285,96 @@
       {
         "type": "computeCurrentGen",
         "sizes": [
+          {
+            "size": "c5.large",
+            "vCPU": "2",
+            "ECU": "8",
+            "memoryGiB": "4",
+            "storageGB": "ebsonly",
+            "valueColumns": [
+              {
+                "name": "linux",
+                "prices": {
+                  "USD": "0.097"
+                }
+              }
+            ]
+          },
+          {
+            "size": "c5.xlarge",
+            "vCPU": "4",
+            "ECU": "16",
+            "memoryGiB": "8",
+            "storageGB": "ebsonly",
+            "valueColumns": [
+              {
+                "name": "linux",
+                "prices": {
+                  "USD": "0.194"
+                }
+              }
+            ]
+          },
+          {
+            "size": "c5.2xlarge",
+            "vCPU": "8",
+            "ECU": "31",
+            "memoryGiB": "16",
+            "storageGB": "ebsonly",
+            "valueColumns": [
+              {
+                "name": "linux",
+                "prices": {
+                  "USD": "0.388"
+                }
+              }
+            ]
+          },
+          {
+            "size": "c5.4xlarge",
+            "vCPU": "16",
+            "ECU": "62",
+            "memoryGiB": "32",
+            "storageGB": "ebsonly",
+            "valueColumns": [
+              {
+                "name": "linux",
+                "prices": {
+                  "USD": "0.776"
+                }
+              }
+            ]
+          },
+          {
+            "size": "c5.9xlarge",
+            "vCPU": "36",
+            "ECU": "139",
+            "memoryGiB": "72",
+            "storageGB": "ebsonly",
+            "valueColumns": [
+              {
+                "name": "linux",
+                "prices": {
+                  "USD": "1.746"
+                }
+              }
+            ]
+          },
+          {
+            "size": "c5.18xlarge",
+            "vCPU": "72",
+            "ECU": "278",
+            "memoryGiB": "144",
+            "storageGB": "ebsonly",
+            "valueColumns": [
+              {
+                "name": "linux",
+                "prices": {
+                  "USD": "3.492"
+                }
+              }
+            ]
+          },
           {
             "size": "c4.large",
             "vCPU": "2",
@@ -7346,36 +7496,6 @@
                 "name": "linux",
                 "prices": {
                   "USD": "21.216"
-                }
-              }
-            ]
-          },
-          {
-            "size": "g2.2xlarge",
-            "vCPU": "8",
-            "ECU": "26",
-            "memoryGiB": "15",
-            "storageGB": "60 SSD",
-            "valueColumns": [
-              {
-                "name": "linux",
-                "prices": {
-                  "USD": "0.772"
-                }
-              }
-            ]
-          },
-          {
-            "size": "g2.8xlarge",
-            "vCPU": "32",
-            "ECU": "104",
-            "memoryGiB": "60",
-            "storageGB": "2 x 120 SSD",
-            "valueColumns": [
-              {
-                "name": "linux",
-                "prices": {
-                  "USD": "3.088"
                 }
               }
             ]
@@ -7821,6 +7941,96 @@
             ]
           },
           {
+            "size": "m5.large",
+            "vCPU": "2",
+            "ECU": "10",
+            "memoryGiB": "8",
+            "storageGB": "ebsonly",
+            "valueColumns": [
+              {
+                "name": "linux",
+                "prices": {
+                  "USD": "0.12"
+                }
+              }
+            ]
+          },
+          {
+            "size": "m5.xlarge",
+            "vCPU": "4",
+            "ECU": "15",
+            "memoryGiB": "16",
+            "storageGB": "ebsonly",
+            "valueColumns": [
+              {
+                "name": "linux",
+                "prices": {
+                  "USD": "0.24"
+                }
+              }
+            ]
+          },
+          {
+            "size": "m5.2xlarge",
+            "vCPU": "8",
+            "ECU": "31",
+            "memoryGiB": "32",
+            "storageGB": "ebsonly",
+            "valueColumns": [
+              {
+                "name": "linux",
+                "prices": {
+                  "USD": "0.48"
+                }
+              }
+            ]
+          },
+          {
+            "size": "m5.4xlarge",
+            "vCPU": "16",
+            "ECU": "61",
+            "memoryGiB": "64",
+            "storageGB": "ebsonly",
+            "valueColumns": [
+              {
+                "name": "linux",
+                "prices": {
+                  "USD": "0.96"
+                }
+              }
+            ]
+          },
+          {
+            "size": "m5.12xlarge",
+            "vCPU": "48",
+            "ECU": "173",
+            "memoryGiB": "192",
+            "storageGB": "ebsonly",
+            "valueColumns": [
+              {
+                "name": "linux",
+                "prices": {
+                  "USD": "2.88"
+                }
+              }
+            ]
+          },
+          {
+            "size": "m5.24xlarge",
+            "vCPU": "96",
+            "ECU": "345",
+            "memoryGiB": "384",
+            "storageGB": "ebsonly",
+            "valueColumns": [
+              {
+                "name": "linux",
+                "prices": {
+                  "USD": "5.76"
+                }
+              }
+            ]
+          },
+          {
             "size": "m4.large",
             "vCPU": "2",
             "ECU": "6.5",
@@ -7915,6 +8125,96 @@
       {
         "type": "computeCurrentGen",
         "sizes": [
+          {
+            "size": "c5.large",
+            "vCPU": "2",
+            "ECU": "8",
+            "memoryGiB": "4",
+            "storageGB": "ebsonly",
+            "valueColumns": [
+              {
+                "name": "linux",
+                "prices": {
+                  "USD": "0.098"
+                }
+              }
+            ]
+          },
+          {
+            "size": "c5.xlarge",
+            "vCPU": "4",
+            "ECU": "16",
+            "memoryGiB": "8",
+            "storageGB": "ebsonly",
+            "valueColumns": [
+              {
+                "name": "linux",
+                "prices": {
+                  "USD": "0.196"
+                }
+              }
+            ]
+          },
+          {
+            "size": "c5.2xlarge",
+            "vCPU": "8",
+            "ECU": "31",
+            "memoryGiB": "16",
+            "storageGB": "ebsonly",
+            "valueColumns": [
+              {
+                "name": "linux",
+                "prices": {
+                  "USD": "0.392"
+                }
+              }
+            ]
+          },
+          {
+            "size": "c5.4xlarge",
+            "vCPU": "16",
+            "ECU": "62",
+            "memoryGiB": "32",
+            "storageGB": "ebsonly",
+            "valueColumns": [
+              {
+                "name": "linux",
+                "prices": {
+                  "USD": "0.784"
+                }
+              }
+            ]
+          },
+          {
+            "size": "c5.9xlarge",
+            "vCPU": "36",
+            "ECU": "139",
+            "memoryGiB": "72",
+            "storageGB": "ebsonly",
+            "valueColumns": [
+              {
+                "name": "linux",
+                "prices": {
+                  "USD": "1.764"
+                }
+              }
+            ]
+          },
+          {
+            "size": "c5.18xlarge",
+            "vCPU": "72",
+            "ECU": "278",
+            "memoryGiB": "144",
+            "storageGB": "ebsonly",
+            "valueColumns": [
+              {
+                "name": "linux",
+                "prices": {
+                  "USD": "3.528"
+                }
+              }
+            ]
+          },
           {
             "size": "c4.large",
             "vCPU": "2",
@@ -8036,36 +8336,6 @@
                 "name": "linux",
                 "prices": {
                   "USD": "27.488"
-                }
-              }
-            ]
-          },
-          {
-            "size": "g2.2xlarge",
-            "vCPU": "8",
-            "ECU": "26",
-            "memoryGiB": "15",
-            "storageGB": "60 SSD",
-            "valueColumns": [
-              {
-                "name": "linux",
-                "prices": {
-                  "USD": "1"
-                }
-              }
-            ]
-          },
-          {
-            "size": "g2.8xlarge",
-            "vCPU": "32",
-            "ECU": "104",
-            "memoryGiB": "60",
-            "storageGB": "2 x 120 SSD",
-            "valueColumns": [
-              {
-                "name": "linux",
-                "prices": {
-                  "USD": "4"
                 }
               }
             ]
@@ -8771,36 +9041,6 @@
                 "name": "linux",
                 "prices": {
                   "USD": "41.944"
-                }
-              }
-            ]
-          },
-          {
-            "size": "g2.2xlarge",
-            "vCPU": "8",
-            "ECU": "26",
-            "memoryGiB": "15",
-            "storageGB": "60 SSD",
-            "valueColumns": [
-              {
-                "name": "linux",
-                "prices": {
-                  "USD": "0.898"
-                }
-              }
-            ]
-          },
-          {
-            "size": "g2.8xlarge",
-            "vCPU": "32",
-            "ECU": "104",
-            "memoryGiB": "60",
-            "storageGB": "2 x 120 SSD",
-            "valueColumns": [
-              {
-                "name": "linux",
-                "prices": {
-                  "USD": "3.592"
                 }
               }
             ]
@@ -9736,36 +9976,6 @@
             ]
           },
           {
-            "size": "g2.2xlarge",
-            "vCPU": "8",
-            "ECU": "26",
-            "memoryGiB": "15",
-            "storageGB": "60 SSD",
-            "valueColumns": [
-              {
-                "name": "linux",
-                "prices": {
-                  "USD": "0.898"
-                }
-              }
-            ]
-          },
-          {
-            "size": "g2.8xlarge",
-            "vCPU": "32",
-            "ECU": "104",
-            "memoryGiB": "60",
-            "storageGB": "2 x 120 SSD",
-            "valueColumns": [
-              {
-                "name": "linux",
-                "prices": {
-                  "USD": "3.592"
-                }
-              }
-            ]
-          },
-          {
             "size": "g3.4xlarge",
             "vCPU": "16",
             "ECU": "47",
@@ -10291,6 +10501,96 @@
                 "name": "linux",
                 "prices": {
                   "USD": "0.4608"
+                }
+              }
+            ]
+          },
+          {
+            "size": "m5.large",
+            "vCPU": "2",
+            "ECU": "10",
+            "memoryGiB": "8",
+            "storageGB": "ebsonly",
+            "valueColumns": [
+              {
+                "name": "linux",
+                "prices": {
+                  "USD": "0.118"
+                }
+              }
+            ]
+          },
+          {
+            "size": "m5.xlarge",
+            "vCPU": "4",
+            "ECU": "15",
+            "memoryGiB": "16",
+            "storageGB": "ebsonly",
+            "valueColumns": [
+              {
+                "name": "linux",
+                "prices": {
+                  "USD": "0.236"
+                }
+              }
+            ]
+          },
+          {
+            "size": "m5.2xlarge",
+            "vCPU": "8",
+            "ECU": "31",
+            "memoryGiB": "32",
+            "storageGB": "ebsonly",
+            "valueColumns": [
+              {
+                "name": "linux",
+                "prices": {
+                  "USD": "0.472"
+                }
+              }
+            ]
+          },
+          {
+            "size": "m5.4xlarge",
+            "vCPU": "16",
+            "ECU": "61",
+            "memoryGiB": "64",
+            "storageGB": "ebsonly",
+            "valueColumns": [
+              {
+                "name": "linux",
+                "prices": {
+                  "USD": "0.944"
+                }
+              }
+            ]
+          },
+          {
+            "size": "m5.12xlarge",
+            "vCPU": "48",
+            "ECU": "173",
+            "memoryGiB": "192",
+            "storageGB": "ebsonly",
+            "valueColumns": [
+              {
+                "name": "linux",
+                "prices": {
+                  "USD": "2.832"
+                }
+              }
+            ]
+          },
+          {
+            "size": "m5.24xlarge",
+            "vCPU": "96",
+            "ECU": "345",
+            "memoryGiB": "384",
+            "storageGB": "ebsonly",
+            "valueColumns": [
+              {
+                "name": "linux",
+                "prices": {
+                  "USD": "5.664"
                 }
               }
             ]
@@ -11845,6 +12145,96 @@
       {
         "type": "computeCurrentGen",
         "sizes": [
+          {
+            "size": "c5.large",
+            "vCPU": "2",
+            "ECU": "8",
+            "memoryGiB": "4",
+            "storageGB": "ebsonly",
+            "valueColumns": [
+              {
+                "name": "linux",
+                "prices": {
+                  "USD": "0.131"
+                }
+              }
+            ]
+          },
+          {
+            "size": "c5.xlarge",
+            "vCPU": "4",
+            "ECU": "16",
+            "memoryGiB": "8",
+            "storageGB": "ebsonly",
+            "valueColumns": [
+              {
+                "name": "linux",
+                "prices": {
+                  "USD": "0.262"
+                }
+              }
+            ]
+          },
+          {
+            "size": "c5.2xlarge",
+            "vCPU": "8",
+            "ECU": "31",
+            "memoryGiB": "16",
+            "storageGB": "ebsonly",
+            "valueColumns": [
+              {
+                "name": "linux",
+                "prices": {
+                  "USD": "0.524"
+                }
+              }
+            ]
+          },
+          {
+            "size": "c5.4xlarge",
+            "vCPU": "16",
+            "ECU": "62",
+            "memoryGiB": "32",
+            "storageGB": "ebsonly",
+            "valueColumns": [
+              {
+                "name": "linux",
+                "prices": {
+                  "USD": "1.048"
+                }
+              }
+            ]
+          },
+          {
+            "size": "c5.9xlarge",
+            "vCPU": "36",
+            "ECU": "139",
+            "memoryGiB": "72",
+            "storageGB": "ebsonly",
+            "valueColumns": [
+              {
+                "name": "linux",
+                "prices": {
+                  "USD": "2.358"
+                }
+              }
+            ]
+          },
+          {
+            "size": "c5.18xlarge",
+            "vCPU": "72",
+            "ECU": "278",
+            "memoryGiB": "144",
+            "storageGB": "ebsonly",
+            "valueColumns": [
+              {
+                "name": "linux",
+                "prices": {
+                  "USD": "4.716"
+                }
+              }
+            ]
+          },
           {
             "size": "c4.large",
             "vCPU": "2",

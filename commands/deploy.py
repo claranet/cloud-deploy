@@ -288,7 +288,10 @@ class Deploy():
 
             # Update existing git mirror
             os.chdir(mirror_path)
-            gcall('git --no-pager remote update',
+            gcall('git --no-pager gc --auto',
+                  'Cleanup local mirror before update {r}'.format(r=git_repo),
+                  self._log_file)
+            gcall('git --no-pager fetch --all --tags --prune',
                   'Update local git mirror from remote {r}'.format(r=git_repo),
                   self._log_file)
         finally:
@@ -305,7 +308,9 @@ class Deploy():
         if self._is_commit_hash(revision):
             # Create intermediate clone from the local git mirror, chdir into it and fetch all commits
             source_path = get_intermediate_clone_path_from_module(self._app, module)
-            gcall('rm -rf {p}'.format(p=source_path), 'Removing previous intermediate clone', self._log_file)
+            if os.path.exists(source_path):
+                gcall('chmod -R u+rwx {p}'.format(p=source_path), 'Update rights on previous intermediate clone', self._log_file)
+                gcall('rm -rf {p}'.format(p=source_path), 'Removing previous intermediate clone', self._log_file)
             os.makedirs(source_path)
             os.chdir(source_path)
             gcall('du -hs .', 'Display current build directory disk usage', self._log_file)
@@ -319,7 +324,9 @@ class Deploy():
             gcall('du -hs .', 'Display current build directory disk usage', self._log_file)
 
             # Create shallow clone from the intermediate clone, chdir into it and retrieve submodules
-            gcall('rm -rf {p}'.format(p=clone_path), 'Removing previous clone', self._log_file)
+            if os.path.exists(clone_path):
+                gcall('chmod -R u+rwx {p}'.format(p=clone_path), 'Update rights on previous clone', self._log_file)
+                gcall('rm -rf {p}'.format(p=clone_path), 'Removing previous clone', self._log_file)
             os.makedirs(clone_path)
             os.chdir(clone_path)
             gcall('du -hs .', 'Display current build directory disk usage', self._log_file)
@@ -329,10 +336,13 @@ class Deploy():
             gcall('du -hs .', 'Display current build directory disk usage', self._log_file)
 
             # Destroy intermediate clone
+            gcall('chmod -R u+rwx {p}'.format(p=source_path), 'Update rights on previous intermediate clone', self._log_file)
             gcall('rm -rf {p}'.format(p=source_path), 'Removing intermediate clone', self._log_file)
         else:
             # Create clone from the local git mirror, chdir into it, fetch requested revision and retrieve submodules
-            gcall('rm -rf {p}'.format(p=clone_path), 'Removing previous clone', self._log_file)
+            if os.path.exists(clone_path):
+                gcall('chmod -R u+rwx {p}'.format(p=clone_path), 'Update rights on previous clone', self._log_file)
+                gcall('rm -rf {p}'.format(p=clone_path), 'Removing previous clone', self._log_file)
             os.makedirs(clone_path)
             os.chdir(clone_path)
             gcall('du -hs .', 'Display current build directory disk usage', self._log_file)
@@ -398,7 +408,7 @@ GHOST_MODULE_USER="{user}"
         module_metadata = module_metadata.format(**metavars)
         custom_env_vars = self._app.get('env_vars', None)
         if custom_env_vars and len(custom_env_vars):
-            module_metadata = module_metadata + u''.join([u'export {key}="{val}" \n'.format(key=env_var['var_key'], val=env_var['var_value']) for env_var in custom_env_vars])
+            module_metadata = module_metadata + u''.join([u'export {key}="{val}" \n'.format(key=env_var['var_key'], val=env_var.get('var_value', '')) for env_var in custom_env_vars])
         with io.open(clone_path + '/.ghost-metadata', mode='w', encoding='utf-8') as f:
             f.write(module_metadata)
         gcall('du -hs .', 'Display current build directory disk usage', self._log_file)

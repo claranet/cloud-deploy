@@ -36,9 +36,10 @@ class AWSImageBuilder(ImageBuilder):
             'source_ami': self._app['build_infos']['source_ami'],
             'instance_type': self._job['instance_type'],
             'ssh_username': self._app['build_infos']['ssh_username'],
+            'ssh_private_ip': True,
             'vpc_id': self._app['vpc_id'],
             'subnet_id': self._app['build_infos']['subnet_id'],
-            'associate_public_ip_address': '1',
+            'associate_public_ip_address': True,
             'skip_provisioner_bootstrap': provisioner_skip_bootstrap_option,
             'ami_block_device_mappings': [],
             'launch_block_device_mappings': [],
@@ -46,7 +47,8 @@ class AWSImageBuilder(ImageBuilder):
             'credentials': self._cloud_connection.get_credentials(),
             'tags': instance_tags,
             'ghost_env_vars': self._format_ghost_env_vars(),
-            'custom_env_vars': self._app.get('env_vars', [])
+            'custom_env_vars': self._app.get('env_vars', []),
+            'security_group_ids': self._app['environment_infos']['security_groups']
         }
 
         for opt_vol in self._app['environment_infos'].get('optional_volumes', []):
