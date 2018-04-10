@@ -249,23 +249,33 @@
                 }
               }
             ]
-          }
-        ]
-      },
-      {
-        "type": "gpuPreviousGen",
-        "sizes": [
+          },
           {
-            "size": "cg1.4xlarge",
-            "vCPU": "16",
-            "ECU": "33.5",
-            "memoryGiB": "22.5",
-            "storageGB": "2 x 840",
+            "size": "g2.2xlarge",
+            "vCPU": "8",
+            "ECU": "26",
+            "memoryGiB": "15",
+            "storageGB": "60 SSD",
             "valueColumns": [
               {
                 "name": "linux",
                 "prices": {
-                  "USD": "2.1"
+                  "USD": "0.65"
+                }
+              }
+            ]
+          },
+          {
+            "size": "g2.8xlarge",
+            "vCPU": "32",
+            "ECU": "104",
+            "memoryGiB": "60",
+            "storageGB": "2 x 120 SSD",
+            "valueColumns": [
+              {
+                "name": "linux",
+                "prices": {
+                  "USD": "2.6"
                 }
               }
             ]
@@ -914,6 +924,36 @@
                 }
               }
             ]
+          },
+          {
+            "size": "g2.2xlarge",
+            "vCPU": "8",
+            "ECU": "26",
+            "memoryGiB": "15",
+            "storageGB": "60 SSD",
+            "valueColumns": [
+              {
+                "name": "linux",
+                "prices": {
+                  "USD": "0.65"
+                }
+              }
+            ]
+          },
+          {
+            "size": "g2.8xlarge",
+            "vCPU": "32",
+            "ECU": "104",
+            "memoryGiB": "60",
+            "storageGB": "2 x 120 SSD",
+            "valueColumns": [
+              {
+                "name": "linux",
+                "prices": {
+                  "USD": "2.6"
+                }
+              }
+            ]
           }
         ]
       },
@@ -1394,6 +1434,36 @@
                 }
               }
             ]
+          },
+          {
+            "size": "g2.2xlarge",
+            "vCPU": "8",
+            "ECU": "26",
+            "memoryGiB": "15",
+            "storageGB": "60 SSD",
+            "valueColumns": [
+              {
+                "name": "linux",
+                "prices": {
+                  "USD": "0.702"
+                }
+              }
+            ]
+          },
+          {
+            "size": "g2.8xlarge",
+            "vCPU": "32",
+            "ECU": "104",
+            "memoryGiB": "60",
+            "storageGB": "2 x 120 SSD",
+            "valueColumns": [
+              {
+                "name": "linux",
+                "prices": {
+                  "USD": "2.808"
+                }
+              }
+            ]
           }
         ]
       },
@@ -1859,23 +1929,33 @@
                 }
               }
             ]
-          }
-        ]
-      },
-      {
-        "type": "gpuPreviousGen",
-        "sizes": [
+          },
           {
-            "size": "cg1.4xlarge",
-            "vCPU": "16",
-            "ECU": "33.5",
-            "memoryGiB": "22.5",
-            "storageGB": "2 x 840",
+            "size": "g2.2xlarge",
+            "vCPU": "8",
+            "ECU": "26",
+            "memoryGiB": "15",
+            "storageGB": "60 SSD",
             "valueColumns": [
               {
                 "name": "linux",
                 "prices": {
-                  "USD": "2.36"
+                  "USD": "0.702"
+                }
+              }
+            ]
+          },
+          {
+            "size": "g2.8xlarge",
+            "vCPU": "32",
+            "ECU": "104",
+            "memoryGiB": "60",
+            "storageGB": "2 x 120 SSD",
+            "valueColumns": [
+              {
+                "name": "linux",
+                "prices": {
+                  "USD": "2.808"
                 }
               }
             ]
@@ -2269,6 +2349,36 @@
                 }
               }
             ]
+          },
+          {
+            "size": "g2.2xlarge",
+            "vCPU": "8",
+            "ECU": "26",
+            "memoryGiB": "15",
+            "storageGB": "60 SSD",
+            "valueColumns": [
+              {
+                "name": "linux",
+                "prices": {
+                  "USD": "0.772"
+                }
+              }
+            ]
+          },
+          {
+            "size": "g2.8xlarge",
+            "vCPU": "32",
+            "ECU": "104",
+            "memoryGiB": "60",
+            "storageGB": "2 x 120 SSD",
+            "valueColumns": [
+              {
+                "name": "linux",
+                "prices": {
+                  "USD": "3.088"
+                }
+              }
+            ]
           }
         ]
       },
@@ -2651,6 +2761,36 @@
                 "name": "linux",
                 "prices": {
                   "USD": "0.655"
+                }
+              }
+            ]
+          },
+          {
+            "size": "g2.2xlarge",
+            "vCPU": "8",
+            "ECU": "26",
+            "memoryGiB": "15",
+            "storageGB": "60 SSD",
+            "valueColumns": [
+              {
+                "name": "linux",
+                "prices": {
+                  "USD": "1"
+                }
+              }
+            ]
+          },
+          {
+            "size": "g2.8xlarge",
+            "vCPU": "32",
+            "ECU": "104",
+            "memoryGiB": "60",
+            "storageGB": "2 x 120 SSD",
+            "valueColumns": [
+              {
+                "name": "linux",
+                "prices": {
+                  "USD": "4"
                 }
               }
             ]
@@ -3134,6 +3274,36 @@
                 }
               }
             ]
+          },
+          {
+            "size": "g2.2xlarge",
+            "vCPU": "8",
+            "ECU": "26",
+            "memoryGiB": "15",
+            "storageGB": "60 SSD",
+            "valueColumns": [
+              {
+                "name": "linux",
+                "prices": {
+                  "USD": "0.898"
+                }
+              }
+            ]
+          },
+          {
+            "size": "g2.8xlarge",
+            "vCPU": "32",
+            "ECU": "104",
+            "memoryGiB": "60",
+            "storageGB": "2 x 120 SSD",
+            "valueColumns": [
+              {
+                "name": "linux",
+                "prices": {
+                  "USD": "3.592"
+                }
+              }
+            ]
           }
         ]
       },
@@ -3611,6 +3781,36 @@
                 "name": "linux",
                 "prices": {
                   "USD": "0.655"
+                }
+              }
+            ]
+          },
+          {
+            "size": "g2.2xlarge",
+            "vCPU": "8",
+            "ECU": "26",
+            "memoryGiB": "15",
+            "storageGB": "60 SSD",
+            "valueColumns": [
+              {
+                "name": "linux",
+                "prices": {
+                  "USD": "0.898"
+                }
+              }
+            ]
+          },
+          {
+            "size": "g2.8xlarge",
+            "vCPU": "32",
+            "ECU": "104",
+            "memoryGiB": "60",
+            "storageGB": "2 x 120 SSD",
+            "valueColumns": [
+              {
+                "name": "linux",
+                "prices": {
+                  "USD": "3.592"
                 }
               }
             ]

@@ -49,7 +49,11 @@ def get_test_application(**kwargs):
             "source_container_image": "lxd-container-image-test"
         },
         "env": "test",
-        "env_vars": [],
+        "env_vars": [
+            {
+                "var_key": "EMPTY_ENV"
+            }
+        ],
         "environment_infos": {
             "instance_profile": "iam.profile.test",
             "public_ip_address": False,
@@ -155,9 +159,9 @@ def get_test_config(**kwargs):
                 'salt': {'git_revision': 'master', 'git_repo': 'git@github.com:claranet/salt-formulas.git'}},
             'api_base_url': 'http://api:5000',
             'ses_settings': {
-                'aws_secret_key': 'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX',
+                'aws_secret_key': 'wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY',
                 'mail_from': 'no-reply@cloud-deploy.io',
-                'aws_access_key': 'XXXXXXXXXXXXXXXXXXXX',
+                'aws_access_key': 'AKIAIOSFODNN7EXAMPLE',
                 'region': 'eu-west-1'
             }
         },

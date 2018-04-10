@@ -4,11 +4,10 @@
 # -*- coding: utf-8 -*-
 
 import os
-import traceback
 import binascii
 from datetime import datetime
-from ghost_tools import ghost_app_object_copy, get_available_provisioners_from_config, b64decode_utf8
 from eve.methods.post import post_internal
+from ghost_tools import ghost_app_object_copy, get_available_provisioners_from_config, b64decode_utf8
 from libs.blue_green import get_blue_green_from_app
 
 OPPOSITE_COLOR = {
@@ -18,6 +17,18 @@ OPPOSITE_COLOR = {
 FORBIDDEN_PATH = ['/', '/tmp', '/var', '/etc', '/ghost', '/root', '/home', '/home/admin']
 COMMAND_FIELDS = ['autoscale', 'blue_green', 'build_infos', 'environment_infos', 'lifecycle_hooks']
 ALL_COMMAND_FIELDS = ['modules', 'features'] + COMMAND_FIELDS
+
+
+class GhostAPIInputError(Exception):
+    """Exception raised for errors in the input.
+
+    Attributes:
+        expression -- input expression in which the error occurred
+        message -- explanation of the error
+    """
+
+    def __init__(self, message):
+        self.message = message
 
 
 def ghost_api_bluegreen_is_enabled(app):
@@ -31,7 +42,7 @@ def ghost_api_bluegreen_is_enabled(app):
 def ghost_api_check_green_app_exists(apps_db, app):
     """
     Check if the Alter Ego application exists
-    ie: the blue one or the green one (depending of the current app color) 
+    ie: the blue one or the green one (depending of the current app color)
     """
     name = app.get('name')
     role = app.get('role')
@@ -160,105 +171,124 @@ def check_app_feature_provisioner(updates):
         provisioners_available = get_available_provisioners_from_config()
         for ft in updates['features']:
             if 'provisioner' in ft and not ft['provisioner'] in provisioners_available:
-                print('Provisioner "{p}" set for feature "{f}" is not available or not compatible.'.format(
-                    p=ft['provisioner'], f=ft['name']))
-                return False
-    return True
+                raise GhostAPIInputError(
+                    'Provisioner "{p}" set for feature "{f}" is not available or not compatible.'.format(
+                        p=ft['provisioner'], f=ft['name']))
 
 
 def check_app_module_path(updates):
     """
     Check if all modules path are allowed
-    :param updates:
-    :return: bool
+    :param updates: Modules configurations
 
     >>> check_app_module_path({})
-    True
 
     >>> check_app_module_path({'modules': []})
-    True
 
     >>> check_app_module_path({'modules': [{'name': 'empty'}]})
-    False
+    Traceback (most recent call last):
+    ...
+    GhostAPIInputError
 
     >>> app = {'_id': 1111, 'env': 'prod', 'name': 'app1', 'role': 'webfront', 'modules': [
     ...     {'name': 'mod1', 'path': '/tmp/test'}, {'name': 'mod2', 'path': '/srv/ok'}]}
     >>> check_app_module_path(app)
-    True
 
     >>> app = {'_id': 1111, 'env': 'prod', 'name': 'app1', 'role': 'webfront', 'modules': [
     ...     {'name': 'mod1', 'path': '/tmp/test/'}, {'name': 'mod2', 'path': '/srv/ok//'}]}
     >>> check_app_module_path(app)
-    True
 
     >>> app = {'_id': 1111, 'env': 'prod', 'name': 'app1', 'role': 'webfront', 'modules': [
     ...     {'name': 'mod1', 'path': '/tmp/'}, {'name': 'mod2', 'path': '/srv/ok//'}]}
     >>> check_app_module_path(app)
-    False
+    Traceback (most recent call last):
+    ...
+    GhostAPIInputError
 
     >>> app = {'_id': 1111, 'env': 'prod', 'name': 'app1', 'role': 'webfront', 'modules': [
     ...     {'name': 'mod1', 'path': '/'}, {'name': 'mod2', 'path': '/srv/ok//'}]}
     >>> check_app_module_path(app)
-    False
+    Traceback (most recent call last):
+    ...
+    GhostAPIInputError
 
     >>> app = {'_id': 1111, 'env': 'prod', 'name': 'app1', 'role': 'webfront', 'modules': [
     ...     {'name': 'mod1', 'path': '/ghost/x'}, {'name': 'mod2', 'path': '/ghost'}]}
     >>> check_app_module_path(app)
-    False
+    Traceback (most recent call last):
+    ...
+    GhostAPIInputError
 
     >>> app = {'_id': 1111, 'env': 'prod', 'name': 'app1', 'role': 'webfront', 'modules': [
     ...     {'name': 'mod1', 'path': '/ghost/x'}, {'name': 'mod2', 'path': '/ghost////'}]}
     >>> check_app_module_path(app)
-    False
+    Traceback (most recent call last):
+    ...
+    GhostAPIInputError
 
     >>> app = {'_id': 1111, 'env': 'prod', 'name': 'app1', 'role': 'webfront', 'modules': [
     ...     {'name': 'mod1', 'path': '/root/x/..'}, {'name': 'mod2', 'path': '/srv/ok'}]}
     >>> check_app_module_path(app)
-    False
+    Traceback (most recent call last):
+    ...
+    GhostAPIInputError
 
     >>> app = {'_id': 1111, 'env': 'prod', 'name': 'app1', 'role': 'webfront', 'modules': [
     ...     {'name': 'mod1', 'path': '/root/x/.//'}, {'name': 'mod2', 'path': '/srv/ok'}]}
     >>> check_app_module_path(app)
-    True
 
     >>> app = {'_id': 1111, 'env': 'prod', 'name': 'app1', 'role': 'webfront', 'modules': [
     ...     {'name': 'mod1', 'path': '/root/x/.//..//////'}, {'name': 'mod2', 'path': '/srv/ok'}]}
     >>> check_app_module_path(app)
-    False
+    Traceback (most recent call last):
+    ...
+    GhostAPIInputError
     """
     if 'modules' in updates:
         for mod in updates['modules']:
             if not 'path' in mod:
-                return False
+                raise GhostAPIInputError('Module "{m} has path empty"'.format(m=mod['name']))
             if os.path.abspath(mod['path']) in FORBIDDEN_PATH:
-                return False
-    return True
+                raise GhostAPIInputError(
+                    'Module "{m}" use a forbidden path : "{p}"'.format(m=mod['name'], p=mod['path']))
 
 
 def check_app_b64_scripts(updates):
     """
     Trigger a base64 decode on every script given to the API in order to verify their validity
-    :param updates:
-    :return: bool
+    :param updates: Modules configurations
     """
-    try:
-        if 'modules' in updates:
-            for mod in updates['modules']:
-                for script in ['build_pack', 'pre_deploy', 'post_deploy', 'after_all_deploy']:
-                    if script in mod:
+    if 'modules' in updates:
+        for mod in updates['modules']:
+            for script in ['build_pack', 'pre_deploy', 'post_deploy', 'after_all_deploy']:
+                if script in mod:
+                    try:
                         b64decode_utf8(mod[script])
-        if 'lifecycle_hooks' in updates:
-            for script in ['pre_buildimage', 'post_buildimage', 'pre_bootstrap', 'post_bootstrap']:
-                if script in updates['lifecycle_hooks']:
+                    except (binascii.Error, UnicodeDecodeError):
+                        raise GhostAPIInputError('Error decoding script "{s}" in module: "{m}"'.format(
+                            s=script, m=mod["name"]))
+    if 'lifecycle_hooks' in updates:
+        for script in ['pre_buildimage', 'post_buildimage', 'pre_bootstrap', 'post_bootstrap']:
+            if script in updates['lifecycle_hooks']:
+                try:
                     b64decode_utf8(updates['lifecycle_hooks'][script])
-        if 'blue_green' in updates and 'hooks' in updates['blue_green']:
-            for script in ['pre_swap', 'post_swap']:
-                if script in updates['blue_green']['hooks']:
-                    b64decode_utf8(updates['blue_green']['hooks'][script])
-        return True
-    except binascii.Error:
-        traceback.print_exc()
-        return False
+                except (binascii.Error, UnicodeDecodeError):
+                    raise GhostAPIInputError(
+                        'Error decoding a script in lifecycle hook: {h}'.format(h=script))
+    if 'blue_green' in updates and 'hooks' in updates['blue_green']:
+        for script in ['pre_swap', 'post_swap']:
+            if script in updates['blue_green']['hooks']:
+                try:
+                    b64decode_utf8(
+                        updates['blue_green']['hooks'][script])
+                except (binascii.Error, UnicodeDecodeError):
+                    raise GhostAPIInputError('Error decoding a script in blue/green hook: {h}'.format(h=script))
+
+
+def ghost_api_app_data_input_validator(app):
+    check_app_b64_scripts(app)
+    check_app_module_path(app)
+    check_app_feature_provisioner(app)
 
 
 def initialize_app_modules(updates, original):

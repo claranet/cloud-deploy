@@ -46,17 +46,19 @@ class Packer:
             'source_ami': self.packer_config['source_ami'],
             'instance_type': self.packer_config['instance_type'],
             'ssh_username': self.packer_config['ssh_username'],
+            'ssh_private_ip': self.packer_config['ssh_private_ip'], # deprecated in version 1.1.3 of packer
             'vpc_id': self.packer_config['vpc_id'],
             'subnet_id': self.packer_config['subnet_id'],
             'associate_public_ip_address': self.packer_config['associate_public_ip_address'],
             'ami_block_device_mappings': self.packer_config['ami_block_device_mappings'],
             'launch_block_device_mappings': self.packer_config['launch_block_device_mappings'],
-            'ssh_pty': 'true',
+            'ssh_pty': True,
             'iam_instance_profile': self.packer_config['iam_instance_profile'],
-            'tags': self.packer_config['tags']
+            'tags': self.packer_config['tags'],
+            'security_group_ids': self.packer_config['security_group_ids']
         }]
 
-        formatted_env_vars = self.packer_config['ghost_env_vars'] + ['%s=%s' % (envvar['var_key'], envvar['var_value']) for envvar in self.packer_config['custom_env_vars']]
+        formatted_env_vars = self.packer_config['ghost_env_vars'] + ['%s=%s' % (envvar['var_key'], envvar.get('var_value', '')) for envvar in self.packer_config['custom_env_vars']]
         provisioners = [{
             'type': 'shell',
             'environment_vars': formatted_env_vars,

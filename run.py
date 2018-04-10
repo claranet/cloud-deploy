@@ -24,8 +24,8 @@ from ghost_tools import get_rq_name_from_app, boolify
 from ghost_blueprints import commands_blueprint
 from ghost_api import ghost_api_bluegreen_is_enabled, ghost_api_enable_green_app
 from ghost_api import ghost_api_delete_alter_ego_app, ghost_api_clean_bluegreen_app
-from ghost_api import check_app_feature_provisioner, check_app_module_path, check_app_b64_scripts
 from ghost_api import initialize_app_modules, check_and_set_app_fields_state
+from ghost_api import ghost_api_app_data_input_validator, GhostAPIInputError
 from ghost_api import ALL_COMMAND_FIELDS
 from ghost_lxd import lxd_blueprint
 from libs.blue_green import BLUE_GREEN_COMMANDS, get_blue_green_from_app, ghost_has_blue_green_enabled
@@ -108,14 +108,10 @@ def pre_update_app(updates, original):
     False
     """
 
-    if not check_app_module_path(updates):
-        abort(422)
-
-    if not check_app_b64_scripts(updates):
-        abort(422)
-
-    if not check_app_feature_provisioner(updates):
-        abort(422)
+    try:
+        ghost_api_app_data_input_validator(updates)
+    except GhostAPIInputError as error:
+        abort(422, description=error.message)
 
     # Selectively reset each module's 'initialized' property if any of its other properties have changed
     updates, modules_edited = initialize_app_modules(updates, original)
@@ -181,18 +177,20 @@ def pre_insert_app(items):
     env = app.get('env')
     app['environment_infos']['instance_tags'] = normalize_application_tags(app, app)
 
-    if not check_app_feature_provisioner(app):
-        abort(422)
+    try:
+        ghost_api_app_data_input_validator(app)
+    except GhostAPIInputError as error:
+        abort(422, description=error.message)
 
     blue_green = app.get('blue_green', None)
     # We can now insert a new app with a different color
     if blue_green and blue_green.get('color', None):
         if get_apps_db().find_one(
                 {'$and': [{'name': name}, {'role': role}, {'env': env}, {'blue_green.color': blue_green['color']}]}):
-            abort(422)
+            abort(422, description="An app already exist with same name, role, env and color. Please change one these fields.")
     else:
         if get_apps_db().find_one({'$and': [{'name': name}, {'role': role}, {'env': env}]}):
-            abort(422)
+            abort(422, description="An app already exist with same name, role and env. Please change one these fields.")
     for mod in app.get('modules'):
         mod['initialized'] = False
 
@@ -209,7 +207,7 @@ def post_insert_app(items):
     app = items[0]
     if ghost_api_bluegreen_is_enabled(app):
         if not ghost_api_enable_green_app(get_apps_db(), app, request.authorization.username):
-            abort(422)
+            abort(422, "Problem occured creating/enabling the green app")
 
 
 def _post_fetched_app(app, embed_last_deployment=False):
@@ -253,7 +251,7 @@ def pre_insert_job(items):
     if not ghost_has_blue_green_enabled():
         # Blue/Green is disabled, but trying to use a blue/green command - denied
         if job.get('command') in BLUE_GREEN_COMMANDS:
-            abort(422)
+            abort(422, description="Blue-Green deployment is currently disabled, command not available")
     if job.get('command') == 'deploy':
         for module in job['modules']:
             not_exist = True
@@ -261,10 +259,10 @@ def pre_insert_job(items):
                 if 'name' in module and module['name'] == mod['name']:
                     not_exist = False
             if not_exist:
-                abort(422)
+                abort(422, description="Module to deploy not found")
     if job['command'] == 'build_image':
         if not ('build_infos' in app.viewkeys()):
-            abort(422)
+            abort(422, description="Impossible to build image, build infos fields are empty")
     job['user'] = request.authorization.username
     job['status'] = 'init'
     job['message'] = 'Initializing job'
@@ -286,7 +284,7 @@ def post_insert_job(items):
 def pre_delete_job(item):
     if item['status'] not in DELETABLE_JOB_STATUSES:
         # Do not allow deleting jobs not in cancelled, done, failed or aborted status
-        abort(422)
+        abort(422, description="Deleting a job not in cancelled, done, failed or aborted status is not possible")
 
 
 def pre_delete_job_enqueueings():
@@ -301,7 +299,7 @@ def pre_delete_job_enqueueings():
         return
 
     # Do not allow cancelling jobs not in init status
-    abort(422)
+    abort(422, description="Cancelling a job not in init status is not allowed")
 
 
 # Create ghost app, explicitly specifying the settings to avoid errors during doctest execution

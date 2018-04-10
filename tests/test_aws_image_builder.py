@@ -86,7 +86,8 @@ def test_build_image_ansible(packer_run_packer_cmd, gcall, provisioner_get_local
                         "GHOST_APP=test-app",
                         "GHOST_ENV=test",
                         "GHOST_ENV_COLOR=",
-                        "GHOST_ROLE=webfront"
+                        "GHOST_ROLE=webfront",
+                        "EMPTY_ENV="
                     ],
                     "script": "/ghost/test-app/test/webfront/hook-pre_buildimage"
                 },
@@ -104,7 +105,8 @@ def test_build_image_ansible(packer_run_packer_cmd, gcall, provisioner_get_local
                         "GHOST_APP=test-app",
                         "GHOST_ENV=test",
                         "GHOST_ENV_COLOR=",
-                        "GHOST_ROLE=webfront"
+                        "GHOST_ROLE=webfront",
+                        "EMPTY_ENV="
                     ],
                     "script": "/ghost/test-app/test/webfront/hook-post_buildimage"
                 }
@@ -120,14 +122,18 @@ def test_build_image_ansible(packer_run_packer_cmd, gcall, provisioner_get_local
                     },
                     "subnet_id": "subnet-test",
                     "ssh_username": "admin",
+                    "ssh_private_ip": True,
                     "region": "eu-west-1",
+                    "security_group_ids": [
+                        "sg-test"
+                    ],
                     "ami_name": ami_name,
                     "iam_instance_profile": "iam.profile.test",
                     "instance_type": "test_instance_type",
-                    "associate_public_ip_address": "1",
+                    "associate_public_ip_address": True,
                     "vpc_id": "vpc-test",
                     "type": "amazon-ebs",
-                    "ssh_pty": "true"
+                    "ssh_pty": True
                 }
             ]
         }
@@ -210,7 +216,8 @@ def test_build_image_ansible_debug(packer_run_packer_cmd, gcall, provisioner_get
                         "GHOST_APP=test-app",
                         "GHOST_ENV=test",
                         "GHOST_ENV_COLOR=",
-                        "GHOST_ROLE=webfront"
+                        "GHOST_ROLE=webfront",
+                        "EMPTY_ENV="
                     ],
                     "script": "/ghost/test-app/test/webfront/hook-pre_buildimage"
                 },
@@ -228,7 +235,8 @@ def test_build_image_ansible_debug(packer_run_packer_cmd, gcall, provisioner_get
                         "GHOST_APP=test-app",
                         "GHOST_ENV=test",
                         "GHOST_ENV_COLOR=",
-                        "GHOST_ROLE=webfront"
+                        "GHOST_ROLE=webfront",
+                        "EMPTY_ENV="
                     ],
                     "script": "/ghost/test-app/test/webfront/hook-post_buildimage"
                 }
@@ -244,14 +252,18 @@ def test_build_image_ansible_debug(packer_run_packer_cmd, gcall, provisioner_get
                     },
                     "subnet_id": "subnet-test",
                     "ssh_username": "admin",
+                    "ssh_private_ip": True,
                     "region": "eu-west-1",
+                    "security_group_ids": [
+                        "sg-test"
+                    ],
                     "ami_name": ami_name,
                     "iam_instance_profile": "iam.profile.test",
                     "instance_type": "test_instance_type",
-                    "associate_public_ip_address": "1",
+                    "associate_public_ip_address": True,
                     "vpc_id": "vpc-test",
                     "type": "amazon-ebs",
-                    "ssh_pty": "true"
+                    "ssh_pty": True
                 }
             ]
         }
