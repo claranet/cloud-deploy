@@ -1,13 +1,20 @@
+import aws_data
 import boto
 import boto.s3
 import boto.s3.connection
 import boto3
+import os
 from boto import vpc, iam
 from boto.ec2 import autoscale
 from boto.sts import STSConnection
+from boto3.session import Session
 from cloud_connection import ACloudConnection
 
 from ghost_log import log
+from ghost_tools import config
+
+os.environ["BOTO_USE_ENDPOINT_HEURISTICS"] = "True"
+
 
 class AWSConnection(ACloudConnection):
 
@@ -124,17 +131,12 @@ class AWSConnection(ACloudConnection):
         return (connection)
 
     def get_regions(self, services):
-        regions = None
+        regions = []
         try:
-            aws_service = self._get_boto_service(boto, services)
-            if not self._role_arn:
-                regions = aws_service.regions()
-            elif self.check_credentials():
-                regions = aws_service.regions(
-                        aws_access_key_id=self._parameters['access_key'],
-                        aws_secret_access_key=self._parameters['secret_key'],
-                        security_token=self._parameters['session_token']
-                )
+            for partition_name in config.get('aws_partitions', ['aws']):
+                for region in Session().get_available_regions(services[0], partition_name):
+                    endpoint = 'ec2.{}.amazonaws.com{}'.format(region, '.cn' if region.startswith('cn-') else '')
+                    regions.append({'Name': region, 'Endpoint': endpoint})
         except:
             if self._log_file:
                 log("An error occured when creating connection, check the exception error message for more details", self._log_file)
