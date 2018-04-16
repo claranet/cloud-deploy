@@ -11,23 +11,25 @@ from ghost_tools import config, CURRENT_REVISION_NAME
 SWAGGER_INFO = {
     'title': 'Claranet Cloud Deploy (Ghost)',
     'version': CURRENT_REVISION_NAME,
-    'description': 'The Claranet Cloud Deploy (Ghost) API by Morea, Claranet Cloud Practice',
+    'description': 'The Claranet Cloud Deploy (Ghost) API by Morea, Claranet Public Cloud Practice',
     'termsOfService': 'Copyright (C) Claranet - All Rights Reserved',
     'contact': {
-        'name': 'Morea, Claranet Cloud Practice',
+        'name': 'Morea, Claranet Public Cloud Practice',
         'url': 'http://www.claranet.fr/'
     },
     'license': {
-        'name': 'TBD',
-        'url': 'https://bitbucket.org/morea/ghost/blob/master/LICENSE',
+        'name': 'Apache License 2.0',
+        'url': 'https://github.com/claranet/cloud-deploy/blob/stable/LICENSE',
     }
 }
 
 # CORS settings for Swagger UI
 X_DOMAINS = [
-  'http://api.ghost.morea.fr',
-  'https://api.ghost.morea.fr',
-  'http://editor.swagger.io',
+    'http://docs.cloud-deploy.io',
+    'https://docs.cloud-deploy.io',
+    'http://docs.cloudeploy.io',
+    'https://docs.cloudeploy.io',
+    'http://editor.swagger.io',
 ]
 X_HEADERS = ['Authorization', 'Content-Type', 'If-Match']
 
