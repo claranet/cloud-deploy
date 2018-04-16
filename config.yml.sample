@@ -245,7 +245,7 @@ deployment_package_retention:
 # Optional, default:
 #deployment_package_exclude_git_metadata: false
 
-# Option to specify the boto3 partition name
+# Option to specify the aws partition name
 # This option allow you to deploy and use ghost on AWS China, AWS GovCloud and any other partition
 aws_partitions:
   - aws
