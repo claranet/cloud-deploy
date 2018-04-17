@@ -145,6 +145,20 @@ key_path: /home/admin/key/client_morea.pem
 # Optional parameters
 # ===================
 
+# Web UI
+# ------
+
+# Web UI override config section
+#web_ui:
+    # Override header background image, string URL
+    #header_background_custom: ""
+
+    # Override header logo (top right), string URL
+    #header_logo_custom: "/static/logo_cloud_deploy.png"
+
+    # Override header menu background color, hexadecimal color value
+    #header_menu_background_color: "#415560"
+
 # Maximum number of deployment to keep per module on running EC2 instances
 # Optional, default:
 #max_deploy_history: 3
