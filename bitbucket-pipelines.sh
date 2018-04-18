@@ -14,4 +14,5 @@ else
 fi
 tox --version
 cp config.yml.sample config.yml
+cp web_ui/config.yml.sample web_ui/config.yml
 tox
