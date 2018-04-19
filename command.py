@@ -246,7 +246,7 @@ class Command:
             'filename': os.path.basename(log_path),
         }
         try:
-            for mail in self.app['log_notifications']:
+            for mail in self.app.get('log_notifications', []):
                 notif.send_mail(From=ses_settings.get('mail_from', MAIL_LOG_FROM_DEFAULT), To=mail, subject=subject,
                                 body_text=body, body_html=html_body, attachments=[log])
                 pass
