@@ -135,8 +135,7 @@ class AWSConnection(ACloudConnection):
         try:
             for partition_name in config.get('aws_partitions', ['aws']):
                 for region in Session().get_available_regions(services[0], partition_name):
-                    endpoint = 'ec2.{}.amazonaws.com{}'.format(region, '.cn' if region.startswith('cn-') else '')
-                    regions.append({'Name': region, 'Endpoint': endpoint})
+                    regions.append(region)
         except:
             if self._log_file:
                 log("An error occured when creating connection, check the exception error message for more details", self._log_file)
