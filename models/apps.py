@@ -19,6 +19,10 @@ apps_schema = {
         'regex': '^[a-z0-9\-\_]*$',
         'required': True
     },
+    'description': {
+        'type': 'string',
+        'required': False
+    },
     'assumed_account_id': {
         'type': 'string',
         'regex': '^[a-zA-Z0-9_.+-]*$',
