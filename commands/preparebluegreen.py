@@ -95,6 +95,15 @@ class Preparebluegreen(object):
     def execute(self):
         """Execute all checks and preparations."""
         log(_green("STATE: Started"), self._log_file)
+
+        online_app, offline_app = get_blue_green_apps(self._app, self._db.apps, self._log_file)
+        if not online_app:
+            self._worker.update_status(
+                "aborted",
+                message=self._get_notification_message_aborted(
+                    self._app, "Blue/green is not enabled on this app or not well configured"))
+            return
+
         copy_ami_option = (
             self._job['options'][0] if 'options' in self._job and len(self._job['options']) > 0
             else get_blue_green_copy_ami_config(self._config)
@@ -103,10 +112,6 @@ class Preparebluegreen(object):
 
         app_region = self._app['region']
         as_conn3 = self._cloud_connection.get_connection(app_region, ['autoscaling'], boto_version='boto3')
-
-        online_app, offline_app = get_blue_green_apps(self._app,
-                                                      self._db.apps,
-                                                      self._log_file)
 
         as_group, as_group_processes_to_suspend = get_autoscaling_group_and_processes_to_suspend(
             as_conn3, offline_app, self._log_file)
@@ -176,7 +181,8 @@ class Preparebluegreen(object):
 
             # Check if modules have been deployed
             if get_blue_green_config(self._config, 'preparebluegreen', 'module_deploy_required', False):
-                if not check_app_manifest(offline_app, self._config, self._log_file, get_path_from_app_with_color(offline_app)):
+                if not check_app_manifest(offline_app, self._config, self._log_file,
+                                          get_path_from_app_with_color(offline_app)):
                     self._worker.update_status(
                         "aborted",
                         message=self._get_notification_message_aborted(
