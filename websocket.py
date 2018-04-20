@@ -10,6 +10,7 @@ import os.path
 from settings import cloud_connections, DEFAULT_PROVIDER
 from ghost_tools import config, get_job_log_remote_path
 from ghost_aws import download_file_from_s3
+from ui_helpers import check_log_id
 
 LOG_ROOT = '/var/log/ghost'
 
@@ -169,8 +170,7 @@ def create_ws(app):
             log_id = data.get('log_id')
             last_pos = data.get('last_pos', 0)
 
-            check_logid = re.match("^[a-f0-9]{24}$", log_id)
-            if check_logid is None:
+            if check_log_id(log_id) is None:
                 socketio.close_room(request.sid)
             else:
                 filename = os.path.join(LOG_ROOT, log_id + '.txt')
