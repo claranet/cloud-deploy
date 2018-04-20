@@ -46,7 +46,7 @@ class Packer:
             'source_ami': self.packer_config['source_ami'],
             'instance_type': self.packer_config['instance_type'],
             'ssh_username': self.packer_config['ssh_username'],
-            'ssh_private_ip': self.packer_config['ssh_private_ip'], # deprecated in version 1.1.3 of packer
+            'ssh_interface': self.packer_config['ssh_interface'],
             'vpc_id': self.packer_config['vpc_id'],
             'subnet_id': self.packer_config['subnet_id'],
             'associate_public_ip_address': self.packer_config['associate_public_ip_address'],
