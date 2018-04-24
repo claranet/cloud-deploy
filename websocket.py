@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 import os
 
 from flask import request
@@ -92,6 +94,33 @@ def ansi_to_html(text):
 
     return COLOR_REGEX.sub(single_sub, escape(text))
 
+
+def encode_line(line):
+    """
+    Encode any log line to utf-8
+
+    >>> import json
+
+    >>> json.dumps(encode_line('é ç è ô ü'), separators=(',', ':'))
+    '"\\\\u00c3\\\\u00a9 \\\\u00c3\\\\u00a7 \\\\u00c3\\\\u00a8 \\\\u00c3\\\\u00b4 \\\\u00c3\\\\u00bc"'
+
+    >>> json.dumps(encode_line(''), separators=(',', ':'))
+    '""'
+
+    >>> json.dumps(encode_line('云部署很酷'), separators=(',', ':'))
+    '"\\\\u00e4\\\\u00ba\\\\u0091\\\\u00e9\\\\u0083\\\\u00a8\\\\u00e7\\\\u00bd\\\\u00b2\\\\u00e5\\\\u00be\\\\u0088\\\\u00e9\\\\u0085\\\\u00b7"'
+
+    >>> json.dumps(encode_line('String'), separators=(',', ':'))
+    '"String"'
+    """
+
+    try:
+        line = line.encode('utf-8')
+    except UnicodeDecodeError:
+        line = line.decode('iso-8859-1').encode('utf-8')
+    return line
+
+
 def create_ws(app):
     socketio = SocketIO(app)
 
@@ -120,10 +149,7 @@ def create_ws(app):
 
                     # Decorate lines
                     for idx, line in enumerate(readlines):
-                        try:
-                            line = line.encode('utf-8')
-                        except UnicodeDecodeError:
-                            line = line.decode('iso-8859-1').encode('utf-8')
+                        line = encode_line(line)
                         for sub_line in line.split("\\n"):
                             clean_line = ansi_to_html(sub_line).replace('\r\n', '\n').replace('\r', '\n').replace('\n', '<br/>').replace('%!(PACKER_COMMA)', '&#44;')
                             if LOG_LINE_REGEX.match(sub_line) is not None:
