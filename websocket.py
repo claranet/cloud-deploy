@@ -100,6 +100,7 @@ def encode_line(line):
     Encode any log line to utf-8
 
     >>> import json # We use json dumps to simulate the way socketio build the websocket packet
+    >>> import base64
 
     >>> json.dumps(encode_line('é ç è ô ü'), separators=(',', ':'))
     '"\\\\u00c3\\\\u00a9 \\\\u00c3\\\\u00a7 \\\\u00c3\\\\u00a8 \\\\u00c3\\\\u00b4 \\\\u00c3\\\\u00bc"'
@@ -109,6 +110,9 @@ def encode_line(line):
 
     >>> json.dumps(encode_line('云部署很酷'), separators=(',', ':'))
     '"\\\\u00e4\\\\u00ba\\\\u0091\\\\u00e9\\\\u0083\\\\u00a8\\\\u00e7\\\\u00bd\\\\u00b2\\\\u00e5\\\\u00be\\\\u0088\\\\u00e9\\\\u0085\\\\u00b7"'
+
+    >>> json.dumps(encode_line(u'(づ｡◕‿‿◕｡)づ'), separators=(',', ':'))
+    '"(\\\\u00e3\\\\u0081\\\\u00a5\\\\u00ef\\\\u00bd\\\\u00a1\\\\u00e2\\\\u0097\\\\u0095\\\\u00e2\\\\u0080\\\\u00bf\\\\u00e2\\\\u0080\\\\u00bf\\\\u00e2\\\\u0097\\\\u0095\\\\u00ef\\\\u00bd\\\\u00a1)\\\\u00e3\\\\u0081\\\\u00a5"'
 
     >>> json.dumps(encode_line('String'), separators=(',', ':'))
     '"String"'
