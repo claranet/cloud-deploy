@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
+import base64
 import chardet
 import os
-import base64
 
 from flask import request
 from flask_socketio import SocketIO
@@ -231,7 +231,7 @@ def create_ws(app):
             last_pos = data.get('last_pos', 0)
 
             if check_log_id(log_id) is None:
-                socketio.close_room(request.sid)
+                socketio.emit('job', formatter.format_error('Invalid log_id syntax.'), room=request.sid)
             else:
                 filename = os.path.join(LOG_ROOT, log_id + '.txt')
                 if not os.path.isfile(filename):
