@@ -157,7 +157,7 @@ def post_update_app(updates, original):
 
 def pre_replace_app(item, original):
     # TODO: implement (or not?) application replacement
-    pass
+    abort(406, description="Application replacement not allowed, please use update/PATCH verb.")
 
 
 def pre_delete_app(item):
@@ -167,7 +167,7 @@ def pre_delete_app(item):
 
 def post_delete_app(item):
     if not ghost_api_delete_alter_ego_app(get_apps_db(), item):
-        abort(422)
+        abort(422, description="Cannot delete the associated blue-green application")
 
 
 def pre_insert_app(items):
