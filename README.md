@@ -1,4 +1,5 @@
-# Claranet Cloud Deploy
+# Claranet Cloud Deploy 
+[![Documentation](https://img.shields.io/badge/documentation-cloud--deploy-brightgreen.svg)](https://docs.cloud-deploy.io) [![CLI](https://img.shields.io/badge/cli-casper-blue.svg)](https://github.com/claranet/casper) [![API Reference](http://img.shields.io/badge/api-reference-blue.svg)](https://docs.cloud-deploy.io/rst/api.html) [![Changelog](https://img.shields.io/badge/changelog-release-green.svg)](https://docs.cloud-deploy.io/rst/changelog.html) [![Apache V2 License](http://img.shields.io/badge/license-Apache%20V2-blue.svg)](https://github.com/claranet/cloud-deploy/blob/stable/LICENSE)
 
 - Documentation: [https://docs.cloud-deploy.io/](https://docs.cloud-deploy.io/)
 - Related repositories: [Claranet Github](https://github.com/claranet?utf8=%E2%9C%93&q=cloud-deploy&type=&language=)
