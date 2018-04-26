@@ -122,7 +122,7 @@ def test_build_image_ansible(packer_run_packer_cmd, gcall, provisioner_get_local
                     },
                     "subnet_id": "subnet-test",
                     "ssh_username": "admin",
-                    "ssh_private_ip": True,
+                    "ssh_interface": "private_ip",
                     "region": "eu-west-1",
                     "security_group_ids": [
                         "sg-test"
@@ -252,7 +252,7 @@ def test_build_image_ansible_debug(packer_run_packer_cmd, gcall, provisioner_get
                     },
                     "subnet_id": "subnet-test",
                     "ssh_username": "admin",
-                    "ssh_private_ip": True,
+                    "ssh_interface": "private_ip",
                     "region": "eu-west-1",
                     "security_group_ids": [
                         "sg-test"

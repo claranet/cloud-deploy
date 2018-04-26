@@ -35,20 +35,19 @@ from .deploy import launch_deploy, launch_executescript
 from .ec2 import find_ec2_pending_instances, find_ec2_running_instances
 
 
-class HostDeploymentManager():
+class HostDeploymentManager:
     """ Class which will manage the host deployment process """
 
     def __init__(self, cloud_connection, app, module, log_file, safe_infos, fabric_exec_strategy, deployment_type=None,
                  execute_script_params=None):
         """
-            :param  module        dict: Ghost object wich describe the module parameters.
-            :param  app           dict: Ghost object which describe the application parameters.
-            :param  log_file:     object for logging
-            :param  safe_infos:   dict: The safe deployment parameters.
-            :param  lb_infos:     list: ELB names, ALB names or Haproxy IPs.
-            :param  fabric_exec_strategy  string: Deployment strategy(serial or parrallel).
-            :param  deployment_type:    string: Deploy or Executescript
-            :param execute_script_params dict: All necessary params for `launch_executescript`
+            :param  module:               dict: Ghost object wich describe the module parameters.
+            :param  app:                  dict: Ghost object which describe the application parameters.
+            :param  log_file:             object for logging
+            :param  safe_infos:           dict: The safe deployment parameters.
+            :param  fabric_exec_strategy: string: Deployment strategy(serial or parrallel).
+            :param  deployment_type:      string: Deploy or Executescript
+            :param execute_script_params: dict: All necessary params for `launch_executescript`
         """
         self._cloud_connection = cloud_connection
         self._app = app
@@ -64,8 +63,8 @@ class HostDeploymentManager():
     def elb_safe_deployment(self, instances_list):
         """ Manage the safe deployment process for the ELB.
 
-            :param  instances_list  list: Instances on which to deploy (list of dict. ex: [{'id':XXX, 'private_ip_address':XXXX}...]).
-            :return                True if operation successed or raise an Exception.
+            :param  instances_list:  list: Instances on which to deploy (list of dict. ex: [{'id':XXX, 'private_ip_address':XXXX}...]).
+            :return True if operation successed or raise an Exception.
         """
         if not self._as_name:
             raise GCallException('Cannot continue because there is no AutoScaling Group configured')
@@ -107,8 +106,9 @@ class HostDeploymentManager():
     def alb_safe_deployment(self, instances_list):
         """ Manage the safe deployment process for the Application Load Balancer.
 
-            :param  instances_list  list: Instances on which to deploy(list of dict. ex: [{'id':XXX, 'private_ip_address':XXXX}...]).
-            :return                True if operation successed or raise an Exception.
+            :param  instances_list: list: Instances on which to
+                    (list of dict. ex: [{'id':XXX, 'private_ip_address':XXXX}...]).
+            :return True if operation successed or raise an Exception.
         """
         if not self._as_name:
             raise GCallException('Cannot continue because there is no AuoScaling Group configured')
@@ -165,8 +165,9 @@ class HostDeploymentManager():
     def haproxy_safe_deployment(self, instances_list):
         """ Manage the safe deployment process for the Haproxy.
 
-            :param  instances_list  list: Instances on which to deploy(list of dict. ex: [{'id':XXX, 'private_ip_address':XXXX}...]).
-            :return                 True if operation successed or raise an Exception.
+            :param  instances_list:  list: Instances on which to deploy
+                    (list of dict. ex: [{'id':XXX, 'private_ip_address':XXXX}...]).
+            :return True if operation successed or raise an Exception.
         """
         lb_infos = [host['private_ip_address'] for host in find_ec2_running_instances(self._cloud_connection,
                                                                                       self._safe_infos['app_tag_value'],
@@ -272,7 +273,7 @@ class HostDeploymentManager():
             running_instances = find_ec2_running_instances(self._cloud_connection, app_name, app_env, app_role,
                                                            app_region, ghost_color=app_color)
             if running_instances:
-                if safe_deployment_strategy:
+                if safe_deployment_strategy and self._safe_infos:
                     self._as_name = as_group
                     self._hosts_list = running_instances
                     return self.safe_manager(safe_deployment_strategy)

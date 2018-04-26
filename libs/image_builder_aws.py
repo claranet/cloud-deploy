@@ -36,7 +36,7 @@ class AWSImageBuilder(ImageBuilder):
             'source_ami': self._app['build_infos']['source_ami'],
             'instance_type': self._job['instance_type'],
             'ssh_username': self._app['build_infos']['ssh_username'],
-            'ssh_private_ip': True,
+            'ssh_interface': 'private_ip',
             'vpc_id': self._app['vpc_id'],
             'subnet_id': self._app['build_infos']['subnet_id'],
             'associate_public_ip_address': True,
