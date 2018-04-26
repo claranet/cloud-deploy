@@ -37,6 +37,16 @@ LIGHT_TEMPLATE = '<span style="color: rgb{}">{}</span>'
 class HtmlLogFormatter():
     @staticmethod
     def format_line(log_line, idx):
+        """
+        >>> HtmlLogFormatter.format_line('log line', 0)
+        '<samp>log line</samp>'
+
+        >>> HtmlLogFormatter.format_line('2018/02/08 16:34:44 GMT: Job processing started', 0)
+        '<div class="panel panel-default"><em class="panel-heading"><span class="timeinterval"><i class="glyphicon glyphicon-time"></i></span><span class="command-title">2018/02/08 16:34:44 GMT: Job processing started</span></em><div class="panel-body">'
+
+        >>> HtmlLogFormatter.format_line('2018/02/08 16:34:44 GMT: Job processing started', 1)
+        '</div></div><div class="panel panel-default"><em class="panel-heading"><span class="timeinterval"><i class="glyphicon glyphicon-time"></i></span><span class="command-title">2018/02/08 16:34:44 GMT: Job processing started</span></em><div class="panel-body">'
+        """
         clean_line = ansi_to_html(log_line).replace('\r\n', '\n').replace('\r', '\n').replace('\n', '<br/>').replace('%!(PACKER_COMMA)', '&#44;')
         if LOG_LINE_REGEX.match(log_line) is not None:
             return '%s<div class="panel panel-default"><em class="panel-heading"><span class="timeinterval"><i class="glyphicon glyphicon-time"></i></span><span class="command-title">%s</span></em><div class="panel-body">' % ('</div></div>' if idx > 0 else '', clean_line)
@@ -45,24 +55,68 @@ class HtmlLogFormatter():
 
     @staticmethod
     def format_data(lines, last_pos):
+        """
+        >>> sorted(HtmlLogFormatter.format_data(["line1", "line2"], 10).items())
+        [('html', 'line1line2'), ('last_pos', 10)]
+
+        >>> sorted(HtmlLogFormatter.format_data([], 0).items())
+        [('html', ''), ('last_pos', 0)]
+        """
         return {'html': ''.join(lines), 'last_pos': last_pos}
 
     @staticmethod
     def format_error(error_message):
+        """
+        >>> sorted(HtmlLogFormatter.format_error('Test error').items())
+        [('html', 'Test error'), ('last_pos', 0)]
+
+        >>> sorted(HtmlLogFormatter.format_error('').items())
+        [('html', ''), ('last_pos', 0)]
+
+        >>> sorted(HtmlLogFormatter.format_error(None).items())
+        [('html', None), ('last_pos', 0)]
+        """
         return {'html': error_message, 'last_pos': 0}
 
 
 class RawLogFormatter():
     @staticmethod
     def format_line(log_line, idx):
+        """
+        >>> RawLogFormatter.format_line('log line', 0)
+        'log line'
+
+        >>> RawLogFormatter.format_line('2018/02/08 16:34:44 GMT: Job processing started', 0)
+        '2018/02/08 16:34:44 GMT: Job processing started'
+
+        >>> RawLogFormatter.format_line('2018/02/08 16:34:44 GMT: Job processing started', 1)
+        '2018/02/08 16:34:44 GMT: Job processing started'
+        """
         return log_line
 
     @staticmethod
     def format_data(lines, last_pos):
+        """
+        >>> sorted(RawLogFormatter.format_data(["line1", "line2"], 10).items())
+        [('last_pos', 10), ('raw', 'bGluZTFsaW5lMg==')]
+
+        >>> sorted(RawLogFormatter.format_data([], 0).items())
+        [('last_pos', 0), ('raw', '')]
+        """
         return {'raw': base64.b64encode(''.join(lines)), 'last_pos': last_pos}
 
     @staticmethod
     def format_error(error_message):
+        """
+        >>> sorted(RawLogFormatter.format_error('Test error').items())
+        [('error', 'Test error'), ('last_pos', 0), ('raw', None)]
+
+        >>> sorted(RawLogFormatter.format_error('').items())
+        [('error', ''), ('last_pos', 0), ('raw', None)]
+
+        >>> sorted(RawLogFormatter.format_error(None).items())
+        [('error', None), ('last_pos', 0), ('raw', None)]
+        """
         return {'raw': None, 'error': error_message, 'last_pos': 0}
 
 
