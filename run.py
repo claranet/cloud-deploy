@@ -175,6 +175,7 @@ def pre_insert_app(items):
     name = app.get('name')
     role = app.get('role')
     env = app.get('env')
+    app['modules'] = app.get('modules', [])
     app['environment_infos'] = app.get('environment_infos', {})
     app['environment_infos']['instance_tags'] = normalize_application_tags(app, app)
 
