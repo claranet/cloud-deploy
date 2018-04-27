@@ -308,7 +308,7 @@ def initialize_app_modules(updates, original):
                         fields.remove('initialized')
                     for prop in fields:
                         if ((not updated_module.get(prop, None) == original_module.get(prop, None))
-                        and (updated_module.get(prop, None) and original_module.get(prop, None))):
+                        and (updated_module.get(prop, None) or original_module.get(prop, None))):
                             updated_module['initialized'] = False
                             modules_edited = True
                             # At least one of the module's prop have changed, can exit loop
@@ -379,7 +379,7 @@ def initialize_app_features(updates, original):
                 fields = set(original_feature.keys() + updated_feature.keys())
                 for prop in fields:
                     if ((not updated_feature.get(prop, None) == original_feature.get(prop, None))
-                    and (updated_feature.get(prop, None) and original_feature.get(prop, None))):
+                    and (updated_feature.get(prop, None) or original_feature.get(prop, None))):
                         # Feature field is different
                         return True
     return False
@@ -434,12 +434,30 @@ def check_field_diff(updates, original, object_name):
     >>> up_ob['a']['z'] = 2
     >>> check_field_diff(up_ob, base_ob, 'a')
     True
+
+    >>> up_ob = deepcopy(base_ob)
+    >>> base_ob['a']['x'] = ""
+    >>> del up_ob['a']['x']
+    >>> check_field_diff(up_ob, base_ob, 'a')
+    False
+
+    >>> up_ob = deepcopy(base_ob)
+    >>> base_ob['a']['x'] = ""
+    >>> up_ob['a']['x'] = []
+    >>> check_field_diff(up_ob, base_ob, 'a')
+    False
+
+    >>> up_ob = deepcopy(base_ob)
+    >>> base_ob['a']['x'] = None
+    >>> up_ob['a']['x'] = ""
+    >>> check_field_diff(up_ob, base_ob, 'a')
+    False
     """
     if object_name in updates and object_name in original:
         fields = set(updates[object_name].keys())
         for prop in fields:
             if ((not updates[object_name].get(prop, None) == original[object_name].get(prop, None))
-                and (updates[object_name].get(prop, None) and original[object_name].get(prop, None))):
+                and (updates[object_name].get(prop, None) or original[object_name].get(prop, None))):
                 # Field is different
                 return True
     return False
