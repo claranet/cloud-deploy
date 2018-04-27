@@ -417,11 +417,12 @@ def check_field_diff(updates, original, object_name):
     False
 
     >>> up_ob = deepcopy(base_ob)
-    >>> del base_ob['b']['i']
-    >>> check_field_diff(up_ob, base_ob, 'a')
+    >>> base_copy_ob = deepcopy(base_ob)
+    >>> del base_copy_ob['b']['i']
+    >>> check_field_diff(up_ob, base_copy_ob, 'a')
     False
 
-    >>> check_field_diff(up_ob, base_ob, 'b')
+    >>> check_field_diff(up_ob, base_copy_ob, 'b')
     True
 
     >>> up_ob = deepcopy(base_ob)
@@ -436,21 +437,22 @@ def check_field_diff(updates, original, object_name):
     True
 
     >>> up_ob = deepcopy(base_ob)
-    >>> base_ob['a']['x'] = ""
+    >>> base_copy_ob = deepcopy(base_ob)
+    >>> base_copy_ob['a']['x'] = ""
     >>> del up_ob['a']['x']
-    >>> check_field_diff(up_ob, base_ob, 'a')
+    >>> check_field_diff(up_ob, base_copy_ob, 'a')
     False
 
     >>> up_ob = deepcopy(base_ob)
-    >>> base_ob['a']['x'] = ""
+    >>> base_copy_ob['a']['x'] = ""
     >>> up_ob['a']['x'] = []
-    >>> check_field_diff(up_ob, base_ob, 'a')
+    >>> check_field_diff(up_ob, base_copy_ob, 'a')
     False
 
     >>> up_ob = deepcopy(base_ob)
-    >>> base_ob['a']['x'] = None
+    >>> base_copy_ob['a']['x'] = None
     >>> up_ob['a']['x'] = ""
-    >>> check_field_diff(up_ob, base_ob, 'a')
+    >>> check_field_diff(up_ob, base_copy_ob, 'a')
     False
     """
     if object_name in updates and object_name in original:
