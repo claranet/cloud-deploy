@@ -307,7 +307,8 @@ def initialize_app_modules(updates, original):
                     if 'initialized' in fields:
                         fields.remove('initialized')
                     for prop in fields:
-                        if not updated_module.get(prop, None) == original_module.get(prop, None):
+                        if ((not updated_module.get(prop, None) == original_module.get(prop, None))
+                        and (updated_module.get(prop, None) and original_module.get(prop, None))):
                             updated_module['initialized'] = False
                             modules_edited = True
                             # At least one of the module's prop have changed, can exit loop
@@ -377,7 +378,8 @@ def initialize_app_features(updates, original):
                 # Compare all fields
                 fields = set(original_feature.keys() + updated_feature.keys())
                 for prop in fields:
-                    if not updated_feature.get(prop, None) == original_feature.get(prop, None):
+                    if ((not updated_feature.get(prop, None) == original_feature.get(prop, None))
+                    and (updated_feature.get(prop, None) and original_feature.get(prop, None))):
                         # Feature field is different
                         return True
     return False
@@ -436,7 +438,8 @@ def check_field_diff(updates, original, object_name):
     if object_name in updates and object_name in original:
         fields = set(updates[object_name].keys())
         for prop in fields:
-            if not updates[object_name].get(prop, None) == original[object_name].get(prop, None):
+            if ((not updates[object_name].get(prop, None) == original[object_name].get(prop, None))
+                and (updates[object_name].get(prop, None) and original[object_name].get(prop, None))):
                 # Field is different
                 return True
     return False
