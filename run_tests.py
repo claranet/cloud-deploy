@@ -9,7 +9,6 @@ import importlib
 from pylxd import Client as LXDClient
 
 modules = [
-  "aws_data",
   "command",
   "commands.buildimage",
   "commands.deploy",
@@ -31,6 +30,7 @@ modules = [
   "run",
   "run_rqworkers",
   "web_ui.app",
+  "web_ui.aws_data",
   "web_ui.forms.form_aws_helper",
   "web_ui.forms.form_helper",
   "web_ui.ghost_client",
