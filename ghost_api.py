@@ -35,6 +35,23 @@ def field_has_changed(new, old):
     """
     Returns true if the field has changed.
     Considers a None value equivalent to an empty string.
+
+    >>> field_has_changed(1, 1)
+    False
+    >>> field_has_changed("a", "a")
+    False
+    >>> field_has_changed("", None)
+    False
+    >>> field_has_changed([], [])
+    False
+    >>> field_has_changed(0, None)
+    True
+    >>> field_has_changed("", [])
+    True
+    >>> field_has_changed("", False)
+    True
+    >>> field_has_changed({}, None)
+    True
     """
     equivalents = [None, ""]
     return (new != old and
