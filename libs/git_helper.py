@@ -26,12 +26,16 @@ def git_acquire_lock(lock_path, log_file=None):
             if log_file:
                 log('Locking git mirror local directory with %s' % lock_path, log_file)
             locked = True
-        except os.error:
-            # If the lock directory exists, wait until it disappears before trying to update the mirror
-            if log_file:
-                log('The git mirror is locked by another process, waiting 5s...', log_file)
-            # time.sleep(secs) https://docs.python.org/2/library/time.html#time.sleep
-            time.sleep(5)
+        except OSError as err:
+            if err.errno == os.errno.EEXIST:
+                # If the lock directory exists, wait until it disappears before trying to update the mirror
+                if log_file:
+                    log('The git mirror is locked by another process, waiting 5s...', log_file)
+                time.sleep(5)
+            else:
+                if log_file:
+                    log('Cannot lock: %s' % err, log_file)
+                raise
 
 
 def git_release_lock(lock_path, log_file=None):
@@ -46,9 +50,14 @@ def git_release_lock(lock_path, log_file=None):
         log('Removing git mirror lock (%s)' % lock_path, log_file)
     try:
         os.rmdir(lock_path)
-    except OSError:
-        if log_file:
-            log('Lock (%s) already released.' % lock_path, log_file)
+    except OSError as err:
+        if err.errno == os.errno.ENOENT:
+            if log_file:
+                log('Lock (%s) already released.' % lock_path, log_file)
+        else:
+            if log_file:
+                log('Cannot unlock: %s' % err, log_file)
+            raise
 
 
 def git_remap_submodule(git_local_repo, submodule_repo, submodule_mirror, log_file):
