@@ -291,6 +291,14 @@ def create_ec2_instance(cloud_connection, app, app_color, config, private_ip_add
                 ["ec2", "networkinterface", "NetworkInterfaceCollection"],
                 interface
                 )
+        devices = get_block_devices_mapping(cloud_connection, app)
+        bdm = cloud_connection.launch_service(
+            ["ec2", "blockdevicemapping", "BlockDeviceMapping"],
+            connection=conn
+        )
+        for device in devices:
+            for path, sda in device.iteritems():
+                bdm[path] = sda
         reservation = conn.run_instances(
             image_id=app['ami'],
             key_name=app['environment_infos']['key_name'],
@@ -298,7 +306,7 @@ def create_ec2_instance(cloud_connection, app, app_color, config, private_ip_add
             instance_type=app['instance_type'],
             instance_profile_name=app['environment_infos']['instance_profile'],
             user_data=userdata,
-            block_device_map=get_block_devices_mapping(cloud_connection, app),
+            block_device_map=bdm,
         )
 
         # Getting instance metadata
