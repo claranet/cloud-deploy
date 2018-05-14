@@ -267,3 +267,143 @@ def test_build_image_ansible_debug(packer_run_packer_cmd, gcall, provisioner_get
                 }
             ]
         }
+
+
+@mock.patch('pypacker.log', new=mocked_logger)
+@mock.patch('libs.image_builder_aws.log', new=mocked_logger)
+@mock.patch('libs.image_builder.log', new=mocked_logger)
+@mock.patch('libs.provisioner.log', new=mocked_logger)
+@mock.patch('libs.provisioner_ansible.log', new=mocked_logger)
+@mock.patch('libs.provisioner.FeaturesProvisioner._get_provisioner_repo', new=void)  # We do not test git mirroring here
+@mock.patch('libs.provisioner.FeaturesProvisioner._get_local_repo_path')
+@mock.patch('libs.provisioner_ansible.gcall')
+@mock.patch('pypacker.Packer._run_packer_cmd')
+def test_build_image_root_block_device(packer_run_packer_cmd, gcall, provisioner_get_local_repo_path):
+    # Application context
+    app = get_test_application(
+        environment_infos={
+            "optional_volumes": [
+                {
+                    "volume_size": 42,
+                    "volume_type": "gp2",
+                    "device_name": "/dev/xvdm"
+                }
+            ],
+            "root_block_device": {
+                "name": "xvda",
+                "size": 33
+            },
+        }
+    )
+    job = {
+        "_id": "test_job_id",
+        "app_id": "test_app_id",
+        "command": "buildimage",
+        "instance_type": "test_instance_type",
+        "options": [False]  # Do not skip bootstrap
+    }
+    test_config = get_test_config(
+        features_provisioners={'ansible': {
+            'git_revision': 'master',
+            'git_repo': 'my_ansible_repo',
+            'base_playbook_file': 'tests/provisioners_data/base_playbook.yml',
+            'base_playbook_requirements_file': 'tests/provisioners_data/base_requirements.yml',
+        }},
+        provisioner_log_level='debug')
+    del test_config['features_provisioners']['salt']
+
+    # Mocks
+    packer_run_packer_cmd.return_value = (0, "something:test_ami_id")
+
+    tmp_dir = tempfile.mkdtemp()
+    venv_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), '.tox/py27/bin/')
+    shutil.copyfile(
+        os.path.join(os.path.dirname(__file__), 'provisioners_data', 'requirements.yml'),
+        os.path.join(tmp_dir, 'requirements.yml'))
+    provisioner_get_local_repo_path.return_value = tmp_dir
+
+    # Build image
+    with mock.patch('ghost_tools.config', new=test_config):
+        image_builder = AWSImageBuilder(app, job, None, LOG_FILE, test_config)
+        ami_id, ami_name = image_builder.start_builder()
+
+    # Test
+    assert ami_id == "test_ami_id"
+    assert ami_name.startswith("ami.test.eu-west-1.webfront.test-app.")
+
+    with open(os.path.join(PACKER_JSON_PATH, job['_id'] + '.json'), 'r') as f:
+        # Verify packer config
+        packer_config = json.load(f)
+        assert packer_config == {
+            "provisioners": [
+                {
+                    "type": "shell",
+                    "environment_vars": [
+                        "GHOST_APP=test-app",
+                        "GHOST_ENV=test",
+                        "GHOST_ENV_COLOR=",
+                        "GHOST_ROLE=webfront",
+                        "EMPTY_ENV="
+                    ],
+                    "script": "/ghost/test-app/test/webfront/hook-pre_buildimage"
+                },
+                {
+                    "type": "ansible",
+                    "playbook_file": os.path.join(tmp_dir, "main.yml"),
+                    "ansible_env_vars": [ "ANSIBLE_HOST_KEY_CHECKING=False", "ANSIBLE_FORCE_COLOR=1", "PYTHONUNBUFFERED=1", "ANSIBLE_ROLES_PATH={}".format(tmp_dir)],
+                    "user": "admin",
+                    "command": os.path.join(venv_dir, "ansible-playbook"),
+                    "extra_arguments": ['-vvv'],
+                },
+                {
+                    "type": "shell",
+                    "environment_vars": [
+                        "GHOST_APP=test-app",
+                        "GHOST_ENV=test",
+                        "GHOST_ENV_COLOR=",
+                        "GHOST_ROLE=webfront",
+                        "EMPTY_ENV="
+                    ],
+                    "script": "/ghost/test-app/test/webfront/hook-post_buildimage"
+                }
+            ],
+            "builders": [
+                {
+                    "ami_block_device_mappings": [
+                        {
+                            "delete_on_termination": True,
+                            "device_name": "/dev/xvdm",
+                            "volume_size": 42,
+                            "volume_type": "gp2"
+                        }
+                    ],
+                    "launch_block_device_mappings": [
+                        {
+                            "delete_on_termination": True,
+                            "device_name": "xvda",
+                            "volume_size": 33,
+                            "volume_type": "gp2"
+                        }
+                    ],
+                    "source_ami": "ami-source",
+                    "tags": {
+                        "Name": "ec2.name.test",
+                        "tag-name": "tag-value",
+                    },
+                    "subnet_id": "subnet-test",
+                    "ssh_username": "admin",
+                    "ssh_interface": "private_ip",
+                    "region": "eu-west-1",
+                    "security_group_ids": [
+                        "sg-test"
+                    ],
+                    "ami_name": ami_name,
+                    "iam_instance_profile": "iam.profile.test",
+                    "instance_type": "test_instance_type",
+                    "associate_public_ip_address": True,
+                    "vpc_id": "vpc-test",
+                    "type": "amazon-ebs",
+                    "ssh_pty": True
+                }
+            ]
+        }
