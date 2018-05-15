@@ -26,7 +26,7 @@ from ghost_api import ghost_api_bluegreen_is_enabled, ghost_api_enable_green_app
 from ghost_api import ghost_api_delete_alter_ego_app, ghost_api_clean_bluegreen_app
 from ghost_api import initialize_app_modules, check_and_set_app_fields_state
 from ghost_api import ghost_api_app_data_input_validator, GhostAPIInputError
-from ghost_api import ALL_COMMAND_FIELDS
+from ghost_api import ALL_COMMAND_FIELDS, check_app_immutable_fields
 from ghost_lxd import lxd_blueprint
 from libs.blue_green import BLUE_GREEN_COMMANDS, get_blue_green_from_app, ghost_has_blue_green_enabled
 from ghost_aws import normalize_application_tags
@@ -106,9 +106,18 @@ def pre_update_app(updates, original):
     True
     >>> updates['modules'][2]['initialized']
     False
+
+    Modified name, env or role stop the update:
+    >>> updates = deepcopy(base_original)
+    >>> updates['name'] = "app2"
+    >>>
+    Traceback (most recent call last):
+    ...
+    GhostAPIInputError
     """
 
     try:
+        check_app_immutable_fields(updates, original)
         ghost_api_app_data_input_validator(updates)
     except GhostAPIInputError as error:
         abort(422, description=error.message)
