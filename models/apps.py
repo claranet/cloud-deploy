@@ -1,7 +1,8 @@
 import instance_role
+import jobs
 import resources
-import volumes
 import tags
+import volumes
 
 apps_schema = {
     'name': {
@@ -168,8 +169,21 @@ apps_schema = {
     'log_notifications': {
         'type': 'list',
         'schema': {
-            'type': 'string',
-            'regex': '^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$'
+            'type': 'dict',
+            'schema': {
+                'email': {
+                    'type': 'string',
+                    'regex': '^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$'
+                },
+                'job_states': {
+                    'type': 'list',
+                    'schema': {
+                        'type': 'string',
+                        'allowed': jobs.DELETABLE_JOB_STATUSES + ['*'],
+                        'default': '*'
+                    }
+                }
+            }
         }
     },
     'autoscale': {
