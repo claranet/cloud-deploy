@@ -246,9 +246,13 @@ class Command:
             'filename': os.path.basename(log_path),
         }
         try:
-            for mail in self.app.get('log_notifications', []):
-                notif.send_mail(From=ses_settings.get('mail_from', MAIL_LOG_FROM_DEFAULT), To=mail, subject=subject,
-                                body_text=body, body_html=html_body, attachments=[log])
+            for log_notif in self.app.get('log_notifications', []):
+                mail = log_notif if isinstance(log_notif, basestring) else log_notif.get('email')
+                if isinstance(log_notif, basestring) \
+                        or self.job['status'] in log_notif.get('job_states', []) \
+                        or ''.join(log_notif.get('job_states', [])) == '*':
+                    notif.send_mail(From=ses_settings.get('mail_from', MAIL_LOG_FROM_DEFAULT), To=mail, subject=subject,
+                                    body_text=body, body_html=html_body, attachments=[log])
                 pass
         except:
             self._init_log_file()
