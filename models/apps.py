@@ -168,6 +168,7 @@ apps_schema = {
     },
     'log_notifications': {
         'type': 'list',
+        'coerce': lambda l: [{'email': v, 'job_states': ['*']} if isinstance(v, basestring) else v for v in l],
         'schema': {
             'type': 'dict',
             'schema': {
