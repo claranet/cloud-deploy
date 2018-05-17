@@ -4,6 +4,7 @@ from mock import MagicMock
 from run import pre_insert_app
 from tests.helpers import create_test_app_context
 
+
 @mock.patch('run.get_apps_db')
 @mock.patch('run.request')
 def test_application_pre_insert(request, get_apps_db):
