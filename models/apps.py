@@ -1,5 +1,5 @@
 import instance_role
-import jobs
+from jobs import DELETABLE_JOB_STATUSES as LOG_NOTIFICATION_JOB_STATES
 import resources
 import tags
 import volumes
@@ -180,7 +180,7 @@ apps_schema = {
                     'type': 'list',
                     'schema': {
                         'type': 'string',
-                        'allowed': jobs.DELETABLE_JOB_STATUSES + ['*'],
+                        'allowed': LOG_NOTIFICATION_JOB_STATES + ['*'],
                         'default': '*'
                     }
                 }
