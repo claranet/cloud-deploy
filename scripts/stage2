@@ -32,11 +32,11 @@ trap exit_deployment EXIT
 
 INSTANCE_ID=$(curl http://169.254.169.254/latest/meta-data/instance-id)
 EC2_AVAIL_ZONE=$(curl -s http://169.254.169.254/latest/meta-data/placement/availability-zone)
-EC2_REGION="`echo \"$EC2_AVAIL_ZONE\" | sed -e 's:\([0-9][0-9]*\)[a-z]*\$:\\1:'`"
+EC2_REGION="$(echo "$EC2_AVAIL_ZONE" | sed 's/[a-z]$//')"
 
 retry=0
 while [ -z "$APP" ] || [ -z "$ENV" ] || [ -z "$ROLE" ] ; do
-    echo "Waiting 2s for (app, env, role) tags to be set..."
+    echo "Waiting 2s for (app, env, role) tags to be set... (attempt ${retry}/150)"
     sleep 2
 
     TAGS=$($AWS_BIN ec2 describe-tags --filters "Name=resource-id,Values=$INSTANCE_ID" --region "$EC2_REGION")
