@@ -299,4 +299,5 @@ else
     download_and_run_lifecycle_hook_script 'post_bootstrap'
 fi
 
+trap - EXIT
 exit_deployment 0
