@@ -33,7 +33,11 @@ function exit_deployment() {
     echo "Unlocking $LOCK..."
     rmdir $LOCK
     echo "Unlocked $LOCK"
-    exit $1
+    if [ -z $1 ]; then
+        exit -1
+    else
+        exit $1
+    fi
 }
 
 set -e
