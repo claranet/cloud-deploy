@@ -1,5 +1,5 @@
 #!/bin/bash
-set -xu
+set -x
 
 LOCK=/run/lock/ghost-stage-2
 AWS_BIN=$(which aws)
