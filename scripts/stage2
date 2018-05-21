@@ -33,6 +33,7 @@ function exit_deployment() {
     echo "Unlocking $LOCK..."
     rmdir $LOCK
     echo "Unlocked $LOCK"
+    trap - EXIT
     if [ -z $1 ]; then
         exit -1
     else
@@ -303,5 +304,4 @@ else
     download_and_run_lifecycle_hook_script 'post_bootstrap'
 fi
 
-trap - EXIT
 exit_deployment 0
