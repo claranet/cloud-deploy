@@ -1,4 +1,3 @@
-import aws_data
 import boto
 import boto.s3
 import boto.s3.connection
