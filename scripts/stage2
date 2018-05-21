@@ -43,7 +43,7 @@ INSTANCE_ID=$(curl http://169.254.169.254/latest/meta-data/instance-id)
 EC2_AVAIL_ZONE=$(curl -s http://169.254.169.254/latest/meta-data/placement/availability-zone)
 EC2_REGION="$(echo "$EC2_AVAIL_ZONE" | sed 's/[a-z]$//')"
 
-retry=0
+retry=1
 while [ -z "$APP" ] || [ -z "$ENV" ] || [ -z "$ROLE" ] ; do
     echo "Waiting 2s for (app, env, role) tags to be set... (attempt ${retry}/150)"
     sleep 2
