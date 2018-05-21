@@ -20,8 +20,15 @@ def git_acquire_lock(lock_path, log_file=None):
     >>> os.rmdir(lock_test)
     """
     locked = False
+    attempt = 1
     while not locked:
         try:
+            # 600 attempts * 5s = 50min of waits max
+            if attempt > 600:
+                msg = 'Cannot lock: "{}" after {} attempts'.format(lock_path, attempt)
+                if log_file:
+                    log(msg, log_file)
+                raise Exception(msg)
             os.makedirs(lock_path)
             if log_file:
                 log('Locking git mirror local directory with %s' % lock_path, log_file)
@@ -29,8 +36,9 @@ def git_acquire_lock(lock_path, log_file=None):
         except OSError as err:
             if err.errno == os.errno.EEXIST:
                 # If the lock directory exists, wait until it disappears before trying to update the mirror
+                attempt += 1
                 if log_file:
-                    log('The git mirror is locked by another process, waiting 5s...', log_file)
+                    log('The git mirror is locked by another process, waiting 5s... (attempt %s/600)' % attempt, log_file)
                 time.sleep(5)
             else:
                 if log_file:
