@@ -27,6 +27,15 @@ COLOR_RED='\033[00;31m'
 COLOR_GREEN='\033[00;32m'
 COLOR_YELLOW='\033[00;33m'
 
+function exit_deployment() {
+    echo "Removing Manifest file" >> $LOGFILE
+    rm -f /tmp/MANIFEST
+    echo "Unlocking $LOCK..."
+    rmdir $LOCK
+    echo "Unlocked $LOCK"
+    exit $1
+}
+
 set -e
 trap exit_deployment EXIT
 
@@ -237,15 +246,6 @@ function find_module() {
             echo $MODULE_NAME $MODULE_FILE $TARGET
         fi
     done
-}
-
-function exit_deployment() {
-    echo "Removing Manifest file" >> $LOGFILE
-    rm -f /tmp/MANIFEST
-    echo "Unlocking $LOCK..."
-    rmdir $LOCK
-    echo "Unlocked $LOCK"
-    exit $1
 }
 
 function download_and_run_lifecycle_hook_script() {
