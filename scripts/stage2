@@ -42,7 +42,7 @@ function exit_deployment() {
 }
 
 set -e
-trap exit_deployment EXIT
+trap exit_deployment EXIT TERM INT
 
 INSTANCE_ID=$(curl http://169.254.169.254/latest/meta-data/instance-id)
 EC2_AVAIL_ZONE=$(curl -s http://169.254.169.254/latest/meta-data/placement/availability-zone)
