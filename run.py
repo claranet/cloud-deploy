@@ -175,6 +175,8 @@ def pre_insert_app(items):
     name = app.get('name')
     role = app.get('role')
     env = app.get('env')
+    app['modules'] = app.get('modules', [])
+    app['environment_infos'] = app.get('environment_infos', {})
     app['environment_infos']['instance_tags'] = normalize_application_tags(app, app)
 
     try:
@@ -192,7 +194,7 @@ def pre_insert_app(items):
     else:
         if get_apps_db().find_one({'$and': [{'name': name}, {'role': role}, {'env': env}]}):
             abort(409, description="An app already exist with same name, role and env. Please change one these fields.")
-    for mod in app.get('modules'):
+    for mod in app.get('modules', []):
         mod['initialized'] = False
 
     app['pending_changes'] = [{
