@@ -169,7 +169,7 @@ def create_block_device(cloud_connection, region, app, rbd={}):
     """ Create a block device
 
         :param cloud_connection: The app Cloud Connection object
-        :param region:  string: The region to use
+        :param region: string: The region to use
         :param app: string: The ghost "app" object
         :param rbd: dict: device mapping configuration
         :return the EC2 instance service object blockdevicemapping

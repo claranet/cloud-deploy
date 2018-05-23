@@ -273,12 +273,12 @@ def test_build_image_ansible_debug(packer_run_packer_cmd, gcall, provisioner_get
 @mock.patch('libs.image_builder_aws.log', new=mocked_logger)
 @mock.patch('libs.image_builder.log', new=mocked_logger)
 @mock.patch('libs.provisioner.log', new=mocked_logger)
-@mock.patch('libs.provisioner_ansible.log', new=mocked_logger)
 @mock.patch('libs.provisioner.FeaturesProvisioner._get_provisioner_repo', new=void)  # We do not test git mirroring here
 @mock.patch('libs.provisioner.FeaturesProvisioner._get_local_repo_path')
-@mock.patch('libs.provisioner_ansible.gcall')
+@mock.patch('libs.provisioner_salt.FeaturesProvisionerSalt._build_salt_top', new=void)
+@mock.patch('libs.provisioner_salt.FeaturesProvisionerSalt._build_salt_pillar', new=void)
 @mock.patch('pypacker.Packer._run_packer_cmd')
-def test_build_image_root_block_device(packer_run_packer_cmd, gcall, provisioner_get_local_repo_path):
+def test_build_image_root_block_device(packer_run_packer_cmd, provisioner_get_local_repo_path):
     # Application context
     app = get_test_application(
         environment_infos={
@@ -302,24 +302,12 @@ def test_build_image_root_block_device(packer_run_packer_cmd, gcall, provisioner
         "instance_type": "test_instance_type",
         "options": [False]  # Do not skip bootstrap
     }
-    test_config = get_test_config(
-        features_provisioners={'ansible': {
-            'git_revision': 'master',
-            'git_repo': 'my_ansible_repo',
-            'base_playbook_file': 'tests/provisioners_data/base_playbook.yml',
-            'base_playbook_requirements_file': 'tests/provisioners_data/base_requirements.yml',
-        }},
-        provisioner_log_level='debug')
-    del test_config['features_provisioners']['salt']
+    test_config = get_test_config()
 
     # Mocks
     packer_run_packer_cmd.return_value = (0, "something:test_ami_id")
 
     tmp_dir = tempfile.mkdtemp()
-    venv_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), '.tox/py27/bin/')
-    shutil.copyfile(
-        os.path.join(os.path.dirname(__file__), 'provisioners_data', 'requirements.yml'),
-        os.path.join(tmp_dir, 'requirements.yml'))
     provisioner_get_local_repo_path.return_value = tmp_dir
 
     # Build image
@@ -348,12 +336,11 @@ def test_build_image_root_block_device(packer_run_packer_cmd, gcall, provisioner
                     "script": "/ghost/test-app/test/webfront/hook-pre_buildimage"
                 },
                 {
-                    "type": "ansible",
-                    "playbook_file": os.path.join(tmp_dir, "main.yml"),
-                    "ansible_env_vars": [ "ANSIBLE_HOST_KEY_CHECKING=False", "ANSIBLE_FORCE_COLOR=1", "PYTHONUNBUFFERED=1", "ANSIBLE_ROLES_PATH={}".format(tmp_dir)],
-                    "user": "admin",
-                    "command": os.path.join(venv_dir, "ansible-playbook"),
-                    "extra_arguments": ['-vvv'],
+                    "skip_bootstrap": False,
+                    "log_level": "info",
+                    "local_state_tree": os.path.join(tmp_dir, 'salt'),
+                    "local_pillar_roots": os.path.join(tmp_dir, 'pillar'),
+                    "type": "salt-masterless"
                 },
                 {
                     "type": "shell",
@@ -365,6 +352,13 @@ def test_build_image_root_block_device(packer_run_packer_cmd, gcall, provisioner
                         "EMPTY_ENV="
                     ],
                     "script": "/ghost/test-app/test/webfront/hook-post_buildimage"
+                },
+                {
+                    "inline": [
+                        "sudo rm -rf /srv/salt || echo 'Salt - no cleanup salt'",
+                        "sudo rm -rf /srv/pillar || echo 'Salt - no cleanup pillar'"
+                    ],
+                    "type": "shell"
                 }
             ],
             "builders": [
