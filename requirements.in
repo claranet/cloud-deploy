@@ -8,6 +8,7 @@ bcrypt
 blinker                   # needed at runtime for flask events
 boto
 boto3
+chardet
 click
 eve-swagger
 Eve
