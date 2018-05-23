@@ -119,7 +119,9 @@ def encode_line(line):
     """
 
     encoding = chardet.detect(line)
-    if encoding['encoding'] is not None:
+    if encoding['encoding'] == 'utf-8':
+        return line
+    elif encoding['encoding'] is not None:
         line = line.decode(encoding['encoding']).encode('utf-8')
     else:
         line = line.encode('utf-8')
