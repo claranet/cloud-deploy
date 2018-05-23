@@ -6,7 +6,7 @@ from flask import Blueprint
 
 from ghost_tools import config, get_job_log_remote_path, CURRENT_REVISION
 from ghost_aws import download_file_from_s3
-from ghost_data import get_app
+from ghost_data import get_app, get_job
 
 from settings import cloud_connections, DEFAULT_PROVIDER
 from command import LOG_ROOT
@@ -90,6 +90,9 @@ def get_version():
 
 @job_logs_blueprint.route('/jobs/<regex("[a-f0-9]{24}"):job_id>/logs', methods=['GET'])
 def job_logs(job_id=None):
+    job = get_job(job_id)
+    if job is None:
+        abort(404, description='Specified job_id don\'t exist.')
     filename = os.path.join(LOG_ROOT, job_id + '.txt')
     if not os.path.isfile(filename):
         remote_log_path = get_job_log_remote_path(job_id)
