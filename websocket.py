@@ -291,7 +291,7 @@ def create_ws(app):
                 if not os.path.isfile(filename):
                     remote_log_path = get_job_log_remote_path(log_id)
                     download_file_from_s3(cloud_connections.get(DEFAULT_PROVIDER)(None), config['bucket_s3'],
-                                          config.get('bucket_region', 'eu-west-1'), remote_log_path, filename)
+                                          config['bucket_region'], remote_log_path, filename)
                 if not os.path.isfile(filename):
                     socketio.emit('job', formatter.format_error('No log file yet.'), room=request.sid)
                     return
