@@ -7,6 +7,7 @@ from ghost_tools import get_aws_connection_data
 from settings import cloud_connections, DEFAULT_PROVIDER
 from ghost_log import log
 
+from .ec2 import get_ami_root_block_device_mapping
 from .image_builder import ImageBuilder
 
 
@@ -14,17 +15,18 @@ class AWSImageBuilder(ImageBuilder):
     """
     This class is designed to Build an AWS AMI using Packer
     """
+
     def __init__(self, app, job, db, log_file, config):
         ImageBuilder.__init__(self, app, job, db, log_file, config)
         self._connection_data = get_aws_connection_data(
-                self._app.get('assumed_account_id', ''),
-                self._app.get('assumed_role_name', ''),
-                self._app.get('assumed_region_name', '')
-                )
+            self._app.get('assumed_account_id', ''),
+            self._app.get('assumed_role_name', ''),
+            self._app.get('assumed_region_name', '')
+        )
         self._cloud_connection = cloud_connections.get(self._app.get('provider', DEFAULT_PROVIDER))(
-                self._log_file,
-                **self._connection_data
-                )
+            self._log_file,
+            **self._connection_data
+        )
 
     def _format_packer_from_app(self, provisioner_skip_bootstrap_option):
         instance_tags = {}
@@ -51,6 +53,21 @@ class AWSImageBuilder(ImageBuilder):
             'security_group_ids': self._app['environment_infos']['security_groups']
         }
 
+        if 'root_block_device' in self._app['environment_infos']:
+            root_vol = self._app['environment_infos']['root_block_device']
+            if root_vol.get('name'):
+                root_vol_path = root_vol['name']
+            else:
+                root_vol_path = get_ami_root_block_device_mapping(self._cloud_connection.get_connection(self._app['region'], ["ec2"]),
+                                                                  self._app['build_infos']['source_ami'])
+            block = {
+                'device_name': root_vol_path,
+                'volume_type': 'gp2',
+                'volume_size': root_vol.get('size', 20),
+                'delete_on_termination': True,
+            }
+            data['launch_block_device_mappings'].append(block)
+
         for opt_vol in self._app['environment_infos'].get('optional_volumes', []):
             block = {
                 'device_name': opt_vol['device_name'],
@@ -68,12 +85,15 @@ class AWSImageBuilder(ImageBuilder):
         return json.dumps(data, sort_keys=True, indent=4, separators=(',', ': '))
 
     def start_builder(self):
-        provisioner_bootstrap_option = self._job['options'][0] if 'options' in self._job and len(self._job['options']) > 0 else True
+        provisioner_bootstrap_option = (self._job['options'][0]
+                                        if 'options' in self._job and len(self._job['options']) > 0
+                                        else True)
         json_packer = self._format_packer_from_app(provisioner_bootstrap_option)
         json_packer_for_log = json.loads(json_packer)
         del json_packer_for_log['credentials']
         log("Generating a new AMI", self._log_file)
-        log("Packer options : %s" %json.dumps(json_packer_for_log, sort_keys=True, indent=4, separators=(',', ': ')), self._log_file)
+        log("Packer options : %s" % json.dumps(json_packer_for_log, sort_keys=True, indent=4, separators=(',', ': ')),
+            self._log_file)
         pack = Packer(json_packer, self._config, self._log_file, self._job['_id'])
         ami_id = pack.build_image(self._app['features'], self._get_buildimage_hooks())
         return ami_id, self._ami_name
