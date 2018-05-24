@@ -223,6 +223,30 @@ def post_insert_app(items):
 
 
 def _post_fetched_app(app, embed_last_deployment=False):
+    """
+    eve post-fetch app event hook to normalize special fields, mostly with models breaking changes
+
+    >>> app_logs = {}
+    >>> _post_fetched_app(app_logs)
+    >>> app_logs.get('log_notifications')
+    []
+
+    >>> app_logs = {'log_notifications': [
+    ...     'no-reply@fr.clara.net',
+    ...     'dummy@fr.clara.net',
+    ... ]}
+    >>> _post_fetched_app(app_logs)
+    >>> [sorted(l.items()) for l in app_logs.get('log_notifications')]
+    [[('email', 'no-reply@fr.clara.net'), ('job_states', ['*'])], [('email', 'dummy@fr.clara.net'), ('job_states', ['*'])]]
+
+    >>> app_logs = {'log_notifications': [
+    ...     {'email': 'no-reply@fr.clara.net', 'job_states': ['done']},
+    ...     'dummy@fr.clara.net',
+    ... ]}
+    >>> _post_fetched_app(app_logs)
+    >>> [sorted(l.items()) for l in app_logs.get('log_notifications')]
+    [[('email', 'no-reply@fr.clara.net'), ('job_states', ['done'])], [('email', 'dummy@fr.clara.net'), ('job_states', ['*'])]]
+    """
     # Retrieve each module's last deployment
     for module in app.get('modules', []):
         query = {
@@ -235,6 +259,18 @@ def _post_fetched_app(app, embed_last_deployment=False):
         deployment = get_deployments_db().find_one(query, sort=sort)
         if deployment:
             module['last_deployment'] = deployment if embed_last_deployment else deployment['_id']
+
+    # Normalize log_notifications
+    log_notifications = []
+    for notif in app.get('log_notifications', []):
+        if isinstance(notif, basestring):
+            log_notifications.append({
+                'email': notif,
+                'job_states': ['*']
+            })
+        else:
+            log_notifications.append(notif)
+    app['log_notifications'] = log_notifications
 
 
 def post_fetched_apps(response):
