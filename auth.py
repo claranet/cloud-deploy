@@ -3,6 +3,7 @@ try:
     import yaml
     from eve.auth import BasicAuth
     from notification import Notification, MAIL_LOG_FROM_DEFAULT
+    from command import format_html_mail_body
 except ImportError as e:
     print 'Needed pip modules not found. Please make sure your virtualenv is \
            activated and pip requirements well installed.'
@@ -47,7 +48,7 @@ def send_mail(conf, mail):
                     To=mail,
                     subject="test",
                     body_text="body",
-                    body_html="test")
+                    body_html=format_html_mail_body("","",""))
 
 
 def read_accounts(accounts):

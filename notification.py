@@ -15,6 +15,7 @@ import shutil
 import StringIO
 
 MAIL_LOG_FROM_DEFAULT = 'no-reply@morea.fr'
+TEMPLATES_DIR = 'email-templates'
 
 class Notification():
     _aws_access_key = None
