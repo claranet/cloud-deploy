@@ -36,8 +36,13 @@ LIGHT_TEMPLATE = '<span style="color: rgb{}">{}</span>'
 
 class HtmlLogFormatter():
     @staticmethod
-    def format_line(log_line, idx):
+    def format_line(log_line, index):
         """
+        Format a log line to HTML format.
+        :param log_line: str:
+        :param index: int:
+        :return: str:
+
         >>> HtmlLogFormatter.format_line('log line', 0)
         '<samp>log line</samp>'
 
@@ -49,13 +54,18 @@ class HtmlLogFormatter():
         """
         clean_line = ansi_to_html(log_line).replace('\r\n', '\n').replace('\r', '\n').replace('\n', '<br/>').replace('%!(PACKER_COMMA)', '&#44;')
         if LOG_LINE_REGEX.match(log_line) is not None:
-            return '%s<div class="panel panel-default"><em class="panel-heading"><span class="timeinterval"><i class="glyphicon glyphicon-time"></i></span><span class="command-title">%s</span></em><div class="panel-body">' % ('</div></div>' if idx > 0 else '', clean_line)
+            return '%s<div class="panel panel-default"><em class="panel-heading"><span class="timeinterval"><i class="glyphicon glyphicon-time"></i></span><span class="command-title">%s</span></em><div class="panel-body">' % ('</div></div>' if index > 0 else '', clean_line)
         else:
             return '<samp>%s</samp>' % clean_line
 
     @staticmethod
     def format_data(lines, last_pos):
         """
+        Format a websocket data to HTML format.
+        :param lines: array: An array containing log lines
+        :param last_pos: int: Last file position
+        :return: dict:
+
         >>> sorted(HtmlLogFormatter.format_data(["line1", "line2"], 10).items())
         [('html', 'line1line2'), ('last_pos', 10)]
 
@@ -67,6 +77,10 @@ class HtmlLogFormatter():
     @staticmethod
     def format_error(error_message):
         """
+        Format a websocket error to HTML format.
+        :param error_message: str:
+        :return: dict:
+
         >>> sorted(HtmlLogFormatter.format_error('Test error').items())
         [('html', 'Test error'), ('last_pos', 0)]
 
@@ -81,8 +95,13 @@ class HtmlLogFormatter():
 
 class RawLogFormatter():
     @staticmethod
-    def format_line(log_line, idx):
+    def format_line(log_line, index):
         """
+        Format a log line to RAW format.
+        :param log_line: str:
+        :param index: int:
+        :return: str:
+
         >>> RawLogFormatter.format_line('log line', 0)
         'log line'
 
@@ -97,6 +116,11 @@ class RawLogFormatter():
     @staticmethod
     def format_data(lines, last_pos):
         """
+        Format a websocket data to RAW format.
+        :param lines: array: An array containing log lines
+        :param last_pos: int: Last file position
+        :return: dict:
+
         >>> sorted(RawLogFormatter.format_data(["line1", "line2"], 10).items())
         [('last_pos', 10), ('raw', 'bGluZTFsaW5lMg==')]
 
@@ -108,6 +132,10 @@ class RawLogFormatter():
     @staticmethod
     def format_error(error_message):
         """
+        Format a websocket error to RAW format.
+        :param error_message: str:
+        :return: dict:
+
         >>> sorted(RawLogFormatter.format_error('Test error').items())
         [('error', 'Test error'), ('last_pos', 0), ('raw', None)]
 
@@ -219,7 +247,7 @@ def encode_line(line):
 def create_ws(app):
     socketio = SocketIO(app)
 
-    def follow(filename, last_pos, sid, formatter=RawLogFormatter):
+    def follow(filename, last_pos, sid, formatter):
         print 'SocketIO: starting loop for ' + sid
         try:
             hub = gevent.get_hub()
@@ -243,10 +271,10 @@ def create_ws(app):
                     eof = f.tell() == new_pos
 
                     # Decorate lines
-                    for idx, line in enumerate(readlines):
+                    for index, line in enumerate(readlines):
                         line = encode_line(line)
                         for sub_line in line.split("\\n"):
-                            lines.append(formatter.format_line(sub_line, idx))
+                            lines.append(formatter.format_line(sub_line, index))
 
                 # Send new data to WebSocket client, if any
                 if new_pos != last_pos:
