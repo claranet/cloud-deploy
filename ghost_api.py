@@ -312,6 +312,38 @@ def check_app_b64_scripts(updates):
                     raise GhostAPIInputError('Error decoding a script in blue/green hook: {h}'.format(h=script))
 
 
+def check_app_immutable_fields(updates, original):
+    """
+    Checks that immutable fields are not being updated. Returns error otherwise.
+    :param updates:
+
+    >>> app = {'env': 'test', 'name': 'app', 'role': 'webfront'}
+    >>> from copy import deepcopy
+    >>> app_updated = deepcopy(app)
+
+    >>> check_app_immutable_fields(app_updated, app)
+
+    >>> app_updated['name'] = 'newapp'
+    >>> check_app_immutable_fields(app_updated, app)
+    Traceback (most recent call last):
+    ...
+    GhostAPIInputError
+
+    >>> del app_updated['name']
+    >>> check_app_immutable_fields(app_updated, app)
+
+    >>> app_updated = deepcopy(app)
+    >>> app_updated['env'] = 'prod'
+    >>> check_app_immutable_fields(app_updated, app)
+    Traceback (most recent call last):
+    ...
+    GhostAPIInputError
+    """
+    for immutable_field in ['name', 'env', 'role']:
+        if immutable_field in updates and updates[immutable_field] != original[immutable_field]:
+            raise GhostAPIInputError('Updates are forbidden for field: "{field}"'.format(field=immutable_field))
+
+
 def ghost_api_app_data_input_validator(app):
     check_app_b64_scripts(app)
     check_app_module_path(app)
