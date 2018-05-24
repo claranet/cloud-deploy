@@ -14,6 +14,8 @@ from gzip import GzipFile
 import shutil
 import StringIO
 
+MAIL_LOG_FROM_DEFAULT = 'no-reply@morea.fr'
+
 class Notification():
     _aws_access_key = None
     _aws_secret_key = None

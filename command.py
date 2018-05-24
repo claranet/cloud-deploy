@@ -15,13 +15,12 @@ from ghost_aws import push_file_to_s3
 from ghost_log import log
 from ghost_tools import get_job_log_remote_path, GHOST_JOB_STATUSES_COLORS
 
-from notification import Notification
+from notification import Notification, MAIL_LOG_FROM_DEFAULT
 from settings import cloud_connections, DEFAULT_PROVIDER
 from settings import MONGO_DBNAME, MONGO_HOST, MONGO_PORT, REDIS_HOST
 
 LOG_ROOT = '/var/log/ghost'
 ROOT_PATH = os.path.dirname(os.path.realpath(__file__))
-MAIL_LOG_FROM_DEFAULT = 'no-reply@morea.fr'
 
 
 def format_html_mail_body(app, job, config):
