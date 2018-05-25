@@ -1,14 +1,25 @@
 {% extends "base_template.html.j2" %}
 
-{% block content %}
+{% block header %}
 
-<p><span style="font-size:28px"><span style="color:#000; font-family:arial,helvetica,sans-serif">Ghost job triggered by </span><strong>{{user}}</strong></span></p>
+<div class="">
+	<!--[if mso]><table width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td style="padding-right: 10px; padding-left: 10px; padding-top: 30px; padding-bottom: 5px;"><![endif]-->
+	<div style="line-height:120%;color:#555555;font-family:'Montserrat', 'Trebuchet MS', 'Lucida Grande', 'Lucida Sans Unicode', 'Lucida Sans', Tahoma, sans-serif; padding-right: 10px; padding-left: 10px; padding-top: 30px; padding-bottom: 5px;">	
+		<div style="font-size:12px;line-height:14px;font-family:Montserrat, 'Trebuchet MS', 'Lucida Grande', 'Lucida Sans Unicode', 'Lucida Sans', Tahoma, sans-serif;color:#555555;text-align:left;"><p style="margin: 0;font-size: 12px;line-height: 14px;text-align: center"><span style="font-size: 48px; line-height: 57px;"><strong><span style="line-height: 57px; font-size: 48px;">Ghost job triggered by </span><strong>{{user}}</strong></span></span></strong></span></p></div>	
+	</div>
+	<!--[if mso]></td></tr></table><![endif]-->
+</div>
+
+{% endblock %}
+
+
+{% block content %}
 
 <table border="0" cellpadding="1" cellspacing="1" style="font-family:arial,helvetica,sans-serif; height:231px; width:700px">
     <tbody>
         <tr>
             <td style="background-color:#858585"><span style="font-size:14px"><strong><span style="color:rgb(255, 255, 255)">Status</span></strong></span></td>
-            <td style="background-color:{status_color}"><strong><span style="color:rgb(255, 255, 255)">{{status}}</span></strong></td>
+            <td style="background-color:{{status_color}}"><strong><span style="color:rgb(255, 255, 255)">{{status}}</span></strong></td>
         </tr>
         <tr>
             <td style="background-color:#858585"><span style="font-size:14px"><strong><span style="color:rgb(255, 255, 255)">Application</span></strong></span></td>
