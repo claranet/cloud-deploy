@@ -18,6 +18,13 @@ ses_settings:
     mail_from: no-reply@cloud-deploy.io
     region: eu-west-1
 
+# One Time Secret used to send mail at user account creation
+# one_time_secret:
+    # api_key: XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+    # username: fr-cloudpublic-ghost-devops@fr.clara.net
+    # ttl: 172800 # Time To Live in seconds
+    # passphrase: cloud-deploy
+
 # AWS S3 bucket used to store all Ghost produced artefacts
 bucket_s3: ghost-packages-eu-west-1-123456
 bucket_region: eu-west-1

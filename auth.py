@@ -2,17 +2,19 @@ try:
     import bcrypt
     import yaml
     from eve.auth import BasicAuth
-    from notification import Notification, MAIL_LOG_FROM_DEFAULT
-    from command import format_html_mail_body
+    from notification import Notification, MAIL_LOG_FROM_DEFAULT, TEMPLATES_DIR
+    import requests
+    from jinja2 import Environment, FileSystemLoader
 except ImportError as e:
-    print 'Needed pip modules not found. Please make sure your virtualenv is \
-           activated and pip requirements well installed.'
+    print('Needed pip modules not found. Please make sure your virtualenv is \
+           activated and pip requirements well installed.')
     raise
 
 import argparse
 import os
 
 ACCOUNTS_FILE = 'accounts.yml'
+ONE_TIME_SECRET_URL = 'https://onetimesecret.com/api/v1/share'
 
 
 class BCryptAuth(BasicAuth):
@@ -29,26 +31,67 @@ class BCryptAuth(BasicAuth):
                 bcrypt.hashpw(password, stored_password) == stored_password)
 
 
-def load_ses_conf():
+def load_conf(user, password, email):
     rootdir = os.path.dirname(os.path.realpath(__file__))
-    conf_file_path = rootdir + "/config.yml"
+    conf_file_path = rootdir + '/config.yml'
     conf_file = open(conf_file_path, 'r')
     conf = yaml.load(conf_file)
-    ses_conf = conf['ses_settings']
 
-    return ses_conf
+    conf['account'] = {}
+    conf['account']['user'] = user
+    conf['account']['password'] = password
+    conf['account']['email'] = email
+
+    return conf
 
 
-def send_mail(conf, mail):
-    notif = Notification(aws_access_key=conf['aws_access_key'],
-                         aws_secret_key=conf['aws_secret_key'],
-                         region=conf['region'])
+def generate_one_time_secret(conf):
+    try:
+        ots_settings = conf['one_time_secret']
+        r = requests.post(ONE_TIME_SECRET_URL,
+                          auth=(ots_settings['username'],
+                                ots_settings['api_key']),
+                          params={'secret': conf['account']['password'],
+                                  'ttl': ots_settings['ttl'],
+                                  'passphrase': ots_settings['passphrase']})
+        if r.status_code != 200:
+            raise r.raise_for_status()
+        
+        ots_settings['secret_key'] = r.json()['secret_key']
+
+    except (requests.ConnectionError, requests.HTTPError) as e:
+        print("couldn't generate one time secret: " + str(e))
+
+
+def format_html(conf):
+    env = Environment(loader=FileSystemLoader(TEMPLATES_DIR))
+    template = env.get_template('account_creation_template.html.j2')
+    html_body = template.render(
+        username=conf['account']['user'],
+        secret_key=conf['one_time_secret']['secret_key'],
+        ghost_url=(conf['ghost_base_url'] if 'http' in conf['ghost_base_url']
+                   else 'https://' + conf['ghost_base_url']),
+        ttl=conf['one_time_secret']['ttl'] / 3600,
+        passphrase=conf['one_time_secret']['passphrase'],
+    )
+
+    return html_body
+
+
+def send_mail(conf):
+    ses_settings = conf['ses_settings']
+    notif = Notification(aws_access_key=ses_settings['aws_access_key'],
+                         aws_secret_key=ses_settings['aws_secret_key'],
+                         region=ses_settings['region'])
     
-    notif.send_mail(From=conf.get('mail_from', MAIL_LOG_FROM_DEFAULT),
-                    To=mail,
-                    subject="test",
-                    body_text="body",
-                    body_html=format_html_mail_body("","",""))
+    try:
+        notif.send_mail(From=ses_settings.get('mail_from', MAIL_LOG_FROM_DEFAULT),
+                        To=conf['account']['email'],
+                        subject="Cloud Deploy account created",
+                        body_html=format_html(conf))
+
+    except Exception as e:
+        print("couldn't send email confirmation: " + str(e))
 
 
 def read_accounts(accounts):
@@ -71,12 +114,6 @@ def parse_args():
 def main():
     args = parse_args()
 
-    # Send email
-    if args.email:
-        conf = load_ses_conf()
-        send_mail(conf, args.email)
-        exit(0)
-
     if args.user and args.password:
         # Load existing accounts
         accounts = {}
@@ -88,6 +125,12 @@ def main():
         # Save accounts
         with open(ACCOUNTS_FILE, 'w') as accounts_file:
             yaml.dump(accounts, accounts_file)
+
+        # Send email
+        if args.email:
+            conf = load_conf(args.user, args.password, args.email)
+            generate_one_time_secret(conf)
+            send_mail(conf)
 
 
 if __name__ == '__main__':
