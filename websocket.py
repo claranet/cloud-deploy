@@ -36,11 +36,11 @@ LIGHT_TEMPLATE = '<span style="color: rgb{}">{}</span>'
 
 class HtmlLogFormatter():
     @staticmethod
-    def format_line(log_line, index):
+    def format_line(log_line, line_number):
         """
         Format a log line to HTML format.
         :param log_line: str:
-        :param index: int:
+        :param line_number: int:
         :return: str:
 
         >>> HtmlLogFormatter.format_line('log line', 0)
@@ -54,7 +54,7 @@ class HtmlLogFormatter():
         """
         clean_line = ansi_to_html(log_line).replace('\r\n', '\n').replace('\r', '\n').replace('\n', '<br/>').replace('%!(PACKER_COMMA)', '&#44;')
         if LOG_LINE_REGEX.match(log_line) is not None:
-            return '%s<div class="panel panel-default"><em class="panel-heading"><span class="timeinterval"><i class="glyphicon glyphicon-time"></i></span><span class="command-title">%s</span></em><div class="panel-body">' % ('</div></div>' if index > 0 else '', clean_line)
+            return '%s<div class="panel panel-default"><em class="panel-heading"><span class="timeinterval"><i class="glyphicon glyphicon-time"></i></span><span class="command-title">%s</span></em><div class="panel-body">' % ('</div></div>' if line_number > 0 else '', clean_line)
         else:
             return '<samp>%s</samp>' % clean_line
 
@@ -95,11 +95,11 @@ class HtmlLogFormatter():
 
 class RawLogFormatter():
     @staticmethod
-    def format_line(log_line, index):
+    def format_line(log_line, line_number):
         """
         Format a log line to RAW format.
         :param log_line: str:
-        :param index: int:
+        :param line_number: int:
         :return: str:
 
         >>> RawLogFormatter.format_line('log line', 0)
@@ -271,10 +271,10 @@ def create_ws(app):
                     eof = f.tell() == new_pos
 
                     # Decorate lines
-                    for index, line in enumerate(readlines):
+                    for line_number, line in enumerate(readlines):
                         line = encode_line(line)
                         for sub_line in line.split("\\n"):
-                            lines.append(formatter.format_line(sub_line, index))
+                            lines.append(formatter.format_line(sub_line, line_number))
 
                 # Send new data to WebSocket client, if any
                 if new_pos != last_pos:
