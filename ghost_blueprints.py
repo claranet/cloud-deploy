@@ -4,12 +4,12 @@ import os
 from flask import abort, jsonify, send_from_directory
 from flask import Blueprint
 
-from ghost_tools import config, get_job_log_remote_path, CURRENT_REVISION
 from ghost_aws import download_file_from_s3
 from ghost_data import get_app, get_job
+from ghost_tools import config, get_job_log_remote_path, CURRENT_REVISION
 
-from settings import cloud_connections, DEFAULT_PROVIDER
 from command import LOG_ROOT
+from settings import cloud_connections, DEFAULT_PROVIDER
 
 commands_blueprint = Blueprint('commands_blueprint', 'commands')
 version_blueprint = Blueprint('version_blueprint', 'version')
@@ -92,7 +92,7 @@ def get_version():
 def job_logs(job_id=None):
     job = get_job(job_id)
     if job is None:
-        abort(404, description='Specified job_id don\'t exist.')
+        abort(404, description='Specified job_id doesn\'t exist.')
     filename = os.path.join(LOG_ROOT, job_id + '.txt')
     if not os.path.isfile(filename):
         remote_log_path = get_job_log_remote_path(job_id)
