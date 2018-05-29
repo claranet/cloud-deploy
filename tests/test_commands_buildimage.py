@@ -62,11 +62,12 @@ def test_buildimage_ami_error(awsimagebuilder_mock, lxdimagebuilder_mock, lxd_is
         assert status == "failed", "Status is {} and not failed: {}".format(status, message)
     worker.update_status = assert_failed
 
-    lxd_is_available_mock.return_value = True
+    lxd_is_available_mock.return_value = False
 
     # Launching command
     cmd = Buildimage(worker)
     cmd._update_app_ami = void
+    cmd._update_container_source = void
     cmd._aws_image_builder.start_builder.return_value = "ERROR", "ERROR"
     cmd.execute()
 
