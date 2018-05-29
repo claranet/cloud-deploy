@@ -6,8 +6,8 @@ try:
     import requests
     from jinja2 import Environment, FileSystemLoader
 except ImportError as e:
-    print('Needed pip modules not found. Please make sure your virtualenv is \
-           activated and pip requirements well installed.')
+    print('Needed pip modules not found. Please make sure your virtualenv is '
+          'activated and pip requirements well installed.')
     raise
 
 import argparse
@@ -36,11 +36,7 @@ def load_conf(user, password, email):
     conf_file_path = rootdir + '/config.yml'
     conf_file = open(conf_file_path, 'r')
     conf = yaml.load(conf_file)
-
-    conf['account'] = {}
-    conf['account']['user'] = user
-    conf['account']['password'] = password
-    conf['account']['email'] = email
+    conf['account'] = {'user': user, 'password': password, 'email': email}
 
     return conf
 
@@ -107,7 +103,8 @@ def parse_args():
     )
     parser.add_argument('user')
     parser.add_argument('password')
-    parser.add_argument('email')
+    parser.add_argument('-e', '--email', help='send confirmation email to '
+                        'the specified email address')
     return parser.parse_args()
 
 
