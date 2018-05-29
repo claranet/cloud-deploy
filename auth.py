@@ -2,7 +2,7 @@ try:
     import bcrypt
     import yaml
     from eve.auth import BasicAuth
-    from notification import Notification, MAIL_LOG_FROM_DEFAULT, TEMPLATES_DIR
+    from notification import MAIL_LOG_FROM_DEFAULT, Notification, TEMPLATES_DIR
     import requests
     from jinja2 import Environment, FileSystemLoader
 except ImportError as e:
@@ -18,8 +18,7 @@ ONE_TIME_SECRET_URL = 'https://onetimesecret.com/api/v1/share'
 
 
 class BCryptAuth(BasicAuth):
-    _accounts = {
-        'api': '$2a$12$HHKaH4pKaz1iiv2lmqQXmuF1./zWsFIDphpU9JXOFHRrBIkhbF.si'}
+    _accounts = {'api': '$2a$12$HHKaH4pKaz1iiv2lmqQXmuF1./zWsFIDphpU9JXOFHRrBIkhbF.si'}
 
     def __init__(self):
         read_accounts(self._accounts)
@@ -34,8 +33,8 @@ class BCryptAuth(BasicAuth):
 def load_conf(user, password, email):
     rootdir = os.path.dirname(os.path.realpath(__file__))
     conf_file_path = rootdir + '/config.yml'
-    conf_file = open(conf_file_path, 'r')
-    conf = yaml.load(conf_file)
+    with open(conf_file_path, 'r') as conf_file:
+        conf = yaml.load(conf_file)
     conf['account'] = {'user': user, 'password': password, 'email': email}
 
     return conf
