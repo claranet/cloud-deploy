@@ -182,7 +182,7 @@ class Command:
                         (self.job['status'] in log_notif.get('job_states', [])
                          or ''.join(log_notif.get('job_states', [])) == '*')):
                     notif.send_mail(From=ses_settings.get('mail_from', MAIL_LOG_FROM_DEFAULT), To=mail, subject=subject,
-                                    body_text=body, body_html=html_body, attachments=[log])
+                                    body_text=body, body_html=html_body, attachments=[log], sender_name='Cloud Deploy') 
                 pass
         except:
             self._init_log_file()

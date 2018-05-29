@@ -83,7 +83,8 @@ def send_mail(conf):
         notif.send_mail(From=ses_settings.get('mail_from', MAIL_LOG_FROM_DEFAULT),
                         To=conf['account']['email'],
                         subject="Your Cloud Deploy account has been created!",
-                        body_html=format_html(conf))
+                        body_html=format_html(conf),
+                        sender_name='Cloud Deploy')
 
     except Exception as e:
         print("couldn't send email confirmation: " + str(e))

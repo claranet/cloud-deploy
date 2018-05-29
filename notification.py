@@ -27,11 +27,11 @@ class Notification():
         self._aws_secret_key = aws_secret_key
         self._region = region
 
-    def send_mail(self, From="", To="", subject="", body_text="", body_html="", attachments=None):
+    def send_mail(self, From="", To="", subject="", body_text="", body_html="", attachments=None, sender_name=''):
         attachments = attachments or []
         msg = MIMEMultipart()
         msg['Subject'] = subject
-        msg['From'] = From
+        msg['From'] = From if sender_name == '' else '{sender} <{email_addr}>'.format(sender=sender_name, email_addr=From)
         msg['To'] = To
         msg.preamble = 'Multipart message.\n'
         # the message body
