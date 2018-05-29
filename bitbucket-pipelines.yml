@@ -1,10 +1,10 @@
 # You can use a Docker image from Docker Hub or your own container
 # registry for your build environment.
 image:
-  name: moreaghost/morea-ghost:2017.11.30-5
-  username: $DOCKER_HUB_LOGIN
-  password: $DOCKER_HUB_PASSWORD
-  email: ghost-devops@morea.fr
+  name: 845945358136.dkr.ecr.eu-west-1.amazonaws.com/cloud-deploy-ci:2018-05-14
+  aws:
+    access-key: $AWS_ACCESS_KEY_ID
+    secret-key: $AWS_SECRET_ACCESS_KEY
 
 pipelines:
   default:

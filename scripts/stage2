@@ -27,22 +27,46 @@ COLOR_RED='\033[00;31m'
 COLOR_GREEN='\033[00;32m'
 COLOR_YELLOW='\033[00;33m'
 
+function exit_deployment() {
+    echo "Removing Manifest file" >> $LOGFILE
+    rm -f /tmp/MANIFEST
+    echo "Unlocking $LOCK..."
+    rmdir $LOCK
+    echo "Unlocked $LOCK"
+    trap - EXIT
+    if [ -z $1 ]; then
+        exit -1
+    else
+        exit $1
+    fi
+}
+
+set -e
+trap exit_deployment EXIT TERM INT
+
 INSTANCE_ID=$(curl http://169.254.169.254/latest/meta-data/instance-id)
 EC2_AVAIL_ZONE=$(curl -s http://169.254.169.254/latest/meta-data/placement/availability-zone)
-EC2_REGION="`echo \"$EC2_AVAIL_ZONE\" | sed -e 's:\([0-9][0-9]*\)[a-z]*\$:\\1:'`"
+EC2_REGION="$(echo "$EC2_AVAIL_ZONE" | sed 's/[a-z]$//')"
 
+retry=1
 while [ -z "$APP" ] || [ -z "$ENV" ] || [ -z "$ROLE" ] ; do
-  # TODO: Exit with error after N retry
-  echo "Waiting 1s for (app, env, role) tags to be set..."
-  sleep 1
+    echo "Waiting 2s for (app, env, role) tags to be set... (attempt ${retry}/150)"
+    sleep 2
 
-  TAGS=$($AWS_BIN ec2 describe-tags --filters "Name=resource-id,Values=$INSTANCE_ID" --region "$EC2_REGION")
+    TAGS=$($AWS_BIN ec2 describe-tags --filters "Name=resource-id,Values=$INSTANCE_ID" --region "$EC2_REGION")
 
-  NAME=$(echo $TAGS | jq -r ".Tags[] | { key: .Key, value: .Value } | [.] | from_entries" | jq -r '.["Name"] | select (.!=null)')
-  APP=$(echo $TAGS | jq -r ".Tags[] | { key: .Key, value: .Value } | [.] | from_entries" | jq -r '.["app"] | select (.!=null)')
-  ENV=$(echo $TAGS | jq -r ".Tags[] | { key: .Key, value: .Value } | [.] | from_entries" | jq -r '.["env"] | select (.!=null)')
-  ROLE=$(echo $TAGS | jq -r ".Tags[] | { key: .Key, value: .Value } | [.] | from_entries" | jq -r '.["role"] | select (.!=null)')
-  COLOR=$(echo $TAGS | jq -r ".Tags[] | { key: .Key, value: .Value } | [.] | from_entries" | jq -r '.["color"] | select (.!=null)')
+    NAME=$(echo $TAGS | jq -r ".Tags[] | { key: .Key, value: .Value } | [.] | from_entries" | jq -r '.["Name"] | select (.!=null)')
+    APP=$(echo $TAGS | jq -r ".Tags[] | { key: .Key, value: .Value } | [.] | from_entries" | jq -r '.["app"] | select (.!=null)')
+    ENV=$(echo $TAGS | jq -r ".Tags[] | { key: .Key, value: .Value } | [.] | from_entries" | jq -r '.["env"] | select (.!=null)')
+    ROLE=$(echo $TAGS | jq -r ".Tags[] | { key: .Key, value: .Value } | [.] | from_entries" | jq -r '.["role"] | select (.!=null)')
+    COLOR=$(echo $TAGS | jq -r ".Tags[] | { key: .Key, value: .Value } | [.] | from_entries" | jq -r '.["color"] | select (.!=null)')
+
+    ((retry++))
+    if [ $retry -gt 150 ] ; then
+        # After 5min, no more hope for tags...
+        echo "[ERROR] Cannot retrieve instance tags, exiting."
+        exit_deployment -1
+    fi
 done
 
 if [ ! -d /ghost ]; then
@@ -50,11 +74,11 @@ if [ ! -d /ghost ]; then
 fi
 
 if [ ! -d /var/lib/ghost ]; then
-    mkdir /var/lib/ghost
+    mkdir -p /var/lib/ghost
 fi
 
 if [ ! -d ${LOGDIR} ]; then
-    mkdir ${LOGDIR}
+    mkdir -p ${LOGDIR}
 fi
 
 if [ ! -z "$COLOR" ]; then
@@ -64,6 +88,8 @@ else
 fi
 
 IP=$(curl -s http://169.254.169.254/latest/meta-data/local-ipv4)
+
+set +e
 
 function zabbix_hostname() {
     # Update Zabbix agent Hostname
@@ -225,15 +251,6 @@ function find_module() {
             echo $MODULE_NAME $MODULE_FILE $TARGET
         fi
     done
-}
-
-function exit_deployment() {
-    echo "Removing Manifest file" >> $LOGFILE
-    rm -f /tmp/MANIFEST
-    echo "Unlocking $LOCK..."
-    rmdir $LOCK
-    echo "Unlocked $LOCK"
-    exit $1
 }
 
 function download_and_run_lifecycle_hook_script() {

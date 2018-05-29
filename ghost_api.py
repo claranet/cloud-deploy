@@ -31,6 +31,33 @@ class GhostAPIInputError(Exception):
         self.message = message
 
 
+def field_has_changed(new, old):
+    """
+    Returns true if the field has changed.
+    Considers a None value equivalent to an empty string.
+
+    >>> field_has_changed(1, 1)
+    False
+    >>> field_has_changed("a", "a")
+    False
+    >>> field_has_changed("", None)
+    False
+    >>> field_has_changed([], [])
+    False
+    >>> field_has_changed(0, None)
+    True
+    >>> field_has_changed("", [])
+    True
+    >>> field_has_changed("", False)
+    True
+    >>> field_has_changed({}, None)
+    True
+    """
+    equivalents = [None, ""]
+    return (new != old and
+            (not new in equivalents or not old in equivalents))
+
+
 def ghost_api_bluegreen_is_enabled(app):
     """
     Return if the Ghost app has Blue/green option enabled
@@ -285,6 +312,38 @@ def check_app_b64_scripts(updates):
                     raise GhostAPIInputError('Error decoding a script in blue/green hook: {h}'.format(h=script))
 
 
+def check_app_immutable_fields(updates, original):
+    """
+    Checks that immutable fields are not being updated. Returns error otherwise.
+    :param updates:
+
+    >>> app = {'env': 'test', 'name': 'app', 'role': 'webfront'}
+    >>> from copy import deepcopy
+    >>> app_updated = deepcopy(app)
+
+    >>> check_app_immutable_fields(app_updated, app)
+
+    >>> app_updated['name'] = 'newapp'
+    >>> check_app_immutable_fields(app_updated, app)
+    Traceback (most recent call last):
+    ...
+    GhostAPIInputError
+
+    >>> del app_updated['name']
+    >>> check_app_immutable_fields(app_updated, app)
+
+    >>> app_updated = deepcopy(app)
+    >>> app_updated['env'] = 'prod'
+    >>> check_app_immutable_fields(app_updated, app)
+    Traceback (most recent call last):
+    ...
+    GhostAPIInputError
+    """
+    for immutable_field in ['name', 'env', 'role']:
+        if immutable_field in updates and updates[immutable_field] != original[immutable_field]:
+            raise GhostAPIInputError('Updates are forbidden for field: "{field}"'.format(field=immutable_field))
+
+
 def ghost_api_app_data_input_validator(app):
     check_app_b64_scripts(app)
     check_app_module_path(app)
@@ -307,7 +366,8 @@ def initialize_app_modules(updates, original):
                     if 'initialized' in fields:
                         fields.remove('initialized')
                     for prop in fields:
-                        if not updated_module.get(prop, None) == original_module.get(prop, None):
+                        if field_has_changed(updated_module.get(prop, None),
+                                             original_module.get(prop, None)):
                             updated_module['initialized'] = False
                             modules_edited = True
                             # At least one of the module's prop have changed, can exit loop
@@ -377,7 +437,8 @@ def initialize_app_features(updates, original):
                 # Compare all fields
                 fields = set(original_feature.keys() + updated_feature.keys())
                 for prop in fields:
-                    if not updated_feature.get(prop, None) == original_feature.get(prop, None):
+                    if field_has_changed(updated_feature.get(prop, None),
+                                         original_feature.get(prop, None)):
                         # Feature field is different
                         return True
     return False
@@ -415,11 +476,12 @@ def check_field_diff(updates, original, object_name):
     False
 
     >>> up_ob = deepcopy(base_ob)
-    >>> del base_ob['b']['i']
-    >>> check_field_diff(up_ob, base_ob, 'a')
+    >>> base_copy_ob = deepcopy(base_ob)
+    >>> del base_copy_ob['b']['i']
+    >>> check_field_diff(up_ob, base_copy_ob, 'a')
     False
 
-    >>> check_field_diff(up_ob, base_ob, 'b')
+    >>> check_field_diff(up_ob, base_copy_ob, 'b')
     True
 
     >>> up_ob = deepcopy(base_ob)
@@ -432,11 +494,37 @@ def check_field_diff(updates, original, object_name):
     >>> up_ob['a']['z'] = 2
     >>> check_field_diff(up_ob, base_ob, 'a')
     True
+
+    >>> up_ob = deepcopy(base_ob)
+    >>> base_copy_ob = deepcopy(base_ob)
+    >>> base_copy_ob['a']['x'] = ""
+    >>> del up_ob['a']['x']
+    >>> check_field_diff(up_ob, base_copy_ob, 'a')
+    False
+
+    >>> up_ob = deepcopy(base_ob)
+    >>> base_copy_ob['a']['x'] = ""
+    >>> up_ob['a']['x'] = []
+    >>> check_field_diff(up_ob, base_copy_ob, 'a')
+    True
+
+    >>> up_ob = deepcopy(base_ob)
+    >>> base_copy_ob['a']['x'] = 0
+    >>> up_ob['a']['x'] = {}
+    >>> check_field_diff(up_ob, base_copy_ob, 'a')
+    True
+
+    >>> up_ob = deepcopy(base_ob)
+    >>> base_copy_ob['a']['x'] = None
+    >>> up_ob['a']['x'] = ""
+    >>> check_field_diff(up_ob, base_copy_ob, 'a')
+    False
     """
     if object_name in updates and object_name in original:
         fields = set(updates[object_name].keys())
         for prop in fields:
-            if not updates[object_name].get(prop, None) == original[object_name].get(prop, None):
+            if field_has_changed(updates[object_name].get(prop, None),
+                                 original[object_name].get(prop, None)):
                 # Field is different
                 return True
     return False

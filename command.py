@@ -280,7 +280,10 @@ class Command:
         self.job = self._db.jobs.find_one({'_id': ObjectId(job_id)})
         self.app = self._db.apps.find_one({'_id': ObjectId(self.job['app_id'])})
         self._init_log_file()
-        self._db.jobs.update({'_id': self.job['_id']}, {'$set': {'log_id': self._worker_job.id}})
+        self._db.jobs.update({'_id': self.job['_id']}, {'$set': {
+            'log_id': self._worker_job.id,
+            'started_at': datetime.utcnow(),
+        }})
         klass_name = self.job['command'].title()
         mod = __import__('commands.' + self.job['command'], fromlist=[klass_name, 'RELATED_APP_FIELDS'])
         command = getattr(mod, klass_name)(self)
