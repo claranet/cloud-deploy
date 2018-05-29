@@ -72,7 +72,7 @@ def get_version():
     """
     Return the current release revision, date and name
 
-    >>> from web_ui.tests import create_test_app_context; create_test_app_context()
+    >>> from tests.helpers import create_test_app_context; create_test_app_context()
     >>> import json
 
     >>> sorted(json.loads(get_version().data))
