@@ -14,7 +14,7 @@ from gzip import GzipFile
 import shutil
 import StringIO
 
-MAIL_LOG_FROM_DEFAULT = 'no-reply@morea.fr'
+MAIL_LOG_FROM_DEFAULT = 'no-reply@cloud-deploy.io'
 TEMPLATES_DIR = 'email-templates'
 
 class Notification():
