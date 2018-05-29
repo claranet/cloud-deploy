@@ -52,5 +52,5 @@ class Createinstance():
             self._worker.update_status("done", message="Creating Instance OK: [{0}]\n\nPublic IP: {1}".format(self._app['name'], str(instance.ip_address)))
             log(_green("STATE: End"), self._log_file)
         except Exception as e:
-            self._worker.update_status("failed", message="Creating Instance Failed: [{0}]\n{1}".format(self._app['name'], str(e)))
+            self._worker.update_status("failed", message="Creating Instance Failed: [{0}]\n{1}".format(self._app['name'], e))
             log(_red("STATE: END"), self._log_file)

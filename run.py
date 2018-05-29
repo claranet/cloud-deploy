@@ -21,12 +21,12 @@ from models.jobs import jobs, CANCELLABLE_JOB_STATUSES, DELETABLE_JOB_STATUSES
 from models.deployments import deployments
 
 from ghost_tools import get_rq_name_from_app, boolify
-from ghost_blueprints import commands_blueprint
+from ghost_blueprints import commands_blueprint, version_blueprint
 from ghost_api import ghost_api_bluegreen_is_enabled, ghost_api_enable_green_app
 from ghost_api import ghost_api_delete_alter_ego_app, ghost_api_clean_bluegreen_app
 from ghost_api import initialize_app_modules, check_and_set_app_fields_state
 from ghost_api import ghost_api_app_data_input_validator, GhostAPIInputError
-from ghost_api import ALL_COMMAND_FIELDS
+from ghost_api import ALL_COMMAND_FIELDS, check_app_immutable_fields
 from ghost_lxd import lxd_blueprint
 from libs.blue_green import BLUE_GREEN_COMMANDS, get_blue_green_from_app, ghost_has_blue_green_enabled
 from ghost_aws import normalize_application_tags
@@ -106,9 +106,18 @@ def pre_update_app(updates, original):
     True
     >>> updates['modules'][2]['initialized']
     False
+
+    Modified name, env or role stop the update:
+    >>> updates = deepcopy(base_original)
+    >>> updates['name'] = "app2"
+    >>>
+    Traceback (most recent call last):
+    ...
+    GhostAPIInputError
     """
 
     try:
+        check_app_immutable_fields(updates, original)
         ghost_api_app_data_input_validator(updates)
     except GhostAPIInputError as error:
         abort(422, description=error.message)
@@ -175,6 +184,8 @@ def pre_insert_app(items):
     name = app.get('name')
     role = app.get('role')
     env = app.get('env')
+    app['modules'] = app.get('modules', [])
+    app['environment_infos'] = app.get('environment_infos', {})
     app['environment_infos']['instance_tags'] = normalize_application_tags(app, app)
 
     try:
@@ -187,11 +198,12 @@ def pre_insert_app(items):
     if blue_green and blue_green.get('color', None):
         if get_apps_db().find_one(
                 {'$and': [{'name': name}, {'role': role}, {'env': env}, {'blue_green.color': blue_green['color']}]}):
-            abort(422, description="An app already exist with same name, role, env and color. Please change one these fields.")
+            abort(409, description="An app already exist with same name, role, env and color. Please change one these "
+                                   "fields.")
     else:
         if get_apps_db().find_one({'$and': [{'name': name}, {'role': role}, {'env': env}]}):
-            abort(422, description="An app already exist with same name, role and env. Please change one these fields.")
-    for mod in app.get('modules'):
+            abort(409, description="An app already exist with same name, role and env. Please change one these fields.")
+    for mod in app.get('modules', []):
         mod['initialized'] = False
 
     app['pending_changes'] = [{
@@ -207,7 +219,7 @@ def post_insert_app(items):
     app = items[0]
     if ghost_api_bluegreen_is_enabled(app):
         if not ghost_api_enable_green_app(get_apps_db(), app, request.authorization.username):
-            abort(422, "Problem occured creating/enabling the green app")
+            abort(422, "Problem occurred when creating/enabling the green app")
 
 
 def _post_fetched_app(app, embed_last_deployment=False):
@@ -310,7 +322,8 @@ rq_settings.update({"REDIS_HOST": REDIS_HOST})
 ghost.config.from_mapping(rq_settings)
 ghost.register_blueprint(rq_dashboard.blueprint, url_prefix='/rq')
 ghost.register_blueprint(swagger, url_prefix='/docs/api')
-# Map /docs/api to eve_swagger as it is hardcoded to <url_prefix>/api-docs (cf. https://github.com/nicolaiarocci/eve-swagger/issues/33)
+# Map /docs/api to eve_swagger as it is hardcoded to <url_prefix>/api-docs
+# (cf. https://github.com/nicolaiarocci/eve-swagger/issues/33)
 ghost.add_url_rule('/docs/api', 'eve_swagger.index')
 
 # Register eve hooks
@@ -333,6 +346,7 @@ ghost.ghost_redis_connection = Redis(host=REDIS_HOST)
 # Register non-mongodb resources as plain Flask blueprints (they won't appear in /docs)
 ghost.register_blueprint(commands_blueprint)
 ghost.register_blueprint(lxd_blueprint)
+ghost.register_blueprint(version_blueprint)
 
 if __name__ == '__main__':
     ghost.run(host='0.0.0.0')

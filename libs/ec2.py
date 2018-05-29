@@ -145,6 +145,7 @@ def get_ec2_instance_status(cloud_connection, aws_region, instance_ids):
     )['InstanceStatuses']
     return ec2_status
 
+
 def test_ec2_instance_status(cloud_connection, aws_region, instance_ids, instance_state):
     """ Get EC2 instance status
 
@@ -163,13 +164,14 @@ def test_ec2_instance_status(cloud_connection, aws_region, instance_ids, instanc
             return False
     return True
 
+
 def create_block_device(cloud_connection, region, app, rbd={}):
-    """ Create all block device
+    """ Create a block device
 
         :param cloud_connection: The app Cloud Connection object
-        :param aws_region  string: The region to use
-        :param app string: The ghost "app" object
-        :param rbd list: device mapping configuration
+        :param region: string: The region to use
+        :param app: string: The ghost "app" object
+        :param rbd: dict: device mapping configuration
         :return the EC2 instance service object blockdevicemapping
     """
     conn = cloud_connection.get_connection(region, ["ec2"])
@@ -186,6 +188,9 @@ def create_block_device(cloud_connection, region, app, rbd={}):
     if not rbd.get('size'):
         rbd['size'] = 20
     dev_sda1.size = rbd['size']
+    dev_sda1.delete_on_termination = rbd.get('delete_on_termination', True)
+    if rbd.get('iops'):
+        dev_sda1.iops = rbd['iops']
     bdm = cloud_connection.launch_service(
         ["ec2", "blockdevicemapping", "BlockDeviceMapping"],
         connection=conn
@@ -196,11 +201,36 @@ def create_block_device(cloud_connection, region, app, rbd={}):
     return bdm
 
 
+def get_block_devices_mapping(cloud_connection, app):
+    """ Create all block device from the app
+
+        :param cloud_connection: The app Cloud Connection object
+        :param app: string: The ghost "app" object
+        :return the EC2 instance service object list of blockdevicemapping
+    """
+    devices = []
+    if 'root_block_device' in app['environment_infos']:
+        devices.append(create_block_device(cloud_connection, app['region'], app, app['environment_infos']['root_block_device']))
+    else:
+        devices.append(create_block_device(cloud_connection, app['region'], app, {}))
+    for opt_vol in app['environment_infos'].get('optional_volumes', []):
+        block = {
+            'name': opt_vol['device_name'],
+            'type': opt_vol['volume_type'],
+            'size': opt_vol['volume_size'],
+            'delete_on_termination': True
+        }
+        if 'iops' in opt_vol:
+            block['iops'] = opt_vol['iops']
+        devices.append(create_block_device(cloud_connection, app['region'], app, block))
+    return devices
+
+
 def get_ami_root_block_device_mapping(conn, ami_id):
     """ Get ami root_block_device to mount
 
-        :param cloud connection object
-        :param ami-id string: the ami id of application 
+        :param conn: cloud connection object
+        :param ami_id: ami-id string: the ami id of application
         :return root block device path 
     """
     try:
@@ -261,17 +291,22 @@ def create_ec2_instance(cloud_connection, app, app_color, config, private_ip_add
                 ["ec2", "networkinterface", "NetworkInterfaceCollection"],
                 interface
                 )
-        if 'root_block_device' in app['environment_infos']:
-            bdm = create_block_device(cloud_connection, app['region'], app, app['environment_infos']['root_block_device'])
-        else:
-            bdm = create_block_device(cloud_connection, app['region'], app, {})
+        devices = get_block_devices_mapping(cloud_connection, app)
+        bdm = cloud_connection.launch_service(
+            ["ec2", "blockdevicemapping", "BlockDeviceMapping"],
+            connection=conn
+        )
+        for device in devices:
+            for path, sda in device.iteritems():
+                bdm[path] = sda
         reservation = conn.run_instances(
             image_id=app['ami'],
             key_name=app['environment_infos']['key_name'],
             network_interfaces=interfaces,
             instance_type=app['instance_type'],
             instance_profile_name=app['environment_infos']['instance_profile'],
-            user_data=userdata, block_device_map=bdm
+            user_data=userdata,
+            block_device_map=bdm,
         )
 
         # Getting instance metadata

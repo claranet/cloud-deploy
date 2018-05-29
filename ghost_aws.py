@@ -4,7 +4,7 @@ import time
 import yaml
 from botocore.exceptions import ClientError
 
-from libs.ec2 import create_block_device, generate_userdata
+from libs.ec2 import get_block_devices_mapping, generate_userdata
 from libs.autoscaling import get_autoscaling_group_object
 from libs.blue_green import get_blue_green_from_app
 
@@ -133,10 +133,6 @@ def create_launch_config(cloud_connection, app, userdata, ami_id):
 
     launchconfig_name = _format_launchconfig_name(app, app_color)
     conn_as = cloud_connection.get_connection(app['region'], ["ec2", "autoscale"])
-    if 'root_block_device' in app['environment_infos']:
-        bdm = create_block_device(cloud_connection, app['region'], app, app['environment_infos']['root_block_device'])
-    else:
-        bdm = create_block_device(cloud_connection, app['region'], app)
     instance_monitoring = app.get('instance_monitoring', False)
     launch_config = cloud_connection.launch_service(
         ["ec2", "autoscale", "LaunchConfiguration"],
@@ -145,7 +141,7 @@ def create_launch_config(cloud_connection, app, userdata, ami_id):
         image_id=ami_id, key_name=app['environment_infos']['key_name'],
         security_groups=app['environment_infos']['security_groups'],
         user_data=userdata, instance_type=app['instance_type'], kernel_id=None,
-        ramdisk_id=None, block_device_mappings=[bdm],
+        ramdisk_id=None, block_device_mappings=get_block_devices_mapping(cloud_connection, app),
         instance_monitoring=instance_monitoring, spot_price=None,
         instance_profile_name=app['environment_infos']['instance_profile'], ebs_optimized=False,
         associate_public_ip_address=app['environment_infos'].get('public_ip_address', True),

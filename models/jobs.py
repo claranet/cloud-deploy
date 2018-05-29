@@ -21,6 +21,10 @@ jobs_schema = {
         'type': 'string',
         'readonly': True
     },
+    'started_at': {
+        'type': 'datetime',
+        'readonly': True
+    },
     'message': {
         'type': 'string',
         'readonly': True
