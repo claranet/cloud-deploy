@@ -82,7 +82,7 @@ def send_mail(conf):
     try:
         notif.send_mail(From=ses_settings.get('mail_from', MAIL_LOG_FROM_DEFAULT),
                         To=conf['account']['email'],
-                        subject="Cloud Deploy account created",
+                        subject="Your Cloud Deploy account has been created!",
                         body_html=format_html(conf))
 
     except Exception as e:
