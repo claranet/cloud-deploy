@@ -2,7 +2,7 @@ import argparse
 
 from datetime import datetime
 
-from flask import abort, request
+from flask import abort, g, request
 from flask_bootstrap import Bootstrap
 
 from eve import Eve
@@ -25,7 +25,7 @@ from models.jobs import jobs, CANCELLABLE_JOB_STATUSES, DELETABLE_JOB_STATUSES
 from models.deployments import deployments
 
 from ghost_tools import get_rq_name_from_app, boolify
-from ghost_blueprints import commands_blueprint, job_logs_blueprint, version_blueprint, websocket_token_blueprint
+from ghost_blueprints import commands_blueprint, job_logs_blueprint, version_blueprint, websocket_token_blueprint, webhook_blueprint
 from ghost_api import ghost_api_bluegreen_is_enabled, ghost_api_enable_green_app
 from ghost_api import ghost_api_delete_alter_ego_app, ghost_api_clean_bluegreen_app
 from ghost_api import initialize_app_modules, check_and_set_app_fields_state
@@ -267,7 +267,8 @@ def pre_insert_job(items):
     if job['command'] == 'build_image':
         if not ('build_infos' in app.viewkeys()):
             abort(422, description="Impossible to build image, build infos fields are empty")
-    job['user'] = request.authorization.username
+    job['user'] = request.authorization.username if request.authorization else getattr(g, 'user', None)
+    del g.user
     job['status'] = 'init'
     job['message'] = 'Initializing job'
 
@@ -368,6 +369,7 @@ ghost.register_blueprint(lxd_blueprint)
 ghost.register_blueprint(version_blueprint)
 ghost.register_blueprint(job_logs_blueprint)
 ghost.register_blueprint(websocket_token_blueprint)
+ghost.register_blueprint(webhook_blueprint)
 
 # Register Websocket server
 ws = create_ws(ghost)
@@ -378,7 +380,6 @@ def parse_args():
     )
     parser.add_argument('-d', '--debug', action='store_true')
     return parser.parse_args()
-
 
 if __name__ == '__main__':
     args = parse_args()
