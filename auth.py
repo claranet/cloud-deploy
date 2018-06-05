@@ -37,6 +37,15 @@ def load_conf(user, password, email):
         conf = yaml.load(conf_file)
     conf['account'] = {'user': user, 'password': password, 'email': email}
 
+    if not conf.get('one_time_secret') or not conf['one_time_secret'].get('api_key'):
+        print('can\'t send email confirmation, config isn\'t complete: "one_time_secret[\'api_key\']" is missing')
+        exit(-1)
+
+    # Set One Time Secret config defaults
+    conf['one_time_secret']['username'] = conf['one_time_secret'].get('username', 'fr-cloudpublic-ghost-devops@fr.clara.net')
+    conf['one_time_secret']['ttl'] = conf['one_time_secret'].get('ttl', 172800)
+    conf['one_time_secret']['passphrase'] = conf['one_time_secret'].get('passphrase', 'cloud-deploy')
+
     return conf
 
 
@@ -56,6 +65,7 @@ def generate_one_time_secret(conf):
 
     except (requests.ConnectionError, requests.HTTPError) as e:
         print("couldn't generate one time secret: " + str(e))
+        exit(-1)
 
 
 def format_html(conf):
@@ -103,8 +113,7 @@ def parse_args():
     )
     parser.add_argument('user')
     parser.add_argument('password')
-    parser.add_argument('-e', '--email', help='send confirmation email to '
-                        'the specified email address')
+    parser.add_argument('-e', '--email', help='send confirmation email to the specified email address')
     return parser.parse_args()
 
 
