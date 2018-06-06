@@ -15,4 +15,7 @@ fi
 tox --version
 cp config.yml.sample config.yml
 cp web_ui/config.yml.sample web_ui/config.yml
+pip install urllib3==1.22 --user
+echo >> tox.ini
+echo "sitepackages=True" >> tox.ini
 tox
