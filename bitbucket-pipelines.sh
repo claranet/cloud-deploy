@@ -14,4 +14,7 @@ else
 fi
 tox --version
 cp config.yml.sample config.yml
+pip install urllib3==1.22 --user
+echo >> tox.ini
+echo "sitepackages=True" >> tox.ini
 tox

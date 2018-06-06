@@ -79,3 +79,4 @@ jobs = {
 CANCELLABLE_JOB_STATUSES = ['init']
 DELETABLE_JOB_STATUSES = ['cancelled', 'done', 'failed', 'aborted']
 JOB_STATUSES = ['started'] + CANCELLABLE_JOB_STATUSES + DELETABLE_JOB_STATUSES
+LOG_NOTIFICATION_JOB_STATUSES = ['done', 'failed', 'aborted']
