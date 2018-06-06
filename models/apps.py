@@ -1,7 +1,8 @@
 import instance_role
+from jobs import LOG_NOTIFICATION_JOB_STATUSES
 import resources
-import volumes
 import tags
+import volumes
 
 apps_schema = {
     'name': {
@@ -167,9 +168,23 @@ apps_schema = {
     },
     'log_notifications': {
         'type': 'list',
+        'coerce': lambda l: [{'email': v, 'job_states': ['*']} if isinstance(v, basestring) else v for v in l],
         'schema': {
-            'type': 'string',
-            'regex': '^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$'
+            'type': 'dict',
+            'schema': {
+                'email': {
+                    'type': 'string',
+                    'regex': '^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$'
+                },
+                'job_states': {
+                    'type': 'list',
+                    'schema': {
+                        'type': 'string',
+                        'allowed': LOG_NOTIFICATION_JOB_STATUSES + ['*'],
+                        'default': '*'
+                    }
+                }
+            }
         }
     },
     'autoscale': {

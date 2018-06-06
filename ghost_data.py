@@ -26,3 +26,12 @@ def get_app(app_id):
     app = db.apps.find_one({'_id': ObjectId(app_id)})
     close_db_connection()
     return app
+
+
+def get_job(job_id):
+    if not job_id:
+        return None
+    db = get_db_connection()
+    job = db.jobs.find_one({'_id': ObjectId(job_id)})
+    close_db_connection()
+    return job

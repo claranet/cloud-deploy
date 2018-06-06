@@ -8,26 +8,13 @@ import doctest
 import importlib
 
 modules = [
-    "command",
-    "commands.buildimage",
-    "commands.deploy",
-    "commands.executescript",
-    "commands.redeploy",
-    "ghost_api",
-    "ghost_aws",
-    "ghost_blueprints",
-    "ghost_tools",
-    "libs.blue_green",
-    "libs.deploy",
-    "libs.git_helper",
-    "libs.host_deployment_manager",
-    "libs.image_builder",
-    "libs.image_builder_aws",
-    "libs.provisioner",
-    "libs.provisioner_salt",
-    "libs.provisioner_ansible",
-    "run",
-    "run_rqworkers",
+    "web_ui.app",
+    "web_ui.aws_data",
+    "web_ui.forms.form_aws_helper",
+    "web_ui.forms.form_helper",
+    "web_ui.ghost_client",
+    "web_ui.websocket",
+    "web_ui.ui_helpers"
 ]
 
 runner = doctest.DocTestRunner(verbose=True)

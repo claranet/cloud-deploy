@@ -21,7 +21,7 @@ from models.jobs import jobs, CANCELLABLE_JOB_STATUSES, DELETABLE_JOB_STATUSES
 from models.deployments import deployments
 
 from ghost_tools import get_rq_name_from_app, boolify
-from ghost_blueprints import commands_blueprint, version_blueprint
+from ghost_blueprints import commands_blueprint, job_logs_blueprint, version_blueprint
 from ghost_api import ghost_api_bluegreen_is_enabled, ghost_api_enable_green_app
 from ghost_api import ghost_api_delete_alter_ego_app, ghost_api_clean_bluegreen_app
 from ghost_api import initialize_app_modules, check_and_set_app_fields_state
@@ -223,6 +223,30 @@ def post_insert_app(items):
 
 
 def _post_fetched_app(app, embed_last_deployment=False):
+    """
+    eve post-fetch app event hook to normalize special fields, mostly with models breaking changes
+
+    >>> app_logs = {}
+    >>> _post_fetched_app(app_logs)
+    >>> app_logs.get('log_notifications')
+    []
+
+    >>> app_logs = {'log_notifications': [
+    ...     'no-reply@fr.clara.net',
+    ...     'dummy@fr.clara.net',
+    ... ]}
+    >>> _post_fetched_app(app_logs)
+    >>> [sorted(l.items()) for l in app_logs.get('log_notifications')]
+    [[('email', 'no-reply@fr.clara.net'), ('job_states', ['*'])], [('email', 'dummy@fr.clara.net'), ('job_states', ['*'])]]
+
+    >>> app_logs = {'log_notifications': [
+    ...     {'email': 'no-reply@fr.clara.net', 'job_states': ['done']},
+    ...     'dummy@fr.clara.net',
+    ... ]}
+    >>> _post_fetched_app(app_logs)
+    >>> [sorted(l.items()) for l in app_logs.get('log_notifications')]
+    [[('email', 'no-reply@fr.clara.net'), ('job_states', ['done'])], [('email', 'dummy@fr.clara.net'), ('job_states', ['*'])]]
+    """
     # Retrieve each module's last deployment
     for module in app.get('modules', []):
         query = {
@@ -235,6 +259,18 @@ def _post_fetched_app(app, embed_last_deployment=False):
         deployment = get_deployments_db().find_one(query, sort=sort)
         if deployment:
             module['last_deployment'] = deployment if embed_last_deployment else deployment['_id']
+
+    # Normalize log_notifications
+    log_notifications = []
+    for notif in app.get('log_notifications', []):
+        if isinstance(notif, basestring):
+            log_notifications.append({
+                'email': notif,
+                'job_states': ['*']
+            })
+        else:
+            log_notifications.append(notif)
+    app['log_notifications'] = log_notifications
 
 
 def post_fetched_apps(response):
@@ -347,6 +383,7 @@ ghost.ghost_redis_connection = Redis(host=REDIS_HOST)
 ghost.register_blueprint(commands_blueprint)
 ghost.register_blueprint(lxd_blueprint)
 ghost.register_blueprint(version_blueprint)
+ghost.register_blueprint(job_logs_blueprint)
 
 if __name__ == '__main__':
     ghost.run(host='0.0.0.0')

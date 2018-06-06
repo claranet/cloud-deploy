@@ -1,13 +1,20 @@
 import pkgutil
+import os
 
-from flask import jsonify
+from flask import abort, jsonify, send_from_directory
 from flask import Blueprint
 
-from ghost_tools import config, CURRENT_REVISION
-from ghost_data import get_app
+from ghost_aws import download_file_from_s3
+from ghost_data import get_app, get_job
+from ghost_tools import config, get_job_log_remote_path, CURRENT_REVISION
+
+from command import LOG_ROOT
+from settings import cloud_connections, DEFAULT_PROVIDER
 
 commands_blueprint = Blueprint('commands_blueprint', 'commands')
 version_blueprint = Blueprint('version_blueprint', 'version')
+job_logs_blueprint = Blueprint('job_logs_blueprint', 'job_logs')
+
 
 def _get_commands(app_context=None):
     commands = []
@@ -72,10 +79,26 @@ def get_version():
     """
     Return the current release revision, date and name
 
-    >>> from web_ui.tests import create_test_app_context; create_test_app_context()
+    >>> from tests.helpers import create_test_app_context; create_test_app_context()
     >>> import json
 
     >>> sorted(json.loads(get_version().data))
     [u'current_revision', u'current_revision_date', u'current_revision_name']
     """
     return jsonify(CURRENT_REVISION)
+
+
+@job_logs_blueprint.route('/jobs/<regex("[a-f0-9]{24}"):job_id>/logs', methods=['GET'])
+def job_logs(job_id=None):
+    job = get_job(job_id)
+    if job is None:
+        abort(404, description='Specified job_id doesn\'t exist.')
+    filename = os.path.join(LOG_ROOT, job_id + '.txt')
+    if not os.path.isfile(filename):
+        remote_log_path = get_job_log_remote_path(job_id)
+        download_file_from_s3(cloud_connections.get(DEFAULT_PROVIDER)(None), config['bucket_s3'],
+                              config['bucket_region'], remote_log_path, filename)
+    if not os.path.isfile(filename):
+        abort(404, description='No log file yet.')
+
+    return send_from_directory(LOG_ROOT, job_id + '.txt', as_attachment=True)
