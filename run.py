@@ -267,8 +267,7 @@ def pre_insert_job(items):
     if job['command'] == 'build_image':
         if not ('build_infos' in app.viewkeys()):
             abort(422, description="Impossible to build image, build infos fields are empty")
-    job['user'] = request.authorization.username if request.authorization else getattr(g, 'user', None)
-    del g.user
+    job['user'] = request.authorization.username if request.authorization else g.get('user', None)
     job['status'] = 'init'
     job['message'] = 'Initializing job'
 
