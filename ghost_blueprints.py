@@ -11,8 +11,7 @@ from flask import send_from_directory
 from hashlib import sha512
 from command import LOG_ROOT
 from ghost_aws import download_file_from_s3
-from ghost_data import get_app
-from ghost_data import get_job
+from ghost_data import get_app, get_job
 from ghost_tools import config, CURRENT_REVISION
 from ghost_tools import get_job_log_remote_path
 from settings import cloud_connections, DEFAULT_PROVIDER
