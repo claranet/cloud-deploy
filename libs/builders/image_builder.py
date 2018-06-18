@@ -106,8 +106,8 @@ class ImageBuilder:
     def _get_packer_provisionners(self):
 
         provisioners = get_provisioners(self._config, self._log_file, self.unique, self._job["options"], self._app)
-        formatted_env_vars = self._format_ghost_env_vars() + ['%s=%s' % (envvar['var_key'], envvar['var_value']) for
-                                                              envvar in self._app['env_vars']]
+        formatted_env_vars = self._format_ghost_env_vars() + ['%s=%s' % (envvar['var_key'], envvar.get('var_value', ''))
+                                                              for envvar in self._app['env_vars']]
 
         hooks = self._get_buildimage_hooks()
         ret = [{
