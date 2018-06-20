@@ -14,7 +14,6 @@ import os.path
 from settings import cloud_connections, DEFAULT_PROVIDER
 from ghost_tools import config, get_job_log_remote_path
 from ghost_aws import download_file_from_s3
-from ui_helpers import check_log_id
 
 LOG_ROOT = '/var/log/ghost'
 
@@ -146,6 +145,21 @@ class RawLogFormatter():
         [('error', None), ('last_pos', 0), ('raw', None)]
         """
         return {'raw': None, 'error': error_message, 'last_pos': 0}
+
+
+def check_log_id(log_id):
+    """
+    Check log_id syntax
+    :param log_id: string
+    :return SRE_Match object
+
+    >>> check_log_id("5ab13d4673c5787c54a75e1d") is not None
+    True
+
+    >>> check_log_id("/etc/test") is not None
+    False
+    """
+    return re.match("^[a-f0-9]{24}$", log_id)
 
 
 def ansi_to_html(text):

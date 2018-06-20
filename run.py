@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from flask import abort, request
+from flask import Flask, abort, request
 from flask_bootstrap import Bootstrap
 
 from eve import Eve
@@ -15,7 +15,8 @@ from redis import Redis
 from rq import Queue, cancel_job
 import rq_dashboard
 
-from settings import __dict__ as eve_settings, REDIS_HOST, RQ_JOB_TIMEOUT
+from settings import __dict__ as eve_settings, API_BIND_HOST, REDIS_HOST, RQ_JOB_TIMEOUT, WS_BIND_HOST, WS_BIND_PORT
+from threading import Thread
 from command import Command
 from models.apps import apps
 from models.jobs import jobs, CANCELLABLE_JOB_STATUSES, DELETABLE_JOB_STATUSES
@@ -32,6 +33,8 @@ from ghost_lxd import lxd_blueprint
 from libs.blue_green import BLUE_GREEN_COMMANDS, get_blue_green_from_app, ghost_has_blue_green_enabled
 from ghost_aws import normalize_application_tags
 from ghost_data import normalize_app
+
+from websocket import create_ws
 
 
 def get_apps_db():
@@ -344,5 +347,14 @@ ghost.register_blueprint(lxd_blueprint)
 ghost.register_blueprint(version_blueprint)
 ghost.register_blueprint(job_logs_blueprint)
 
+ws_app = Flask(__name__)
+ws = create_ws(ws_app)
+
+def run_ws():
+    ws.run(ws_app, host=WS_BIND_HOST, port=WS_BIND_PORT, log_output=True)
+
 if __name__ == '__main__':
-    ghost.run(host='0.0.0.0')
+    thread = Thread(target=run_ws)
+    thread.daemon = True
+    thread.start();
+    ghost.run(host=API_BIND_HOST)

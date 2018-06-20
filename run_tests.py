@@ -27,9 +27,10 @@ modules = [
     "libs.provisioners",
     "libs.provisioners.provisioner_salt",
     "libs.provisioners.provisioner_ansible",
+    "pypacker",
     "run",
     "run_rqworkers",
-    "pypacker"
+    "websocket",
 ]
 
 runner = doctest.DocTestRunner(verbose=True)
