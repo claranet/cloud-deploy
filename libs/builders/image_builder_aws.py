@@ -49,7 +49,8 @@ class AWSImageBuilder(ImageBuilder):
             'launch_block_device_mappings': [],
             'iam_instance_profile': self._app['environment_infos']['instance_profile'],
             'tags': instance_tags,
-            'security_group_ids': self._app['environment_infos']['security_groups']
+            'security_group_ids': self._app['environment_infos']['security_groups'],
+            "ssh_pty": True,
         }
 
         if 'root_block_device' in self._app['environment_infos']:
@@ -84,22 +85,23 @@ class AWSImageBuilder(ImageBuilder):
         return data
 
     def _build_packer_json(self):
-        packer = {}
+        packer_config = {}
         builders = [self._format_packer_from_app()]
-        packer['builders'] = builders
-        packer['provisioners'] = self._get_packer_provisionners
-        log('packer file path: {0}'.format(self.packer_file_path), self._log_file)
-        stream = file(self._packer_file_path_aws, 'w')
-        log("Writing Packer definition to: {0}".format(self.packer_file_path), self._log_file)
-        json.dump(packer, stream, sort_keys=True, indent=4, separators=(',', ': '))
-        return packer
+        packer_config['builders'] = builders
+        packer_config['provisioners'] = self._get_packer_provisionners
+        return json.dumps(packer_config, sort_keys=True, indent=4, separators=(',', ': '))
 
     def start_builder(self):
-        packer = self._build_packer_json()
+        packer_config = self._build_packer_json()
         credentials = self._cloud_connection.get_credentials()
         log("Generating a new AMI", self._log_file)
-        log("Packer options : %s" % json.dumps(packer, sort_keys=True, indent=4, separators=(',', ': ')),
-            self._log_file)
+
+        log('Packer file path: {0}'.format(self.packer_file_path), self._log_file)
+        with open(self._packer_file_path_aws, 'w') as stream:
+            log("Writing Packer definition to: {0}".format(self.packer_file_path), self._log_file)
+            stream.write(packer_config)
+
+        log("Packer options: {0}".format(packer_config), self._log_file)
         pack = Packer(credentials, self._log_file)
         ami_id = pack.build_image(self._packer_file_path_aws)
         return ami_id, self._ami_name
