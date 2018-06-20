@@ -250,10 +250,11 @@ deployment_package_retention:
 #deployment_package_exclude_git_metadata: false
 
 # Option to specify the aws partition name
-# This option allow you to deploy and use ghost on AWS China, AWS GovCloud and any other partition
+# This option is a list, allowing to deploy and use ghost on Global AWS (aws), AWS China (aws-cn) or AWS GovCloud (aws-us-gov)
 aws_partitions:
   - aws
 #  - aws-cn
+#  - aws-us-gov
 
 # One Time Secret config used to send mail at user account creation
 # one_time_secret:
