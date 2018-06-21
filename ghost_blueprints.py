@@ -113,6 +113,7 @@ def job_logs(job_id=None):
 
 
 @websocket_token_blueprint.route('/jobs/<regex("[a-f0-9]{24}"):job_id>/websocket_token', methods=['GET'])
+@requires_auth('')
 def websocket_token(job_id=None):
     job = get_job(job_id)
     if job is None:
