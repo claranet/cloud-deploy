@@ -80,8 +80,8 @@ features_provisioners:
 
 # Need to be set when used with docker-compose (docker link use DNS to map containers)
 api_base_url: http://localhost:5000
-api_bind_host: 0.0.0.0
-ws_bind_host: 0.0.0.0
+#api_bind_host: '0.0.0.0'
+#ws_bind_host: '0.0.0.0'
 ws_bind_port: 5002
 redis_host: localhost
 mongo_host: localhost
