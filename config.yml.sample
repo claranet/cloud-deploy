@@ -30,6 +30,8 @@ bucket_region: eu-west-1
 #    endpoint: https://lxd.ghost.morea.fr:8443
 ## Use True to prevent destruction of containers after a buildimage or a deployment
 #    debug: False
+## Endpoint timeout in seconds
+#    timeout: 10
 
 # Configuration manager options
 features_provisioners:

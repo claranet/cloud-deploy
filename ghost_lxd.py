@@ -10,7 +10,7 @@ lxd_blueprint = Blueprint('lxd_blueprint', __name__)
 
 @lxd_blueprint.route('/lxd/status', methods=['GET'])
 def lxd_status():
-    return jsonify([("status", str(lxd_is_available(config)))])
+    return jsonify({"status": lxd_is_available(config)})
 
 
 @lxd_blueprint.route('/lxd/images', methods=['GET'])

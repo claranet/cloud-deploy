@@ -12,9 +12,10 @@ def list_lxd_images(config=None):
         container_config = config.get('container', {'endpoint': config.get('endpoint',
                                                                            DEFAULT_LXD_REMOTE_ENDPOINT)})
         if container_config.get('endpoint', 'localhost') == "localhost":
-            lxd = LXDClient()
+            lxd = LXDClient(timeout=container_config.get('timeout', 10))
         else:
-            lxd = LXDClient(endpoint=container_config.get('endpoint', DEFAULT_LXD_REMOTE_ENDPOINT), verify=True)
+            lxd = LXDClient(endpoint=container_config.get('endpoint', DEFAULT_LXD_REMOTE_ENDPOINT), verify=True,
+                            timeout=container_config.get('timeout', 10))
         images = lxd.images.all()
 
         return [('', "Don't use containers")] + \
@@ -31,11 +32,13 @@ def lxd_is_available(config=None):
     """
     config = config or {}
     try:
-        lxd_local = LXDClient()
         container_config = config.get('container', {'endpoint': config.get('endpoint',
                                                                            DEFAULT_LXD_REMOTE_ENDPOINT)})
+        lxd_local = LXDClient(timeout=container_config.get('timeout', 10))
+
         if container_config.get('endpoint', 'localhost') != "localhost":
-            lxd = LXDClient(endpoint=container_config.get('endpoint', DEFAULT_LXD_REMOTE_ENDPOINT), verify=True)
+            lxd = LXDClient(endpoint=container_config.get('endpoint', DEFAULT_LXD_REMOTE_ENDPOINT), verify=True,
+                            timeout=container_config.get('timeout', 10))
     except:
         return False
     return True
