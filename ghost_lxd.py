@@ -1,3 +1,4 @@
+from eve.auth import requires_auth
 from flask import Blueprint
 from flask import jsonify
 
@@ -9,6 +10,7 @@ lxd_blueprint = Blueprint('lxd_blueprint', __name__)
 
 
 @lxd_blueprint.route('/lxd/status', methods=['GET'])
+@requires_auth('')
 def lxd_status():
   try:
     return jsonify({'status': lxd_is_available(config)})
@@ -17,6 +19,7 @@ def lxd_status():
 
 
 @lxd_blueprint.route('/lxd/images', methods=['GET'])
+@requires_auth('')
 def list_images():
   try:
     return jsonify(list_lxd_images(config))
