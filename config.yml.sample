@@ -22,6 +22,10 @@ ses_settings:
 bucket_s3: ghost-packages-eu-west-1-123456
 bucket_region: eu-west-1
 
+# Enable LXD container manager
+#
+#lxd_container_enabled: false
+#
 # Container options
 # * Set a LXD endpoint to download LXC image from another registry (https://lxd.ghost.morea.fr:8443 by default)
 #
