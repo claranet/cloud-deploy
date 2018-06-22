@@ -9,9 +9,8 @@ from tests.helpers import LOG_FILE, mocked_logger, get_test_application, get_tes
 @mock.patch('libs.builders.image_builder.log', new=mocked_logger)
 @mock.patch('ghost_tools.log', new=mocked_logger)
 @mock.patch('libs.builders.image_builder_lxd.time.sleep', new=void)  # Avoid waiting
-@mock.patch('libs.builders.image_builder_lxd.gcall')
 @mock.patch('libs.builders.image_builder_lxd.LXDClient')
-def test_build_image(lxd_client_cls, gcall_lxd):
+def test_build_image(lxd_client_cls):
     # Application context
     app = get_test_application()
     job = {
@@ -112,21 +111,19 @@ def test_build_image(lxd_client_cls, gcall_lxd):
         },
     }
     lxd_profiles_mock.create.assert_called_once_with(container_name, devices=expected_devices_config)
-
-    gcall_lxd.assert_called_once_with(
-        "lxc publish {container_name} local: --alias={job_id} description={container_name} --force".format(
-            job_id="test_job_id", container_name=container_name),
-        "Publish Container as image", LOG_FILE
-    )
+    lxd_containers_mock.snapshots.create(container_name, stateful=False, wait=True)
+    snapshot = lxd_containers_mock.snapshots.get(container_name)
+    lxd_containers_mock.snapshots.get(container_name)
+    snapshot.publish(wait=True)
+    snapshot.delete(wait=True)
 
 
 @mock.patch('libs.builders.image_builder_lxd.log', new=mocked_logger)
 @mock.patch('libs.builders.image_builder.log', new=mocked_logger)
 @mock.patch('ghost_tools.log', new=mocked_logger)
 @mock.patch('libs.builders.image_builder_lxd.time.sleep', new=void)  # Avoid waiting
-@mock.patch('libs.builders.image_builder_lxd.gcall')
 @mock.patch('libs.builders.image_builder_lxd.LXDClient')
-def test_purge(lxd_client_cls, gcall_lxd):
+def test_purge(lxd_client_cls):
     # Application context
     app = get_test_application()
 
