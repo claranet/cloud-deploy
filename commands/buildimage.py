@@ -65,7 +65,6 @@ class Buildimage():
 
     def _update_app_ami(self, ami_id, ami_name):
         self._db.apps.update({'_id': self._app['_id']}, {'$set': {'ami': ami_id, 'build_infos.ami_name': ami_name}})
-        self._worker.update_status("done")
 
     def _update_container_source(self, container):
         self._db.apps.update({'_id': self._app['_id']}, {'$set': {'build_infos.container_image': str(container)}})
@@ -74,8 +73,7 @@ class Buildimage():
         try:
             ami_id, ami_name = self._aws_image_builder.start_builder()
             if ami_id is "ERROR":
-                log("ERROR: ami_id not found. The packer process had maybe fail.", self._log_file)
-                self._worker.update_status("failed")
+                self._worker.update_status("failed", message="ERROR: ami_id not found. The packer process had maybe fail.")
                 return
         except (GalaxyNoMatchingRolesException, GalaxyBadRequirementPathException, GCallException) as e:
             self._worker.update_status("aborted", message=str(e))
@@ -96,8 +94,7 @@ class Buildimage():
                 self._lxd_image_builder.start_builder()
             except Exception as e:
                 traceback.print_exc(self._log_file)
-                log("An error occured during container process ({})".format(e), self._log_file)
-                self._worker.update_status("failed")
+                self._worker.update_status("failed", message="An error occured during container process ({})".format(e))
                 return
             log("Update app in MongoDB to update container source image", self._log_file)
             self._update_container_source(self._job["id"])
@@ -108,10 +105,10 @@ class Buildimage():
                                                            self._log_file):
                     self._worker.update_status("done", message=self._get_notification_message_done(ami_id))
                 else:
-                    self._worker.update_status("failed")
-            except:
+                    self._worker.update_status("failed", message="Autoscaling group update failed")
+            except Exception as e:
                 traceback.print_exc(self._log_file)
-                self._worker.update_status("failed")
+                self._worker.update_status("failed", message="Autoscaling group update failed: {0}".format(e))
         else:
             log("No autoscaling group name was set", self._log_file)
-            self._worker.update_status("done")
+            self._worker.update_status("done", message=self._get_notification_message_done(ami_id))
