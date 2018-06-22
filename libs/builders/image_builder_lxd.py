@@ -118,8 +118,9 @@ class LXDImageBuilder(ImageBuilder):
     def _delete_containers_profile(self):
         """ Delete the container profile
         """
-        gcall("lxc profile delete {container_name}".format(container_name=self._container_name),
-              "Delete container profile", self._log_file)
+        profile = self._client.profiles.get(self._container_name)
+        profile.delete
+        log("lxc profile delete {container_name}".format(container_name=self._container_name), self._log_file)
 
     def _publish_container(self):
         """ Publish container as image on registry local after build image
