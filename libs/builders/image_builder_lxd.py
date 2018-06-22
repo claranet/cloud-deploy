@@ -126,8 +126,13 @@ class LXDImageBuilder(ImageBuilder):
         """ Publish container as image on registry local after build image
         """
         self._clean_lxd_images()
-        gcall("lxc publish {container_name} local: --alias={job_id} description={container_name} --force".format(
-            job_id=self._job['_id'], container_name=self._container_name), "Publish Container as image", self._log_file)
+        log("Created snapshot of container {container_name}".format(container_name=self._container_name), self._log_file)
+        self.container.snapshots.create(self._container_name, stateful=False, wait=True)
+        snapshot = self.container.snapshots.get(self._container_name)
+        log("Publishing snapshot of container {container_name}".format(container_name=self._container_name), self._log_file)
+        snapshot.publish(wait=True)
+        log("Delete snapshot of container {container_name}".format(container_name=self._container_name), self._log_file)
+        snapshot.delete(wait=True)
 
     def _clean_lxd_images(self):
         """ Clean lxd image in local registry as aws ami with ami_retention parameter
