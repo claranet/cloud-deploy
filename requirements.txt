@@ -59,7 +59,7 @@ psutil==5.4.5
 py==1.5.3                 # via tox
 pyasn1==0.4.2
 pycparser==2.18           # via cffi
-pylxd==2.2.6
+pylxd==2.2.7
 pymongo==3.6.1
 pynacl==1.2.1             # via paramiko
 pyopenssl==18.0.0
