@@ -1,7 +1,6 @@
 import re
 
 from ghost_data import get_app
-from mock import MagicMock
 
 
 class WebhookParser(object):
@@ -62,6 +61,7 @@ class WebhookParser(object):
         """
         Check one of repo urls matches configuration repo url.
 
+        >>> from mock import MagicMock
         >>> app = {'name': 'name', 'env': 'env', 'role': 'role', 'modules': [{'name': 'wordpress', 'git_repo': 'git@github.com:test/test.git', 'scope': 'code', 'path': '/var/www'}]}
         >>> urls = ['git@github.com:test/test.git']
         >>> test_parser = WebhookParser(None)
@@ -88,6 +88,7 @@ class WebhookParser(object):
         """
         Check event matches configuration events list.
 
+        >>> from mock import MagicMock
         >>> test_parser = WebhookParser(None)
         >>> test_parser.get_event = MagicMock(return_value='push')
 
@@ -103,6 +104,7 @@ class WebhookParser(object):
         """
         Check revision matches configuration revision regex.
 
+        >>> from mock import MagicMock
         >>> test_parser = WebhookParser(None)
         >>> test_parser.get_revision = MagicMock(return_value='testing_env')
 
