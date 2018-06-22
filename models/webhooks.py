@@ -11,7 +11,7 @@ webhook_schema = {
         }
     },
     'module': {
-        'type': 'string',
+        'type': 'string'
     },
     'rev': {
         'type': 'string',
@@ -36,20 +36,10 @@ webhook_schema = {
         },
     },
     'secret_token': {
-        'type': 'string',
+        'type': 'string'
     },
-    'deployment_strategy': {
-        'type': 'string',
-        'required': True,
-        'allowed': ['serial', 'parallel']
-    },
-    'safe_deployment_strategy': {
-        'type': 'string',
-        'allowed': ['1by1', '1/3', '25%', '50%']
-    },
-    'instance_type': {
-        'type': 'string',
-        'default': 't2.micro'
+    'options': {
+        'type': 'dict'
     },
 }
 

@@ -43,15 +43,18 @@ class WebhookHandler:
         job_conf = {
             'app_id': self.get_attribute('app_id'),
         }
-        if 'safe_deployment_strategy' in self.get_conf():
-            job_conf['safe_deployment_strategy'] = self.get_attribute('safe_deployment_strategy')
         if 'module' in self.get_conf():
             job_conf['modules'] = [{
                 'name': self.get_attribute('module'),
                 'rev': str(self._parser.get_revision())
             }]
-        if 'instance_type' in self.get_conf():
-            job_conf['instance_type'] = self.get_attribute('instance_type')
+        if 'options' in self.get_conf():
+            job_conf['options'] = []
+            for key, val in self.get_attribute('options').items():
+                if key == 'instance_type':
+                    job_conf['instance_type'] = val
+                elif val:
+                    job_conf['options'].append(val)
 
         return job_conf
 
