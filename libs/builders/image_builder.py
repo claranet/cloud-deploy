@@ -37,7 +37,7 @@ class ImageBuilder:
                                         name=self._app['name'],
                                         date=time.strftime("%Y%m%d-%H%M%S"),
                                         color='.%s' % self._color if self._color else '')
-        self.unique = str(job['id'])
+        self.unique = str(job['_id'])
         self.packer_file_path = PACKER_JSON_PATH + self.unique
         if not os.path.exists(self.packer_file_path):
             os.makedirs(self.packer_file_path)
