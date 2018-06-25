@@ -63,8 +63,8 @@ class LXDImageBuilder(ImageBuilder):
                     "server": self._container_config['endpoint']
                 }
         elif self._job["command"] == u"deploy":
-            fingerprint = self._app['build_infos']["container_image"]
-            config['source'] = {"type": "image", "fingerprint": fingerprint}
+            alias = self._app['build_infos']["container_image"]
+            config['source'] = {"type": "image", "alias": alias}
         else:
             raise Exception("Incompatible command given to LXD Builder")
 
