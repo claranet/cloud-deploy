@@ -23,7 +23,7 @@ def test_build_image_ansible(packer_run_packer_cmd, gcall, provisioner_get_local
     # Application context
     app = get_test_application()
     job = {
-        "_id": "test_job_id",
+        "_id": "012345678901234567890123",
         "id": "012345678901234567890123",
         "app_id": "test_app_id",
         "command": "buildimage",
@@ -156,7 +156,7 @@ def test_build_image_ansible_debug(packer_run_packer_cmd, gcall, provisioner_get
     # Application context
     app = get_test_application()
     job = {
-        "_id": "test_job_id",
+        "_id": "012345678901234567890123",
         "id": "012345678901234567890123",
         "app_id": "test_app_id",
         "command": "buildimage",
@@ -304,7 +304,7 @@ def test_build_image_root_block_device(packer_run_packer_cmd, provisioner_get_lo
         }
     )
     job = {
-        "_id": "test_job_id",
+        "_id": "012345678901234567890123",
         "id": "012345678901234567890123",
         "app_id": "test_app_id",
         "command": "buildimage",

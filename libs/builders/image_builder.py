@@ -59,7 +59,7 @@ class ImageBuilder:
                 'name': 'AppName', 'env': 'prod', 'role': 'webfront', 'region': 'eu-west-1',\
                 'lifecycle_hooks': {'pre_buildimage': u'', 'post_buildimage': b64encode_utf8(u'echo Custom post-buildimage script')}\
             }
-        >>> job = {"id" : "012345678901234567890123"}
+        >>> job = {"_id" : "012345678901234567890123"}
         >>> log_file = StringIO()
         >>> _config = None
         >>> _db = None
