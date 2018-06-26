@@ -13,6 +13,7 @@ except ImportError as e:
 import argparse
 import os
 
+
 ACCOUNTS_FILE = 'accounts.yml'
 ONE_TIME_SECRET_URL = 'https://onetimesecret.com/api/v1/share'
 
@@ -22,12 +23,28 @@ class BCryptAuth(BasicAuth):
 
     def __init__(self):
         read_accounts(self._accounts)
+        self.watch_updates()
 
     def check_auth(self, username, password, allowed_roles, resource, method):
         stored_password = self._accounts.get(username, None)
 
         return (stored_password and
                 bcrypt.hashpw(password, stored_password) == stored_password)
+
+    def reload_accounts(self, event=None):
+        try:
+            read_accounts(self._accounts)
+        except Exception as e:
+            print("couldn't reload accounts: " + str(e))
+
+    def watch_updates(self):
+        import pyinotify
+
+        wm = pyinotify.WatchManager()
+        notifier = pyinotify.ThreadedNotifier(wm, default_proc_fun=self.reload_accounts)
+        notifier.setDaemon(True)
+        notifier.start()
+        wm.add_watch(ACCOUNTS_FILE, pyinotify.IN_CLOSE_WRITE)
 
 
 def load_conf(user, password, email):
