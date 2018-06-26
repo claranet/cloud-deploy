@@ -129,7 +129,7 @@ def get_websocket_token(job_id):
 
 websocket_token.hash_seed = "%032x" % random.getrandbits(2048)
 
-@webhook_blueprint.route('/webhook/<webhook_id>', methods=['POST'])
+@webhook_blueprint.route('/webhooks/<webhook_id>/invoke', methods=['POST'])
 def handle_webhook(webhook_id):
     """
     Checks webhook's validity and runs desired commands.
