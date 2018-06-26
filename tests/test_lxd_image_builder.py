@@ -111,11 +111,7 @@ def test_build_image(lxd_client_cls):
         },
     }
     lxd_profiles_mock.create.assert_called_once_with(container_name, devices=expected_devices_config)
-    lxd_containers_mock.snapshots.create(container_name, stateful=False, wait=True)
-    snapshot = lxd_containers_mock.snapshots.get(container_name)
-    lxd_containers_mock.snapshots.get(container_name)
-    snapshot.publish(wait=True)
-    snapshot.delete(wait=True)
+    lxd_container_mock.publish.assert_called_once_with(wait=True)
 
 
 @mock.patch('libs.builders.image_builder_lxd.log', new=mocked_logger)
