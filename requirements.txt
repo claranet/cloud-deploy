@@ -58,7 +58,6 @@ psutil==5.4.6
 py==1.5.4                 # via tox
 pyasn1==0.4.3
 pycparser==2.18           # via cffi
-pyinotify==0.9.6
 pylxd==2.2.7
 pymongo==3.7.1
 pynacl==1.2.1             # via paramiko

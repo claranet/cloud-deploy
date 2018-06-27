@@ -1,5 +1,6 @@
 try:
     import bcrypt
+    import gevent
     import yaml
     from eve.auth import BasicAuth
     from notification import MAIL_LOG_FROM_DEFAULT, Notification, TEMPLATES_DIR
@@ -12,6 +13,7 @@ except ImportError as e:
 
 import argparse
 import os
+from threading import Thread
 
 
 ACCOUNTS_FILE = 'accounts.yml'
@@ -23,7 +25,9 @@ class BCryptAuth(BasicAuth):
 
     def __init__(self):
         read_accounts(self._accounts)
-        self.watch_updates()
+        t_accounts_watcher = Thread(target=self.watch_updates, name='accounts_watcher')
+        t_accounts_watcher.setDaemon(True)
+        t_accounts_watcher.start()
 
     def check_auth(self, username, password, allowed_roles, resource, method):
         stored_password = self._accounts.get(username, None)
@@ -31,20 +35,19 @@ class BCryptAuth(BasicAuth):
         return (stored_password and
                 bcrypt.hashpw(password, stored_password) == stored_password)
 
-    def reload_accounts(self, event=None):
+    def reload_accounts(self):
         try:
             read_accounts(self._accounts)
         except Exception as e:
             print("couldn't reload accounts: " + str(e))
 
     def watch_updates(self):
-        import pyinotify
+        hub = gevent.get_hub()
+        watcher = hub.loop.stat(str(ACCOUNTS_FILE))
 
-        wm = pyinotify.WatchManager()
-        notifier = pyinotify.ThreadedNotifier(wm, default_proc_fun=self.reload_accounts)
-        notifier.setDaemon(True)
-        notifier.start()
-        wm.add_watch(ACCOUNTS_FILE, pyinotify.IN_CLOSE_WRITE)
+        while True:
+            hub.wait(watcher)
+            self.reload_accounts()
 
 
 def load_conf(user, password, email):

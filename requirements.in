@@ -28,7 +28,6 @@ ndg-httpsclient
 pip-tools
 psutil
 pyasn1
-pyinotify
 pylxd
 pymongo
 pyopenssl
