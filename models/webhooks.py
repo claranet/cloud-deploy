@@ -48,5 +48,6 @@ webhooks = {
         'source': 'webhooks'
     },
     'item_title': 'webhook',
-    'schema': webhook_schema
+    'schema': webhook_schema,
+    'url': 'webhooks'
 }

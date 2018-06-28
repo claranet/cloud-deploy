@@ -1,6 +1,6 @@
-import os
 import random
 import pkgutil
+import os
 
 from eve.auth import requires_auth
 from eve.methods.post import post_internal
@@ -9,19 +9,17 @@ from flask import jsonify
 from flask import send_from_directory
 
 from hashlib import sha512
-from command import LOG_ROOT
 from ghost_aws import download_file_from_s3
 from ghost_data import get_app, get_job
-from ghost_tools import config, CURRENT_REVISION
-from ghost_tools import get_job_log_remote_path
+from ghost_tools import config, get_job_log_remote_path, CURRENT_REVISION
+
+from command import LOG_ROOT
 from settings import cloud_connections, DEFAULT_PROVIDER
-from webhooks.webhook_handler import WebhookHandler
 
 commands_blueprint = Blueprint('commands_blueprint', 'commands')
 version_blueprint = Blueprint('version_blueprint', 'version')
 job_logs_blueprint = Blueprint('job_logs_blueprint', 'job_logs')
 websocket_token_blueprint = Blueprint('websocket_token_blueprint', 'websocket_token')
-webhook_blueprint = Blueprint('webhook_blueprint', 'webhook')
 
 
 def _get_commands(app_context=None):
@@ -128,37 +126,3 @@ def get_websocket_token(job_id):
     return sha512(websocket_token.hash_seed + job_id).hexdigest()
 
 websocket_token.hash_seed = "%032x" % random.getrandbits(2048)
-
-@webhook_blueprint.route('/webhooks/<webhook_id>/invoke', methods=['POST'])
-def handle_webhook(webhook_id):
-    """
-    Checks webhook's validity and runs desired commands.
-    """
-    webhook_handler = WebhookHandler(webhook_id, request)
-
-    # Get webhook conf from ID
-    if not webhook_handler.get_conf():
-        abort(404, 'could not find webhook Cloud Deploy configuration matching webhook request: {id}.'.format(id=webhook_id))
-
-    # Parse webhook request
-    try:
-        webhook_handler.parse_request()
-    except Exception as e:
-        abort(422, 'invalid webhook request payload: {err}'.format(id=webhook_id, err=e))
-
-    # Validate webhook request against its corresponding Cloud Deploy configuration
-    validated, err = webhook_handler.validate_request()
-    if err:
-        abort(403, 'webhook request doesn\'t match its Cloud Deploy configuration: {id}. error: {err}.'.format(id=webhook_id, err=err))
-
-    # Create webhook user for the jobs
-    g.user = 'webhook_' + str(webhook_id)
-
-    # Launches desired jobs
-    results, err = webhook_handler.start_jobs()
-    msg = 'webhook received with id "{id}"!\n\n{results}'.format(id=webhook_id, results=results)
-
-    if err:
-        abort(500, msg)
-
-    return msg

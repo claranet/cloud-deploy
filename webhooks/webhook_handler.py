@@ -62,6 +62,7 @@ class WebhookHandler:
         job_conf = self.create_job_configuration()
         results = ''
         errors = False
+        jobs = []
 
         for command in set(self.get_attribute('commands')):
             job_conf['command'] = command
@@ -71,5 +72,6 @@ class WebhookHandler:
                 errors = True
             else:
                 results += '- job {command} has been created: {job}\n'.format(command=command, job=str(job))
+                jobs.append(job)
 
-        return results, errors
+        return jobs, results, errors

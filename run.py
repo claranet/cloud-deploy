@@ -6,6 +6,8 @@ from flask import abort, g, request
 from flask_bootstrap import Bootstrap
 
 from eve import Eve
+from eve.io.mongo import Validator
+from eve.io.mongo.mongo import ObjectId
 from eve_swagger import swagger
 from eve.auth import requires_auth
 
@@ -23,9 +25,10 @@ from command import Command
 from models.apps import apps
 from models.jobs import jobs, CANCELLABLE_JOB_STATUSES, DELETABLE_JOB_STATUSES
 from models.deployments import deployments
+from models.webhook_invocations import webhook_invocations, webhook_invocation_schema
 
 from ghost_tools import get_rq_name_from_app, boolify
-from ghost_blueprints import commands_blueprint, job_logs_blueprint, version_blueprint, websocket_token_blueprint, webhook_blueprint
+from ghost_blueprints import commands_blueprint, job_logs_blueprint, version_blueprint, websocket_token_blueprint
 from ghost_api import ghost_api_bluegreen_is_enabled, ghost_api_enable_green_app
 from ghost_api import ghost_api_delete_alter_ego_app, ghost_api_clean_bluegreen_app
 from ghost_api import initialize_app_modules, check_and_set_app_fields_state
@@ -38,6 +41,8 @@ from ghost_data import normalize_app
 
 from websocket import create_ws
 
+from webhooks.webhook_handler import WebhookHandler
+
 
 def get_apps_db():
     return ghost.data.driver.db[apps['datasource']['source']]
@@ -49,6 +54,10 @@ def get_jobs_db():
 
 def get_deployments_db():
     return ghost.data.driver.db[deployments['datasource']['source']]
+
+
+def get_webhook_invocations_db():
+    return ghost.data.driver.db[webhook_invocations['datasource']['source']]
 
 
 def pre_update_app(updates, original):
@@ -323,6 +332,75 @@ def post_fetched_deployment(response):
         normalize_app(response.get('app_id'), False)
 
 
+def pre_insert_webhook_invocation(items):
+    status = {}
+    webhook_id = request.view_args['webhook_id']
+
+    webhook_handler = WebhookHandler(webhook_id, request)
+
+    # Get webhook conf from ID
+    if not webhook_handler.get_conf():
+        abort(404, 'Could not find webhook Cloud Deploy configuration matching webhook request: {id}.'.format(id=webhook_id))
+
+    # Parse webhook request
+    try:
+        webhook_handler.parse_request()
+    except Exception as e:
+        abort(422, 'Invalid webhook request payload: {err}'.format(id=webhook_id, err=e))
+
+    # Validate webhook request against its corresponding Cloud Deploy configuration
+    validated, err = webhook_handler.validate_request()
+    if err:
+        status = {
+            'code': 403,
+            'message': 'Webhook request doesn\'t match its Cloud Deploy configuration: {id}. error: {err}.'.format(id=webhook_id, err=err)
+        }
+
+    # Create webhook user for the jobs
+    g.user = 'webhook_' + str(webhook_id)
+
+    # Launches desired jobs
+    jobs, results, err = webhook_handler.start_jobs()
+    if err:
+        status = {
+            'code': 500,
+            'message': 'Not all jobs were created: {results}'.format(results=results)
+        }
+
+    # Prepare webhook invocation item
+    if not status:
+        status = {
+            'code': 200
+        }
+
+    # Remove request payload information from webhook invocation object
+    keys_to_save = ['_created', '_etag ', '_id', '_latest_version', '_updated', '_version']
+    for key in items[0].keys():
+        if key not in keys_to_save:
+            del items[0][key]
+
+    items[0]['webhook_id'] = ObjectId(webhook_id)
+    items[0]['jobs'] = [job['_id'] for job in jobs] or []
+    items[0]['status'] = status
+
+    # Validate webhook invocation model before insertion
+    validator = Validator(webhook_invocation_schema)
+    validator.validate(items[0])
+    for key in validator.errors.keys():
+        if key in keys_to_save:
+            del validator.errors[key]
+
+    if validator.errors.keys():
+        abort(500, str(validator.errors))
+
+
+def post_insert_webhook_invocation(items):
+    invocation = items[0]
+
+    if invocation['status']['code'] != 200:
+        abort(invocation['status']['code'], invocation['status']['message'])
+
+
 # Create ghost app, explicitly specifying the settings to avoid errors during doctest execution
 ghost = Eve(auth=BCryptAuth, settings=eve_settings)
 Bootstrap(ghost)
@@ -359,6 +437,8 @@ ghost.on_delete_item_jobs += pre_delete_job
 ghost.on_delete_resource_job_enqueueings += pre_delete_job_enqueueings
 ghost.on_fetched_item_deployments += post_fetched_deployment
 ghost.on_fetched_resource_deployments += post_fetched_deployments
+ghost.on_insert_webhook_invocations += pre_insert_webhook_invocation
+ghost.on_inserted_webhook_invocations += post_insert_webhook_invocation
 
 ghost.ghost_redis_connection = Redis(host=REDIS_HOST)
 
@@ -368,7 +448,6 @@ ghost.register_blueprint(lxd_blueprint)
 ghost.register_blueprint(version_blueprint)
 ghost.register_blueprint(job_logs_blueprint)
 ghost.register_blueprint(websocket_token_blueprint)
-ghost.register_blueprint(webhook_blueprint)
 
 # Register Websocket server
 ws = create_ws(ghost)
