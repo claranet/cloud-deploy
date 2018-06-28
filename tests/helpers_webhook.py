@@ -1,4 +1,5 @@
 from flask import json
+from datetime import datetime
 
 
 event_to_header = {
@@ -18,6 +19,18 @@ event_to_header = {
         'merge': 'Merge Request Hook',
     }
 }
+
+
+def base_invocation_item():
+    return [{
+        '_created': datetime.now(),
+        '_etag ': '1c501c0ffcd8212de99e44e1971d6568f19ffb40',
+        '_id': '5b1e82bae617250001845a81',
+        '_latest_version': 1,
+        '_updated': datetime.now(),
+        '_version': 1,
+        'bad_data': True
+    }]
 
 
 def base_app():
@@ -51,6 +64,7 @@ def load_github_conf(event='push'):
     # Basic conf
     conf['app'] = base_app()
     conf['webhook'] = base_webhook()
+    conf['invocation'] = base_invocation_item()
 
     # Customs
     conf['app']['modules'][0]['git_repo'] = 'git@github.com:test/test.git'
@@ -76,6 +90,7 @@ def load_bitbucket_conf(event='push'):
     # Basic conf
     conf['app'] = base_app()
     conf['webhook'] = base_webhook()
+    conf['invocation'] = base_invocation_item()
 
     # Customs
     conf['app']['modules'][0]['git_repo'] = 'git@bitbucket.org:test/test.git'
@@ -101,6 +116,7 @@ def load_gitlab_conf(event='push'):
     # Basic conf
     conf['app'] = base_app()
     conf['webhook'] = base_webhook()
+    conf['invocation'] = base_invocation_item()
 
     # Customs
     conf['app']['modules'][0]['git_repo'] = 'git@gitlab.com:test/test.git'
@@ -118,3 +134,10 @@ def load_gitlab_conf(event='push'):
 
     return conf
 
+
+def get_webhook_id():
+    return '5b1e82bae617250001845a81'
+
+
+def gen_webhook_url(webhook_id='5b1e82bae617250001845a81'):
+    return 'webhooks/{id}/invocations'.format(id=webhook_id)

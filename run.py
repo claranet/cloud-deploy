@@ -334,7 +334,7 @@ def post_fetched_deployment(response):
 
 def pre_insert_webhook_invocation(items):
     status = {}
-    webhook_id = request.view_args['webhook_id']
+    webhook_id = request.view_args.get('webhook_id')
 
     webhook_handler = WebhookHandler(webhook_id, request)
 
