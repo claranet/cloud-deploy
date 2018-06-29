@@ -38,9 +38,9 @@ class ImageBuilder:
                                         date=time.strftime("%Y%m%d-%H%M%S"),
                                         color='.%s' % self._color if self._color else '')
         self.unique = str(job['_id'])
-        self.packer_file_path = PACKER_JSON_PATH + self.unique
-        if not os.path.exists(self.packer_file_path):
-            os.makedirs(self.packer_file_path)
+        self.packer_directory_path = PACKER_JSON_PATH + self.unique
+        if not os.path.exists(self.packer_directory_path):
+            os.makedirs(self.packer_directory_path)
 
     def _format_ghost_env_vars(self):
         ghost_vars = []

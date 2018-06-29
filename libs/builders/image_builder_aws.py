@@ -28,7 +28,7 @@ class AWSImageBuilder(ImageBuilder):
             **self._connection_data
         )
 
-        self._packer_file_path_aws = self.packer_file_path + "/aws_builder.json"
+        self._packer_file_path_aws = self.packer_directory_path + "/aws_builder.json"
 
     def _format_packer_from_app(self):
         instance_tags = {}
@@ -96,9 +96,9 @@ class AWSImageBuilder(ImageBuilder):
         credentials = self._cloud_connection.get_credentials()
         log("Generating a new AMI", self._log_file)
 
-        log('Packer file path: {0}'.format(self.packer_file_path), self._log_file)
+        log('Packer file path: {0}'.format(self.packer_directory_path), self._log_file)
         with open(self._packer_file_path_aws, 'w') as stream:
-            log("Writing Packer definition to: {0}".format(self.packer_file_path), self._log_file)
+            log("Writing Packer definition to: {0}".format(self.packer_directory_path), self._log_file)
             stream.write(packer_config)
 
         log("Packer options: {0}".format(packer_config), self._log_file)

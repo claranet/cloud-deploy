@@ -104,7 +104,7 @@ class LXDImageBuilder(ImageBuilder):
         profile = self._client.profiles.create(self._container_name, devices=devices)
         log("Created container profile: {}".format(profile.name), self._log_file)
 
-    def _create_container(self, module=None, source_module=None, wait=20):
+    def _create_container(self, module=None, source_module=None, wait=10):
         """ Create a container with his profile and set time parameter to wait until network was up (default: 5 sec)
         """
         log("Create container {container_name}".format(container_name=self._container_name), self._log_file)
