@@ -50,6 +50,13 @@ class ImageBuilder:
         ghost_vars.append('GHOST_ROLE=%s' % self._app['role'])
         return ghost_vars
 
+    def _format_custom_env_vars(self):
+        custom_vars = []
+        for var in self._app.get('env_vars', []):
+            if var['var_key'] != "EMPTY_ENV":
+                custom_vars.append("%s=%s" % (var['var_key'], var['var_value']))
+        return custom_vars
+
     def _generate_buildimage_hook(self, hook_name):
         """ Generates a buildimage hook script
 

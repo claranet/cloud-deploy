@@ -104,7 +104,7 @@ class LXDImageBuilder(ImageBuilder):
         profile = self._client.profiles.create(self._container_name, devices=devices)
         log("Created container profile: {}".format(profile.name), self._log_file)
 
-    def _create_container(self, module=None, source_module=None, wait=10):
+    def _create_container(self, module=None, source_module=None, wait=20):
         """ Create a container with his profile and set time parameter to wait until network was up (default: 5 sec)
         """
         log("Create container {container_name}".format(container_name=self._container_name), self._log_file)
@@ -154,7 +154,7 @@ class LXDImageBuilder(ImageBuilder):
     def _set_ghost_env_vars(self):
         for var in self._format_ghost_env_vars():
             self.container.execute(["export", var])
-        for var in self._app.get('env_vars', []):
+        for var in self._format_custom_env_vars():
             self.container.execute(["export", var])
 
     def _lxd_bootstrap(self):
