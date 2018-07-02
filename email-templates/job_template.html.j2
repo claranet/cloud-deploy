@@ -1,0 +1,68 @@
+{% extends "base_template.html.j2" %}
+
+{% block header %}
+
+<div class="">
+	<div style="line-height:120%;color:#555555;font-family:'Montserrat', 'Trebuchet MS', 'Lucida Grande', 'Lucida Sans Unicode', 'Lucida Sans', Tahoma, sans-serif; padding-right: 10px; padding-left: 10px; padding-top: 30px; padding-bottom: 5px;">	
+		<div style="font-size:12px;line-height:14px;font-family:Montserrat, 'Trebuchet MS', 'Lucida Grande', 'Lucida Sans Unicode', 'Lucida Sans', Tahoma, sans-serif;color:#555555;text-align:left;"><p style="margin: 0;font-size: 12px;line-height: 14px;text-align: center"><span style="font-size: 48px; line-height: 57px;"><strong><span style="line-height: 57px; font-size: 48px;">Cloud Deploy job triggered by </span><strong>{{user}}</strong></span></span></strong></span></p></div>	
+	</div>
+</div>
+
+{% endblock %}
+
+
+{% block content %}
+
+<table border="0" cellpadding="1" cellspacing="1" style="margin-top: 20px; margin-bottom: 20px; font-family:arial,helvetica,sans-serif; height:231px; width:700px">
+    <tbody>
+        <tr>
+            <td style="background-color:#858585"><span style="margin-left:5px; font-size:14px"><strong><span style="color:rgb(255, 255, 255)">Status</span></strong></span></td>
+            <td style="background-color:{{status_color}}"><strong><span style="margin-left:5px; color:rgb(255, 255, 255)">{{status}}</span></strong></td>
+        </tr>
+        <tr>
+            <td style="background-color:#858585"><span style="margin-left:5px; font-size:14px"><strong><span style="color:rgb(255, 255, 255)">Application</span></strong></span></td>
+            <td style="background-color:#d1d6da"><div style="margin-left:5px;">{{app}}</div></td>
+        </tr>
+        <tr>
+            <td style="background-color:#858585"><span style="margin-left:5px; font-size:14px"><strong><span style="color:rgb(255, 255, 255)">Environment</span></strong></span></td>
+            <td style="background-color:#d1d6da"><div style="margin-left:5px;">{{env}}</div></td>
+        </tr>
+        <tr>
+            <td style="background-color:#858585"><span style="margin-left:5px; font-size:14px"><strong><span style="color:rgb(255, 255, 255)">Role</span></strong></span></td>
+            <td style="background-color:#d1d6da"><div style="margin-left:5px;">{{role}}</div></td>
+        </tr>
+        <tr>
+            <td style="background-color:#858585"><span style="margin-left:5px; font-size:14px"><strong><span style="color:rgb(255, 255, 255)">Command</span></strong></span></td>
+            <td style="background-color:#d1d6da"><div style="margin-left:5px;">{{command}}</div></td>
+        </tr>
+        <tr>
+            <td style="background-color:#858585"><span style="margin-left:5px; font-size:14px"><strong><span style="color:rgb(255, 255, 255)">Job ID</span></strong></span></td>
+            <td style="background-color:#d1d6da"><div style="margin-left:5px;"><a href="{{ghost_url}}/web/jobs/{{jobId}}" target="_blank">{{jobId}}</a></div></td>
+        </tr>
+        <tr>
+            <td style="background-color:#858585"><span style="margin-left:5px; font-size:14px"><strong><span style="color:rgb(255, 255, 255)">Job message</span></strong></span></td>
+            <td style="background-color:#d1d6da"><div style="margin-left:5px;"><pre>{{message}}</pre></div></td>
+        </tr>
+        <tr>
+            <td style="background-color:#FFFFFF">&nbsp;</td>
+            <td style="background-color:#FFFFFF">&nbsp;</td>
+        </tr>
+        <tr>
+            <td style="background-color:#858585"><strong><span style="margin-left:5px; font-size:14px"><span style="color:rgb(255, 255, 255)">Date</span></span></strong></td>
+            <td style="background-color:#d1d6da">
+                <table border="0" cellpadding="1" cellspacing="1" style="margin-left:5px; font-size:14px; height:70px; width:420px">
+                    <tbody>
+                        <tr>
+                            <td><strong>Creation</strong><br>
+                            {{creation_date}}</td>
+                            <td><strong>End</strong><br>
+                            {{end_date}}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </td>
+        </tr>
+    </tbody>
+</table>
+
+{% endblock %}
