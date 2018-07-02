@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import json
+import os
 
 from pypacker import Packer
 from ghost_tools import get_aws_connection_data
@@ -28,7 +29,7 @@ class AWSImageBuilder(ImageBuilder):
             **self._connection_data
         )
 
-        self._packer_file_path_aws = self.packer_directory_path + "/aws_builder.json"
+        self._packer_file_path_aws = os.path.join(self.packer_directory_path, "/aws_builder.json")
 
     def _format_packer_from_app(self):
         instance_tags = {}
