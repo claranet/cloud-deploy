@@ -38,18 +38,16 @@ class ImageBuilder:
                                         date=time.strftime("%Y%m%d-%H%M%S"),
                                         color='.%s' % self._color if self._color else '')
         self.unique = str(job['_id'])
-        self.packer_directory_path = PACKER_JSON_PATH + self.unique
+        self.packer_directory_path = os.path.join(PACKER_JSON_PATH, self.unique)
         if not os.path.exists(self.packer_directory_path):
             os.makedirs(self.packer_directory_path)
 
     def _format_ghost_env_vars(self):
         """ Generate Ghost environment variables
         >>> from StringIO import StringIO
-        >>> from ghost_tools import b64encode_utf8
-        >>> app = { \
-                'name': 'AppName', 'env': 'prod', 'role': 'webfront', 'region': 'eu-west-1',\
-                'env_vars': []\
-            }
+        >>> app = {
+        ... 'name': 'AppName', 'env': 'prod', 'role': 'webfront', 'region': 'eu-west-1','env_vars': []
+        ...  }
         >>> job = {"_id" : "012345678901234567890123"}
         >>> log_file = StringIO()
         >>> _config = None

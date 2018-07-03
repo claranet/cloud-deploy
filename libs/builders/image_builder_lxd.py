@@ -151,13 +151,13 @@ class LXDImageBuilder(ImageBuilder):
             for image in filtered_images:
                 image.delete()
 
-    def _set_ghost_env_vars(self):
+    def _export_ghost_env_vars(self):
         for var in self._format_ghost_env_vars():
             self.container.execute(["export", var])
 
     def _lxd_bootstrap(self):
         log("Bootstrap container", self._log_file)
-        self._set_ghost_env_vars()
+        self._export_ghost_env_vars()
         if not boolify(self.skip_salt_bootstrap_option):
             if 'salt' in self.provisioners:
                 salt_bootstrap = self.container.execute(
