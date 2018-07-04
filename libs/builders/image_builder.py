@@ -43,42 +43,57 @@ class ImageBuilder:
             os.makedirs(self.packer_directory_path)
 
     def _format_ghost_env_vars(self):
-        """ Generate Ghost environment variables
+        """
+        Generates Cloud Deploy environment variables
+
         >>> from StringIO import StringIO
         >>> app = {
-        ... 'name': 'AppName', 'env': 'prod', 'role': 'webfront', 'region': 'eu-west-1','env_vars': []
-        ...  }
+        ...   'name': 'AppName', 'env': 'prod', 'role': 'webfront', 'region': 'eu-west-1','env_vars': []
+        ... }
         >>> job = {"_id" : "012345678901234567890123"}
         >>> log_file = StringIO()
-        >>> _config = None
-        >>> _db = None
-        
-        >>> ImageBuilder(app, job, _db, log_file, _config)._format_ghost_env_vars()
+
+        >>> ImageBuilder(app, job, None, log_file, None)._format_ghost_env_vars()
         ['GHOST_APP=AppName', 'GHOST_ENV=prod', 'GHOST_ENV_COLOR=', 'GHOST_ROLE=webfront']
+
         >>> app = {
-        ... 'name': 'AppName', 'env': 'prod', 'role': 'webfront', 'region': 'eu-west-1',
-        ... 'env_vars': [{"var_value": "va", "var_key": "ka"}, {"var_value": "vb", "var_key": "kb" }]
-        ...  }
-        >>> ImageBuilder(app, job, _db, log_file, _config)._format_ghost_env_vars()
+        ...   'name': 'AppName', 'env': 'prod', 'role': 'webfront', 'region': 'eu-west-1',
+        ...   'env_vars': [{"var_value": "va", "var_key": "ka"}, {"var_value": "vb", "var_key": "kb" }]
+        ... }
+        >>> ImageBuilder(app, job, None, log_file, None)._format_ghost_env_vars()
         ['GHOST_APP=AppName', 'GHOST_ENV=prod', 'GHOST_ENV_COLOR=', 'GHOST_ROLE=webfront', 'ka=va', 'kb=vb']
+
+        >>> app = {
+        ...   'name': 'AppName', 'env': 'prod', 'role': 'webfront', 'region': 'eu-west-1',
+        ...   'env_vars': [{"var_key": "mykey"}]
+        ... }
+        >>> ImageBuilder(app, job, None, log_file, None)._format_ghost_env_vars()
+        ['GHOST_APP=AppName', 'GHOST_ENV=prod', 'GHOST_ENV_COLOR=', 'GHOST_ROLE=webfront', 'mykey=']
         """
-        ghost_vars = []
-        ghost_vars.append('GHOST_APP=%s' % self._app['name'])
-        ghost_vars.append('GHOST_ENV=%s' % self._app['env'])
-        ghost_vars.append('GHOST_ENV_COLOR=%s' % (self._color if self._color else ''))
-        ghost_vars.append('GHOST_ROLE=%s' % self._app['role'])
-        custom_vars = ['%s=%s' % (envvar['var_key'], envvar.get('var_value', '')) for envvar in self._app['env_vars']]
+
+        ghost_vars = [
+            'GHOST_APP=%s' % self._app['name'],
+            'GHOST_ENV=%s' % self._app['env'],
+            'GHOST_ENV_COLOR=%s' % (self._color if self._color else ''),
+            'GHOST_ROLE=%s' % self._app['role'],
+        ]
+        custom_vars = ['%s=%s' % (envvar['var_key'], envvar.get('var_value', ''))
+                       for envvar in self._app['env_vars']]
         return ghost_vars + custom_vars
 
     def _generate_buildimage_hook(self, hook_name):
-        """ Generates a buildimage hook script
+        """
+        Generates a buildimage hook script
 
         >>> from StringIO import StringIO
         >>> from ghost_tools import b64encode_utf8
-        >>> app = { \
-                'name': 'AppName', 'env': 'prod', 'role': 'webfront', 'region': 'eu-west-1',\
-                'lifecycle_hooks': {'pre_buildimage': u'', 'post_buildimage': b64encode_utf8(u'echo Custom post-buildimage script')}\
-            }
+        >>> app = {
+        ...   'name': 'AppName', 'env': 'prod', 'role': 'webfront', 'region': 'eu-west-1',
+        ...   'lifecycle_hooks': {
+        ...     'pre_buildimage': u'',
+        ...     'post_buildimage': b64encode_utf8(u'echo Custom post-buildimage script')
+        ...   }
+        ... }
         >>> job = {"_id" : "012345678901234567890123"}
         >>> log_file = StringIO()
         >>> _config = None
