@@ -55,6 +55,12 @@ class ImageBuilder:
         
         >>> ImageBuilder(app, job, _db, log_file, _config)._format_ghost_env_vars()
         ['GHOST_APP=AppName', 'GHOST_ENV=prod', 'GHOST_ENV_COLOR=', 'GHOST_ROLE=webfront']
+        >>> app = {
+        ... 'name': 'AppName', 'env': 'prod', 'role': 'webfront', 'region': 'eu-west-1',
+        ... 'env_vars': [{"var_value": "va", "var_key": "ka"}, {"var_value": "vb", "var_key": "kb" }]
+        ...  }
+        >>> ImageBuilder(app, job, _db, log_file, _config)._format_ghost_env_vars()
+        ['GHOST_APP=AppName', 'GHOST_ENV=prod', 'GHOST_ENV_COLOR=', 'GHOST_ROLE=webfront', 'ka=va', 'kb=vb']
         """
         ghost_vars = []
         ghost_vars.append('GHOST_APP=%s' % self._app['name'])
