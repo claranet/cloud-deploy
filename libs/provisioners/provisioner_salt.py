@@ -12,7 +12,8 @@ SALT_PILLAR_TOP = {'base': {'*': ['features']}}
 
 
 class FeaturesProvisionerSalt(FeaturesProvisioner):
-    """ """
+    """ Build features with SaltStack """
+
     def __init__(self, log_file, unique_id, options, config, global_config):
         FeaturesProvisioner.__init__(self, log_file, 'salt', unique_id, options, config, global_config)
         self._salt_state_tree = os.path.join(self.local_repo_path, 'salt')
