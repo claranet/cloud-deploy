@@ -45,7 +45,7 @@ class Buildimage():
         self._job['id'] = self._job['_id']
         self._aws_image_builder = AWSImageBuilder(self._app, self._job, self._db, self._log_file, self._config)
         self._lxd_image_builder = None
-        if lxd_is_available() and self._app.get('build_infos', {}).get('source_container_image', None):
+        if lxd_is_available(self._config) and self._app.get('build_infos', {}).get('source_container_image', None):
             self._lxd_image_builder = LXDImageBuilder(self._app, self._job, self._db, self._log_file, self._config)
 
     def _get_notification_message_done(self, ami_id):

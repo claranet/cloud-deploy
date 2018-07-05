@@ -48,7 +48,7 @@ def execute_module_script_on_ghost(app, module, script_name, script_friendly_nam
         script_env = os.environ.copy()
         script_env.update(get_ghost_env_variables(app, module))
 
-        if app['build_infos'].get('container_image') and lxd_is_available():
+        if app['build_infos'].get('container_image') and lxd_is_available(config):
             source_module = get_buildpack_clone_path_from_module(app, module)
             container = LXDImageBuilder(app, job, None, log_file, config)
             if not container.deploy(script_path, module, source_module):
