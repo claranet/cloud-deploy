@@ -23,8 +23,7 @@ def test_build_image_ansible(packer_run_packer_cmd, gcall, provisioner_get_local
     # Application context
     app = get_test_application()
     job = {
-        "_id": "012345678901234567890123",
-        "id": "012345678901234567890123",
+        "_id": "test_job_id",
         "app_id": "test_app_id",
         "command": "buildimage",
         "instance_type": "test_instance_type",
@@ -63,7 +62,7 @@ def test_build_image_ansible(packer_run_packer_cmd, gcall, provisioner_get_local
         "{0}ansible-galaxy install -r {1}/requirement_app.yml -p {1}/roles".format(venv_dir, tmp_dir),
         'Ansible -  ansible-galaxy command', LOG_FILE)
 
-    with open(os.path.join(PACKER_JSON_PATH, job['id'] + '/aws_builder.json'), 'r') as f:
+    with open(os.path.join(PACKER_JSON_PATH, job['_id'], 'aws_builder.json'), 'r') as f:
         # Verify generated ansible files
         with open(os.path.join(tmp_dir, 'requirement_app.yml'), 'r') as f2:
             requirement_app = yaml.load(f2)
@@ -80,7 +79,6 @@ def test_build_image_ansible(packer_run_packer_cmd, gcall, provisioner_get_local
 
         # Verify packer config
         packer_config = json.load(f)
-        print packer_config
         packer_config_reference = {
             "provisioners": [
                 {
@@ -156,8 +154,7 @@ def test_build_image_ansible_debug(packer_run_packer_cmd, gcall, provisioner_get
     # Application context
     app = get_test_application()
     job = {
-        "_id": "012345678901234567890123",
-        "id": "012345678901234567890123",
+        "_id": "test_job_id",
         "app_id": "test_app_id",
         "command": "buildimage",
         "instance_type": "test_instance_type",
@@ -196,7 +193,7 @@ def test_build_image_ansible_debug(packer_run_packer_cmd, gcall, provisioner_get
         "{0}ansible-galaxy install -r {1}/requirement_app.yml -p {1}/roles".format(venv_dir, tmp_dir),
         'Ansible -  ansible-galaxy command', LOG_FILE)
 
-    with open(os.path.join(PACKER_JSON_PATH, job['id'] + '/aws_builder.json'), 'r') as f:
+    with open(os.path.join(PACKER_JSON_PATH, job['_id'], 'aws_builder.json'), 'r') as f:
         # Verify generated ansible files
         with open(os.path.join(tmp_dir, 'requirement_app.yml'), 'r') as f2:
             requirement_app = yaml.load(f2)
@@ -213,8 +210,6 @@ def test_build_image_ansible_debug(packer_run_packer_cmd, gcall, provisioner_get
 
         # Verify packer config
         packer_config = json.load(f)
-        print packer_config
-
         assert packer_config == {
             "provisioners": [
                 {
@@ -304,8 +299,7 @@ def test_build_image_root_block_device(packer_run_packer_cmd, provisioner_get_lo
         }
     )
     job = {
-        "_id": "012345678901234567890123",
-        "id": "012345678901234567890123",
+        "_id": "test_job_id",
         "app_id": "test_app_id",
         "command": "buildimage",
         "instance_type": "test_instance_type",
@@ -328,7 +322,7 @@ def test_build_image_root_block_device(packer_run_packer_cmd, provisioner_get_lo
     assert ami_id == "test_ami_id"
     assert ami_name.startswith("ami.test.eu-west-1.webfront.test-app.")
 
-    with open(os.path.join(PACKER_JSON_PATH, job['id'] + '/aws_builder.json'), 'r') as f:
+    with open(os.path.join(PACKER_JSON_PATH, job['_id'], 'aws_builder.json'), 'r') as f:
         # Verify packer config
         packer_config = json.load(f)
         packer_config_reference = {

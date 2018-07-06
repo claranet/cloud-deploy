@@ -20,7 +20,6 @@ def test_build_image(lxd_client_cls):
         "instance_type": "test_instance_type",
         "options": [False]  # Do not skip bootstrap
     }
-    job["id"] = "012345678901234567890123"
 
     test_config = get_test_config(
         features_provisioners={'ansible': {
@@ -29,7 +28,6 @@ def test_build_image(lxd_client_cls):
             'base_playbook_file': 'tests/provisioners_data/base_playbook.yml',
             'base_playbook_requirements_file': 'tests/provisioners_data/base_requirements.yml',
         }})
-    provisioners = []
 
     # Mocks
     lxd_client = mock.MagicMock()
@@ -130,7 +128,6 @@ def test_purge(lxd_client_cls):
         "instance_type": "test_instance_type",
         "options": [False]  # Do not skip bootstrap
     }
-    job["id"] = "012345678901234567890123"
 
     test_config = get_test_config(ami_retention=3)
 
