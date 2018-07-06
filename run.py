@@ -358,9 +358,11 @@ rq_settings = rq_dashboard.default_settings.__dict__
 rq_settings.update({"REDIS_HOST": REDIS_HOST})
 ghost.config.from_mapping(rq_settings)
 
+
+# Secure RQ dashboard access with Eve BCryptAuth authentication
 @rq_dashboard.blueprint.before_request
 @requires_auth('')
-def check_auth():
+def rq_dashboard_before_request():
     pass
 
 ghost.register_blueprint(rq_dashboard.blueprint, url_prefix='/rq')
