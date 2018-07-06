@@ -2,12 +2,14 @@ import logging
 
 from pylxd import Client as LXDClient
 
-
 DEFAULT_LXD_REMOTE_ENDPOINT = 'https://lxd.ghost.morea.fr:8443'
 
-def list_lxd_images(config=None):
+
+def list_lxd_images(config):
     """
     Retrieve images on local registry
+
+    :param config: Configuration object
     """
     config = config or {}
     try:
@@ -32,9 +34,11 @@ def list_lxd_images(config=None):
         return [('', 'Container Image list is unavailable, check your LXD parameters in config.yml')]
 
 
-def lxd_is_available(config=None):
+def lxd_is_available(config):
     """
     Test if lxd is available on system and test if remote lxd endpoint is available
+
+    :param config: Configuration object
     """
     config = config or {}
     container_config = config.get('container', {'endpoint': config.get('endpoint',
