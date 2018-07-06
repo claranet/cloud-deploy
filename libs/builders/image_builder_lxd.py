@@ -7,7 +7,7 @@ import time
 from pylxd import Client as LXDClient
 
 from ghost_log import log
-from ghost_tools import gcall, GCallException, get_provisioners_config, get_local_repo_path, boolify
+from ghost_tools import GCallException, get_provisioners_config, get_local_repo_path, boolify
 from libs.builders.image_builder import ImageBuilder
 from libs.provisioners.provisioner import PROVISIONER_LOCAL_TREE
 from libs.provisioners.provisioner_ansible import ANSIBLE_COMMAND, ANSIBLE_LOG_LEVEL_MAP
@@ -119,7 +119,7 @@ class LXDImageBuilder(ImageBuilder):
         """ Delete the container profile
         """
         profile = self._client.profiles.get(self._container_name)
-        profile.delete
+        profile.delete()
         log("lxc profile delete {container_name}".format(container_name=self._container_name), self._log_file)
 
     def _publish_container(self):

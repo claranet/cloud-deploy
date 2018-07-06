@@ -42,7 +42,6 @@ class Buildimage():
             self._log_file,
             **self._connection_data
         )
-        self._job['id'] = self._job['_id']
         self._aws_image_builder = AWSImageBuilder(self._app, self._job, self._db, self._log_file, self._config)
         self._lxd_image_builder = None
         if lxd_is_available(self._config) and self._app.get('build_infos', {}).get('source_container_image', None):
@@ -97,7 +96,7 @@ class Buildimage():
                 self._worker.update_status("failed", message="An error occured during container process ({})".format(e))
                 return
             log("Update app in MongoDB to update container source image", self._log_file)
-            self._update_container_source(self._job["id"])
+            self._update_container_source(self._job["_id"])
 
         if self._app['autoscale']['name']:
             try:
