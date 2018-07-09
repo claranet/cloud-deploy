@@ -349,23 +349,26 @@ def pre_insert_webhook_invocation(items):
         abort(422, 'Invalid webhook request payload: {err}'.format(id=webhook_id, err=e))
 
     # Validate webhook request against its corresponding Cloud Deploy configuration
-    validated, err = webhook_handler.validate_request()
-    if err:
+    validated, validation_err = webhook_handler.validate_request()
+    if not validated:
         status = {
             'code': 403,
-            'message': 'Webhook request doesn\'t match its Cloud Deploy configuration: {id}. error: {err}.'.format(id=webhook_id, err=err)
+            'message': 'Webhook request doesn\'t match its Cloud Deploy configuration: {id}. error: {err}.'.format(id=webhook_id, err=validation_err)
         }
 
     # Create webhook user for the jobs
     g.user = 'webhook_' + str(webhook_id)
 
     # Launches desired jobs
-    jobs, results, err = webhook_handler.start_jobs()
-    if err:
-        status = {
-            'code': 500,
-            'message': 'Not all jobs were created: {results}'.format(results=results)
-        }
+    jobs = []
+    if validated:
+        jobs, results, err = webhook_handler.start_jobs()
+
+        if err:
+            status = {
+                'code': 500,
+                'message': 'Not all jobs were created: {results}'.format(results=results)
+            }
 
     # Prepare webhook invocation item
     if not status:
@@ -380,7 +383,7 @@ def pre_insert_webhook_invocation(items):
             del items[0][key]
 
     items[0]['webhook_id'] = ObjectId(webhook_id)
-    items[0]['jobs'] = [job['_id'] for job in jobs] or []
+    items[0]['jobs'] = [job['_id'] for job in jobs]
     items[0]['status'] = status
 
     # Validate webhook invocation model before insertion
@@ -392,6 +395,7 @@ def pre_insert_webhook_invocation(items):
 
     if validator.errors.keys():
         abort(500, str(validator.errors))
+
 
 
 def post_insert_webhook_invocation(items):

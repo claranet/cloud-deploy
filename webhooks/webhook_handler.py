@@ -51,7 +51,7 @@ class WebhookHandler:
         if 'options' in self.get_conf():
             job_conf['options'] = []
             for key, val in self.get_attribute('options').items():
-                if key == 'instance_type':
+                if key == 'instance_type' and val:
                     job_conf['instance_type'] = val
                 elif val:
                     job_conf['options'].append(val)
