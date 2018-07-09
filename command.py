@@ -12,6 +12,7 @@ from rq import get_current_job, Connection
 from sh import tail
 
 from ghost_aws import push_file_to_s3
+from ghost_data import get_app, get_job
 from ghost_log import log
 from ghost_tools import get_job_log_remote_path, GHOST_JOB_STATUSES_COLORS
 
@@ -213,8 +214,8 @@ class Command:
         with Connection(Redis(host=REDIS_HOST)):
             self._worker_job = get_current_job()
         self._connect_db()
-        self.job = self._db.jobs.find_one({'_id': ObjectId(job_id)})
-        self.app = self._db.apps.find_one({'_id': ObjectId(self.job['app_id'])})
+        self.job = get_job(job_id)
+        self.app = get_app(self.job['app_id'])
         self._init_log_file()
         self._db.jobs.update({'_id': self.job['_id']}, {'$set': {
             'log_id': self._worker_job.id,
