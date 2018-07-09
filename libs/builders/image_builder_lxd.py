@@ -129,12 +129,12 @@ class LXDImageBuilder(ImageBuilder):
         log("Publishing  container {container_name}".format(container_name=self._container_name), self._log_file)
         image = self.container.publish(wait=True)
         image.add_alias(str(self._job['_id']), self._container_name)
-        log("Imgage created with fingerprint: {fingerprint}".format(fingerprint=image.fingerprint), self._log_file)
+        log("Image created with fingerprint: {fingerprint}".format(fingerprint=image.fingerprint), self._log_file)
 
     def _clean_lxd_images(self):
         """ Clean lxd image in local registry as aws ami with ami_retention parameter
         """
-        log("Cleanup image", self._log_file)
+        log("Cleanup images", self._log_file)
         retention = self._config.get('ami_retention', 5)
         filtered_images = []
         images = self._client.images.all()

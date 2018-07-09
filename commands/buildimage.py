@@ -72,7 +72,8 @@ class Buildimage():
         try:
             ami_id, ami_name = self._aws_image_builder.start_builder()
             if ami_id is "ERROR":
-                self._worker.update_status("failed", message="ERROR: ami_id not found. The packer process had maybe fail.")
+                self._worker.update_status("failed",
+                                           message="ERROR: ami_id not found. The packer process may have failed.")
                 return
         except (GalaxyNoMatchingRolesException, GalaxyBadRequirementPathException, GCallException) as e:
             self._worker.update_status("aborted", message=str(e))
