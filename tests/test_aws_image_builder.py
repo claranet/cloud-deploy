@@ -5,19 +5,19 @@ import os
 import shutil
 import yaml
 
-from libs.image_builder_aws import AWSImageBuilder
-from pypacker import PACKER_JSON_PATH
+from libs.builders.image_builder_aws import AWSImageBuilder
+from libs.builders.image_builder import PACKER_JSON_PATH
 from tests.helpers import LOG_FILE, mocked_logger, get_test_application, get_test_config, void
 
 
 @mock.patch('pypacker.log', new=mocked_logger)
-@mock.patch('libs.image_builder_aws.log', new=mocked_logger)
-@mock.patch('libs.image_builder.log', new=mocked_logger)
-@mock.patch('libs.provisioner.log', new=mocked_logger)
-@mock.patch('libs.provisioner_ansible.log', new=mocked_logger)
-@mock.patch('libs.provisioner.FeaturesProvisioner._get_provisioner_repo', new=void)  # We do not test git mirroring here
-@mock.patch('libs.provisioner.FeaturesProvisioner._get_local_repo_path')
-@mock.patch('libs.provisioner_ansible.gcall')
+@mock.patch('libs.builders.image_builder_aws.log', new=mocked_logger)
+@mock.patch('libs.builders.image_builder.log', new=mocked_logger)
+@mock.patch('libs.provisioners.provisioner.log', new=mocked_logger)
+@mock.patch('libs.provisioners.provisioner_ansible.log', new=mocked_logger)
+@mock.patch('libs.provisioners.provisioner.FeaturesProvisioner._get_provisioner_repo', new=void)  # We do not test git mirroring here
+@mock.patch('libs.provisioners.provisioner.FeaturesProvisioner._get_local_repo_path')
+@mock.patch('libs.provisioners.provisioner_ansible.gcall')
 @mock.patch('pypacker.Packer._run_packer_cmd')
 def test_build_image_ansible(packer_run_packer_cmd, gcall, provisioner_get_local_repo_path):
     # Application context
@@ -29,6 +29,7 @@ def test_build_image_ansible(packer_run_packer_cmd, gcall, provisioner_get_local
         "instance_type": "test_instance_type",
         "options": [False]  # Do not skip bootstrap
     }
+
     test_config = get_test_config(
         features_provisioners={'ansible': {
             'git_revision': 'master',
@@ -61,7 +62,7 @@ def test_build_image_ansible(packer_run_packer_cmd, gcall, provisioner_get_local
         "{0}ansible-galaxy install -r {1}/requirement_app.yml -p {1}/roles".format(venv_dir, tmp_dir),
         'Ansible -  ansible-galaxy command', LOG_FILE)
 
-    with open(os.path.join(PACKER_JSON_PATH, job['_id'] + '.json'), 'r') as f:
+    with open(os.path.join(PACKER_JSON_PATH, job['_id'], 'aws_builder.json'), 'r') as f:
         # Verify generated ansible files
         with open(os.path.join(tmp_dir, 'requirement_app.yml'), 'r') as f2:
             requirement_app = yaml.load(f2)
@@ -78,7 +79,7 @@ def test_build_image_ansible(packer_run_packer_cmd, gcall, provisioner_get_local
 
         # Verify packer config
         packer_config = json.load(f)
-        assert packer_config == {
+        packer_config_reference = {
             "provisioners": [
                 {
                     "type": "shell",
@@ -137,16 +138,17 @@ def test_build_image_ansible(packer_run_packer_cmd, gcall, provisioner_get_local
                 }
             ]
         }
+        assert packer_config == packer_config_reference
 
 
 @mock.patch('pypacker.log', new=mocked_logger)
-@mock.patch('libs.image_builder_aws.log', new=mocked_logger)
-@mock.patch('libs.image_builder.log', new=mocked_logger)
-@mock.patch('libs.provisioner.log', new=mocked_logger)
-@mock.patch('libs.provisioner_ansible.log', new=mocked_logger)
-@mock.patch('libs.provisioner.FeaturesProvisioner._get_provisioner_repo', new=void)  # We do not test git mirroring here
-@mock.patch('libs.provisioner.FeaturesProvisioner._get_local_repo_path')
-@mock.patch('libs.provisioner_ansible.gcall')
+@mock.patch('libs.builders.image_builder_aws.log', new=mocked_logger)
+@mock.patch('libs.builders.image_builder.log', new=mocked_logger)
+@mock.patch('libs.provisioners.provisioner.log', new=mocked_logger)
+@mock.patch('libs.provisioners.provisioner_ansible.log', new=mocked_logger)
+@mock.patch('libs.provisioners.provisioner.FeaturesProvisioner._get_provisioner_repo', new=void)  # We do not test git mirroring here
+@mock.patch('libs.provisioners.provisioner.FeaturesProvisioner._get_local_repo_path')
+@mock.patch('libs.provisioners.provisioner_ansible.gcall')
 @mock.patch('pypacker.Packer._run_packer_cmd')
 def test_build_image_ansible_debug(packer_run_packer_cmd, gcall, provisioner_get_local_repo_path):
     # Application context
@@ -191,7 +193,7 @@ def test_build_image_ansible_debug(packer_run_packer_cmd, gcall, provisioner_get
         "{0}ansible-galaxy install -r {1}/requirement_app.yml -p {1}/roles".format(venv_dir, tmp_dir),
         'Ansible -  ansible-galaxy command', LOG_FILE)
 
-    with open(os.path.join(PACKER_JSON_PATH, job['_id'] + '.json'), 'r') as f:
+    with open(os.path.join(PACKER_JSON_PATH, job['_id'], 'aws_builder.json'), 'r') as f:
         # Verify generated ansible files
         with open(os.path.join(tmp_dir, 'requirement_app.yml'), 'r') as f2:
             requirement_app = yaml.load(f2)
@@ -270,13 +272,14 @@ def test_build_image_ansible_debug(packer_run_packer_cmd, gcall, provisioner_get
 
 
 @mock.patch('pypacker.log', new=mocked_logger)
-@mock.patch('libs.image_builder_aws.log', new=mocked_logger)
-@mock.patch('libs.image_builder.log', new=mocked_logger)
-@mock.patch('libs.provisioner.log', new=mocked_logger)
-@mock.patch('libs.provisioner.FeaturesProvisioner._get_provisioner_repo', new=void)  # We do not test git mirroring here
-@mock.patch('libs.provisioner.FeaturesProvisioner._get_local_repo_path')
-@mock.patch('libs.provisioner_salt.FeaturesProvisionerSalt._build_salt_top', new=void)
-@mock.patch('libs.provisioner_salt.FeaturesProvisionerSalt._build_salt_pillar', new=void)
+@mock.patch('libs.builders.image_builder_aws.log', new=mocked_logger)
+@mock.patch('libs.builders.image_builder.log', new=mocked_logger)
+@mock.patch('libs.provisioners.provisioner.log', new=mocked_logger)
+@mock.patch('libs.provisioners.provisioner_ansible.log', new=mocked_logger)
+@mock.patch('libs.provisioners.provisioner.FeaturesProvisioner._get_provisioner_repo', new=void)  # We do not test git mirroring here
+@mock.patch('libs.provisioners.provisioner.FeaturesProvisioner._get_local_repo_path')
+@mock.patch('libs.provisioners.provisioner_salt.FeaturesProvisionerSalt._build_salt_top', new=void)
+@mock.patch('libs.provisioners.provisioner_salt.FeaturesProvisionerSalt._build_salt_pillar', new=void)
 @mock.patch('pypacker.Packer._run_packer_cmd')
 def test_build_image_root_block_device(packer_run_packer_cmd, provisioner_get_local_repo_path):
     # Application context
@@ -319,10 +322,10 @@ def test_build_image_root_block_device(packer_run_packer_cmd, provisioner_get_lo
     assert ami_id == "test_ami_id"
     assert ami_name.startswith("ami.test.eu-west-1.webfront.test-app.")
 
-    with open(os.path.join(PACKER_JSON_PATH, job['_id'] + '.json'), 'r') as f:
+    with open(os.path.join(PACKER_JSON_PATH, job['_id'], 'aws_builder.json'), 'r') as f:
         # Verify packer config
         packer_config = json.load(f)
-        assert packer_config == {
+        packer_config_reference = {
             "provisioners": [
                 {
                     "type": "shell",
@@ -401,3 +404,4 @@ def test_build_image_root_block_device(packer_run_packer_cmd, provisioner_get_lo
                 }
             ]
         }
+        assert packer_config == packer_config_reference

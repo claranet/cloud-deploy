@@ -6,6 +6,7 @@ from ghost_log import log
 from ghost_tools import get_lock_path_from_repo, get_local_repo_path
 from libs.git_helper import git_remap_submodule, git_acquire_lock, git_release_lock
 
+
 PROVISIONER_LOCAL_TREE="/tmp/ghost-features-provisioner"
 PROVISIONER_LOCAL_MIRROR="/ghost/.mirrors"
 ZABBIX_REPO="git@bitbucket.org:morea/zabbix.git"
@@ -21,7 +22,7 @@ class GalaxyBadRequirementPathException(Exception):
 
 
 class FeaturesProvisioner:
-    def __init__(self, log_file, name, unique_id, config, global_config):
+    def __init__(self, log_file, name, unique_id, options, config, global_config):
         self._log_file = log_file
         self.name = name
         self.unique = unique_id
@@ -39,6 +40,7 @@ class FeaturesProvisioner:
 
         if config:
             self._get_provisioner_repo()
+            self._options = options
 
     def _get_local_repo_path(self):
         return get_local_repo_path(PROVISIONER_LOCAL_TREE, self.name, self.unique)
@@ -55,8 +57,9 @@ class FeaturesProvisioner:
         try:
             output=git("ls-remote", "--exit-code", provisioner_git_repo, provisioner_git_revision).strip()
             log("Provisioner repository checked successfuly with output: " + output, self._log_file)
-        except sh.ErrorReturnCode as e:
-            log("Invalid provisioner repository or invalid credentials. Please check your yaml 'config.yml' file", self._log_file)
+        except sh.ErrorReturnCode:
+            log("Invalid provisioner repository or invalid credentials. Please check your yaml 'config.yml' file",
+                self._log_file)
             raise
 
         try:
@@ -78,7 +81,8 @@ class FeaturesProvisioner:
             git_release_lock(lock_path, self._log_file)
 
         log("Cloning [{r}] repo with local mirror reference".format(r=provisioner_git_repo), self._log_file)
-        git.clone(['--reference', git_local_mirror, provisioner_git_repo, '-b', provisioner_git_revision, '--single-branch', self.local_repo_path + '/'])
+        git.clone(['--reference', git_local_mirror, provisioner_git_repo, '-b',
+                   provisioner_git_revision, '--single-branch', self.local_repo_path + '/'])
         if os.path.exists(self.local_repo_path + '/.gitmodules'):
             os.chdir(self.local_repo_path)
             log("Re-map submodules on local git mirror", self._log_file)
@@ -91,19 +95,14 @@ class FeaturesProvisioner:
         """
         Return the local mirror path
         """
-        return "{base_mirror}/{remote}".format(base_mirror=PROVISIONER_LOCAL_MIRROR, remote=git_remote.replace('@', '_').replace(':', '_'))
+        return "{base_mirror}/{remote}".format(base_mirror=PROVISIONER_LOCAL_MIRROR,
+                                               remote=git_remote.replace('@', '_').replace(':', '_'))
 
     def build_provisioner_features_files(self, params, features):
         raise NotImplementedError
 
-    def build_packer_provisioner_config(self, packer_config):
+    def build_packer_provisioner_config(self, features_infos):
         raise NotImplementedError
 
     def build_packer_provisioner_cleanup(self):
-        raise NotImplementedError
-
-    def format_provisioner_features(self, features):
-        raise NotImplementedError
-
-    def format_provisioner_params(self, features):
         raise NotImplementedError
