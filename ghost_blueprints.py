@@ -1,6 +1,7 @@
 import pkgutil
 import os
 
+from eve.auth import requires_auth
 from flask import abort, jsonify, send_from_directory
 from flask import Blueprint
 
@@ -32,6 +33,7 @@ def _get_commands(app_context=None):
 
 @commands_blueprint.route('/commands', methods=['GET'])
 @commands_blueprint.route('/commands/<app_id>', methods=['GET'])
+@requires_auth('')
 def list_commands(app_id=None):
     """
     Returns a mapping of the available commands and their descriptions:
@@ -54,6 +56,7 @@ def list_commands(app_id=None):
 
 @commands_blueprint.route('/commands/fields', methods=['GET'])
 @commands_blueprint.route('/commands/fields/<app_id>', methods=['GET'])
+@requires_auth('')
 def list_commands_app_fields_impact(app_id=None):
     """
     Returns a mapping of the available commands and which App's fields are used:
@@ -75,6 +78,7 @@ def list_commands_app_fields_impact(app_id=None):
 
 
 @version_blueprint.route('/version', methods=['GET'])
+@requires_auth('')
 def get_version():
     """
     Return the current release revision, date and name
@@ -89,6 +93,7 @@ def get_version():
 
 
 @job_logs_blueprint.route('/jobs/<regex("[a-f0-9]{24}"):job_id>/logs', methods=['GET'])
+@requires_auth('')
 def job_logs(job_id=None):
     job = get_job(job_id)
     if job is None:

@@ -1,14 +1,15 @@
 # -*- coding: utf-8 -*-
 
 import json
+import os
 
 from pypacker import Packer
 from ghost_tools import get_aws_connection_data
 from settings import cloud_connections, DEFAULT_PROVIDER
 from ghost_log import log
 
-from .ec2 import get_ami_root_block_device_mapping
-from .image_builder import ImageBuilder
+from libs.ec2 import get_ami_root_block_device_mapping
+from libs.builders.image_builder import ImageBuilder
 
 
 class AWSImageBuilder(ImageBuilder):
@@ -27,12 +28,14 @@ class AWSImageBuilder(ImageBuilder):
             self._log_file,
             **self._connection_data
         )
+        self._packer_file_path_aws = os.path.join(self.packer_directory_path, 'aws_builder.json')
 
-    def _format_packer_from_app(self, provisioner_skip_bootstrap_option):
+    def _format_packer_from_app(self):
         instance_tags = {}
         if 'instance_tags' in self._app['environment_infos']:
             instance_tags = {i['tag_name']: i['tag_value'] for i in self._app['environment_infos']['instance_tags']}
         data = {
+            'type': 'amazon-ebs',
             'region': self._app['region'],
             'ami_name': self._ami_name,
             'source_ami': self._app['build_infos']['source_ami'],
@@ -42,15 +45,12 @@ class AWSImageBuilder(ImageBuilder):
             'vpc_id': self._app['vpc_id'],
             'subnet_id': self._app['build_infos']['subnet_id'],
             'associate_public_ip_address': True,
-            'skip_provisioner_bootstrap': provisioner_skip_bootstrap_option,
             'ami_block_device_mappings': [],
             'launch_block_device_mappings': [],
             'iam_instance_profile': self._app['environment_infos']['instance_profile'],
-            'credentials': self._cloud_connection.get_credentials(),
             'tags': instance_tags,
-            'ghost_env_vars': self._format_ghost_env_vars(),
-            'custom_env_vars': self._app.get('env_vars', []),
-            'security_group_ids': self._app['environment_infos']['security_groups']
+            'security_group_ids': self._app['environment_infos']['security_groups'],
+            "ssh_pty": True,
         }
 
         if 'root_block_device' in self._app['environment_infos']:
@@ -82,20 +82,28 @@ class AWSImageBuilder(ImageBuilder):
             if 'launch_block_device_mappings' in opt_vol:
                 data['launch_block_device_mappings'].append(block)
 
-        return json.dumps(data, sort_keys=True, indent=4, separators=(',', ': '))
+        return data
+
+    def _build_packer_json(self):
+        packer_config = {}
+        builders = [self._format_packer_from_app()]
+        packer_config['builders'] = builders
+        packer_config['provisioners'] = self._get_packer_provisionners
+        return json.dumps(packer_config, sort_keys=True, indent=4, separators=(',', ': '))
 
     def start_builder(self):
-        provisioner_bootstrap_option = (self._job['options'][0]
-                                        if 'options' in self._job and len(self._job['options']) > 0
-                                        else True)
-        json_packer = self._format_packer_from_app(provisioner_bootstrap_option)
-        json_packer_for_log = json.loads(json_packer)
-        del json_packer_for_log['credentials']
+        packer_config = self._build_packer_json()
+        credentials = self._cloud_connection.get_credentials()
         log("Generating a new AMI", self._log_file)
-        log("Packer options : %s" % json.dumps(json_packer_for_log, sort_keys=True, indent=4, separators=(',', ': ')),
-            self._log_file)
-        pack = Packer(json_packer, self._config, self._log_file, self._job['_id'])
-        ami_id = pack.build_image(self._app['features'], self._get_buildimage_hooks())
+
+        log('Packer file path: {0}'.format(self._packer_file_path_aws), self._log_file)
+        with open(self._packer_file_path_aws, 'w') as stream:
+            log("Writing Packer definition to: {0}".format(self._packer_file_path_aws), self._log_file)
+            stream.write(packer_config)
+
+        log("Packer options: {0}".format(packer_config), self._log_file)
+        pack = Packer(credentials, self._log_file)
+        ami_id = pack.build_image(self._packer_file_path_aws)
         return ami_id, self._ami_name
 
     def purge_old_images(self):

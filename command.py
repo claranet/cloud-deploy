@@ -15,95 +15,23 @@ from ghost_aws import push_file_to_s3
 from ghost_log import log
 from ghost_tools import get_job_log_remote_path, GHOST_JOB_STATUSES_COLORS
 
-from notification import Notification
+from notification import MAIL_LOG_FROM_DEFAULT, Notification, TEMPLATES_DIR
 from settings import cloud_connections, DEFAULT_PROVIDER
 from settings import MONGO_DBNAME, MONGO_HOST, MONGO_PORT, REDIS_HOST
+from jinja2 import Environment, FileSystemLoader
 
 LOG_ROOT = '/var/log/ghost'
 ROOT_PATH = os.path.dirname(os.path.realpath(__file__))
-MAIL_LOG_FROM_DEFAULT = 'no-reply@morea.fr'
 
 
 def format_html_mail_body(app, job, config):
     """
     Returns a formatted HTML mail body content
     """
-    html_template = """
-<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-<style type="text/css">
-td{{font-family:arial,helvetica,sans-serif;}}
-</style>
 
-<p><span style="font-size:28px"><span style="color:#000; font-family:arial,helvetica,sans-serif">Ghost job triggered by </span><strong>{user}</strong></span></p>
-
-<table border="0" cellpadding="1" cellspacing="1" style="font-family:arial,helvetica,sans-serif; height:231px; width:700px">
-    <tbody>
-        <tr>
-            <td style="background-color:#858585"><span style="font-size:14px"><strong><span style="color:rgb(255, 255, 255)">Status</span></strong></span></td>
-            <td style="background-color:{status_color}"><strong><span style="color:rgb(255, 255, 255)">{status}</span></strong></td>
-        </tr>
-        <tr>
-            <td style="background-color:#858585"><span style="font-size:14px"><strong><span style="color:rgb(255, 255, 255)">Application</span></strong></span></td>
-            <td style="background-color:#d1d6da">{app}</td>
-        </tr>
-        <tr>
-            <td style="background-color:#858585"><span style="font-size:14px"><strong><span style="color:rgb(255, 255, 255)">Environment</span></strong></span></td>
-            <td style="background-color:#d1d6da">{env}</td>
-        </tr>
-        <tr>
-            <td style="background-color:#858585"><span style="font-size:14px"><strong><span style="color:rgb(255, 255, 255)">Role</span></strong></span></td>
-            <td style="background-color:#d1d6da">{role}</td>
-        </tr>
-        <tr>
-            <td style="background-color:#858585"><span style="font-size:14px"><strong><span style="color:rgb(255, 255, 255)">Command</span></strong></span></td>
-            <td style="background-color:#d1d6da">{command}</td>
-        </tr>
-        <tr>
-            <td style="background-color:#858585"><span style="font-size:14px"><strong><span style="color:rgb(255, 255, 255)">Job ID</span></strong></span></td>
-            <td style="background-color:#d1d6da"><a href="{ghost_url}/web/jobs/{jobId}" target="_blank">{jobId}</a></td>
-        </tr>
-        <tr>
-            <td style="background-color:#858585"><span style="font-size:14px"><strong><span style="color:rgb(255, 255, 255)">Job message</span></strong></span></td>
-            <td style="background-color:#d1d6da"><pre>{message}</pre></td>
-        </tr>
-        <tr>
-            <td style="background-color:#FFFFFF">&nbsp;</td>
-            <td style="background-color:#FFFFFF">&nbsp;</td>
-        </tr>
-        <tr>
-            <td style="background-color:#858585"><strong><span style="font-size:14px"><span style="color:rgb(255, 255, 255)">Date</span></span></strong></td>
-            <td style="background-color:#d1d6da">
-                <table border="0" cellpadding="1" cellspacing="1" style="font-size:14px; height:70px; width:420px">
-                    <tbody>
-                        <tr>
-                            <td><strong>Creation</strong><br>
-                            {creation_date}</td>
-                            <td><strong>End</strong><br>
-                            {end_date}</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </td>
-        </tr>
-    </tbody>
-</table>
-
-<table border="0" cellpadding="0" cellspacing="0" style="color:rgb(102, 102, 102); font-family:arial,helvetica,sans-serif; font-size:12px; height:200px; width:700px">
-<br>
-<br>
-</table>
-<p></p>
-<table cellpadding="1" cellspacing="1" style="height:84px; width:700px">
-   <tbody>
-         <tr>
-             <td width="300"><img src="https://www.cloudeploy.io/ghost/mail_footer_image.png" width="300" height="127"></td>
-             <td width="115"><span style="font-family:arial,helvetica,sans-serif"><span style="font-size:12px; color: #333;">&nbsp;</span></span></td>
-        </tr>
-     </tbody>
-</table>
-    """
-
-    html_body = html_template.format(
+    env = Environment(loader=FileSystemLoader(TEMPLATES_DIR))
+    template = env.get_template('job_template.html.j2')
+    html_body = template.render(
         user=job['user'],
         status=job['status'],
         status_color=GHOST_JOB_STATUSES_COLORS[job['status']],
@@ -117,6 +45,7 @@ td{{font-family:arial,helvetica,sans-serif;}}
         end_date=job['_updated'],
         ghost_url=config.get('ghost_base_url'),
     )
+
     return html_body
 
 
@@ -253,7 +182,7 @@ class Command:
                         (self.job['status'] in log_notif.get('job_states', [])
                          or ''.join(log_notif.get('job_states', [])) == '*')):
                     notif.send_mail(From=ses_settings.get('mail_from', MAIL_LOG_FROM_DEFAULT), To=mail, subject=subject,
-                                    body_text=body, body_html=html_body, attachments=[log])
+                                    body_text=body, body_html=html_body, attachments=[log], sender_name='Cloud Deploy') 
                 pass
         except:
             self._init_log_file()

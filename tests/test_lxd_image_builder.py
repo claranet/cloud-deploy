@@ -1,19 +1,16 @@
 import mock
 import os
 
-from ghost_tools import get_local_repo_path
-from libs.image_builder_lxd import LXDImageBuilder
-from libs.provisioner import PROVISIONER_LOCAL_TREE
+from libs.builders.image_builder_lxd import LXDImageBuilder
 from tests.helpers import LOG_FILE, mocked_logger, get_test_application, get_test_config, void
 
 
-@mock.patch('libs.image_builder_lxd.log', new=mocked_logger)
-@mock.patch('libs.image_builder.log', new=mocked_logger)
+@mock.patch('libs.builders.image_builder_lxd.log', new=mocked_logger)
+@mock.patch('libs.builders.image_builder.log', new=mocked_logger)
 @mock.patch('ghost_tools.log', new=mocked_logger)
-@mock.patch('libs.image_builder_lxd.time.sleep', new=void)  # Avoid waiting
-@mock.patch('libs.image_builder_lxd.gcall')
-@mock.patch('libs.image_builder_lxd.LXDClient')
-def test_build_image(lxd_client_cls, gcall_lxd):
+@mock.patch('libs.builders.image_builder_lxd.time.sleep', new=void)  # Avoid waiting
+@mock.patch('libs.builders.image_builder_lxd.LXDClient')
+def test_build_image(lxd_client_cls):
     # Application context
     app = get_test_application()
     job = {
@@ -23,6 +20,7 @@ def test_build_image(lxd_client_cls, gcall_lxd):
         "instance_type": "test_instance_type",
         "options": [False]  # Do not skip bootstrap
     }
+
     test_config = get_test_config(
         features_provisioners={'ansible': {
             'git_revision': 'master',
@@ -111,23 +109,18 @@ def test_build_image(lxd_client_cls, gcall_lxd):
         },
     }
     lxd_profiles_mock.create.assert_called_once_with(container_name, devices=expected_devices_config)
-
-    gcall_lxd.assert_called_once_with(
-        "lxc publish {container_name} local: --alias={job_id} description={container_name} --force".format(
-            job_id="test_job_id", container_name=container_name),
-        "Publish Container as image", LOG_FILE
-    )
+    lxd_container_mock.publish.assert_called_once_with(wait=True)
 
 
-@mock.patch('libs.image_builder_lxd.log', new=mocked_logger)
-@mock.patch('libs.image_builder.log', new=mocked_logger)
+@mock.patch('libs.builders.image_builder_lxd.log', new=mocked_logger)
+@mock.patch('libs.builders.image_builder.log', new=mocked_logger)
 @mock.patch('ghost_tools.log', new=mocked_logger)
-@mock.patch('libs.image_builder_lxd.time.sleep', new=void)  # Avoid waiting
-@mock.patch('libs.image_builder_lxd.gcall')
-@mock.patch('libs.image_builder_lxd.LXDClient')
-def test_purge(lxd_client_cls, gcall_lxd):
+@mock.patch('libs.builders.image_builder_lxd.time.sleep', new=void)  # Avoid waiting
+@mock.patch('libs.builders.image_builder_lxd.LXDClient')
+def test_purge(lxd_client_cls):
     # Application context
     app = get_test_application()
+
     job = {
         "_id": "test_job_id",
         "app_id": "test_app_id",
@@ -135,6 +128,7 @@ def test_purge(lxd_client_cls, gcall_lxd):
         "instance_type": "test_instance_type",
         "options": [False]  # Do not skip bootstrap
     }
+
     test_config = get_test_config(ami_retention=3)
 
     # Mocks

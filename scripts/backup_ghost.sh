@@ -17,7 +17,7 @@ SCRIPTPATH=$( cd $(dirname $0) ; pwd -P )
 CONFIG="$SCRIPTPATH/../config.yml"
 S3=$(grep bucket_s3 $CONFIG | cut -d' ' -f2)
 S3_REGION=$(grep bucket_region $CONFIG | cut -d' ' -f2)
-BACKUP=/tmp/backup_ghost
+BACKUP=/ghost/.backup_ghost
 FILE="ghost-backup-`date +"%F_%H_%M"`.tar.gz"
 
 if [ $# -eq 1 ]; then

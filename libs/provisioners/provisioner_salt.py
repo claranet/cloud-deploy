@@ -12,8 +12,10 @@ SALT_PILLAR_TOP = {'base': {'*': ['features']}}
 
 
 class FeaturesProvisionerSalt(FeaturesProvisioner):
-    def __init__(self, log_file, unique_id, config, global_config):
-        FeaturesProvisioner.__init__(self, log_file, 'salt', unique_id, config, global_config)
+    """ Build features with SaltStack """
+
+    def __init__(self, log_file, unique_id, options, config, global_config):
+        FeaturesProvisioner.__init__(self, log_file, 'salt', unique_id, options, config, global_config)
         self._salt_state_tree = os.path.join(self.local_repo_path, 'salt')
         self._salt_pillar_roots = os.path.join(self.local_repo_path, 'pillar')
         self._provisioner_log_level = self.global_config.get('provisioner_log_level', 'info')
@@ -22,47 +24,48 @@ class FeaturesProvisionerSalt(FeaturesProvisioner):
         self._salt_pillar_features_path = os.path.join(self._salt_pillar_roots, 'features.sls')
         self._salt_additional_pillar = config.get('salt_additional_pillar', '')
 
-    def build_provisioner_features_files(self, params, features):
-        """ Build salt files only if features with salt provisioner """
-        self._enabled_packer_salt_config = self._test_not_empty_salt_features(features)
-        if self._enabled_packer_salt_config:
-            self._build_salt_top(features)
-            self._build_salt_pillar(params)
+    def build_packer_provisioner_config(self, features_config):
+        features = self._format_provisioner_features(features_config)
+        provisioner_params = self._format_provisioner_params(features_config)
+        enabled_packer_salt_config = self._test_not_empty_salt_features(features)
 
-    def build_packer_provisioner_config(self, packer_config):
-        if self._enabled_packer_salt_config:
-            return [{
+        if enabled_packer_salt_config:
+            self.build_provisioner_features_files(features, provisioner_params)
+            _provisionner_config = {
                 'type': 'salt-masterless',
                 'local_state_tree': self._salt_state_tree,
                 'local_pillar_roots': self._salt_pillar_roots,
-                'skip_bootstrap': packer_config['skip_provisioner_bootstrap'],
+                'skip_bootstrap': self._options[0],
                 'log_level': self._provisioner_log_level,
-            }]
-        else:
-            return None
-
-    def build_packer_provisioner_cleanup(self):
-        if self._enabled_packer_salt_config:
-            return {
-                'type': 'shell',
-                'inline': [
-                    "sudo rm -rf /srv/salt || echo 'Salt - no cleanup salt'",
-                    "sudo rm -rf /srv/pillar || echo 'Salt - no cleanup pillar'"
-                ]
             }
         else:
             return None
+        return [_provisionner_config]
+
+    def build_provisioner_features_files(self, features, provisioner_params):
+        """ Build salt files only if features with salt provisioner """
+        self._build_salt_top(features)
+        self._build_salt_pillar(provisioner_params)
+
+    def build_packer_provisioner_cleanup(self):
+        return {
+            'type': 'shell',
+            'inline': [
+                "sudo rm -rf /srv/salt || echo 'Salt - no cleanup salt'",
+                "sudo rm -rf /srv/pillar || echo 'Salt - no cleanup pillar'"
+            ]
+        }
 
     def _test_not_empty_salt_features(self, features):
         """ Test is features set
 
         >>> features = []
         >>> import pprint
-        >>> pprint.pprint(FeaturesProvisionerSalt(None, None, {}, {})._test_not_empty_salt_features(features))
+        >>> pprint.pprint(FeaturesProvisionerSalt(None, None, {}, {}, {})._test_not_empty_salt_features(features))
         False
 
         >>> features = ['pkg']
-        >>> pprint.pprint(FeaturesProvisionerSalt(None, None, {}, {})._test_not_empty_salt_features(features))
+        >>> pprint.pprint(FeaturesProvisionerSalt(None, None, {}, {}, {})._test_not_empty_salt_features(features))
         True
 
         """
@@ -93,19 +96,19 @@ class FeaturesProvisionerSalt(FeaturesProvisioner):
             log(_yellow('Salt - pillar: features.sls: {0}'.format(features)), self._log_file)
             yaml.dump(features, stream_features, default_flow_style=False)
 
-    def format_provisioner_features(self, features):
+    def _format_provisioner_features(self, features):
         """ Generates the formula dictionnary object with all required features
 
         >>> features = [{'name': 'pkg', 'version': 'git_vim'}, {'name': 'pkg', 'version': 'package=lsof'}, {'name': 'pkg', 'version': 'package=curl'}]
-        >>> FeaturesProvisionerSalt(None, None, {}, {}).format_provisioner_features(features)
+        >>> FeaturesProvisionerSalt(None, None, {}, {}, {})._format_provisioner_features(features)
         ['pkg']
 
         >>> features = [{'name': 'pkg', 'version': 'git_vim', 'provisioner': 'salt'}, {'name': 'pkg', 'version': 'package=lsof', 'provisioner': 'salt'}, {'name': 'pkg', 'version': 'package=curl', 'provisioner': 'salt'}]
-        >>> FeaturesProvisionerSalt(None, None, {}, {}).format_provisioner_features(features)
+        >>> FeaturesProvisionerSalt(None, None, {}, {}, {})._format_provisioner_features(features)
         ['pkg']
 
         >>> features = []
-        >>> FeaturesProvisionerSalt(None, None, {}, {}).format_provisioner_features(features)
+        >>> FeaturesProvisionerSalt(None, None, {}, {}, {})._format_provisioner_features(features)
         []
 
         """
@@ -123,28 +126,28 @@ class FeaturesProvisionerSalt(FeaturesProvisioner):
                 top.append(i['name'].encode('utf-8'))
         return top
 
-    def format_provisioner_params(self, features):
+    def _format_provisioner_params(self, features):
         """ Generates the pillar dictionnary object with all required features and their options
 
         >>> features = [{'name': 'pkg', 'version': 'git_vim'}, {'name': 'pkg', 'version': 'package=lsof'}, {'name': 'pkg', 'version': 'package=curl'}]
         >>> import pprint
-        >>> pprint.pprint(FeaturesProvisionerSalt(None, None, {}, {}).format_provisioner_params(features).items())
+        >>> pprint.pprint(FeaturesProvisionerSalt(None, None, {}, {}, {})._format_provisioner_params(features).items())
         [('pkg', {'package': ['lsof', 'curl'], 'version': 'git_vim'})]
 
         >>> features = [{'name': 'pkg', 'version': 'git_vim', 'provisioner': 'salt'}, {'name': 'pkg', 'version': 'package=lsof', 'provisioner': 'salt'}, {'name': 'pkg', 'version': 'package=curl', 'provisioner': 'salt'}]
-        >>> pprint.pprint(FeaturesProvisionerSalt(None, None, {}, {}).format_provisioner_params(features).items())
+        >>> pprint.pprint(FeaturesProvisionerSalt(None, None, {}, {}, {})._format_provisioner_params(features).items())
         [('pkg', {'package': ['lsof', 'curl'], 'version': 'git_vim'})]
 
         >>> features = [{'name': 'pkg', 'version': 'git_vim', 'provisioner': 'ansible'}, {'name': 'pkg', 'version': 'package=lsof', 'provisioner': 'salt'}, {'name': 'pkg', 'version': 'package=curl', 'provisioner': 'salt'}]
-        >>> pprint.pprint(FeaturesProvisionerSalt(None, None, {}, {}).format_provisioner_params(features).items())
+        >>> pprint.pprint(FeaturesProvisionerSalt(None, None, {}, {}, {})._format_provisioner_params(features).items())
         [('pkg', {'package': ['lsof', 'curl']})]
 
         >>> features = [{'name': 'pkg', 'version': 'git_vim', 'provisioner': 'ansible'}, {'name': 'pkg', 'version': 'package=lsof', 'provisioner': 'ansible'}, {'name': 'pkg', 'version': 'package=curl', 'provisioner': 'ansible'}]
-        >>> pprint.pprint(FeaturesProvisionerSalt(None, None, {}, {}).format_provisioner_params(features).items())
+        >>> pprint.pprint(FeaturesProvisionerSalt(None, None, {}, {}, {})._format_provisioner_params(features).items())
         []
 
         >>> features = []
-        >>> pprint.pprint(FeaturesProvisionerSalt(None, None, {}, {}).format_provisioner_params(features).items())
+        >>> pprint.pprint(FeaturesProvisionerSalt(None, None, {}, {}, {})._format_provisioner_params(features).items())
         []
 
         """

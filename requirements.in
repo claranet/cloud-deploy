@@ -1,7 +1,8 @@
 # This file is used by pip-compile to generate requirements.txt
 # Everything you directly use in your source code should be a top-level dependency recorded here.
 # Don't pin them unless you want them pinned, of course.
-ansible
+appdirs>=1.4.0            # Needed by setuptools, pinned version because of https://github.com/ActiveState/appdirs/issues/89
+ansible==2.5.*            # Breaking changes with 2.6, needs more testing
 argparse
 awscli                    # needed in some buildpacks but dependent on botocore which is a transitive dependency of boto3 and upgraded
 bcrypt
@@ -11,11 +12,12 @@ boto3
 chardet
 click
 eve-swagger
-Eve
-Fabric
-Flask
+Eve==0.7.9
+Fabric==1.14.0            # Breaking changes in > 2.0 - http://docs.fabfile.org/en/2.0/upgrading.html
+Flask==0.12               # Breaking changes in > 1.0 - http://flask.pocoo.org/docs/1.0/changelog/
 Flask-Bootstrap
 Flask-Login
+flask-pymongo==0.5.*      # Breaking changes with 2.0.0: no longer compatible with MongoDB < 3.2
 Flask-SocketIO
 Flask-WTF
 gevent
@@ -40,6 +42,6 @@ six
 subprocess32
 tox
 uwsgi
-Werkzeug
+Werkzeug==0.11.15
 WTForms
 yapf
