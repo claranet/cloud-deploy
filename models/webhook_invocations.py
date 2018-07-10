@@ -29,6 +29,9 @@ webhook_invocation_schema = {
                 'type': 'string'
             }
         }
+    },
+    'payload': {
+        'type': 'string',
     }
 }
 

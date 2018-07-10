@@ -385,6 +385,7 @@ def pre_insert_webhook_invocation(items):
     items[0]['webhook_id'] = ObjectId(webhook_id)
     items[0]['jobs'] = [job['_id'] for job in jobs]
     items[0]['status'] = status
+    items[0]['payload'] = request.get_data(as_text=True) or ''
 
     # Validate webhook invocation model before insertion
     validator = Validator(webhook_invocation_schema)
