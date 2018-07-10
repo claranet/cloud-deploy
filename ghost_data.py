@@ -3,8 +3,8 @@
 """
 # -*- coding: utf-8 -*-
 
-from bson.objectid import ObjectId
 from pymongo import MongoClient
+from bson.objectid import ObjectId
 
 from models.apps import APPS_DEFAULT
 from settings import MONGO_DBNAME, MONGO_HOST, MONGO_PORT

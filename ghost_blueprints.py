@@ -3,10 +3,8 @@ import pkgutil
 import os
 
 from eve.auth import requires_auth
-from eve.methods.post import post_internal
-from flask import abort, Blueprint, g, request
-from flask import jsonify
-from flask import send_from_directory
+from flask import abort, jsonify, send_from_directory
+from flask import Blueprint
 
 from hashlib import sha512
 from ghost_aws import download_file_from_s3
