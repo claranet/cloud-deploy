@@ -7,10 +7,10 @@ import time
 from pylxd import Client as LXDClient
 
 from ghost_log import log
-from ghost_tools import gcall, GCallException, get_provisioners_config, get_local_repo_path, boolify
-from .image_builder import ImageBuilder
-from .provisioner import PROVISIONER_LOCAL_TREE
-from .provisioner_ansible import ANSIBLE_COMMAND, ANSIBLE_LOG_LEVEL_MAP
+from ghost_tools import GCallException, get_provisioners_config, get_local_repo_path, boolify
+from libs.builders.image_builder import ImageBuilder
+from libs.provisioners.provisioner import PROVISIONER_LOCAL_TREE
+from libs.provisioners.provisioner_ansible import ANSIBLE_COMMAND, ANSIBLE_LOG_LEVEL_MAP
 
 
 class LXDImageBuilder(ImageBuilder):
@@ -45,7 +45,6 @@ class LXDImageBuilder(ImageBuilder):
             self._job['options']) > 0 else True
         self._ansible_log_level = self._config.get('provisioner_log_level', 'info')
         self._salt_log_level = self._config.get('provisioner_log_level', 'info')
-
 
     def _create_containers_config(self):
         """ Generate a container configuration according build image or deployment
@@ -119,20 +118,23 @@ class LXDImageBuilder(ImageBuilder):
     def _delete_containers_profile(self):
         """ Delete the container profile
         """
-        gcall("lxc profile delete {container_name}".format(container_name=self._container_name),
-              "Delete container profile", self._log_file)
+        profile = self._client.profiles.get(self._container_name)
+        profile.delete()
+        log("lxc profile delete {container_name}".format(container_name=self._container_name), self._log_file)
 
     def _publish_container(self):
         """ Publish container as image on registry local after build image
         """
         self._clean_lxd_images()
-        gcall("lxc publish {container_name} local: --alias={job_id} description={container_name} --force".format(
-            job_id=self._job['_id'], container_name=self._container_name), "Publish Container as image", self._log_file)
+        log("Publishing  container {container_name}".format(container_name=self._container_name), self._log_file)
+        image = self.container.publish(wait=True)
+        image.add_alias(str(self._job['_id']), self._container_name)
+        log("Image created with fingerprint: {fingerprint}".format(fingerprint=image.fingerprint), self._log_file)
 
     def _clean_lxd_images(self):
         """ Clean lxd image in local registry as aws ami with ami_retention parameter
         """
-        log("Cleanup image", self._log_file)
+        log("Cleanup images", self._log_file)
         retention = self._config.get('ami_retention', 5)
         filtered_images = []
         images = self._client.images.all()
@@ -149,15 +151,13 @@ class LXDImageBuilder(ImageBuilder):
             for image in filtered_images:
                 image.delete()
 
-    def _set_ghost_env_vars(self):
+    def _export_ghost_env_vars(self):
         for var in self._format_ghost_env_vars():
-            self.container.execute(["export", var])
-        for var in self._app.get('env_vars', []):
             self.container.execute(["export", var])
 
     def _lxd_bootstrap(self):
         log("Bootstrap container", self._log_file)
-        self._set_ghost_env_vars()
+        self._export_ghost_env_vars()
         if not boolify(self.skip_salt_bootstrap_option):
             if 'salt' in self.provisioners:
                 salt_bootstrap = self.container.execute(
