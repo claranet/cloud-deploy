@@ -16,7 +16,7 @@ def get_db_connection():
 
 def get_deployments_db():
     db = get_db_connection()
-    return db.deployments
+    return db.deploy_histories
 
 
 def close_db_connection():
@@ -69,17 +69,20 @@ def normalize_app(app, embed_last_deployment=False):
     [[('email', 'no-reply@fr.clara.net'), ('job_states', ['done'])], [('email', 'dummy@fr.clara.net'), ('job_states', ['*'])]]
     """
     # Retrieve each module's last deployment
-    for module in app.get('modules', []):
-        query = {
-            '$and': [
-                {'app_id': app['_id']},
-                {'module': module['name']}
-            ]
-        }
-        sort = [('timestamp', -1)]
-        deployment = get_deployments_db().find_one(query, sort=sort)
-        if deployment:
-            module['last_deployment'] = deployment if embed_last_deployment else deployment['_id']
+    if app.get('modules', []):
+        db = get_deployments_db()
+        for module in app.get('modules', []):
+            query = {
+                '$and': [
+                    {'app_id': app['_id']},
+                    {'module': module['name']}
+                ]
+            }
+            sort = [('timestamp', -1)]
+            deployment = db.find_one(query, sort=sort)
+            if deployment:
+                module['last_deployment'] = deployment if embed_last_deployment else deployment['_id']
+        close_db_connection()
 
     # Normalize log_notifications
     log_notifications = []
