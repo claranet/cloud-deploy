@@ -179,7 +179,6 @@ class Command:
         }
         try:
             for log_notif in self.app.get('log_notifications', []):
-                log_notif = log_notif if isinstance(log_notif, dict) else {'email': log_notif, 'job_states': ['*']}
                 mail = log_notif.get('email')
                 if (mail and
                         (self.job['status'] in log_notif.get('job_states', [])

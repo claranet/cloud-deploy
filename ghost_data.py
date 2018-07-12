@@ -68,8 +68,16 @@ def normalize_app(app, embed_last_deployment=False):
     >>> normalize_app(app_logs)
     >>> [sorted(l.items()) for l in app_logs.get('log_notifications')]
     [[('email', 'no-reply@fr.clara.net'), ('job_states', ['done'])], [('email', 'dummy@fr.clara.net'), ('job_states', ['*'])]]
+
+    >>> app_logs = {'log_notifications': [
+    ...     {'email': 'no-reply@fr.clara.net'},
+    ...     'dummy@fr.clara.net',
+    ... ]}
+    >>> normalize_app(app_logs)
+    >>> [sorted(l.items()) for l in app_logs.get('log_notifications')]
+    [[('email', 'no-reply@fr.clara.net'), ('job_states', ['*'])], [('email', 'dummy@fr.clara.net'), ('job_states', ['*'])]]
     """
-    # Retrieve each module's last deployment
+    # [GHOST-172] Retrieve each module's last deployment
     if app.get('modules', []):
         db = get_deployments_db()
         for module in app.get('modules', []):
@@ -85,7 +93,7 @@ def normalize_app(app, embed_last_deployment=False):
                 module['last_deployment'] = deployment if embed_last_deployment else deployment['_id']
         close_db_connection()
 
-    # Normalize log_notifications
+    # [GHOST-638] Normalize log_notifications
     log_notifications = []
     for notif in app.get('log_notifications', []):
         if isinstance(notif, basestring):
@@ -94,5 +102,7 @@ def normalize_app(app, embed_last_deployment=False):
                 'job_states': ['*']
             })
         else:
+            if not notif.get('job_states'):
+                notif['job_states'] = ['*']
             log_notifications.append(notif)
     app['log_notifications'] = log_notifications
