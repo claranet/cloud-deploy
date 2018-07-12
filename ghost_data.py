@@ -30,7 +30,8 @@ def get_app(app_id):
     db = get_db_connection()
     app = db.apps.find_one({'_id': ObjectId(app_id)})
     close_db_connection()
-    return normalize_app(app)
+    normalize_app(app)
+    return app
 
 
 def get_job(job_id):
@@ -95,5 +96,3 @@ def normalize_app(app, embed_last_deployment=False):
         else:
             log_notifications.append(notif)
     app['log_notifications'] = log_notifications
-
-    return app

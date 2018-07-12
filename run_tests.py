@@ -16,6 +16,7 @@ modules = [
     "ghost_api",
     "ghost_aws",
     "ghost_blueprints",
+    "ghost_data",
     "ghost_tools",
     "libs.blue_green",
     "libs.deploy",
