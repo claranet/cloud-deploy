@@ -68,13 +68,6 @@ PAGINATION_LIMIT = config.get('eve_pagination_limit', 200)
 # API BASE URL
 API_BASE_URL = os.getenv('API_BASE_URL', config.get('api_base_url', 'http://localhost:5000'))
 
-# API BIND HOST
-API_BIND_HOST = os.getenv('API_BIND_HOST', config.get('api_bind_host', '0.0.0.0'))
-
-# Websocket BIND HOST
-WS_BIND_HOST = os.getenv('WS_BIND_HOST', config.get('ws_bind_host', '0.0.0.0'))
-WS_BIND_PORT = os.getenv('WS_BIND_PORT', config.get('ws_bind_port', 5002))
-
 DOMAIN = {
     'job_enqueueings': job_enqueueings.job_enqueueings,
     'jobs': jobs.jobs,

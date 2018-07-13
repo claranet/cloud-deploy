@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from flask import Flask, abort, request
+from flask import abort, request
 from flask_bootstrap import Bootstrap
 
 from eve import Eve
@@ -15,8 +15,9 @@ from redis import Redis
 from rq import Queue, cancel_job
 import rq_dashboard
 
-from settings import __dict__ as eve_settings, API_BIND_HOST, REDIS_HOST, RQ_JOB_TIMEOUT, WS_BIND_HOST, WS_BIND_PORT
+from settings import __dict__ as eve_settings, API_BASE_URL, REDIS_HOST, RQ_JOB_TIMEOUT
 from threading import Thread
+from urlparse import urlparse
 from command import Command
 from models.apps import apps
 from models.jobs import jobs, CANCELLABLE_JOB_STATUSES, DELETABLE_JOB_STATUSES
@@ -28,7 +29,7 @@ from ghost_api import ghost_api_bluegreen_is_enabled, ghost_api_enable_green_app
 from ghost_api import ghost_api_delete_alter_ego_app, ghost_api_clean_bluegreen_app
 from ghost_api import initialize_app_modules, check_and_set_app_fields_state
 from ghost_api import ghost_api_app_data_input_validator, GhostAPIInputError
-from ghost_api import ALL_COMMAND_FIELDS, check_app_immutable_fields
+from ghost_api import ALL_COMMAND_FIELDS, check_app_immutable_fields, StandaloneApplication
 from ghost_lxd import lxd_blueprint
 from libs.blue_green import BLUE_GREEN_COMMANDS, get_blue_green_from_app, ghost_has_blue_green_enabled
 from ghost_aws import normalize_application_tags
@@ -347,14 +348,16 @@ ghost.register_blueprint(lxd_blueprint)
 ghost.register_blueprint(version_blueprint)
 ghost.register_blueprint(job_logs_blueprint)
 
-ws_app = Flask(__name__)
-ws = create_ws(ws_app)
-
-def run_ws():
-    ws.run(ws_app, host=WS_BIND_HOST, port=WS_BIND_PORT, log_output=True)
+# Register Websocket server
+ws = create_ws(ghost)
 
 if __name__ == '__main__':
-    thread = Thread(target=run_ws)
-    thread.daemon = True
-    thread.start();
-    ghost.run(host=API_BIND_HOST)
+    ghost.config['DEBUG'] = True
+    options = {
+        'bind': urlparse(API_BASE_URL).netloc,
+        'workers': 1,
+        'worker_class': 'geventwebsocket.gunicorn.workers.GeventWebSocketWorker',
+        'debug': True,
+        'timeout': 600,
+    }
+    StandaloneApplication(ghost, options).run()
