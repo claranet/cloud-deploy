@@ -20,6 +20,8 @@ from settings import cloud_connections, DEFAULT_PROVIDER
 from settings import MONGO_DBNAME, MONGO_HOST, MONGO_PORT, REDIS_HOST
 from jinja2 import Environment, FileSystemLoader
 
+from cgi import escape
+
 LOG_ROOT = '/var/log/ghost'
 ROOT_PATH = os.path.dirname(os.path.realpath(__file__))
 
@@ -40,7 +42,7 @@ def format_html_mail_body(app, job, config):
         role=app['role'],
         command=job['command'],
         jobId=str(job['_id']),
-        message=job['message'],
+        message=escape(job['message']),
         creation_date=job['_created'],
         end_date=job['_updated'],
         ghost_url=config.get('ghost_base_url'),
