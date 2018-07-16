@@ -16,7 +16,6 @@ from rq import Queue, cancel_job
 import rq_dashboard
 
 from settings import __dict__ as eve_settings, API_BASE_URL, REDIS_HOST, RQ_JOB_TIMEOUT
-from threading import Thread
 from urlparse import urlparse
 from command import Command
 from models.apps import apps
