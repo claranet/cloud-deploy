@@ -6,6 +6,7 @@
 from pymongo import MongoClient
 from bson.objectid import ObjectId
 
+from models.apps import apps_default
 from settings import MONGO_DBNAME, MONGO_HOST, MONGO_PORT, REDIS_HOST
 
 
@@ -96,8 +97,10 @@ def normalize_app(app, embed_last_deployment=False):
             git_repo = module.get('git_repo')
             module_source = module.get('source', {}) or {}
             module_source['url'] = module_source.get('url', git_repo) or git_repo
-            module_source['protocol'] = module_source.get('protocol', 'git') or 'git'
-            module_source['mode'] = module_source.get('mode', 'symlink') or 'symlink'
+            module_source['protocol'] = (module_source.get('protocol', apps_default['modules.source.protocol'])
+                                            or apps_default['modules.source.protocol'])
+            module_source['mode'] = (module_source.get('mode', apps_default['modules.source.mode'])
+                                        or apps_default['modules.source.mode'])
             git_repo = git_repo or module_source['url']
 
             module['git_repo'] = git_repo
