@@ -77,10 +77,10 @@ def normalize_app(app, embed_last_deployment=False):
     >>> [sorted(l.items()) for l in app_logs.get('log_notifications')]
     [[('email', 'no-reply@fr.clara.net'), ('job_states', ['*'])], [('email', 'dummy@fr.clara.net'), ('job_states', ['*'])]]
     """
-    # [GHOST-172] Retrieve each module's last deployment
     if app.get('modules', []):
         db = get_deployments_db()
         for module in app.get('modules', []):
+            # [GHOST-172] Retrieve each module's last deployment
             query = {
                 '$and': [
                     {'app_id': app['_id']},
@@ -91,6 +91,18 @@ def normalize_app(app, embed_last_deployment=False):
             deployment = db.find_one(query, sort=sort)
             if deployment:
                 module['last_deployment'] = deployment if embed_last_deployment else deployment['_id']
+
+            # [GHOST-507] Normalize modules.*.source / git_repo
+            git_repo = module.get('git_repo')
+            module_source = module.get('source', {}) or {}
+            module_source['url'] = module_source.get('url', git_repo) or git_repo
+            module_source['protocol'] = module_source.get('protocol', 'git') or 'git'
+            module_source['mode'] = module_source.get('mode', 'symlink') or 'symlink'
+            git_repo = git_repo or module_source['url']
+
+            module['git_repo'] = git_repo
+            module['source'] = module_source
+
         close_db_connection()
 
     # [GHOST-638] Normalize log_notifications
