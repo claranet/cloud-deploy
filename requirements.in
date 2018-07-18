@@ -12,12 +12,11 @@ boto3
 chardet
 click
 eve-swagger
-Eve==0.7.9
+Eve
 Fabric==1.14.0            # Breaking changes in > 2.0 - http://docs.fabfile.org/en/2.0/upgrading.html
-Flask==0.12               # Breaking changes in > 1.0 - http://flask.pocoo.org/docs/1.0/changelog/
+Flask
 Flask-Bootstrap
 Flask-Login
-flask-pymongo==0.5.*      # Breaking changes with 2.0.0: no longer compatible with MongoDB < 3.2
 Flask-SocketIO
 Flask-WTF
 gevent
@@ -42,6 +41,6 @@ six
 subprocess32
 tox
 uwsgi
-Werkzeug==0.11.15
+Werkzeug
 WTForms
 yapf
