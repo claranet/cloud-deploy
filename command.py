@@ -31,7 +31,7 @@ def format_html_mail_body(app, job, config):
     Returns a formatted HTML mail body content
     """
 
-    env = Environment(loader=FileSystemLoader(TEMPLATES_DIR))
+    env = Environment(loader=FileSystemLoader(os.path.join(ROOT_PATH, TEMPLATES_DIR)))
     template = env.get_template('job_template.html.j2')
     html_body = template.render(
         user=job['user'],

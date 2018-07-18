@@ -9,7 +9,7 @@
     <link href="https://fonts.googleapis.com/css?family=Montserrat" rel="stylesheet" type="text/css">
     <style type="text/css" id="media-query">
         body {
-            margin: 0;
+            Margin: 0;
             padding: 0;
         }
 
@@ -20,14 +20,15 @@
         .table {
           width: 100%;
           max-width: 100%;
-          margin-bottom: 1rem;
-          background-color: transparent;
+          Margin-bottom: 1rem;
         }
 
         .table th,
         .table td {
-          padding: 0.75rem;
           vertical-align: top;
+        }
+
+        .table .table-job td {
           border-top: 1px solid #dee2e6;
         }
 
@@ -390,7 +391,7 @@
                 width: 100% !important;
             }
             .col>div {
-                margin: 0 auto;
+                Margin: 0 auto;
             }
             img.fullwidth,
             img.fullwidthOnMobile {
@@ -444,7 +445,7 @@
                 display: block!important;
             }
             .col>div {
-                margin: 0 auto;
+                Margin: 0 auto;
             }
             img.fullwidth {
                 max-width: 100%!important;
@@ -481,108 +482,113 @@
             }
         }
     </style>
-    <table class="nl-container" style="border-collapse: collapse;table-layout: fixed;border-spacing: 0;mso-table-lspace: 0pt;mso-table-rspace: 0pt;vertical-align: top;min-width: 320px;Margin: 0 auto;background-color: #FFFFFF;width: 100%" cellpadding="0" cellspacing="0">
+    <table class="nl-container" background="https://www.cloudeploy.io/ghost/mail_header_background.gif" bgcolor="#F9F9F9" style="background-image:url('https://www.cloudeploy.io/ghost/mail_header_background.gif');background-position:top center;background-repeat:repeat;background-color:#F9F9F9;border-collapse: collapse;table-layout: fixed;border-spacing: 0;mso-table-lspace: 0pt;mso-table-rspace: 0pt;vertical-align: top;min-width: 320px;Margin: 0 auto;width: 100%" cellpadding="0" cellspacing="0">
         <tbody>
+            <tr style="vertical-align: top"><td style="height:20px;" height="20">&nbsp;</td></tr>
             <tr style="vertical-align: top">
                 <td style="word-break: break-word;border-collapse: collapse !important;vertical-align: top">
-                    <div style="background-image:url('https://www.cloudeploy.io/ghost/mail_header_background.gif');background-position:top center;background-repeat:repeat;;background-color:transparent">
-                        <div style="Margin: 0 auto;min-width: 320px;max-width: 525px;overflow-wrap: break-word;word-wrap: break-word;word-break: break-word;background-color: transparent;" class="block-grid ">
-                            <div style="border-collapse: collapse;display: table;width: 100%;background-color:transparent;">
-                                <div class="col num12" style="min-width: 320px;max-width: 525px;display: table-cell;vertical-align: top;">
-                                    <div style="background-color: transparent; width: 100% !important;">
-                                        <div style="border-top: 0px solid transparent; border-left: 0px solid transparent; border-bottom: 0px solid transparent; border-right: 0px solid transparent; padding-top:5px; padding-bottom:15px; padding-right: 0px; padding-left: 0px;">
-                                            {% block header %}
-                                            {% endblock %}
+                    <div style="Margin: 0 auto;min-width: 320px;max-width: 525px;overflow-wrap: break-word;word-wrap: break-word;word-break: break-word;background-color: transparent;" class="block-grid ">
+                        <div style="border-collapse: collapse;display: table;width: 100%;background-color:transparent;">
+                            <div class="col num12" style="min-width: 320px;max-width: 525px;display: table-cell;vertical-align: top;">
+                                <div style="background-color: transparent; width: 100% !important;">
+                                    <div style="border-top: 0px solid transparent; border-left: 0px solid transparent; border-bottom: 0px solid transparent; border-right: 0px solid transparent; padding-top:5px; padding-bottom:15px; padding-right: 0px; padding-left: 0px;">
+                                        {% block header %}
+                                        {% endblock %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+            </td></tr>
+            <tr style="vertical-align: top"><td style="height:20px;" height="20">&nbsp;</td></tr>
+            <tr style="vertical-align: top">
+                <td style="word-break: break-word;border-collapse: collapse !important;vertical-align: top;text-align: center;">
+                    <table align="center" bgcolor="#FFFFFF" class="table table-hover center" style="background:#FFFF;border-radius: 5px;Margin: 0 auto;font-family:arial,helvetica,sans-serif;max-width: 525px" width="525" cellpadding="0" cellspacing="0">
+                        <tbody>
+                            <tr><td bgcolor="#FFFFFF" style="background:#FFFF;height:10px;" height="10" colspan="3">&nbsp;</td></tr>
+                            <tr>
+                                <td bgcolor="#FFFFFF" style="background:#FFFF;width:20px;" width="20">&nbsp;</td>
+                                <td bgcolor="#FFFFFF" style="background:#FFFF;Margin: 0 auto;width: 485px;" width="485">
+                                    <div style="border-top: 0px solid transparent; border-left: 0px solid transparent; border-bottom: 0px solid transparent; border-right: 0px solid transparent; padding:0px;">
+                                        {% block content %}
+                                        {% endblock %}
+                                    </div>
+                                </td>
+                                <td bgcolor="#FFFFFF" style="background:#FFFF;width:20px;" width="20">&nbsp;</td>
+                            </tr>
+                            <tr><td bgcolor="#FFFFFF" style="background:#FFFF;height:10px;" height="10" colspan="3">&nbsp;</td></tr>
+                        </tbody>
+                    </table>
+                </td>
+            </tr>
+            <tr style="vertical-align: top">
+                <td style="word-break: break-word;border-collapse: collapse !important;vertical-align: top">
+                    <div style="Margin: 0 auto;min-width: 320px;max-width: 525px;overflow-wrap: break-word;word-wrap: break-word;word-break: break-word;background-color: transparent;" class="block-grid ">
+                        <div style="border-collapse: collapse;display: table;width: 100%;background-color:transparent;">
+                            <div class="col num12" style="min-width: 320px;max-width: 525px;display: table-cell;vertical-align: top;">
+                                <div style="background-color: transparent; width: 100% !important;">
+                                    <div style="border-top: 0px solid transparent; border-left: 0px solid transparent; border-bottom: 0px solid transparent; border-right: 0px solid transparent; padding-top:5px; padding-bottom:5px; padding-right: 0px; padding-left: 0px;">
+                                        <div align="center" class="img-container center  autowidth  " style="padding-right: 0px;  padding-left: 0px;">
+                                            <div style="line-height:20px;font-size:1px">&nbsp;</div> <img class="center autowidth" align="center" border="0" src="https://www.cloudeploy.io/ghost/mail_footer_image.png" alt="Cloud Deploy Logo" title="Cloud Deploy Logo" style="outline: none;text-decoration: none;-ms-interpolation-mode: bicubic;clear: both;display: block !important;border: 0;height: auto;float: none;width: 100%;max-width: 300px" width="300">
+                                            <div style="line-height:5px;font-size:1px">&nbsp;</div>
+                                        </div>
+                                        <div style="line-height:120%;color:#555555;font-family:'Lato', Tahoma, Verdana, Segoe, sans-serif; padding-right: 10px; padding-left: 10px; padding-top: 10px; padding-bottom: 10px;">
+                                            <div style="font-size:12px;line-height:14px;color:#555555;font-family:'Lato', Tahoma, Verdana, Segoe, sans-serif;text-align:left;">
+                                                <p style="Margin: 0;font-size: 16px;line-height: 19px;text-align: center"><span style="font-size: 16px; line-height: 19px;"><span style="font-size: 16px; line-height: 19px;"><a style="color:#555555" href="https://docs.cloud-deploy.io" target="_blank" rel="noopener">docs.cloud-deploy.io</a></span></span>
+                                                </p>
+                                                <p style="Margin: 0;font-size: 16px;line-height: 19px;text-align: center">&nbsp;<br></p>
+                                            </div>
+                                        </div>
+                                        <table border="0" cellpadding="0" cellspacing="0" width="100%" class="divider " style="border-collapse: collapse;table-layout: fixed;border-spacing: 0;mso-table-lspace: 0pt;mso-table-rspace: 0pt;vertical-align: top;min-width: 100%;-ms-text-size-adjust: 100%;-webkit-text-size-adjust: 100%">
+                                            <tbody>
+                                                <tr style="vertical-align: top">
+                                                    <td class="divider_inner" style="word-break: break-word;border-collapse: collapse !important;vertical-align: top;padding-right: 0px;padding-left: 0px;padding-top: 0px;padding-bottom: 15px;min-width: 100%;mso-line-height-rule: exactly;-ms-text-size-adjust: 100%;-webkit-text-size-adjust: 100%">
+                                                        <table class="divider_content" height="0px" align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="border-collapse: collapse;table-layout: fixed;border-spacing: 0;mso-table-lspace: 0pt;mso-table-rspace: 0pt;vertical-align: top;border-top: 1px solid #EEEDED;-ms-text-size-adjust: 100%;-webkit-text-size-adjust: 100%">
+                                                            <tbody>
+                                                                <tr style="vertical-align: top">
+                                                                    <td style="word-break: break-word;border-collapse: collapse !important;vertical-align: top;font-size: 0px;line-height: 0px;mso-line-height-rule: exactly;-ms-text-size-adjust: 100%;-webkit-text-size-adjust: 100%"> <span>&nbsp;</span> </td>
+                                                                </tr>
+                                                            </tbody>
+                                                        </table>
+                                                    </td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                        <div align="center" class="img-container center  autowidth  " style="padding-right: 0px;  padding-left: 0px;">
+                                            <div style="line-height:10px;font-size:1px">&nbsp;</div>
+                                            <a href="https://github.com/claranet/cloud-deploy" target="_blank"> <img class="center autowidth" align="center" border="0" src="https://www.cloudeploy.io/ghost/github_logo.png" alt="Cloud Deploy Gihub" title="Cloud Deploy Gihub" style="outline: none;text-decoration: none;-ms-interpolation-mode: bicubic;clear: both;display: block !important;border: none;height: auto;float: none;width: 100%;max-width: 64px" width="64"> </a>
+                                            <div style="line-height:5px;font-size:1px">&nbsp;</div>
+                                        </div>
+                                        <div style="line-height:120%;color:#555555;font-family:'Lato', Tahoma, Verdana, Segoe, sans-serif; padding-right: 10px; padding-left: 10px; padding-top: 10px; padding-bottom: 10px;">
+                                            <div style="font-size:12px;line-height:14px;color:#555555;font-family:'Lato', Tahoma, Verdana, Segoe, sans-serif;text-align:left;">
+                                                <p style="Margin: 0;font-size: 14px;line-height: 17px;text-align: center"><strong>&copy; 2018 Claranet.</strong> All rights reserved</p>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </div>
-                    <div style="background-color:transparent;">
-                        <div style="Margin: 0 auto;min-width: 320px;max-width: 525px;overflow-wrap: break-word;word-wrap: break-word;word-break: break-word;background-color: transparent;" class="block-grid ">
-                            <div style="border-collapse: collapse;display: table;width: 100%;background-color:transparent;">
-                                <div class="col num12" style="min-width: 320px;max-width: 525px;display: table-cell;vertical-align: top;">
-                                    <div style="background-color: transparent; width: 100% !important;">
-                                        <div style="border-top: 0px solid transparent; border-left: 0px solid transparent; border-bottom: 0px solid transparent; border-right: 0px solid transparent; padding-top:5px; padding-bottom:5px; padding-right: 0px; padding-left: 0px;">
-                                            {% block content %}
-                                            {% endblock %}
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div style="background-color:#F9F9F9;">
-                        <div style="Margin: 0 auto;min-width: 320px;max-width: 525px;overflow-wrap: break-word;word-wrap: break-word;word-break: break-word;background-color: transparent;" class="block-grid ">
-                            <div style="border-collapse: collapse;display: table;width: 100%;background-color:transparent;">
-                                <div class="col num12" style="min-width: 320px;max-width: 525px;display: table-cell;vertical-align: top;">
-                                    <div style="background-color: transparent; width: 100% !important;">
-                                        <div style="border-top: 0px solid transparent; border-left: 0px solid transparent; border-bottom: 0px solid transparent; border-right: 0px solid transparent; padding-top:5px; padding-bottom:5px; padding-right: 0px; padding-left: 0px;">
-                                            <div align="center" class="img-container center  autowidth  " style="padding-right: 0px;  padding-left: 0px;">
-                                                <div style="line-height:20px;font-size:1px">&nbsp;</div> <img class="center autowidth" align="center" border="0" src="https://www.cloudeploy.io/ghost/mail_footer_image.png" alt="Cloud Deploy Logo" title="Cloud Deploy Logo" style="outline: none;text-decoration: none;-ms-interpolation-mode: bicubic;clear: both;display: block !important;border: 0;height: auto;float: none;width: 100%;max-width: 300px" width="300">
-                                                <div style="line-height:5px;font-size:1px">&nbsp;</div>
-                                            </div>
-                                            <div style="line-height:120%;color:#555555;font-family:'Lato', Tahoma, Verdana, Segoe, sans-serif; padding-right: 10px; padding-left: 10px; padding-top: 10px; padding-bottom: 10px;">
-                                                <div style="font-size:12px;line-height:14px;color:#555555;font-family:'Lato', Tahoma, Verdana, Segoe, sans-serif;text-align:left;">
-                                                    <p style="margin: 0;font-size: 16px;line-height: 19px;text-align: center"><span style="font-size: 16px; line-height: 19px;"><span style="font-size: 16px; line-height: 19px;"><a style="color:#555555" href="https://docs.cloud-deploy.io" target="_blank" rel="noopener">docs.cloud-deploy.io</a></span></span>
-                                                    </p>
-                                                    <p style="margin: 0;font-size: 16px;line-height: 19px;text-align: center">&nbsp;<br></p>
-                                                </div>
-                                            </div>
-                                            <table border="0" cellpadding="0" cellspacing="0" width="100%" class="divider " style="border-collapse: collapse;table-layout: fixed;border-spacing: 0;mso-table-lspace: 0pt;mso-table-rspace: 0pt;vertical-align: top;min-width: 100%;-ms-text-size-adjust: 100%;-webkit-text-size-adjust: 100%">
-                                                <tbody>
-                                                    <tr style="vertical-align: top">
-                                                        <td class="divider_inner" style="word-break: break-word;border-collapse: collapse !important;vertical-align: top;padding-right: 0px;padding-left: 0px;padding-top: 0px;padding-bottom: 15px;min-width: 100%;mso-line-height-rule: exactly;-ms-text-size-adjust: 100%;-webkit-text-size-adjust: 100%">
-                                                            <table class="divider_content" height="0px" align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="border-collapse: collapse;table-layout: fixed;border-spacing: 0;mso-table-lspace: 0pt;mso-table-rspace: 0pt;vertical-align: top;border-top: 1px solid #EEEDED;-ms-text-size-adjust: 100%;-webkit-text-size-adjust: 100%">
-                                                                <tbody>
-                                                                    <tr style="vertical-align: top">
-                                                                        <td style="word-break: break-word;border-collapse: collapse !important;vertical-align: top;font-size: 0px;line-height: 0px;mso-line-height-rule: exactly;-ms-text-size-adjust: 100%;-webkit-text-size-adjust: 100%"> <span>&nbsp;</span> </td>
-                                                                    </tr>
-                                                                </tbody>
-                                                            </table>
-                                                        </td>
-                                                    </tr>
-                                                </tbody>
-                                            </table>
-                                            <div align="center" class="img-container center  autowidth  " style="padding-right: 0px;  padding-left: 0px;">
-                                                <div style="line-height:10px;font-size:1px">&nbsp;</div>
-                                                <a href="https://github.com/claranet/cloud-deploy" target="_blank"> <img class="center autowidth" align="center" border="0" src="https://www.cloudeploy.io/ghost/github_logo.png" alt="Cloud Deploy Gihub" title="Cloud Deploy Gihub" style="outline: none;text-decoration: none;-ms-interpolation-mode: bicubic;clear: both;display: block !important;border: none;height: auto;float: none;width: 100%;max-width: 64px" width="64"> </a>
-                                                <div style="line-height:5px;font-size:1px">&nbsp;</div>
-                                            </div>
-                                            <div style="line-height:120%;color:#555555;font-family:'Lato', Tahoma, Verdana, Segoe, sans-serif; padding-right: 10px; padding-left: 10px; padding-top: 10px; padding-bottom: 10px;">
-                                                <div style="font-size:12px;line-height:14px;color:#555555;font-family:'Lato', Tahoma, Verdana, Segoe, sans-serif;text-align:left;">
-                                                    <p style="margin: 0;font-size: 14px;line-height: 17px;text-align: center"><strong>&copy; 2018 Claranet.</strong> All rights reserved</p>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div style="background-color:#F9F9F9;">
-                        <div style="Margin: 0 auto;min-width: 320px;max-width: 525px;overflow-wrap: break-word;word-wrap: break-word;word-break: break-word;background-color: transparent;" class="block-grid ">
-                            <div style="border-collapse: collapse;display: table;width: 100%;background-color:transparent;">
-                                <div class="col num12" style="min-width: 320px;max-width: 525px;display: table-cell;vertical-align: top;">
-                                    <div style="background-color: transparent; width: 100% !important;">
-                                        <div style="border-top: 0px solid transparent; border-left: 0px solid transparent; border-bottom: 0px solid transparent; border-right: 0px solid transparent; padding-top:15px; padding-bottom:0px; padding-right: 0px; padding-left: 0px;">
-                                            <table border="0" cellpadding="0" cellspacing="0" width="100%" class="divider " style="border-collapse: collapse;table-layout: fixed;border-spacing: 0;mso-table-lspace: 0pt;mso-table-rspace: 0pt;vertical-align: top;min-width: 100%;-ms-text-size-adjust: 100%;-webkit-text-size-adjust: 100%">
-                                                <tbody>
-                                                    <tr style="vertical-align: top">
-                                                        <td class="divider_inner" style="word-break: break-word;border-collapse: collapse !important;vertical-align: top;padding-right: 10px;padding-left: 10px;padding-top: 10px;padding-bottom: 10px;min-width: 100%;mso-line-height-rule: exactly;-ms-text-size-adjust: 100%;-webkit-text-size-adjust: 100%">
-                                                            <table class="divider_content" align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="border-collapse: collapse;table-layout: fixed;border-spacing: 0;mso-table-lspace: 0pt;mso-table-rspace: 0pt;vertical-align: top;border-top: 0px solid transparent;-ms-text-size-adjust: 100%;-webkit-text-size-adjust: 100%">
-                                                                <tbody>
-                                                                    <tr style="vertical-align: top">
-                                                                        <td style="word-break: break-word;border-collapse: collapse !important;vertical-align: top;mso-line-height-rule: exactly;-ms-text-size-adjust: 100%;-webkit-text-size-adjust: 100%"> <span></span> </td>
-                                                                    </tr>
-                                                                </tbody>
-                                                            </table>
-                                                        </td>
-                                                    </tr>
-                                                </tbody>
-                                            </table>
-                                        </div>
+                    <div style="Margin: 0 auto;min-width: 320px;max-width: 525px;overflow-wrap: break-word;word-wrap: break-word;word-break: break-word;background-color: transparent;" class="block-grid ">
+                        <div style="border-collapse: collapse;display: table;width: 100%;background-color:transparent;">
+                            <div class="col num12" style="min-width: 320px;max-width: 525px;display: table-cell;vertical-align: top;">
+                                <div style="background-color: transparent; width: 100% !important;">
+                                    <div style="border-top: 0px solid transparent; border-left: 0px solid transparent; border-bottom: 0px solid transparent; border-right: 0px solid transparent; padding-top:15px; padding-bottom:0px; padding-right: 0px; padding-left: 0px;">
+                                        <table border="0" cellpadding="0" cellspacing="0" width="100%" class="divider " style="border-collapse: collapse;table-layout: fixed;border-spacing: 0;mso-table-lspace: 0pt;mso-table-rspace: 0pt;vertical-align: top;min-width: 100%;-ms-text-size-adjust: 100%;-webkit-text-size-adjust: 100%">
+                                            <tbody>
+                                                <tr style="vertical-align: top">
+                                                    <td class="divider_inner" style="word-break: break-word;border-collapse: collapse !important;vertical-align: top;padding-right: 10px;padding-left: 10px;padding-top: 10px;padding-bottom: 10px;min-width: 100%;mso-line-height-rule: exactly;-ms-text-size-adjust: 100%;-webkit-text-size-adjust: 100%">
+                                                        <table class="divider_content" align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="border-collapse: collapse;table-layout: fixed;border-spacing: 0;mso-table-lspace: 0pt;mso-table-rspace: 0pt;vertical-align: top;border-top: 0px solid transparent;-ms-text-size-adjust: 100%;-webkit-text-size-adjust: 100%">
+                                                            <tbody>
+                                                                <tr style="vertical-align: top">
+                                                                    <td style="word-break: break-word;border-collapse: collapse !important;vertical-align: top;mso-line-height-rule: exactly;-ms-text-size-adjust: 100%;-webkit-text-size-adjust: 100%"> <span></span> </td>
+                                                                </tr>
+                                                            </tbody>
+                                                        </table>
+                                                    </td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
                                     </div>
                                 </div>
                             </div>
