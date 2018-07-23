@@ -26,7 +26,7 @@ def is_available(app_context=None):
     return True
 
 
-class Deploy():
+class Deploy:
     _app = None
     _job = None
     _log_file = -1
@@ -264,17 +264,8 @@ class Deploy():
         # If resolved_revision begins with or equals revision, it is a commit hash
         return resolved_revision.find(revision) == 0
 
-    def _execute_deploy(self, module, fabric_execution_strategy, safe_deployment_strategy):
-        """
-        Returns the deployment id
-        """
-
-        now = datetime.datetime.utcnow()
-        ts = calendar.timegm(now.timetuple())
-
-        git_repo = module['git_repo'].strip()
+    def _get_module_git(self, module, git_repo, clone_path):
         mirror_path = get_mirror_path_from_module(module)
-        clone_path = get_buildpack_clone_path_from_module(self._app, module)
         lock_path = get_lock_path_from_repo(git_repo)
         revision = self._get_module_revision(module['name'])
 
@@ -357,6 +348,28 @@ class Deploy():
 
         # At last, reset remote origin URL
         gcall('git --no-pager remote set-url origin {r}'.format(r=git_repo), 'Git reset remote origin to {r}'.format(r=git_repo), self._log_file)
+
+        return git_repo, clone_path, revision, commit, commit_message
+
+    def _get_module_sources(self, module):
+        source = module.get('source', {})
+        source_protocol = source['protocol'].strip()
+        source_url = source['url'].strip()
+        clone_path = get_buildpack_clone_path_from_module(self._app, module)
+        if source_protocol == 'git':
+            return self._get_module_git(module, source_url, clone_path)
+        else:
+            raise GCallException('Invalid source protocol provided ({})'.format(source_protocol))
+
+    def _execute_deploy(self, module, fabric_execution_strategy, safe_deployment_strategy):
+        """
+        Returns the deployment id
+        """
+
+        now = datetime.datetime.utcnow()
+        ts = calendar.timegm(now.timetuple())
+
+        git_repo, clone_path, revision, commit, commit_message = self._get_module_sources(module)
 
         # Store predeploy script in tarball
         if 'pre_deploy' in module:
@@ -446,3 +459,33 @@ GHOST_MODULE_USER="{user}"
             '_updated': now,
         }
         return self._worker._db.deploy_histories.insert(deployment)
+
+    def execute(self):
+        fabric_execution_strategy = self._job['options'][0] if 'options' in self._job and len(self._job['options']) > 0 else None
+        safe_deployment_strategy = self._job['options'][1] if 'options' in self._job and len(self._job['options']) > 1 else None
+
+        self._apps_modules = self._find_modules_by_name(self._job['modules'])
+        if not self._apps_modules:
+            self._worker.update_status("aborted", message=self._get_notification_message_aborted(self._job['modules']))
+            return
+
+        refresh_stage2(cloud_connections.get(self._app.get('provider', DEFAULT_PROVIDER))(self._log_file),
+                       self._config.get('bucket_region', self._app['region']), self._config
+                       )
+        module_list = []
+        for module in self._apps_modules:
+            if 'name' in module:
+                module_list.append(module['name'])
+        split_comma = ', '
+        module_list = split_comma.join(module_list)
+        try:
+            deploy_ids = {}
+            for module in self._apps_modules:
+                deploy_id = self._execute_deploy(module, fabric_execution_strategy, safe_deployment_strategy)
+                deploy_ids[module['name']] = deploy_id
+                self._worker._db.jobs.update({ '_id': self._job['_id'], 'modules.name': module['name']}, {'$set': { 'modules.$.deploy_id': deploy_id }})
+                self._worker._db.apps.update({ '_id': self._app['_id'], 'modules.name': module['name']}, {'$set': { 'modules.$.initialized': True }})
+
+            self._worker.update_status("done", message=self._get_notification_message_done(deploy_ids))
+        except GCallException as e:
+            self._worker.update_status("failed", message=self._get_notification_message_failed(module_list, e))
