@@ -11,26 +11,18 @@ from settings import MONGO_DBNAME, MONGO_HOST, MONGO_PORT, REDIS_HOST
 
 
 # DB Access
-def get_db_connection():
-    return MongoClient(host=MONGO_HOST, port=MONGO_PORT)[MONGO_DBNAME]
+db = MongoClient(host=MONGO_HOST, port=MONGO_PORT)[MONGO_DBNAME]
 
 
 def get_deployments_db():
-    db = get_db_connection()
     return db.deploy_histories
-
-
-def close_db_connection():
-    MongoClient().close()
 
 
 # Data Access
 def get_app(app_id):
     if not app_id:
         return None
-    db = get_db_connection()
     app = db.apps.find_one({'_id': ObjectId(app_id)})
-    close_db_connection()
     normalize_app(app)
     return app
 
@@ -38,9 +30,7 @@ def get_app(app_id):
 def get_job(job_id):
     if not job_id:
         return None
-    db = get_db_connection()
     job = db.jobs.find_one({'_id': ObjectId(job_id)})
-    close_db_connection()
     return job
 
 
@@ -79,7 +69,7 @@ def normalize_app(app, embed_last_deployment=False):
     [[('email', 'no-reply@fr.clara.net'), ('job_states', ['*'])], [('email', 'dummy@fr.clara.net'), ('job_states', ['*'])]]
     """
     if app.get('modules', []):
-        db = get_deployments_db()
+        dbdeploys = get_deployments_db()
         for module in app.get('modules', []):
             # [GHOST-172] Retrieve each module's last deployment
             query = {
@@ -89,7 +79,7 @@ def normalize_app(app, embed_last_deployment=False):
                 ]
             }
             sort = [('timestamp', -1)]
-            deployment = db.find_one(query, sort=sort)
+            deployment = dbdeploys.find_one(query, sort=sort)
             if deployment:
                 module['last_deployment'] = deployment if embed_last_deployment else deployment['_id']
 
@@ -105,8 +95,6 @@ def normalize_app(app, embed_last_deployment=False):
 
             module['git_repo'] = git_repo
             module['source'] = module_source
-
-        close_db_connection()
 
     # [GHOST-638] Normalize log_notifications
     log_notifications = []
