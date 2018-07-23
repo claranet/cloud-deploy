@@ -3,8 +3,12 @@
 {% block header %}
 
 <div class="">
-	<div style="line-height:120%;color:#555555;font-family:'Montserrat', 'Trebuchet MS', 'Lucida Grande', 'Lucida Sans Unicode', 'Lucida Sans', Tahoma, sans-serif; padding-right: 10px; padding-left: 10px; padding-top: 30px; padding-bottom: 5px;">	
-		<div style="font-size:12px;line-height:14px;font-family:Montserrat, 'Trebuchet MS', 'Lucida Grande', 'Lucida Sans Unicode', 'Lucida Sans', Tahoma, sans-serif;color:#555555;text-align:left;"><p style="margin: 0;font-size: 12px;line-height: 14px;text-align: center"><span style="font-size: 48px; line-height: 57px;"><strong><span style="line-height: 57px; font-size: 48px;">Cloud Deploy job triggered by </span><strong>{{user}}</strong></span></span></strong></span></p></div>	
+	<div style="line-height:120%;color:#555555;font-family:'Montserrat', 'Trebuchet MS', 'Lucida Grande', 'Lucida Sans Unicode', 'Lucida Sans', Tahoma, sans-serif; padding-right: 10px; padding-left: 10px; padding-top: 30px; padding-bottom: 5px;">
+        <div style="font-size:12px;line-height:14px;font-family:Montserrat, 'Trebuchet MS', 'Lucida Grande', 'Lucida Sans Unicode', 'Lucida Sans', Tahoma, sans-serif;color:#555555;text-align:left;">
+            <p style="margin: 0;font-size: 12px;line-height: 14px;text-align: center">
+                <span style="font-size: 48px; line-height: 57px;">Cloud Deploy job triggered by <strong>{{user}}</strong></span>
+            </p>
+        </div>
 	</div>
 </div>
 
@@ -13,54 +17,43 @@
 
 {% block content %}
 
-<table border="0" cellpadding="1" cellspacing="1" style="margin-top: 20px; margin-bottom: 20px; font-family:arial,helvetica,sans-serif; height:231px; width:700px">
+<table align="left" class="table table-hover table-job" style="font-family:arial,helvetica,sans-serif;max-width: 525px; text-align: left;" cellpadding="20" cellspacing="0">
     <tbody>
-        <tr>
-            <td style="background-color:#858585"><span style="margin-left:5px; font-size:14px"><strong><span style="color:rgb(255, 255, 255)">Status</span></strong></span></td>
-            <td style="background-color:{{status_color}}"><strong><span style="margin-left:5px; color:rgb(255, 255, 255)">{{status}}</span></strong></td>
+        <tr style="background-color:{{status_color}};color:rgb(255, 255, 255)">
+            <td style="width:30%;"><span><strong><span>Status</span></strong></span></td>
+            <td><strong><span>{{status}}</span></strong></td>
         </tr>
         <tr>
-            <td style="background-color:#858585"><span style="margin-left:5px; font-size:14px"><strong><span style="color:rgb(255, 255, 255)">Application</span></strong></span></td>
-            <td style="background-color:#d1d6da"><div style="margin-left:5px;">{{app}}</div></td>
+            <td style="width:30%;"><span><strong><span>Application</span></strong></span></td>
+            <td>{{app}}</td>
         </tr>
         <tr>
-            <td style="background-color:#858585"><span style="margin-left:5px; font-size:14px"><strong><span style="color:rgb(255, 255, 255)">Environment</span></strong></span></td>
-            <td style="background-color:#d1d6da"><div style="margin-left:5px;">{{env}}</div></td>
+            <td style="width:30%;"><span><strong><span>Environment</span></strong></span></td>
+            <td>{{env}}</td>
         </tr>
         <tr>
-            <td style="background-color:#858585"><span style="margin-left:5px; font-size:14px"><strong><span style="color:rgb(255, 255, 255)">Role</span></strong></span></td>
-            <td style="background-color:#d1d6da"><div style="margin-left:5px;">{{role}}</div></td>
+            <td style="width:30%;"><span><strong><span>Role</span></strong></span></td>
+            <td>{{role}}</td>
         </tr>
         <tr>
-            <td style="background-color:#858585"><span style="margin-left:5px; font-size:14px"><strong><span style="color:rgb(255, 255, 255)">Command</span></strong></span></td>
-            <td style="background-color:#d1d6da"><div style="margin-left:5px;">{{command}}</div></td>
+            <td style="width:30%;"><span><strong><span>Command</span></strong></span></td>
+            <td>{{command}}</td>
         </tr>
         <tr>
-            <td style="background-color:#858585"><span style="margin-left:5px; font-size:14px"><strong><span style="color:rgb(255, 255, 255)">Job ID</span></strong></span></td>
-            <td style="background-color:#d1d6da"><div style="margin-left:5px;"><a href="{{ghost_url}}/web/jobs/{{jobId}}" target="_blank">{{jobId}}</a></div></td>
+            <td style="width:30%;"><span><strong><span>Job ID</span></strong></span></td>
+            <td style="word-break: break-word;border-collapse: collapse !important;vertical-align: top"><a href="{{ghost_url}}/web/jobs/{{jobId}}" target="_blank">{{jobId}}</a></td>
+        </tr>
+        <tr style="word-break: break-word;border-collapse: collapse !important;vertical-align: top">
+            <td style="width:30%;"><span><strong><span>Job message</span></strong></span></td>
+            <td style="word-break: break-word;border-collapse: collapse !important;vertical-align: top; max-width: 340px;"><pre style="max-width: 340px;white-space: pre-wrap;">{{message}}</pre></td>
         </tr>
         <tr>
-            <td style="background-color:#858585"><span style="margin-left:5px; font-size:14px"><strong><span style="color:rgb(255, 255, 255)">Job message</span></strong></span></td>
-            <td style="background-color:#d1d6da"><div style="margin-left:5px;"><pre>{{message}}</pre></div></td>
+            <td style="width:30%;"><strong><span><span>Creation date</span></span></strong></td>
+            <td>{{creation_date}}</td>
         </tr>
         <tr>
-            <td style="background-color:#FFFFFF">&nbsp;</td>
-            <td style="background-color:#FFFFFF">&nbsp;</td>
-        </tr>
-        <tr>
-            <td style="background-color:#858585"><strong><span style="margin-left:5px; font-size:14px"><span style="color:rgb(255, 255, 255)">Date</span></span></strong></td>
-            <td style="background-color:#d1d6da">
-                <table border="0" cellpadding="1" cellspacing="1" style="margin-left:5px; font-size:14px; height:70px; width:420px">
-                    <tbody>
-                        <tr>
-                            <td><strong>Creation</strong><br>
-                            {{creation_date}}</td>
-                            <td><strong>End</strong><br>
-                            {{end_date}}</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </td>
+            <td style="width:30%;"><strong><span><span>End date</span></span></strong></td>
+            <td>{{end_date}}</td>
         </tr>
     </tbody>
 </table>
