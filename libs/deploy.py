@@ -6,6 +6,7 @@
 import io
 import os.path
 from copy import copy
+import re
 import sys
 import os
 import tempfile
@@ -436,3 +437,14 @@ def launch_executescript(app, script, context_path, sudoer_user, jobid, hosts_li
                          ghost_env, hosts=hosts_list)
 
     _handle_fabric_errors(result, "Script execution error")
+
+
+def download_s3_object(app, source_url, working_directory, revision, log_file):
+    cloud_connection = cloud_connections.get(app.get('provider', DEFAULT_PROVIDER))(log_file)
+    conn = cloud_connection.get_connection(config.get('bucket_region', app['region']), ["s3"], boto_version='boto3')
+    pattern = re.compile('s3://([a-z0-9][a-z0-9-.]*)?/(.*)')
+    matches = pattern.search(source_url)
+    bucket_name = matches.group(1)
+    bucket_key_path = matches.group(2)
+    conn.download_file(bucket_name, bucket_key_path, os.path.join(working_directory, bucket_key_path),
+                       ExtraArgs={'VersionId': revision})
