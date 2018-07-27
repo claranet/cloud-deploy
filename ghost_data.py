@@ -14,6 +14,10 @@ from settings import MONGO_DBNAME, MONGO_HOST, MONGO_PORT, REDIS_HOST
 db = MongoClient(host=MONGO_HOST, port=MONGO_PORT)[MONGO_DBNAME]
 
 
+def get_fresh_connection():
+    return MongoClient(host=MONGO_HOST, port=MONGO_PORT)[MONGO_DBNAME]
+
+
 def get_deployments_db():
     return db.deploy_histories
 

@@ -10,7 +10,7 @@ from rq import get_current_job, Connection
 from sh import tail
 
 from ghost_aws import push_file_to_s3
-from ghost_data import db as ghost_db, get_app, get_job
+from ghost_data import get_fresh_connection, get_app, get_job
 from ghost_data import update_app, update_job
 from ghost_log import log
 from ghost_tools import get_job_log_remote_path, GHOST_JOB_STATUSES_COLORS
@@ -105,8 +105,6 @@ class Command:
         conf_file_path = rootdir + "/config.yml"
         conf_file = open(conf_file_path, 'r')
         self._config = yaml.load(conf_file)
-        # used in worker sub classes, TODO: to cleanup
-        self._db = ghost_db
 
     # FIXME: not used anymore
     def _update_progress(self, message, **kwargs):
@@ -209,6 +207,8 @@ class Command:
     def execute(self, job_id):
         with Connection(Redis(host=REDIS_HOST)):
             self._worker_job = get_current_job()
+        # used in worker sub classes, TODO: to cleanup
+        self._db = get_fresh_connection()
         self.job = get_job(job_id)
         self.app = get_app(self.job['app_id'])
         self._init_log_file()
