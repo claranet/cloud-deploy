@@ -109,3 +109,11 @@ def normalize_app(app, embed_last_deployment=False):
                 notif['job_states'] = ['*']
             log_notifications.append(notif)
     app['log_notifications'] = log_notifications
+
+
+def update_app(app_id, app_data):
+    db.apps.update({'_id': app_id}, {'$set': app_data})
+
+
+def update_job(job_id, job_data):
+    db.jobs.update({'_id': job_id}, {'$set': job_data})
