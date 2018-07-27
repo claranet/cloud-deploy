@@ -98,7 +98,6 @@ apps_schema = {
                 'parameters': {
                     'type': 'dict',
                     'allow_unknown': True,
-                    'schema': {},
                 }
             }
         }
