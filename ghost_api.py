@@ -409,7 +409,6 @@ def initialize_app_modules(updates, original):
         for updated_module in updates['modules']:
             # Set 'initialized' to False by default in case of new modules
             updated_module['initialized'] = False
-            updated_module['git_repo'] = updated_module['git_repo'].strip()
             for original_module in original['modules']:
                 if updated_module['name'] == original_module['name']:
                     # Restore previous 'initialized' value as 'updated_module' does not contain it (read-only field)
