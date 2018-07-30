@@ -55,6 +55,8 @@ def execute_module_script_on_ghost(app, module, script_name, script_friendly_nam
             if not container.deploy(script_path, module, source_module):
                 raise GCallException("ERROR: %s execution on container failed" % script_name)
         else:
+            log("Change directory to working dir ({w})".format(w=clone_path), log_file)
+            os.chdir(clone_path)
             gcall('bash %s' % script_path, '%s: Execute' % script_friendly_name, log_file, env=script_env)
         
         gcall('du -hs .', 'Display current build directory disk usage', log_file)
