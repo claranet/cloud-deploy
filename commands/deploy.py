@@ -374,7 +374,7 @@ class Deploy:
         # If revision is HEAD, used the latest S3 object version
         if revision.lower().strip() in ['head', 'latest']:
             revision = 'latest'
-            gcall('aws s3 sync "{s}" "{w}" --delete'.format(s=source_url, w=working_directory),
+            gcall('aws s3 cp "{s}" "{w}" --recursive'.format(s=source_url, w=working_directory),
                   'Retrieving from S3 bucket ({url}) at latest revision'.format(url=source_url),
                   self._log_file)
         else:
