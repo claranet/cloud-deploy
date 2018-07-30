@@ -448,5 +448,5 @@ def download_s3_object(app, source_url, working_directory, revision, log_file):
     matches = pattern.search(source_url)
     bucket_name = matches.group(1)
     bucket_key_path = matches.group(2)
-    conn.download_file(bucket_name, bucket_key_path, os.path.join(working_directory, bucket_key_path),
+    conn.download_file(bucket_name, bucket_key_path, os.path.join(working_directory, os.path.basename(bucket_key_path)),
                        ExtraArgs={'VersionId': revision})
