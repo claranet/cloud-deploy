@@ -1,3 +1,5 @@
+import argparse
+
 from datetime import datetime
 
 from flask import abort, request
@@ -350,13 +352,23 @@ ghost.register_blueprint(job_logs_blueprint)
 # Register Websocket server
 ws = create_ws(ghost)
 
+def parse_args():
+    parser = argparse.ArgumentParser(
+        description='Run the Ghost API from the command line.'
+    )
+    parser.add_argument('-d', '--debug', action='store_true')
+    return parser.parse_args()
+
+
 if __name__ == '__main__':
-    ghost.config['DEBUG'] = True
+    args = parse_args()
+
+    ghost.config['DEBUG'] = args.debug
     options = {
         'bind': urlparse(API_BASE_URL).netloc,
         'workers': 1,
         'worker_class': 'geventwebsocket.gunicorn.workers.GeventWebSocketWorker',
-        'debug': True,
+        'debug': args.debug,
         'timeout': 600,
     }
     StandaloneApplication(ghost, options).run()
