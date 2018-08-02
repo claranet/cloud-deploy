@@ -4,7 +4,7 @@
 #
 #    pip-compile --output-file requirements.txt requirements.in
 #
--e git+ssh://bitbucket.org/morea/boto-sts-assume-role@GHOST-677_boto-sts_pip-pkg#egg=botosts
+-e git+ssh://git@bitbucket.org/morea/boto-sts-assume-role@GHOST-677_boto-sts_pip-pkg#egg=botosts
 ansible==2.5.3
 appdirs==1.4.3            # via setuptools https://github.com/ActiveState/appdirs/issues/89
 argparse==1.4.0
