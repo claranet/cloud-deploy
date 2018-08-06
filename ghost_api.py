@@ -205,7 +205,7 @@ def check_app_feature_provisioner(updates):
 
 def check_app_module_path(updates):
     """
-    Check if all modules path are allowed
+    Check if all modules path are allowed and are unique across the app
     :param updates: Modules configurations
 
     >>> check_app_module_path({})
@@ -270,14 +270,43 @@ def check_app_module_path(updates):
     Traceback (most recent call last):
     ...
     GhostAPIInputError
+
+    >>> app = {'_id': 1111, 'env': 'prod', 'name': 'app1', 'role': 'webfront', 'modules': [
+    ...     {'name': 'mod1', 'path': '/srv/ko'}, {'name': 'mod2', 'path': '/srv/ko'}]}
+    >>> check_app_module_path(app)
+    Traceback (most recent call last):
+    ...
+    GhostAPIInputError
+
+    >>> app = {'_id': 1111, 'env': 'prod', 'name': 'app1', 'role': 'webfront', 'modules': [
+    ...     {'name': 'mod1', 'path': '/srv/ko'}, {'name': 'mod2', 'path': '/srv/trick/../ko'}]}
+    >>> check_app_module_path(app)
+    Traceback (most recent call last):
+    ...
+    GhostAPIInputError
+
+    >>> app = {'_id': 1111, 'env': 'prod', 'name': 'app1', 'role': 'webfront', 'modules': [
+    ...     {'name': 'mod1', 'path': '/srv///ko/./'}, {'name': 'mod2', 'path': '/srv/trick/..//./ko/./'}]}
+    >>> check_app_module_path(app)
+    Traceback (most recent call last):
+    ...
+    GhostAPIInputError
+
     """
     if 'modules' in updates:
+        modules_path = {}
         for mod in updates['modules']:
-            if not 'path' in mod:
-                raise GhostAPIInputError('Module "{m} has path empty"'.format(m=mod['name']))
-            if os.path.abspath(mod['path']) in FORBIDDEN_PATH:
-                raise GhostAPIInputError(
-                    'Module "{m}" use a forbidden path : "{p}"'.format(m=mod['name'], p=mod['path']))
+            if 'path' not in mod:
+                raise GhostAPIInputError('Module "{m}" has empty path'.format(m=mod['name']))
+            abs_path = os.path.abspath(mod['path'])
+            if abs_path in FORBIDDEN_PATH:
+                raise GhostAPIInputError('Module "{m}" uses a forbidden path: "{p}"'.format(m=mod['name'],
+                                                                                            p=mod['path']))
+            if abs_path in modules_path.keys():
+                raise GhostAPIInputError('Module "{m}" has a duplicated path ({p}) with another module ("{dm}")'.format(
+                    m=mod['name'], p=mod['path'], dm=modules_path[abs_path]))
+            else:
+                modules_path[abs_path] = mod['name']
 
 
 def check_app_b64_scripts(updates):
