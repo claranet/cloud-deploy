@@ -151,13 +151,8 @@ class LXDImageBuilder(ImageBuilder):
             for image in filtered_images:
                 image.delete()
 
-    def _export_ghost_env_vars(self):
-        for var in self._format_ghost_env_vars():
-            self.container.execute(["export", var])
-
     def _lxd_bootstrap(self):
         log("Bootstrap container", self._log_file)
-        self._export_ghost_env_vars()
         if not boolify(self.skip_salt_bootstrap_option):
             if 'salt' in self.provisioners:
                 salt_bootstrap = self.container.execute(
@@ -172,7 +167,7 @@ class LXDImageBuilder(ImageBuilder):
         log("Run features install", self._log_file)
         if 'salt' in self.provisioners:
             salt_call = self.container.execute(
-                ["salt-call", "state.highstate", "--file-root=/srv/salt/salt", "--pillar-root=/srv/salt/pillar ",
+                ["salt-call", "state.highstate", "--file-root=/srv/salt/salt", "--pillar-root=/srv/salt/pillar",
                  "--local", "-l", self._salt_log_level])
             self._container_log(salt_call)
             self._container_execution_error(salt_call, "salt execution")
@@ -187,7 +182,7 @@ class LXDImageBuilder(ImageBuilder):
 
     def _lxd_run_hooks(self, hook_name):
         log("Run %s" % hook_name, self._log_file)
-        hook_result = self.container.execute(["sh", "/ghost/%s" % hook_name])
+        hook_result = self.container.execute(["sh", "/ghost/%s" % hook_name], self._get_ghost_env_vars())
         self._container_log(hook_result)
         self._container_execution_error(hook_result, hook_name)
 
@@ -197,7 +192,7 @@ class LXDImageBuilder(ImageBuilder):
         self.container.execute(["sed", "2icd " + module['path'], "-i",
                                 "{module_path}/{script}".format(module_path=module['path'], script=script)])
         buildpack = self.container.execute(["sh", "{module_path}/{script}".format(module_path=module['path'],
-                                                                                  script=script)])
+                                                                                  script=script)], self._get_ghost_env_vars())
         self._container_log(buildpack)
         self.container.execute(["chown", "-R", "1001:1002", "{module_path}".format(module_path=module['path'])])
         self._container_execution_error(buildpack, "buildpack")
