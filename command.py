@@ -153,7 +153,7 @@ class Command:
         self.log_file.close()
 
     def _push_log_to_s3(self):
-        cloud_connection = cloud_connections.get(self.app.get('provider', DEFAULT_PROVIDER))(None)
+        cloud_connection = cloud_connections.get(self.app.get('provider', DEFAULT_PROVIDER))(self._config)
         log_path = self._get_log_path()
         bucket = self._config['bucket_s3']
         region = self._config.get('bucket_region', self.app['region'])

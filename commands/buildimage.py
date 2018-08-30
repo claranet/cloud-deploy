@@ -39,7 +39,7 @@ class Buildimage():
             self._app.get('assumed_region_name', '')
         )
         self._cloud_connection = cloud_connections.get(self._app.get('provider', DEFAULT_PROVIDER))(
-            self._log_file,
+            self._config,
             **self._connection_data
         )
         self._aws_image_builder = AWSImageBuilder(self._app, self._job, self._db, self._log_file, self._config)

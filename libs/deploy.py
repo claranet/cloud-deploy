@@ -114,7 +114,7 @@ def get_intermediate_clone_path_from_module(app, module):
 
 def _get_app_manifest_from_s3(app, config, log_file):
     key_path = get_path_from_app_with_color(app) + '/MANIFEST'
-    cloud_connection = cloud_connections.get(app.get('provider', DEFAULT_PROVIDER))(log_file)
+    cloud_connection = cloud_connections.get(app.get('provider', DEFAULT_PROVIDER))(config)
     conn = cloud_connection.get_connection(config.get('bucket_region', app['region']), ["s3"])
     bucket = conn.get_bucket(config['bucket_s3'])
     key = bucket.get_key(key_path)
