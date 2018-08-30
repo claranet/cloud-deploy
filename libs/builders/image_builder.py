@@ -94,14 +94,14 @@ class ImageBuilder:
 
         >>> sorted(ImageBuilder(app, job, None, log_file, None)._format_ghost_env_vars())
         ['GHOST_APP=AppName', 'GHOST_ENV=prod', 'GHOST_ENV_COLOR=', 'GHOST_ROLE=webfront']
-        
+
         >>> app = {
         ...   'name': 'AppName', 'env': 'prod', 'role': 'webfront', 'region': 'eu-west-1',
         ...   'env_vars': [{"var_value": "va", "var_key": "ka"}, {"var_value": "vb", "var_key": "kb" }]
         ... }
         >>> sorted(ImageBuilder(app, job, None, log_file, None)._format_ghost_env_vars())
         ['GHOST_APP=AppName', 'GHOST_ENV=prod', 'GHOST_ENV_COLOR=', 'GHOST_ROLE=webfront', 'ka=va', 'kb=vb']
-        
+
         >>> app = {
         ...   'name': 'AppName', 'env': 'prod', 'role': 'webfront', 'region': 'eu-west-1',
         ...   'env_vars': [{"var_key": "mykey"}]
@@ -109,9 +109,7 @@ class ImageBuilder:
         >>> sorted(ImageBuilder(app, job, None, log_file, None)._format_ghost_env_vars())
         ['GHOST_APP=AppName', 'GHOST_ENV=prod', 'GHOST_ENV_COLOR=', 'GHOST_ROLE=webfront', 'mykey=']
         """
-
         return sorted(['{}={}'.format(k, v) for k, v in self._get_ghost_env_vars().items()])
-
 
     def _generate_buildimage_hook(self, hook_name):
         """
