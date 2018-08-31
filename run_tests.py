@@ -28,6 +28,7 @@ modules = [
     "libs.provisioners.provisioner_ansible",
     "run",
     "run_rqworkers",
+    "pypacker"
 ]
 
 runner = doctest.DocTestRunner(verbose=True)
