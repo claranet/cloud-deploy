@@ -53,7 +53,7 @@ def pre_update_app(updates, original):
 
     >>> from copy import deepcopy
     >>> base_original = {'_id': 1111, 'env': 'prod', 'name': 'app1', 'role': 'webfront', 'modules': [
-    ...     {'name': 'mod1', 'git_repo': 'git@github.com/test/mod1', 'path': '/tmp/ok'},
+    ...     {'name': 'mod1', 'git_repo': 'git@github.com/test/mod1', 'path': '/tmp/ok1'},
     ...     {'name': 'mod2', 'git_repo': 'git@github.com/test/mod2', 'path': '/tmp/ok2'}],
     ... 'environment_infos': {'instance_tags':[]}}
     >>> original = deepcopy(base_original)

@@ -292,6 +292,20 @@ def check_app_module_path(updates):
     ...
     GhostAPIInputError
 
+    >>> app = {'_id': 1111, 'env': 'prod', 'name': 'app1', 'role': 'webfront', 'modules': [
+    ...     {'name': 'mod1', 'path': '/srv///ko/./'}, {'name': 'mod2', 'path': '/srv/trick/..//./ko/./subdir'}]}
+    >>> check_app_module_path(app)
+    Traceback (most recent call last):
+    ...
+    GhostAPIInputError
+
+    >>> app = {'_id': 1111, 'env': 'prod', 'name': 'app1', 'role': 'webfront', 'modules': [
+    ...     {'name': 'mod1', 'path': '/srv///ko/./with-sub/dir'}, {'name': 'mod2', 'path': '/srv/trick/..//./ko/./'}]}
+    >>> check_app_module_path(app)
+    Traceback (most recent call last):
+    ...
+    GhostAPIInputError
+
     """
     if 'modules' in updates:
         modules_path = {}
@@ -302,9 +316,16 @@ def check_app_module_path(updates):
             if abs_path in FORBIDDEN_PATH:
                 raise GhostAPIInputError('Module "{m}" uses a forbidden path: "{p}"'.format(m=mod['name'],
                                                                                             p=mod['path']))
+            path_included = filter(lambda s: s.startswith(abs_path), modules_path.keys())
             if abs_path in modules_path.keys():
                 raise GhostAPIInputError('Module "{m}" has a duplicated path ({p}) with another module ("{dm}")'.format(
-                    m=mod['name'], p=mod['path'], dm=modules_path[abs_path]))
+                    m=mod['name'], p=mod['path'], dm=modules_path.get(abs_path)))
+            elif path_included:
+                raise GhostAPIInputError('Module "{m}" has a path ({p}) in collision with another module ("{dm}")'.format(
+                    m=mod['name'], p=mod['path'], dm=modules_path.get(path_included[0])))
+            elif abs_path.startswith(tuple(modules_path.keys())):
+                raise GhostAPIInputError('Module "{m}" has a path ({p}) in collision with another module'.format(
+                    m=mod['name'], p=mod['path']))
             else:
                 modules_path[abs_path] = mod['name']
 
