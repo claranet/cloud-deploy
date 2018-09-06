@@ -7,9 +7,8 @@ import io
 from ghost_log import log
 from ghost_tools import b64decode_utf8
 
-from libs.provisioners import get_provisioners
-
 from libs.blue_green import get_blue_green_from_app
+from libs.provisioners import get_provisioners
 
 AMI_BASE_FMT = "ami.{env}.{region}.{role}.{name}.{color}"
 AMI_FMT = AMI_BASE_FMT + "{date}"
@@ -78,7 +77,7 @@ class ImageBuilder:
             'GHOST_ROLE': self._app['role'],
         }
         ghost_vars.update({envvar['var_key']: envvar.get('var_value', '')
-                       for envvar in self._app['env_vars']})
+                           for envvar in self._app['env_vars']})
         return ghost_vars
 
     def _generate_buildimage_hook(self, hook_name):
@@ -132,9 +131,10 @@ class ImageBuilder:
         """
         Create and return a dictionary will all hooks available for Build Image process
         """
-        hooks = {}
-        hooks['pre_buildimage'] = self._generate_buildimage_hook('pre_buildimage')
-        hooks['post_buildimage'] = self._generate_buildimage_hook('post_buildimage')
+        hooks = {
+            'pre_buildimage': self._generate_buildimage_hook('pre_buildimage'),
+            'post_buildimage': self._generate_buildimage_hook('post_buildimage')
+        }
         return hooks
 
     @property
