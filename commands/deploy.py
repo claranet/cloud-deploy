@@ -371,7 +371,7 @@ class Deploy:
             raise GCallException('Invalid S3 source url given: "{}", it must starts with "s3://"'.format(source_url))
         revision = self._get_module_revision(module['name'])
 
-        # If revision is HEAD, used the latest S3 object version
+        # If revision is HEAD, use the latest S3 object version
         if revision.lower().strip() in ['head', 'latest']:
             revision = 'latest'
             gcall('aws s3 cp "{s}" "{w}" --recursive'.format(s=source_url, w=working_directory),
