@@ -312,22 +312,25 @@ def check_app_module_path(updates):
         for mod in updates['modules']:
             if 'path' not in mod:
                 raise GhostAPIInputError('Module "{m}" has empty path'.format(m=mod['name']))
+
             abs_path = os.path.abspath(mod['path'])
             if abs_path in FORBIDDEN_PATH:
                 raise GhostAPIInputError('Module "{m}" uses a forbidden path: "{p}"'.format(m=mod['name'],
                                                                                             p=mod['path']))
-            path_included = filter(lambda s: s.startswith(abs_path), modules_path.keys())
             if abs_path in modules_path.keys():
                 raise GhostAPIInputError('Module "{m}" has a duplicated path ({p}) with another module ("{dm}")'.format(
                     m=mod['name'], p=mod['path'], dm=modules_path.get(abs_path)))
-            elif path_included:
-                raise GhostAPIInputError('Module "{m}" has a path ({p}) in collision with another module ("{dm}")'.format(
-                    m=mod['name'], p=mod['path'], dm=modules_path.get(path_included[0])))
-            elif abs_path.startswith(tuple(modules_path.keys())):
+
+            if abs_path.startswith(tuple(modules_path.keys())):
                 raise GhostAPIInputError('Module "{m}" has a path ({p}) in collision with another module'.format(
                     m=mod['name'], p=mod['path']))
-            else:
-                modules_path[abs_path] = mod['name']
+
+            path_included = filter(lambda s: s.startswith(abs_path), modules_path.keys())
+            if path_included:
+                raise GhostAPIInputError('Module "{m}" has a path ({p}) in collision with other(s) module(s) ("{dm}")'.format(
+                    m=mod['name'], p=mod['path'], dm=', '.join([modules_path[x] for x in path_included])))
+
+            modules_path[abs_path] = mod['name']
 
 
 def check_app_b64_scripts(updates):
