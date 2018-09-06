@@ -81,36 +81,6 @@ class ImageBuilder:
                        for envvar in self._app['env_vars']})
         return ghost_vars
 
-    def _format_ghost_env_vars(self):
-        """
-        Generates Cloud Deploy environment variables
-
-        >>> from StringIO import StringIO
-        >>> app = {
-        ...   'name': 'AppName', 'env': 'prod', 'role': 'webfront', 'region': 'eu-west-1','env_vars': []
-        ... }
-        >>> job = {"_id" : "012345678901234567890123"}
-        >>> log_file = StringIO()
-
-        >>> sorted(ImageBuilder(app, job, None, log_file, None)._format_ghost_env_vars())
-        ['GHOST_APP=AppName', 'GHOST_ENV=prod', 'GHOST_ENV_COLOR=', 'GHOST_ROLE=webfront']
-
-        >>> app = {
-        ...   'name': 'AppName', 'env': 'prod', 'role': 'webfront', 'region': 'eu-west-1',
-        ...   'env_vars': [{"var_value": "va", "var_key": "ka"}, {"var_value": "vb", "var_key": "kb" }]
-        ... }
-        >>> sorted(ImageBuilder(app, job, None, log_file, None)._format_ghost_env_vars())
-        ['GHOST_APP=AppName', 'GHOST_ENV=prod', 'GHOST_ENV_COLOR=', 'GHOST_ROLE=webfront', 'ka=va', 'kb=vb']
-
-        >>> app = {
-        ...   'name': 'AppName', 'env': 'prod', 'role': 'webfront', 'region': 'eu-west-1',
-        ...   'env_vars': [{"var_key": "mykey"}]
-        ... }
-        >>> sorted(ImageBuilder(app, job, None, log_file, None)._format_ghost_env_vars())
-        ['GHOST_APP=AppName', 'GHOST_ENV=prod', 'GHOST_ENV_COLOR=', 'GHOST_ROLE=webfront', 'mykey=']
-        """
-        return sorted(['{}={}'.format(k, v) for k, v in self._get_ghost_env_vars().items()])
-
     def _generate_buildimage_hook(self, hook_name):
         """
         Generates a buildimage hook script
@@ -171,7 +141,7 @@ class ImageBuilder:
     def _get_packer_provisionners(self):
 
         provisioners = get_provisioners(self._config, self._log_file, self.unique, self._job["options"], self._app)
-        formatted_env_vars = self._format_ghost_env_vars()
+        formatted_env_vars = sorted(['{}={}'.format(k, v) for k, v in self._get_ghost_env_vars().items()])
 
         hooks = self._get_buildimage_hooks()
         ret = [{
