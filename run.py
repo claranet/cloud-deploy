@@ -387,17 +387,6 @@ def pre_insert_webhook_invocation(items):
     items[0]['status'] = status
     items[0]['payload'] = request.get_data(as_text=True) or ''
 
-    # Validate webhook invocation model before insertion
-    validator = Validator(webhook_invocation_schema)
-    validator.validate(items[0])
-    for key in validator.errors.keys():
-        if key in keys_to_save:
-            del validator.errors[key]
-
-    if validator.errors.keys():
-        abort(500, str(validator.errors))
-
-
 
 def post_insert_webhook_invocation(items):
     invocation = items[0]

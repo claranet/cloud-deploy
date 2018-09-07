@@ -13,11 +13,10 @@ webhook_id = get_webhook_id()
 webhook_url = gen_webhook_url()
 
 
-@patch('run.Validator.errors')
 @patch('webhooks.webhook_handler.post_internal')
 @patch('webhooks.parsers.base.get_app')
 @patch('webhooks.webhook_handler.get_webhook')
-def test_webhook_github(get_webhook, get_app, post_internal, errors):
+def test_webhook_github(get_webhook, get_app, post_internal):
     app = Flask(__name__)
 
     # Overwrite DB related function's behavior
@@ -25,7 +24,6 @@ def test_webhook_github(get_webhook, get_app, post_internal, errors):
         get_app.return_value = conf['app']
         get_webhook.return_value = conf['webhook']
         post_internal.return_value = mock_job_post()
-        errors.keys.return_value = {}
 
     # Positive tests
     # test_github_push
@@ -74,11 +72,10 @@ def test_webhook_github(get_webhook, get_app, post_internal, errors):
                 assert e.description == 'Invalid webhook request payload: \'repository\''
 
 
-@patch('run.Validator.errors')
 @patch('webhooks.webhook_handler.post_internal')
 @patch('webhooks.parsers.base.get_app')
 @patch('webhooks.webhook_handler.get_webhook')
-def test_webhook_bitbucket(get_webhook, get_app, post_internal, errors):
+def test_webhook_bitbucket(get_webhook, get_app, post_internal):
     conf = load_bitbucket_conf()
     app = Flask(__name__)
 
@@ -87,7 +84,6 @@ def test_webhook_bitbucket(get_webhook, get_app, post_internal, errors):
         get_app.return_value = conf['app']
         get_webhook.return_value = conf['webhook']
         post_internal.return_value = mock_job_post()
-        errors.keys.return_value = {}
 
     # Positive tests
     load_mocks(conf)
@@ -134,11 +130,10 @@ def test_webhook_bitbucket(get_webhook, get_app, post_internal, errors):
                 assert e.description == 'Invalid webhook request payload: \'repository\''
 
 
-@patch('run.Validator.errors')
 @patch('webhooks.webhook_handler.post_internal')
 @patch('webhooks.parsers.base.get_app')
 @patch('webhooks.webhook_handler.get_webhook')
-def test_webhook_gitlab(get_webhook, get_app, post_internal, errors):
+def test_webhook_gitlab(get_webhook, get_app, post_internal):
     conf = load_gitlab_conf()
     app = Flask(__name__)
 
@@ -147,7 +142,6 @@ def test_webhook_gitlab(get_webhook, get_app, post_internal, errors):
         get_app.return_value = conf['app']
         get_webhook.return_value = conf['webhook']
         post_internal.return_value = mock_job_post()
-        errors.keys.return_value = {}
 
     # Positive tests
     # test_gitlab_simple
