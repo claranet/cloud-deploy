@@ -1,4 +1,5 @@
 import hmac
+import re
 from hashlib import sha1
 
 from base import WebhookParser
@@ -27,7 +28,7 @@ class GithubWebhookParser(WebhookParser):
         event = self.get_event()
 
         if event in ['push', 'tag']:
-            return self._payload['ref']
+            return re.sub('^refs\/(heads|tags)\/', '', self._payload['ref'])
         elif event == 'merge':
             return self._payload['pull_request']['base']['ref']
 
