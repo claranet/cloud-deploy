@@ -45,14 +45,16 @@ class Deploy():
         self._config = worker._config
         self._worker = worker
         self._connection_data = get_aws_connection_data(
-                self._app.get('assumed_account_id', ''),
-                self._app.get('assumed_role_name', ''),
-                self._app.get('assumed_region_name', '')
-                )
+            self._app.get('assumed_account_id', ''),
+            self._app.get('assumed_role_name', ''),
+            self._app.get('assumed_region_name', '')
+        )
         self._cloud_connection = cloud_connections.get(self._app.get('provider', DEFAULT_PROVIDER))(
-                self._log_file,
-                **self._connection_data
-                )
+            self._config,
+            **self._connection_data
+        )
+        # Local connection without Assume Role data, needed for local S3 access
+        self._local_cloud_connection = cloud_connections.get(self._app.get('provider', DEFAULT_PROVIDER))(self._config)
 
     def _find_modules_by_name(self, modules):
         result = []
@@ -109,8 +111,7 @@ class Deploy():
         gcall("tar czf {0} --owner={1} --group={2} {3} .".format(pkg_path, uid, gid, tar_exclude_git), "Creating package: %s" % pkg_name, self._log_file)
 
         log("Uploading package: %s" % pkg_name, self._log_file)
-        cloud_connection = cloud_connections.get(self._app.get('provider', DEFAULT_PROVIDER))(self._log_file)
-        conn = cloud_connection.get_connection(self._config.get('bucket_region', self._app['region']), ["s3"])
+        conn = self._local_cloud_connection.get_connection(self._config.get('bucket_region', self._app['region']), ["s3"])
         bucket = conn.get_bucket(self._config['bucket_s3'])
         key_path = '{path}/{pkg_name}'.format(path=path, pkg_name=pkg_name)
         key = bucket.get_key(path)
@@ -194,9 +195,8 @@ class Deploy():
             self._worker.update_status("aborted", message=self._get_notification_message_aborted(self._job['modules']))
             return
 
-        refresh_stage2(cloud_connections.get(self._app.get('provider', DEFAULT_PROVIDER))(self._log_file),
-                self._config.get('bucket_region', self._app['region']), self._config
-                )
+        # Cannot use self._cloud_connection, needs to use local one for S3 bucket
+        refresh_stage2(self._local_cloud_connection, self._config.get('bucket_region', self._app['region']), self._config)
         module_list = []
         for module in self._apps_modules:
             if 'name' in module:

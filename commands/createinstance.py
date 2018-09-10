@@ -17,7 +17,7 @@ def is_available(app_context=None):
     return app_context.get('ami', '') != ''
 
 
-class Createinstance():
+class Createinstance:
     _app = None
     _job = None
     _log_file = -1
@@ -30,14 +30,14 @@ class Createinstance():
         self._worker = worker
         self._log_file = worker.log_file
         self._connection_data = get_aws_connection_data(
-                self._app.get('assumed_account_id', ''),
-                self._app.get('assumed_role_name', ''),
-                self._app.get('assumed_region_name', '')
-                )
+            self._app.get('assumed_account_id', ''),
+            self._app.get('assumed_role_name', ''),
+            self._app.get('assumed_region_name', '')
+        )
         self._cloud_connection = cloud_connections.get(self._app.get('provider', DEFAULT_PROVIDER))(
-                self._log_file,
-                **self._connection_data
-                )
+            self._config,
+            **self._connection_data
+        )
         blue_green, self._color = get_blue_green_from_app(self._app)
 
     def execute(self):

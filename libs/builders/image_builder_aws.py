@@ -25,7 +25,7 @@ class AWSImageBuilder(ImageBuilder):
             self._app.get('assumed_region_name', '')
         )
         self._cloud_connection = cloud_connections.get(self._app.get('provider', DEFAULT_PROVIDER))(
-            self._log_file,
+            self._config,
             **self._connection_data
         )
         self._packer_file_path_aws = os.path.join(self.packer_directory_path, 'aws_builder.json')

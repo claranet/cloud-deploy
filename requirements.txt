@@ -4,18 +4,19 @@
 #
 #    pip-compile --output-file requirements.txt requirements.in
 #
+-e git+ssh://git@bitbucket.org/morea/boto-sts-assume-role@v0.0.2#egg=botosts
 ansible==2.5.3
 appdirs==1.4.3            # via setuptools https://github.com/ActiveState/appdirs/issues/89
 argparse==1.4.0
 arrow==0.12.1             # via rq-dashboard
 asn1crypto==0.24.0        # via cryptography
-awscli==1.15.60
+awscli==1.15.69
 backports.functools-lru-cache==1.5  # via arrow
 bcrypt==3.1.4
 blinker==1.4
-boto3==1.7.59
+boto3==1.7.68
 boto==2.49.0
-botocore==1.10.59         # via awscli, boto3, s3transfer
+botocore==1.10.68         # via awscli, boto3, s3transfer
 cerberus==1.2             # via eve
 certifi==2018.4.16        # via requests
 cffi==1.11.5              # via bcrypt, cryptography, pynacl
