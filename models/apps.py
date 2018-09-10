@@ -149,7 +149,7 @@ apps_schema = {
                             'type': 'string',
                             'required': False,
                             'default': APPS_DEFAULT['modules.source.protocol'],
-                            'allowed': ['git'],
+                            'allowed': ['git', 's3'],
                         },
                         'url': {
                             'type': 'string',

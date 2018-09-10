@@ -17,6 +17,7 @@ from libs.deploy import execute_module_script_on_ghost
 from libs.deploy import get_path_from_app_with_color
 from libs.deploy import get_buildpack_clone_path_from_module, get_intermediate_clone_path_from_module
 from libs.deploy import update_app_manifest, rollback_app_manifest
+from libs.deploy import download_s3_object
 
 COMMAND_DESCRIPTION = "Deploy module(s)"
 RELATED_APP_FIELDS = ['modules']
@@ -265,6 +266,13 @@ class Deploy:
         return resolved_revision.find(revision) == 0
 
     def _get_module_git(self, module, git_repo, clone_path):
+        """
+        Fetch the module sources from Git
+        :param module: Module object
+        :param git_repo: Source git repository
+        :param clone_path: Working directory
+        :return: (source url, working directory, source version, version uid, version message)
+        """
         mirror_path = get_mirror_path_from_module(module)
         lock_path = get_lock_path_from_repo(git_repo)
         revision = self._get_module_revision(module['name'])
@@ -351,13 +359,45 @@ class Deploy:
 
         return git_repo, clone_path, revision, commit, commit_message
 
+    def _get_module_s3(self, module, source_url, working_directory):
+        """
+        Fetch the module sources from S3
+        :param module:
+        :param source_url:
+        :param working_directory:
+        :return: (source url, working directory, source version, version uid, version message)
+        """
+        if not source_url.startswith('s3://'):
+            raise GCallException('Invalid S3 source url given: "{}", it must starts with "s3://"'.format(source_url))
+        revision = self._get_module_revision(module['name'])
+
+        # If revision is HEAD, use the latest S3 object version
+        if revision.lower().strip() in ['head', 'latest']:
+            revision = 'latest'
+            gcall('aws s3 cp "{s}" "{w}" --recursive'.format(s=source_url, w=working_directory),
+                  'Retrieving from S3 bucket ({url}) at latest revision'.format(url=source_url),
+                  self._log_file)
+        else:
+            log("Retrieving from S3 bucket ({url}) at revision '{rev}'".format(url=source_url, rev=revision),
+                self._log_file)
+            download_s3_object(self._app, source_url, working_directory, revision, self._log_file)
+
+        return source_url, working_directory, revision, '', ''
+
     def _get_module_sources(self, module):
+        """
+        Fetch the current module source, using the right protocol
+        :param module: app module object
+        :return: (source url, working directory, source version, version uid, version message)
+        """
         source = module.get('source', {})
         source_protocol = source['protocol'].strip()
         source_url = source['url'].strip()
         clone_path = get_buildpack_clone_path_from_module(self._app, module)
         if source_protocol == 'git':
             return self._get_module_git(module, source_url, clone_path)
+        elif source_protocol == 's3':
+            return self._get_module_s3(module, source_url, clone_path)
         else:
             raise GCallException('Invalid source protocol provided ({})'.format(source_protocol))
 
