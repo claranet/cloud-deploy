@@ -7,9 +7,8 @@ import io
 from ghost_log import log
 from ghost_tools import b64decode_utf8
 
-from libs.provisioners import get_provisioners
-
 from libs.blue_green import get_blue_green_from_app
+from libs.provisioners import get_provisioners
 
 AMI_BASE_FMT = "ami.{env}.{region}.{role}.{name}.{color}"
 AMI_FMT = AMI_BASE_FMT + "{date}"
@@ -42,44 +41,44 @@ class ImageBuilder:
         if not os.path.exists(self.packer_directory_path):
             os.makedirs(self.packer_directory_path)
 
-    def _format_ghost_env_vars(self):
+    def _get_ghost_env_vars(self):
         """
         Generates Cloud Deploy environment variables
-
+ 
         >>> from StringIO import StringIO
         >>> app = {
         ...   'name': 'AppName', 'env': 'prod', 'role': 'webfront', 'region': 'eu-west-1','env_vars': []
         ... }
         >>> job = {"_id" : "012345678901234567890123"}
         >>> log_file = StringIO()
-
-        >>> ImageBuilder(app, job, None, log_file, None)._format_ghost_env_vars()
-        ['GHOST_APP=AppName', 'GHOST_ENV=prod', 'GHOST_ENV_COLOR=', 'GHOST_ROLE=webfront']
+ 
+        >>> sorted(ImageBuilder(app, job, None, log_file, None)._get_ghost_env_vars().items())
+        [('GHOST_APP', 'AppName'), ('GHOST_ENV', 'prod'), ('GHOST_ENV_COLOR', ''), ('GHOST_ROLE', 'webfront')]
 
         >>> app = {
         ...   'name': 'AppName', 'env': 'prod', 'role': 'webfront', 'region': 'eu-west-1',
         ...   'env_vars': [{"var_value": "va", "var_key": "ka"}, {"var_value": "vb", "var_key": "kb" }]
         ... }
-        >>> ImageBuilder(app, job, None, log_file, None)._format_ghost_env_vars()
-        ['GHOST_APP=AppName', 'GHOST_ENV=prod', 'GHOST_ENV_COLOR=', 'GHOST_ROLE=webfront', 'ka=va', 'kb=vb']
+        >>> sorted(ImageBuilder(app, job, None, log_file, None)._get_ghost_env_vars().items())
+        [('GHOST_APP', 'AppName'), ('GHOST_ENV', 'prod'), ('GHOST_ENV_COLOR', ''), ('GHOST_ROLE', 'webfront'), ('ka', 'va'), ('kb', 'vb')]
 
         >>> app = {
         ...   'name': 'AppName', 'env': 'prod', 'role': 'webfront', 'region': 'eu-west-1',
         ...   'env_vars': [{"var_key": "mykey"}]
         ... }
-        >>> ImageBuilder(app, job, None, log_file, None)._format_ghost_env_vars()
-        ['GHOST_APP=AppName', 'GHOST_ENV=prod', 'GHOST_ENV_COLOR=', 'GHOST_ROLE=webfront', 'mykey=']
+        >>> sorted(ImageBuilder(app, job, None, log_file, None)._get_ghost_env_vars().items())
+        [('GHOST_APP', 'AppName'), ('GHOST_ENV', 'prod'), ('GHOST_ENV_COLOR', ''), ('GHOST_ROLE', 'webfront'), ('mykey', '')]
         """
 
-        ghost_vars = [
-            'GHOST_APP=%s' % self._app['name'],
-            'GHOST_ENV=%s' % self._app['env'],
-            'GHOST_ENV_COLOR=%s' % (self._color if self._color else ''),
-            'GHOST_ROLE=%s' % self._app['role'],
-        ]
-        custom_vars = ['%s=%s' % (envvar['var_key'], envvar.get('var_value', ''))
-                       for envvar in self._app['env_vars']]
-        return ghost_vars + custom_vars
+        ghost_vars = {
+            'GHOST_APP': self._app['name'],
+            'GHOST_ENV': self._app['env'],
+            'GHOST_ENV_COLOR': (self._color if self._color else ''),
+            'GHOST_ROLE': self._app['role'],
+        }
+        ghost_vars.update({envvar['var_key']: envvar.get('var_value', '')
+                           for envvar in self._app['env_vars']})
+        return ghost_vars
 
     def _generate_buildimage_hook(self, hook_name):
         """
@@ -132,16 +131,17 @@ class ImageBuilder:
         """
         Create and return a dictionary will all hooks available for Build Image process
         """
-        hooks = {}
-        hooks['pre_buildimage'] = self._generate_buildimage_hook('pre_buildimage')
-        hooks['post_buildimage'] = self._generate_buildimage_hook('post_buildimage')
+        hooks = {
+            'pre_buildimage': self._generate_buildimage_hook('pre_buildimage'),
+            'post_buildimage': self._generate_buildimage_hook('post_buildimage')
+        }
         return hooks
 
     @property
     def _get_packer_provisionners(self):
 
         provisioners = get_provisioners(self._config, self._log_file, self.unique, self._job["options"], self._app)
-        formatted_env_vars = self._format_ghost_env_vars()
+        formatted_env_vars = sorted(['{}={}'.format(k, v) for k, v in self._get_ghost_env_vars().items()])
 
         hooks = self._get_buildimage_hooks()
         ret = [{
