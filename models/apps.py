@@ -4,6 +4,11 @@ import resources
 import tags
 import volumes
 
+APPS_DEFAULT = {
+    'modules.source.mode': 'symlink',
+    'modules.source.protocol': 'git',
+}
+
 apps_schema = {
     'name': {
         'type': 'string',
@@ -143,7 +148,7 @@ apps_schema = {
                         'protocol': {
                             'type': 'string',
                             'required': False,
-                            'default': 'git',
+                            'default': APPS_DEFAULT['modules.source.protocol'],
                             'allowed': ['git'],
                         },
                         'url': {
@@ -153,7 +158,7 @@ apps_schema = {
                         'mode': {
                             'type': 'string',
                             'required': False,
-                            'default': 'symlink',
+                            'default': APPS_DEFAULT['modules.source.mode'],
                             'allowed': ['symlink'],
                         },
                     },

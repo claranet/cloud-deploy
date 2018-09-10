@@ -31,6 +31,7 @@ from ghost_api import ALL_COMMAND_FIELDS, check_app_immutable_fields
 from ghost_lxd import lxd_blueprint
 from libs.blue_green import BLUE_GREEN_COMMANDS, get_blue_green_from_app, ghost_has_blue_green_enabled
 from ghost_aws import normalize_application_tags
+from ghost_data import normalize_app
 
 
 def get_apps_db():
@@ -223,64 +224,13 @@ def post_insert_app(items):
             abort(422, "Problem occurred when creating/enabling the green app")
 
 
-def _post_fetched_app(app, embed_last_deployment=False):
-    """
-    eve post-fetch app event hook to normalize special fields, mostly with models breaking changes
-
-    >>> app_logs = {}
-    >>> _post_fetched_app(app_logs)
-    >>> app_logs.get('log_notifications')
-    []
-
-    >>> app_logs = {'log_notifications': [
-    ...     'no-reply@fr.clara.net',
-    ...     'dummy@fr.clara.net',
-    ... ]}
-    >>> _post_fetched_app(app_logs)
-    >>> [sorted(l.items()) for l in app_logs.get('log_notifications')]
-    [[('email', 'no-reply@fr.clara.net'), ('job_states', ['*'])], [('email', 'dummy@fr.clara.net'), ('job_states', ['*'])]]
-
-    >>> app_logs = {'log_notifications': [
-    ...     {'email': 'no-reply@fr.clara.net', 'job_states': ['done']},
-    ...     'dummy@fr.clara.net',
-    ... ]}
-    >>> _post_fetched_app(app_logs)
-    >>> [sorted(l.items()) for l in app_logs.get('log_notifications')]
-    [[('email', 'no-reply@fr.clara.net'), ('job_states', ['done'])], [('email', 'dummy@fr.clara.net'), ('job_states', ['*'])]]
-    """
-    # Retrieve each module's last deployment
-    for module in app.get('modules', []):
-        query = {
-            '$and': [
-                {'app_id': app['_id']},
-                {'module': module['name']}
-            ]
-        }
-        sort = [('timestamp', -1)]
-        deployment = get_deployments_db().find_one(query, sort=sort)
-        if deployment:
-            module['last_deployment'] = deployment if embed_last_deployment else deployment['_id']
-
-    # Normalize log_notifications
-    log_notifications = []
-    for notif in app.get('log_notifications', []):
-        if isinstance(notif, basestring):
-            log_notifications.append({
-                'email': notif,
-                'job_states': ['*']
-            })
-        else:
-            log_notifications.append(notif)
-    app['log_notifications'] = log_notifications
-
-
 def post_fetched_apps(response):
     # Do we need to embed each module's last_deployment?
     embedded = json.loads(request.args.get('embedded', '{}'))
     embed_last_deployment = boolify(embedded.get('modules.last_deployment', False))
 
     for app in response['_items']:
-        _post_fetched_app(app, embed_last_deployment)
+        normalize_app(app, embed_last_deployment)
 
 
 def post_fetched_app(response):
@@ -288,7 +238,7 @@ def post_fetched_app(response):
     embedded = json.loads(request.args.get('embedded', '{}'))
     embed_last_deployment = boolify(embedded.get('modules.last_deployment', False))
 
-    _post_fetched_app(response, embed_last_deployment)
+    normalize_app(response, embed_last_deployment)
 
 
 def pre_insert_job(items):
