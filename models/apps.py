@@ -137,8 +137,29 @@ apps_schema = {
                 'name': {'type': 'string',
                          'regex': '^[a-zA-Z0-9\.\-\_]*$',
                          'required': True},
+                'source': {
+                    'type': 'dict',
+                    'schema': {
+                        'protocol': {
+                            'type': 'string',
+                            'required': False,
+                            'default': 'git',
+                            'allowed': ['git'],
+                        },
+                        'url': {
+                            'type': 'string',
+                            'required': False,
+                        },
+                        'mode': {
+                            'type': 'string',
+                            'required': False,
+                            'default': 'symlink',
+                            'allowed': ['symlink'],
+                        },
+                    },
+                },
                 'git_repo': {'type': 'string',
-                             'required': True},
+                             'required': False},
                 'scope': {
                     'type': 'string',
                     'required': True,
