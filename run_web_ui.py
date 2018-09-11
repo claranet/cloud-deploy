@@ -4,10 +4,8 @@ import gunicorn.app.base
 from gunicorn.six import iteritems
 
 from web_ui import app as web_ui_app
-from web_ui import websocket
 
 app = web_ui_app.app
-ws = websocket.create_ws(app)
 
 class StandaloneApplication(gunicorn.app.base.BaseApplication):
     def __init__(self, app, options=None):
@@ -35,19 +33,12 @@ def run_standalone():
     }
     StandaloneApplication(app, options).run()
 
-def run_eclipse():
-    ws.run(app, host='0.0.0.0', port=5001, log_output=True)
-
 def parse_args():
     parser = argparse.ArgumentParser(
         description='Run the Ghost web ui from the command line.'
     )
-    parser.add_argument('--eclipse', action='store_true')
     return parser.parse_args()
 
 if __name__ == '__main__':
     args = parse_args()
-    if args.eclipse:
-        run_eclipse()
-    else:
-        run_standalone()
+    run_standalone()

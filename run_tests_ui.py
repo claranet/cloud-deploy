@@ -13,7 +13,6 @@ modules = [
     "web_ui.forms.form_aws_helper",
     "web_ui.forms.form_helper",
     "web_ui.ghost_client",
-    "web_ui.websocket",
     "web_ui.ui_helpers"
 ]
 

@@ -5,9 +5,11 @@
 
 import os
 import binascii
+import gunicorn.app.base
 from datetime import datetime
 from eve.methods.post import post_internal
 from ghost_tools import ghost_app_object_copy, get_available_provisioners_from_config, b64decode_utf8
+from gunicorn.six import iteritems
 from libs.blue_green import get_blue_green_from_app
 
 OPPOSITE_COLOR = {
@@ -17,6 +19,22 @@ OPPOSITE_COLOR = {
 FORBIDDEN_PATH = ['/', '/tmp', '/var', '/etc', '/ghost', '/root', '/home', '/home/admin']
 COMMAND_FIELDS = ['autoscale', 'blue_green', 'build_infos', 'environment_infos', 'lifecycle_hooks']
 ALL_COMMAND_FIELDS = ['modules', 'features'] + COMMAND_FIELDS
+
+
+class StandaloneApplication(gunicorn.app.base.BaseApplication):
+    def __init__(self, app, options=None):
+        self.options = options or {}
+        self.application = app
+        super(StandaloneApplication, self).__init__()
+
+    def load_config(self):
+        config = dict([(key, value) for key, value in iteritems(self.options)
+                       if key in self.cfg.settings and value is not None])
+        for key, value in iteritems(config):
+            self.cfg.set(key.lower(), value)
+
+    def load(self):
+        return self.application
 
 
 class GhostAPIInputError(Exception):

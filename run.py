@@ -1,3 +1,5 @@
+import argparse
+
 from datetime import datetime
 
 from flask import abort, request
@@ -15,7 +17,8 @@ from redis import Redis
 from rq import Queue, cancel_job
 import rq_dashboard
 
-from settings import __dict__ as eve_settings, REDIS_HOST, RQ_JOB_TIMEOUT
+from settings import __dict__ as eve_settings, API_BASE_URL, REDIS_HOST, RQ_JOB_TIMEOUT
+from urlparse import urlparse
 from command import Command
 from models.apps import apps
 from models.jobs import jobs, CANCELLABLE_JOB_STATUSES, DELETABLE_JOB_STATUSES
@@ -27,11 +30,13 @@ from ghost_api import ghost_api_bluegreen_is_enabled, ghost_api_enable_green_app
 from ghost_api import ghost_api_delete_alter_ego_app, ghost_api_clean_bluegreen_app
 from ghost_api import initialize_app_modules, check_and_set_app_fields_state
 from ghost_api import ghost_api_app_data_input_validator, GhostAPIInputError
-from ghost_api import ALL_COMMAND_FIELDS, check_app_immutable_fields
+from ghost_api import ALL_COMMAND_FIELDS, check_app_immutable_fields, StandaloneApplication
 from ghost_lxd import lxd_blueprint
 from libs.blue_green import BLUE_GREEN_COMMANDS, get_blue_green_from_app, ghost_has_blue_green_enabled
 from ghost_aws import normalize_application_tags
 from ghost_data import normalize_app
+
+from websocket import create_ws
 
 
 def get_apps_db():
@@ -344,5 +349,26 @@ ghost.register_blueprint(lxd_blueprint)
 ghost.register_blueprint(version_blueprint)
 ghost.register_blueprint(job_logs_blueprint)
 
+# Register Websocket server
+ws = create_ws(ghost)
+
+def parse_args():
+    parser = argparse.ArgumentParser(
+        description='Run the Ghost API from the command line.'
+    )
+    parser.add_argument('-d', '--debug', action='store_true')
+    return parser.parse_args()
+
+
 if __name__ == '__main__':
-    ghost.run(host='0.0.0.0')
+    args = parse_args()
+
+    ghost.config['DEBUG'] = args.debug
+    options = {
+        'bind': urlparse(API_BASE_URL).netloc,
+        'workers': 1,
+        'worker_class': 'geventwebsocket.gunicorn.workers.GeventWebSocketWorker',
+        'debug': args.debug,
+        'timeout': 600,
+    }
+    StandaloneApplication(ghost, options).run()
