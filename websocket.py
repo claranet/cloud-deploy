@@ -81,15 +81,15 @@ class HtmlLogFormatter():
         :return: dict:
 
         >>> sorted(HtmlLogFormatter.format_error('Test error').items())
-        [('html', 'Test error'), ('last_pos', 0)]
+        [('html', '<div class="panel panel-default"><em class="panel-heading"><span class="timeinterval"><i class="glyphicon glyphicon-time"></i></span><span class="command-title"><span style="color: #f44336">ERROR: Test error</span></span></em><div class="panel-body"></div></div>'), ('last_pos', 0)]
 
         >>> sorted(HtmlLogFormatter.format_error('').items())
-        [('html', ''), ('last_pos', 0)]
+        [('html', '<div class="panel panel-default"><em class="panel-heading"><span class="timeinterval"><i class="glyphicon glyphicon-time"></i></span><span class="command-title"><span style="color: #f44336">ERROR: </span></span></em><div class="panel-body"></div></div>'), ('last_pos', 0)]
 
         >>> sorted(HtmlLogFormatter.format_error(None).items())
-        [('html', None), ('last_pos', 0)]
+        [('html', '<div class="panel panel-default"><em class="panel-heading"><span class="timeinterval"><i class="glyphicon glyphicon-time"></i></span><span class="command-title"><span style="color: #f44336">ERROR: </span></span></em><div class="panel-body"></div></div>'), ('last_pos', 0)]
         """
-        return {'html': error_message, 'last_pos': 0}
+        return {'html': '<div class="panel panel-default"><em class="panel-heading"><span class="timeinterval"><i class="glyphicon glyphicon-time"></i></span><span class="command-title"><span style="color: #f44336">ERROR: {}</span></span></em><div class="panel-body"></div></div>'.format(error_message if error_message else ''), 'last_pos': 0}
 
 
 class RawLogFormatter():
