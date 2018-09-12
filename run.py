@@ -306,6 +306,23 @@ def pre_delete_job_enqueueings():
     abort(422, description="Cancelling a job not in init status is not allowed")
 
 
+def post_fetched_deployments(response):
+    embedded = json.loads(request.args.get('embedded', '{}'))
+    embed_app = boolify(embedded.get('app_id', False))
+
+    if embed_app:
+        for deployment in response['_items']:
+            normalize_app(deployment.get('app_id'), False)
+
+
+def post_fetched_deployment(response):
+    embedded = json.loads(request.args.get('embedded', '{}'))
+    embed_app = boolify(embedded.get('app_id', False))
+
+    if embed_app:
+        normalize_app(response.get('app_id'), False)
+
+
 # Create ghost app, explicitly specifying the settings to avoid errors during doctest execution
 ghost = Eve(auth=BCryptAuth, settings=eve_settings)
 Bootstrap(ghost)
@@ -340,6 +357,8 @@ ghost.on_insert_jobs += pre_insert_job
 ghost.on_inserted_jobs += post_insert_job
 ghost.on_delete_item_jobs += pre_delete_job
 ghost.on_delete_resource_job_enqueueings += pre_delete_job_enqueueings
+ghost.on_fetched_item_deployments += post_fetched_deployment
+ghost.on_fetched_resource_deployments += post_fetched_deployments
 
 ghost.ghost_redis_connection = Redis(host=REDIS_HOST)
 
