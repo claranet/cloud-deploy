@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import json
 import tempfile
 import mock
@@ -382,6 +383,127 @@ def test_build_image_root_block_device(packer_run_packer_cmd, provisioner_get_lo
                             "volume_type": "gp2"
                         }
                     ],
+                    "source_ami": "ami-source",
+                    "tags": {
+                        "Name": "ec2.name.test",
+                        "tag-name": "tag-value",
+                    },
+                    "subnet_id": "subnet-test",
+                    "ssh_username": "admin",
+                    "ssh_interface": "private_ip",
+                    "region": "eu-west-1",
+                    "security_group_ids": [
+                        "sg-test"
+                    ],
+                    "ami_name": ami_name,
+                    "iam_instance_profile": "iam.profile.test",
+                    "instance_type": "test_instance_type",
+                    "associate_public_ip_address": True,
+                    "vpc_id": "vpc-test",
+                    "type": "amazon-ebs",
+                    "ssh_pty": True
+                }
+            ]
+        }
+        assert packer_config == packer_config_reference
+
+
+@mock.patch('pypacker.log', new=mocked_logger)
+@mock.patch('libs.builders.image_builder_aws.log', new=mocked_logger)
+@mock.patch('libs.builders.image_builder.log', new=mocked_logger)
+@mock.patch('libs.provisioners.provisioner.log', new=mocked_logger)
+@mock.patch('libs.provisioners.provisioner_ansible.log', new=mocked_logger)
+@mock.patch('libs.provisioners.provisioner.FeaturesProvisioner._get_provisioner_repo', new=void)  # We do not test git mirroring here
+@mock.patch('libs.provisioners.provisioner.FeaturesProvisioner._get_local_repo_path')
+@mock.patch('libs.provisioners.provisioner_salt.FeaturesProvisionerSalt._build_salt_top', new=void)
+@mock.patch('libs.provisioners.provisioner_salt.FeaturesProvisionerSalt._build_salt_pillar', new=void)
+@mock.patch('pypacker.Packer._run_packer_cmd')
+def test_build_image_custom_envvars(packer_run_packer_cmd, provisioner_get_local_repo_path):
+    # Application context
+    app = get_test_application(
+        env_vars=[
+            {
+                "var_value": u"hello world !",
+                "var_key": "TESTVAR"
+            },
+            {
+                "var_value": u"ên français avec des accents! héhé Ã@¤.",
+                "var_key": "C_USTom2"
+            }
+        ]
+    )
+    job = {
+        "_id": "test_job_id",
+        "app_id": "test_app_id",
+        "command": "buildimage",
+        "instance_type": "test_instance_type",
+        "options": [False]  # Do not skip bootstrap
+    }
+    test_config = get_test_config()
+
+    # Mocks
+    packer_run_packer_cmd.return_value = (0, "something:test_ami_id")
+
+    tmp_dir = tempfile.mkdtemp()
+    provisioner_get_local_repo_path.return_value = tmp_dir
+
+    # Build image
+    with mock.patch('ghost_tools.config', new=test_config):
+        image_builder = AWSImageBuilder(app, job, None, LOG_FILE, test_config)
+        ami_id, ami_name = image_builder.start_builder()
+
+    # Test
+    assert ami_id == "test_ami_id"
+    assert ami_name.startswith("ami.test.eu-west-1.webfront.test-app.")
+
+    with open(os.path.join(PACKER_JSON_PATH, job['_id'], 'aws_builder.json'), 'r') as f:
+        # Verify packer config
+        packer_config = json.load(f)
+        packer_config_reference = {
+            "provisioners": [
+                {
+                    "type": "shell",
+                    "environment_vars": [
+                        u"C_USTom2=\u00ean fran\u00e7ais avec des accents! h\u00e9h\u00e9 \u00c3@\u00a4.",
+                        "GHOST_APP=test-app",
+                        "GHOST_ENV=test",
+                        "GHOST_ENV_COLOR=",
+                        "GHOST_ROLE=webfront",
+                        "TESTVAR=hello world !"
+                    ],
+                    "script": "/ghost/test-app/test/webfront/hook-pre_buildimage"
+                },
+                {
+                    "skip_bootstrap": False,
+                    "log_level": "info",
+                    "local_state_tree": os.path.join(tmp_dir, 'salt'),
+                    "local_pillar_roots": os.path.join(tmp_dir, 'pillar'),
+                    "type": "salt-masterless"
+                },
+                {
+                    "type": "shell",
+                    "environment_vars": [
+                        u"C_USTom2=\u00ean fran\u00e7ais avec des accents! h\u00e9h\u00e9 \u00c3@\u00a4.",
+                        "GHOST_APP=test-app",
+                        "GHOST_ENV=test",
+                        "GHOST_ENV_COLOR=",
+                        "GHOST_ROLE=webfront",
+                        "TESTVAR=hello world !"
+                    ],
+                    "script": "/ghost/test-app/test/webfront/hook-post_buildimage"
+                },
+                {
+                    "inline": [
+                        "sudo rm -rf /srv/salt || echo 'Salt - no cleanup salt'",
+                        "sudo rm -rf /srv/pillar || echo 'Salt - no cleanup pillar'"
+                    ],
+                    "type": "shell"
+                }
+            ],
+            "builders": [
+                {
+                    "ami_block_device_mappings": [],
+                    "launch_block_device_mappings": [],
                     "source_ami": "ami-source",
                     "tags": {
                         "Name": "ec2.name.test",
