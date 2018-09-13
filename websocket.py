@@ -14,8 +14,7 @@ import os.path
 from settings import cloud_connections, DEFAULT_PROVIDER
 from ghost_tools import config, get_job_log_remote_path
 from ghost_aws import download_file_from_s3
-from ghost_blueprints import websocket_token
-from hashlib import sha512
+from ghost_blueprints import get_websocket_token
 
 LOG_ROOT = '/var/log/ghost'
 
@@ -329,10 +328,7 @@ def create_ws(app):
                 log_id = data.get('log_id')
                 last_pos = data.get('last_pos', 0)
 
-                hash = sha512()
-                hash.update(websocket_token.random + log_id)
-
-                if hash.hexdigest() != data.get('auth_token'):
+                if get_websocket_token(log_id) != data.get('auth_token'):
                     socketio.emit('job', formatter.format_error('Invalid authentication token.'), room=request.sid)
                     return
 

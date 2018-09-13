@@ -118,8 +118,10 @@ def websocket_token(job_id=None):
     job = get_job(job_id)
     if job is None:
         abort(404, description='Specified job_id doesn\'t exist.')
-    hash = sha512()
-    hash.update(websocket_token.random + job_id)
-    return jsonify({ 'token': hash.hexdigest() })
+    return jsonify({ 'token': get_websocket_token(job_id) })
 
-websocket_token.random = "%032x" % random.getrandbits(2048)
+
+def get_websocket_token(job_id):
+    return sha512(websocket_token.hash_seed + job_id).hexdigest()
+
+websocket_token.hash_seed = "%032x" % random.getrandbits(2048)
