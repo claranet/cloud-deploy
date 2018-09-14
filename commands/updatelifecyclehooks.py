@@ -32,14 +32,14 @@ class Updatelifecyclehooks():
         self._config = worker._config
         self._worker = worker
         self._connection_data = get_aws_connection_data(
-                self._app.get('assumed_account_id', ''),
-                self._app.get('assumed_role_name', ''),
-                self._app.get('assumed_region_name', '')
-                )
+            self._app.get('assumed_account_id', ''),
+            self._app.get('assumed_role_name', ''),
+            self._app.get('assumed_region_name', '')
+        )
         self._cloud_connection = cloud_connections.get(self._app.get('provider', DEFAULT_PROVIDER))(
-                self._log_file,
-                **self._connection_data
-                )
+            self._config,
+            **self._connection_data
+        )
 
     def _refresh_env_vars(self, custom_env_vars, bucket, prefix):
         key_name = '{prefix}/{var_file}'.format(prefix=prefix, var_file='custom_env_vars')
@@ -67,11 +67,10 @@ class Updatelifecyclehooks():
             bucket.delete_key(key_name)
             log('INFO: deleted {key}'.format(key=key_name), self._log_file)
 
-
     def execute(self):
         try:
             app = self._app
-            cloud_connection = cloud_connections.get(self._app.get('provider', DEFAULT_PROVIDER))(self._log_file)
+            cloud_connection = cloud_connections.get(self._app.get('provider', DEFAULT_PROVIDER))(self._config)
             refresh_stage2(cloud_connection, self._config.get('bucket_region', self._app['region']), self._config)
             log('INFO: refreshed /ghost/stage2', self._log_file)
 

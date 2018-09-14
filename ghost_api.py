@@ -5,9 +5,11 @@
 
 import os
 import binascii
+import gunicorn.app.base
 from datetime import datetime
 from eve.methods.post import post_internal
 from ghost_tools import ghost_app_object_copy, get_available_provisioners_from_config, b64decode_utf8
+from gunicorn.six import iteritems
 from libs.blue_green import get_blue_green_from_app
 
 OPPOSITE_COLOR = {
@@ -17,6 +19,22 @@ OPPOSITE_COLOR = {
 FORBIDDEN_PATH = ['/', '/tmp', '/var', '/etc', '/ghost', '/root', '/home', '/home/admin']
 COMMAND_FIELDS = ['autoscale', 'blue_green', 'build_infos', 'environment_infos', 'lifecycle_hooks']
 ALL_COMMAND_FIELDS = ['modules', 'features'] + COMMAND_FIELDS
+
+
+class StandaloneApplication(gunicorn.app.base.BaseApplication):
+    def __init__(self, app, options=None):
+        self.options = options or {}
+        self.application = app
+        super(StandaloneApplication, self).__init__()
+
+    def load_config(self):
+        config = dict([(key, value) for key, value in iteritems(self.options)
+                       if key in self.cfg.settings and value is not None])
+        for key, value in iteritems(config):
+            self.cfg.set(key.lower(), value)
+
+    def load(self):
+        return self.application
 
 
 class GhostAPIInputError(Exception):
@@ -205,7 +223,7 @@ def check_app_feature_provisioner(updates):
 
 def check_app_module_path(updates):
     """
-    Check if all modules path are allowed
+    Check if all modules path are allowed and are unique across the app
     :param updates: Modules configurations
 
     >>> check_app_module_path({})
@@ -270,14 +288,67 @@ def check_app_module_path(updates):
     Traceback (most recent call last):
     ...
     GhostAPIInputError
+
+    >>> app = {'_id': 1111, 'env': 'prod', 'name': 'app1', 'role': 'webfront', 'modules': [
+    ...     {'name': 'mod1', 'path': '/srv/ko'}, {'name': 'mod2', 'path': '/srv/ko'}]}
+    >>> check_app_module_path(app)
+    Traceback (most recent call last):
+    ...
+    GhostAPIInputError
+
+    >>> app = {'_id': 1111, 'env': 'prod', 'name': 'app1', 'role': 'webfront', 'modules': [
+    ...     {'name': 'mod1', 'path': '/srv/ko'}, {'name': 'mod2', 'path': '/srv/trick/../ko'}]}
+    >>> check_app_module_path(app)
+    Traceback (most recent call last):
+    ...
+    GhostAPIInputError
+
+    >>> app = {'_id': 1111, 'env': 'prod', 'name': 'app1', 'role': 'webfront', 'modules': [
+    ...     {'name': 'mod1', 'path': '/srv///ko/./'}, {'name': 'mod2', 'path': '/srv/trick/..//./ko/./'}]}
+    >>> check_app_module_path(app)
+    Traceback (most recent call last):
+    ...
+    GhostAPIInputError
+
+    >>> app = {'_id': 1111, 'env': 'prod', 'name': 'app1', 'role': 'webfront', 'modules': [
+    ...     {'name': 'mod1', 'path': '/srv///ko/./'}, {'name': 'mod2', 'path': '/srv/trick/..//./ko/./subdir'}]}
+    >>> check_app_module_path(app)
+    Traceback (most recent call last):
+    ...
+    GhostAPIInputError
+
+    >>> app = {'_id': 1111, 'env': 'prod', 'name': 'app1', 'role': 'webfront', 'modules': [
+    ...     {'name': 'mod1', 'path': '/srv///ko/./with-sub/dir'}, {'name': 'mod2', 'path': '/srv/trick/..//./ko/./'}]}
+    >>> check_app_module_path(app)
+    Traceback (most recent call last):
+    ...
+    GhostAPIInputError
+
     """
     if 'modules' in updates:
+        modules_path = {}
         for mod in updates['modules']:
-            if not 'path' in mod:
-                raise GhostAPIInputError('Module "{m} has path empty"'.format(m=mod['name']))
-            if os.path.abspath(mod['path']) in FORBIDDEN_PATH:
-                raise GhostAPIInputError(
-                    'Module "{m}" use a forbidden path : "{p}"'.format(m=mod['name'], p=mod['path']))
+            if 'path' not in mod:
+                raise GhostAPIInputError('Module "{m}" has empty path'.format(m=mod['name']))
+
+            abs_path = os.path.abspath(mod['path'])
+            if abs_path in FORBIDDEN_PATH:
+                raise GhostAPIInputError('Module "{m}" uses a forbidden path: "{p}"'.format(m=mod['name'],
+                                                                                            p=mod['path']))
+            if abs_path in modules_path.keys():
+                raise GhostAPIInputError('Module "{m}" has a duplicated path ({p}) with another module ("{dm}")'.format(
+                    m=mod['name'], p=mod['path'], dm=modules_path.get(abs_path)))
+
+            if abs_path.startswith(tuple(modules_path.keys())):
+                raise GhostAPIInputError('Module "{m}" has a path ({p}) in collision with another module'.format(
+                    m=mod['name'], p=mod['path']))
+
+            path_included = filter(lambda s: s.startswith(abs_path), modules_path.keys())
+            if path_included:
+                raise GhostAPIInputError('Module "{m}" has a path ({p}) in collision with other(s) module(s) ("{dm}")'.format(
+                    m=mod['name'], p=mod['path'], dm=', '.join([modules_path[x] for x in path_included])))
+
+            modules_path[abs_path] = mod['name']
 
 
 def check_app_b64_scripts(updates):
@@ -356,7 +427,6 @@ def initialize_app_modules(updates, original):
         for updated_module in updates['modules']:
             # Set 'initialized' to False by default in case of new modules
             updated_module['initialized'] = False
-            updated_module['git_repo'] = updated_module['git_repo'].strip()
             for original_module in original['modules']:
                 if updated_module['name'] == original_module['name']:
                     # Restore previous 'initialized' value as 'updated_module' does not contain it (read-only field)

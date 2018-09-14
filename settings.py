@@ -3,7 +3,7 @@ from models import jobs
 from models import apps
 from models import deployments
 from models import job_enqueueings
-from aws_connection import AWSConnection
+from botosts.aws_connection import AWSConnection
 
 from ghost_tools import config, CURRENT_REVISION_NAME
 

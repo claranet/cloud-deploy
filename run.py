@@ -1,3 +1,5 @@
+import argparse
+
 from datetime import datetime
 
 from flask import abort, request
@@ -15,7 +17,8 @@ from redis import Redis
 from rq import Queue, cancel_job
 import rq_dashboard
 
-from settings import __dict__ as eve_settings, REDIS_HOST, RQ_JOB_TIMEOUT
+from settings import __dict__ as eve_settings, API_BASE_URL, REDIS_HOST, RQ_JOB_TIMEOUT
+from urlparse import urlparse
 from command import Command
 from models.apps import apps
 from models.jobs import jobs, CANCELLABLE_JOB_STATUSES, DELETABLE_JOB_STATUSES
@@ -27,10 +30,13 @@ from ghost_api import ghost_api_bluegreen_is_enabled, ghost_api_enable_green_app
 from ghost_api import ghost_api_delete_alter_ego_app, ghost_api_clean_bluegreen_app
 from ghost_api import initialize_app_modules, check_and_set_app_fields_state
 from ghost_api import ghost_api_app_data_input_validator, GhostAPIInputError
-from ghost_api import ALL_COMMAND_FIELDS, check_app_immutable_fields
+from ghost_api import ALL_COMMAND_FIELDS, check_app_immutable_fields, StandaloneApplication
 from ghost_lxd import lxd_blueprint
 from libs.blue_green import BLUE_GREEN_COMMANDS, get_blue_green_from_app, ghost_has_blue_green_enabled
 from ghost_aws import normalize_application_tags
+from ghost_data import normalize_app
+
+from websocket import create_ws
 
 
 def get_apps_db():
@@ -53,8 +59,8 @@ def pre_update_app(updates, original):
 
     >>> from copy import deepcopy
     >>> base_original = {'_id': 1111, 'env': 'prod', 'name': 'app1', 'role': 'webfront', 'modules': [
-    ...     {'name': 'mod1', 'git_repo': 'git@github.com/test/mod1', 'path': '/tmp/ok'},
-    ...     {'name': 'mod2', 'git_repo': 'git@github.com/test/mod2', 'path': '/tmp/ok'}],
+    ...     {'name': 'mod1', 'git_repo': 'git@github.com/test/mod1', 'path': '/tmp/ok1'},
+    ...     {'name': 'mod2', 'git_repo': 'git@github.com/test/mod2', 'path': '/tmp/ok2'}],
     ... 'environment_infos': {'instance_tags':[]}}
     >>> original = deepcopy(base_original)
     >>> updates = deepcopy(base_original)
@@ -99,7 +105,7 @@ def pre_update_app(updates, original):
     New modules get their 'initialized' field set to False by default:
 
     >>> updates = deepcopy(base_original)
-    >>> updates['modules'].append({'name': 'mod3', 'git_repo': 'git@github.com/test/mod3', 'path': '/tmp/ok'})
+    >>> updates['modules'].append({'name': 'mod3', 'git_repo': 'git@github.com/test/mod3', 'path': '/tmp/ok/plus'})
     >>> pre_update_app(updates, original)
     >>> updates['modules'][0]['initialized']
     True
@@ -223,64 +229,13 @@ def post_insert_app(items):
             abort(422, "Problem occurred when creating/enabling the green app")
 
 
-def _post_fetched_app(app, embed_last_deployment=False):
-    """
-    eve post-fetch app event hook to normalize special fields, mostly with models breaking changes
-
-    >>> app_logs = {}
-    >>> _post_fetched_app(app_logs)
-    >>> app_logs.get('log_notifications')
-    []
-
-    >>> app_logs = {'log_notifications': [
-    ...     'no-reply@fr.clara.net',
-    ...     'dummy@fr.clara.net',
-    ... ]}
-    >>> _post_fetched_app(app_logs)
-    >>> [sorted(l.items()) for l in app_logs.get('log_notifications')]
-    [[('email', 'no-reply@fr.clara.net'), ('job_states', ['*'])], [('email', 'dummy@fr.clara.net'), ('job_states', ['*'])]]
-
-    >>> app_logs = {'log_notifications': [
-    ...     {'email': 'no-reply@fr.clara.net', 'job_states': ['done']},
-    ...     'dummy@fr.clara.net',
-    ... ]}
-    >>> _post_fetched_app(app_logs)
-    >>> [sorted(l.items()) for l in app_logs.get('log_notifications')]
-    [[('email', 'no-reply@fr.clara.net'), ('job_states', ['done'])], [('email', 'dummy@fr.clara.net'), ('job_states', ['*'])]]
-    """
-    # Retrieve each module's last deployment
-    for module in app.get('modules', []):
-        query = {
-            '$and': [
-                {'app_id': app['_id']},
-                {'module': module['name']}
-            ]
-        }
-        sort = [('timestamp', -1)]
-        deployment = get_deployments_db().find_one(query, sort=sort)
-        if deployment:
-            module['last_deployment'] = deployment if embed_last_deployment else deployment['_id']
-
-    # Normalize log_notifications
-    log_notifications = []
-    for notif in app.get('log_notifications', []):
-        if isinstance(notif, basestring):
-            log_notifications.append({
-                'email': notif,
-                'job_states': ['*']
-            })
-        else:
-            log_notifications.append(notif)
-    app['log_notifications'] = log_notifications
-
-
 def post_fetched_apps(response):
     # Do we need to embed each module's last_deployment?
     embedded = json.loads(request.args.get('embedded', '{}'))
     embed_last_deployment = boolify(embedded.get('modules.last_deployment', False))
 
     for app in response['_items']:
-        _post_fetched_app(app, embed_last_deployment)
+        normalize_app(app, embed_last_deployment)
 
 
 def post_fetched_app(response):
@@ -288,7 +243,7 @@ def post_fetched_app(response):
     embedded = json.loads(request.args.get('embedded', '{}'))
     embed_last_deployment = boolify(embedded.get('modules.last_deployment', False))
 
-    _post_fetched_app(response, embed_last_deployment)
+    normalize_app(response, embed_last_deployment)
 
 
 def pre_insert_job(items):
@@ -351,6 +306,23 @@ def pre_delete_job_enqueueings():
     abort(422, description="Cancelling a job not in init status is not allowed")
 
 
+def post_fetched_deployments(response):
+    embedded = json.loads(request.args.get('embedded', '{}'))
+    embed_app = boolify(embedded.get('app_id', False))
+
+    if embed_app:
+        for deployment in response['_items']:
+            normalize_app(deployment.get('app_id'), False)
+
+
+def post_fetched_deployment(response):
+    embedded = json.loads(request.args.get('embedded', '{}'))
+    embed_app = boolify(embedded.get('app_id', False))
+
+    if embed_app:
+        normalize_app(response.get('app_id'), False)
+
+
 # Create ghost app, explicitly specifying the settings to avoid errors during doctest execution
 ghost = Eve(auth=BCryptAuth, settings=eve_settings)
 Bootstrap(ghost)
@@ -385,6 +357,8 @@ ghost.on_insert_jobs += pre_insert_job
 ghost.on_inserted_jobs += post_insert_job
 ghost.on_delete_item_jobs += pre_delete_job
 ghost.on_delete_resource_job_enqueueings += pre_delete_job_enqueueings
+ghost.on_fetched_item_deployments += post_fetched_deployment
+ghost.on_fetched_resource_deployments += post_fetched_deployments
 
 ghost.ghost_redis_connection = Redis(host=REDIS_HOST)
 
@@ -394,5 +368,26 @@ ghost.register_blueprint(lxd_blueprint)
 ghost.register_blueprint(version_blueprint)
 ghost.register_blueprint(job_logs_blueprint)
 
+# Register Websocket server
+ws = create_ws(ghost)
+
+def parse_args():
+    parser = argparse.ArgumentParser(
+        description='Run the Ghost API from the command line.'
+    )
+    parser.add_argument('-d', '--debug', action='store_true')
+    return parser.parse_args()
+
+
 if __name__ == '__main__':
-    ghost.run(host='0.0.0.0')
+    args = parse_args()
+
+    ghost.config['DEBUG'] = args.debug
+    options = {
+        'bind': urlparse(API_BASE_URL).netloc,
+        'workers': 1,
+        'worker_class': 'geventwebsocket.gunicorn.workers.GeventWebSocketWorker',
+        'debug': args.debug,
+        'timeout': 600,
+    }
+    StandaloneApplication(ghost, options).run()

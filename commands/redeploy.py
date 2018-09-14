@@ -30,14 +30,14 @@ class Redeploy():
         self._config = worker._config
         self._log_file = worker.log_file
         self._connection_data = get_aws_connection_data(
-                self._app.get('assumed_account_id', ''),
-                self._app.get('assumed_role_name', ''),
-                self._app.get('assumed_region_name', '')
-                )
+            self._app.get('assumed_account_id', ''),
+            self._app.get('assumed_role_name', ''),
+            self._app.get('assumed_region_name', '')
+        )
         self._cloud_connection = cloud_connections.get(self._app.get('provider', DEFAULT_PROVIDER))(
-                self._log_file,
-                **self._connection_data
-                )
+            self._config,
+            **self._connection_data
+        )
 
     def _find_modules_by_name(self, modules):
         result = []
@@ -70,8 +70,9 @@ class Redeploy():
         key_path = '{path}/{module}/{pkg_name}'.format(path=get_path_from_app_with_color(self._app), module=module['name'], pkg_name=package)
         log("Downloading package: {0} from '{1}'".format(package, key_path), self._log_file)
         dest_package_path = "{0}/{1}".format(clone_path, package)
-        cloud_connection = cloud_connections.get(self._app.get('provider', DEFAULT_PROVIDER))(self._log_file)
-        conn = cloud_connection.get_connection(self._config.get('bucket_region', self._app['region']), ["s3"])
+        # No assume role, local S3 access
+        local_cloud_connection = cloud_connections.get(self._app.get('provider', DEFAULT_PROVIDER))(self._config)
+        conn = local_cloud_connection.get_connection(self._config.get('bucket_region', self._app['region']), ["s3"])
         bucket = conn.get_bucket(self._config['bucket_s3'])
         key = bucket.get_key(key_path)
         if not key:

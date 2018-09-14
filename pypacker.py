@@ -3,16 +3,24 @@ import os
 from subprocess32 import Popen, PIPE
 
 from ghost_log import log
-from ghost_tools import boolify
 
-PACKER_LOGDIR="/var/log/ghost/packer"
+PACKER_LOGDIR = "/var/log/ghost/packer"
 
 
 class Packer:
+    """
+    Test _assumed_role attribute
+    >>> packer = Packer({'aws_access_key': ''}, '')
+    >>> packer._assumed_role
+    False
+    >>> packer = Packer({'aws_access_key': 'positive'}, '')
+    >>> packer._assumed_role
+    True
+    """
     def __init__(self, credentials, log_file):
         self._log_file = log_file
         self._aws_credentials = credentials
-        self._assumed_role = boolify(self._aws_credentials.get('aws_access_key', False))
+        self._assumed_role = bool(self._aws_credentials.get('aws_access_key'))
 
     def _run_packer_cmd(self, cmd):
         """

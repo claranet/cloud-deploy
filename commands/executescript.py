@@ -36,7 +36,7 @@ class Executescript():
             self._app.get('assumed_region_name', '')
         )
         self._cloud_connection = cloud_connections.get(self._app.get('provider', DEFAULT_PROVIDER))(
-            self._log_file,
+            self._config,
             **self._connection_data
         )
         blue_green, self._color = get_blue_green_from_app(self._app)
