@@ -16,11 +16,11 @@ def ghost_has_blue_green_enabled():
     return config.get('blue_green') and config.get('blue_green').get('enabled', False)
 
 
-def get_blue_green_config(config, command, key, default_value):
+def get_blue_green_config(conf, command, key, default_value):
     """
     Return the Blue Green command option from global config
     """
-    blue_green_section = config.get('blue_green', None)
+    blue_green_section = conf.get('blue_green', None)
     if not blue_green_section:
         return default_value
     command_section = blue_green_section.get(command, None)
@@ -97,7 +97,7 @@ def get_blue_green_apps(app, apps_db, log_file):
 
 def check_app_manifest(app, config, log_file, app_path):
     key_path = app_path + '/MANIFEST'
-    cloud_connection = cloud_connections.get(app.get('provider', DEFAULT_PROVIDER))(log_file)
+    cloud_connection = cloud_connections.get(app.get('provider', DEFAULT_PROVIDER))(config)
     conn = cloud_connection.get_connection(config.get('bucket_region', app['region']), ["s3"])
     bucket = conn.get_bucket(config['bucket_s3'])
     key = bucket.get_key(key_path)

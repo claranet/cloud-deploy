@@ -75,16 +75,16 @@ def test_build_image(lxd_client_cls):
 
     lxd_container_mock.start.assert_called_once_with(wait=True)
     lxd_container_mock.stop.assert_called_once_with(wait=True)
-
-    lxd_container_mock.execute.assert_any_call(["sh", "/ghost/hook-pre_buildimage"])
-    lxd_container_mock.execute.assert_any_call(["sh", "/ghost/hook-post_buildimage"])
+    
+    lxd_container_mock.execute.assert_any_call(["sh", "/ghost/hook-pre_buildimage"], image_builder._get_ghost_env_vars())
+    lxd_container_mock.execute.assert_any_call(["sh", "/ghost/hook-post_buildimage"], image_builder._get_ghost_env_vars())
 
     lxd_container_mock.execute.assert_any_call(
             [os.path.join(venv_bin_dir, "ansible-playbook"), "-i", "localhost,",
              "--connection=local", "/srv/ansible/main.yml", "-v"])
     lxd_container_mock.execute.assert_any_call(
         ["salt-call", "state.highstate", "--file-root=/srv/salt/salt",
-         "--pillar-root=/srv/salt/pillar ", "--local", "-l", "info"])
+         "--pillar-root=/srv/salt/pillar", "--local", "-l", "info"])
 
     expected_devices_config = {
         'venv': {

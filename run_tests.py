@@ -16,6 +16,7 @@ modules = [
     "ghost_api",
     "ghost_aws",
     "ghost_blueprints",
+    "ghost_data",
     "ghost_tools",
     "libs.blue_green",
     "libs.deploy",
@@ -26,8 +27,10 @@ modules = [
     "libs.provisioners",
     "libs.provisioners.provisioner_salt",
     "libs.provisioners.provisioner_ansible",
+    "pypacker",
     "run",
     "run_rqworkers",
+    "websocket",
 ]
 
 runner = doctest.DocTestRunner(verbose=True)

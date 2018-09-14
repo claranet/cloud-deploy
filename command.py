@@ -4,20 +4,19 @@ import sys
 import traceback
 import yaml
 
-from bson.objectid import ObjectId
 from datetime import datetime
-from pymongo import MongoClient
 from redis import Redis
 from rq import get_current_job, Connection
 from sh import tail
 
 from ghost_aws import push_file_to_s3
+from ghost_data import get_fresh_connection, get_app, get_job
+from ghost_data import update_app, update_job
 from ghost_log import log
 from ghost_tools import get_job_log_remote_path, GHOST_JOB_STATUSES_COLORS
 
 from notification import MAIL_LOG_FROM_DEFAULT, Notification, TEMPLATES_DIR
-from settings import cloud_connections, DEFAULT_PROVIDER
-from settings import MONGO_DBNAME, MONGO_HOST, MONGO_PORT, REDIS_HOST
+from settings import cloud_connections, DEFAULT_PROVIDER, REDIS_HOST
 from jinja2 import Environment, FileSystemLoader
 
 from cgi import escape
@@ -107,12 +106,6 @@ class Command:
         conf_file = open(conf_file_path, 'r')
         self._config = yaml.load(conf_file)
 
-    def _connect_db(self):
-        self._db = MongoClient(host=MONGO_HOST, port=MONGO_PORT)[MONGO_DBNAME]
-
-    def _disconnect_db(self):
-        MongoClient().close()
-
     # FIXME: not used anymore
     def _update_progress(self, message, **kwargs):
         self._worker_job.meta['progress_message'] = message
@@ -125,16 +118,19 @@ class Command:
         self.job['message'] = message
         log(message, self.log_file)
         self.job['_updated'] = datetime.utcnow()
-        self._db.jobs.update({'_id': self.job['_id']},
-                             {'$set': {'status': status, 'message': message, '_updated': self.job['_updated']}})
+        update_job(self.job['_id'], {
+           'status': status,
+           'message': message,
+           '_updated': self.job['_updated']
+        })
 
     def _update_app_pending_changes(self, fields):
         app_pending_changes = {ob['field']: ob for ob in self.app.get('pending_changes', [])}
         for f in fields:
             if f in app_pending_changes.keys():
                 del app_pending_changes[f]
-        self._db.apps.update({'_id': self.app['_id']},
-                             {'$set': {'pending_changes': app_pending_changes.values()}})
+        update_app(self.app['_id'],
+                   {'pending_changes': app_pending_changes.values()})
 
     def _get_log_path(self):
         log_path = "{log_path}/{job_id}.txt".format(log_path=LOG_ROOT, job_id=self._worker_job.id)
@@ -153,7 +149,7 @@ class Command:
         self.log_file.close()
 
     def _push_log_to_s3(self):
-        cloud_connection = cloud_connections.get(self.app.get('provider', DEFAULT_PROVIDER))(None)
+        cloud_connection = cloud_connections.get(self.app.get('provider', DEFAULT_PROVIDER))(self._config)
         log_path = self._get_log_path()
         bucket = self._config['bucket_s3']
         region = self._config.get('bucket_region', self.app['region'])
@@ -178,7 +174,6 @@ class Command:
         }
         try:
             for log_notif in self.app.get('log_notifications', []):
-                log_notif = log_notif if isinstance(log_notif, dict) else {'email': log_notif, 'job_states': ['*']}
                 mail = log_notif.get('email')
                 if (mail and
                         (self.job['status'] in log_notif.get('job_states', [])
@@ -212,14 +207,15 @@ class Command:
     def execute(self, job_id):
         with Connection(Redis(host=REDIS_HOST)):
             self._worker_job = get_current_job()
-        self._connect_db()
-        self.job = self._db.jobs.find_one({'_id': ObjectId(job_id)})
-        self.app = self._db.apps.find_one({'_id': ObjectId(self.job['app_id'])})
+        # used in worker sub classes, TODO: to cleanup
+        self._db = get_fresh_connection()
+        self.job = get_job(job_id)
+        self.app = get_app(self.job['app_id'])
         self._init_log_file()
-        self._db.jobs.update({'_id': self.job['_id']}, {'$set': {
+        update_job(self.job['_id'], {
             'log_id': self._worker_job.id,
             'started_at': datetime.utcnow(),
-        }})
+        })
         klass_name = self.job['command'].title()
         mod = __import__('commands.' + self.job['command'], fromlist=[klass_name, 'RELATED_APP_FIELDS'])
         command = getattr(mod, klass_name)(self)
@@ -246,4 +242,3 @@ class Command:
             self._close_log_file()
             self._mail_log_action(subject, body)
             self._push_log_to_s3()
-            self._disconnect_db()

@@ -17,6 +17,7 @@ from libs.deploy import execute_module_script_on_ghost
 from libs.deploy import get_path_from_app_with_color
 from libs.deploy import get_buildpack_clone_path_from_module, get_intermediate_clone_path_from_module
 from libs.deploy import update_app_manifest, rollback_app_manifest
+from libs.deploy import download_s3_object
 
 COMMAND_DESCRIPTION = "Deploy module(s)"
 RELATED_APP_FIELDS = ['modules']
@@ -26,7 +27,7 @@ def is_available(app_context=None):
     return True
 
 
-class Deploy():
+class Deploy:
     _app = None
     _job = None
     _log_file = -1
@@ -45,14 +46,16 @@ class Deploy():
         self._config = worker._config
         self._worker = worker
         self._connection_data = get_aws_connection_data(
-                self._app.get('assumed_account_id', ''),
-                self._app.get('assumed_role_name', ''),
-                self._app.get('assumed_region_name', '')
-                )
+            self._app.get('assumed_account_id', ''),
+            self._app.get('assumed_role_name', ''),
+            self._app.get('assumed_region_name', '')
+        )
         self._cloud_connection = cloud_connections.get(self._app.get('provider', DEFAULT_PROVIDER))(
-                self._log_file,
-                **self._connection_data
-                )
+            self._config,
+            **self._connection_data
+        )
+        # Local connection without Assume Role data, needed for local S3 access
+        self._local_cloud_connection = cloud_connections.get(self._app.get('provider', DEFAULT_PROVIDER))(self._config)
 
     def _find_modules_by_name(self, modules):
         result = []
@@ -109,8 +112,7 @@ class Deploy():
         gcall("tar czf {0} --owner={1} --group={2} {3} .".format(pkg_path, uid, gid, tar_exclude_git), "Creating package: %s" % pkg_name, self._log_file)
 
         log("Uploading package: %s" % pkg_name, self._log_file)
-        cloud_connection = cloud_connections.get(self._app.get('provider', DEFAULT_PROVIDER))(self._log_file)
-        conn = cloud_connection.get_connection(self._config.get('bucket_region', self._app['region']), ["s3"])
+        conn = self._local_cloud_connection.get_connection(self._config.get('bucket_region', self._app['region']), ["s3"])
         bucket = conn.get_bucket(self._config['bucket_s3'])
         key_path = '{path}/{pkg_name}'.format(path=path, pkg_name=pkg_name)
         key = bucket.get_key(path)
@@ -194,9 +196,8 @@ class Deploy():
             self._worker.update_status("aborted", message=self._get_notification_message_aborted(self._job['modules']))
             return
 
-        refresh_stage2(cloud_connections.get(self._app.get('provider', DEFAULT_PROVIDER))(self._log_file),
-                self._config.get('bucket_region', self._app['region']), self._config
-                )
+        # Cannot use self._cloud_connection, needs to use local one for S3 bucket
+        refresh_stage2(self._local_cloud_connection, self._config.get('bucket_region', self._app['region']), self._config)
         module_list = []
         for module in self._apps_modules:
             if 'name' in module:
@@ -264,17 +265,15 @@ class Deploy():
         # If resolved_revision begins with or equals revision, it is a commit hash
         return resolved_revision.find(revision) == 0
 
-    def _execute_deploy(self, module, fabric_execution_strategy, safe_deployment_strategy):
+    def _get_module_git(self, module, git_repo, clone_path):
         """
-        Returns the deployment id
+        Fetch the module sources from Git
+        :param module: Module object
+        :param git_repo: Source git repository
+        :param clone_path: Working directory
+        :return: (source url, working directory, source version, version uid, version message)
         """
-
-        now = datetime.datetime.utcnow()
-        ts = calendar.timegm(now.timetuple())
-
-        git_repo = module['git_repo'].strip()
         mirror_path = get_mirror_path_from_module(module)
-        clone_path = get_buildpack_clone_path_from_module(self._app, module)
         lock_path = get_lock_path_from_repo(git_repo)
         revision = self._get_module_revision(module['name'])
 
@@ -357,6 +356,60 @@ class Deploy():
 
         # At last, reset remote origin URL
         gcall('git --no-pager remote set-url origin {r}'.format(r=git_repo), 'Git reset remote origin to {r}'.format(r=git_repo), self._log_file)
+
+        return git_repo, clone_path, revision, commit, commit_message
+
+    def _get_module_s3(self, module, source_url, working_directory):
+        """
+        Fetch the module sources from S3
+        :param module:
+        :param source_url:
+        :param working_directory:
+        :return: (source url, working directory, source version, version uid, version message)
+        """
+        if not source_url.startswith('s3://'):
+            raise GCallException('Invalid S3 source url given: "{}", it must starts with "s3://"'.format(source_url))
+        revision = self._get_module_revision(module['name'])
+
+        # If revision is HEAD, use the latest S3 object version
+        if revision.lower().strip() in ['head', 'latest']:
+            revision = 'latest'
+            gcall('aws s3 cp "{s}" "{w}" --recursive'.format(s=source_url, w=working_directory),
+                  'Retrieving from S3 bucket ({url}) at latest revision'.format(url=source_url),
+                  self._log_file)
+        else:
+            log("Retrieving from S3 bucket ({url}) at revision '{rev}'".format(url=source_url, rev=revision),
+                self._log_file)
+            download_s3_object(self._app, source_url, working_directory, revision, self._log_file)
+
+        return source_url, working_directory, revision, '', ''
+
+    def _get_module_sources(self, module):
+        """
+        Fetch the current module source, using the right protocol
+        :param module: app module object
+        :return: (source url, working directory, source version, version uid, version message)
+        """
+        source = module.get('source', {})
+        source_protocol = source['protocol'].strip()
+        source_url = source['url'].strip()
+        clone_path = get_buildpack_clone_path_from_module(self._app, module)
+        if source_protocol == 'git':
+            return self._get_module_git(module, source_url, clone_path)
+        elif source_protocol == 's3':
+            return self._get_module_s3(module, source_url, clone_path)
+        else:
+            raise GCallException('Invalid source protocol provided ({})'.format(source_protocol))
+
+    def _execute_deploy(self, module, fabric_execution_strategy, safe_deployment_strategy):
+        """
+        Returns the deployment id
+        """
+
+        now = datetime.datetime.utcnow()
+        ts = calendar.timegm(now.timetuple())
+
+        git_repo, clone_path, revision, commit, commit_message = self._get_module_sources(module)
 
         # Store predeploy script in tarball
         if 'pre_deploy' in module:
@@ -446,3 +499,33 @@ GHOST_MODULE_USER="{user}"
             '_updated': now,
         }
         return self._worker._db.deploy_histories.insert(deployment)
+
+    def execute(self):
+        fabric_execution_strategy = self._job['options'][0] if 'options' in self._job and len(self._job['options']) > 0 else None
+        safe_deployment_strategy = self._job['options'][1] if 'options' in self._job and len(self._job['options']) > 1 else None
+
+        self._apps_modules = self._find_modules_by_name(self._job['modules'])
+        if not self._apps_modules:
+            self._worker.update_status("aborted", message=self._get_notification_message_aborted(self._job['modules']))
+            return
+
+        refresh_stage2(cloud_connections.get(self._app.get('provider', DEFAULT_PROVIDER))(self._log_file),
+                       self._config.get('bucket_region', self._app['region']), self._config
+                       )
+        module_list = []
+        for module in self._apps_modules:
+            if 'name' in module:
+                module_list.append(module['name'])
+        split_comma = ', '
+        module_list = split_comma.join(module_list)
+        try:
+            deploy_ids = {}
+            for module in self._apps_modules:
+                deploy_id = self._execute_deploy(module, fabric_execution_strategy, safe_deployment_strategy)
+                deploy_ids[module['name']] = deploy_id
+                self._worker._db.jobs.update({ '_id': self._job['_id'], 'modules.name': module['name']}, {'$set': { 'modules.$.deploy_id': deploy_id }})
+                self._worker._db.apps.update({ '_id': self._app['_id'], 'modules.name': module['name']}, {'$set': { 'modules.$.initialized': True }})
+
+            self._worker.update_status("done", message=self._get_notification_message_done(deploy_ids))
+        except GCallException as e:
+            self._worker.update_status("failed", message=self._get_notification_message_failed(module_list, e))
