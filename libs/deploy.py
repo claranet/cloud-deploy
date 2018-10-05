@@ -351,7 +351,8 @@ def get_key_path(config, region, account, key_name, log_file):
                 key_path = key_path.get(key_name, '')
 
     # Uncomment the following line for debugging purposes locally (do not commit this change)
-    # log("Selected '{}' key path for '{}' keypair name in '{}' region of '{}' account".format(key_path, key_name, region, account), log_file)
+    # log("Selected '{}' key path for '{}' keypair name in '{}' region of '{}' account"
+    # .format(key_path, key_name, region, account), log_file)
 
     return key_path
 
@@ -362,7 +363,8 @@ def _get_fabric_params(app, fabric_execution_strategy, task, log_file):
 
     # FIXME: key_name and ssh_username should be dynamically retrieved from each EC2 instance.
     # Indeed, in case of mixed deployments they may differ from one to another.
-    # This can happen when these values are changed on the Ghost app but not all live instances are replaced to use the new values.
+    # This can happen when these values are changed on the Ghost app
+    # but not all live instances are replaced to use the new values.
     app_key_name = app['environment_infos']['key_name']
     app_ssh_username = app['build_infos']['ssh_username']
 
@@ -406,7 +408,7 @@ def launch_deploy(app, module, hosts_list, fabric_execution_strategy, log_file):
                                                                                          task, log_file)
 
     bucket_region = config.get('bucket_region', app['region'])
-    bootstrap_endpoint = config.get('bootstrap_endpoint')
+    bootstrap_endpoint = config.get('bootstrap_endpoint', '')
     stage2 = render_stage2(config, bucket_region)
 
     log("Updating current instances in {}: {}".format(fabric_execution_strategy, hosts_list), log_file)
