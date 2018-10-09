@@ -27,7 +27,7 @@ COLOR_RED='\033[00;31m'
 COLOR_GREEN='\033[00;32m'
 COLOR_YELLOW='\033[00;33m'
 
-function exit_deployment() {
+function exit_stage2() {
     echo "Removing Manifest file" >> $LOGFILE
     rm -f /tmp/MANIFEST
     echo "Unlocking $LOCK..." | tee -a $LOGFILE
@@ -43,7 +43,7 @@ function exit_deployment() {
 }
 
 set -e
-trap exit_deployment EXIT TERM INT
+trap exit_stage2 EXIT TERM INT
 
 INSTANCE_ID=$(curl http://169.254.169.254/latest/meta-data/instance-id)
 EC2_AVAIL_ZONE=$(curl -s http://169.254.169.254/latest/meta-data/placement/availability-zone)
@@ -66,7 +66,7 @@ while [ -z "$APP" ] || [ -z "$ENV" ] || [ -z "$ROLE" ] ; do
     if [ $retry -gt 150 ] ; then
         # After 5min, no more hope for tags...
         echo "[ERROR] Cannot retrieve instance tags, exiting."
-        exit_deployment -1
+        exit_stage2 -1
     fi
 done
 
@@ -175,21 +175,21 @@ function deploy_module() {
     MODULE_NAME=$1
     if [ -z $MODULE_NAME ]; then
         echo "MODULE_NAME cannot be empty"
-        exit_deployment -10
+        exit_stage2 -10
     fi
     MODULE_FILE=$2
     if [ -z $MODULE_FILE ]; then
         echo "MODULE_FILE cannot be empty"
-        exit_deployment -10
+        exit_stage2 -10
     fi
     TARGET=$3
     if [ -z $TARGET ]; then
         echo "TARGET cannot be empty"
-        exit_deployment -10
+        exit_stage2 -10
     fi
     if [ ${TARGET%%+(/)} == "/tmp" ]; then
         echo "TARGET path cannot be /tmp"
-        exit_deployment -10
+        exit_stage2 -10
     fi
     TARGETDIR=$(dirname $TARGET)
     if [ ! -d $TARGETDIR ]; then
@@ -206,7 +206,7 @@ function deploy_module() {
     tar --warning=no-timestamp -xvzf /tmp/$MODULE_FILE -C /ghost/$UUID > /dev/null
     if [ $? -ne 0 ] || [ ! -f /tmp/$MODULE_FILE ]; then
         echo "Extracting module failed !"
-        exit_deployment -11
+        exit_stage2 -11
     fi
 
     rm -rf /tmp/$MODULE_FILE
@@ -224,7 +224,7 @@ function deploy_module() {
         if [ $status -ne 0 ]; then
             echo -e "${COLOR_RED}[${MODULE_NAME}:${GHOST_MODULE_REV}] Predeploy script exited with error code ${status} ${COLOR_CLR}"
             purge_latest_failed_deploy $MODULE_NAME $UUID
-            exit_deployment -12
+            exit_stage2 -12
         fi
         rm -vf ./predeploy
     fi
@@ -248,7 +248,7 @@ function deploy_module() {
         if [ $status -ne 0 ]; then
             echo -e "${COLOR_RED}[${MODULE_NAME}:${GHOST_MODULE_REV}] Postdeploy script exited with error code ${status} ${COLOR_CLR}"
             purge_latest_failed_deploy $MODULE_NAME $UUID
-            exit_deployment -13
+            exit_stage2 -13
         fi
         rm -vf ./postdeploy
     fi
@@ -284,7 +284,7 @@ function download_and_run_lifecycle_hook_script() {
         GHOST_APP=$APP GHOST_ENV=$ENV GHOST_ENV_COLOR=$COLOR GHOST_ROLE=$ROLE /tmp/ghost_${script_name} 2>&1 | tee -a $LOGFILE
         local status=${PIPESTATUS[0]}
         if [ $status -ne 0 ]; then
-            exit_deployment -5
+            exit_stage2 -5
         fi
         if [ -e /tmp/ghost_custom_env_vars ]; then
             rm -vf /tmp/ghost_custom_env_vars
@@ -300,7 +300,7 @@ $AWS_BIN s3 cp --only-show-errors s3://${S3_BUCKET}/${APP_PATH}/MANIFEST /tmp/ -
 if [ $? -ne 0 ]; then
     echo "Manifest download error...Exiting" >> $LOGFILE
     # init zabbix before quit
-    exit_deployment -3
+    exit_stage2 -3
 fi
 
 notify_status 'started'
@@ -323,4 +323,4 @@ else
     download_and_run_lifecycle_hook_script 'post_bootstrap'
 fi
 
-exit_deployment 0
+exit_stage2 0
