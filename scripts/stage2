@@ -96,6 +96,7 @@ function notify_status() {
     if [ -z $NOTIFICATION_ENDPOINT ]; then
         return
     fi
+    # First arg is a status code? (integer)
     if [[ $1 =~ ^-?[0-9]+$ ]]; then
         status=$([ "$1" == 0 ] && echo "done" || echo "failed")
         notif_payload=$(printf '{"status":"%s","return_code":%d,"hostname":"%s"}' "$status" "$1" "$EC2_HOSTNAME")
@@ -125,6 +126,8 @@ function instance_hostname() {
         done
     fi
 }
+
+notify_status 'bootstrapping'
 
 if [ -z "$1" ] ; then
     zabbix_hostname
@@ -292,7 +295,7 @@ function download_and_run_lifecycle_hook_script() {
     fi
 }
 
-notify_status 'init'
+notify_status 'starting'
 
 echo "Downloading Manifest" >> $LOGFILE
 $AWS_BIN s3 cp --only-show-errors s3://${S3_BUCKET}/${APP_PATH}/MANIFEST /tmp/ --region "$S3_REGION"
