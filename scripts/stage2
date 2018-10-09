@@ -93,17 +93,17 @@ MAX_NAME=$(($(getconf HOST_NAME_MAX)-16))
 EC2_HOSTNAME=$(echo ${NAME:0:$MAX_NAME}-${IP} | tr -s '.' '-')
 
 function notify_status() {
-    if [ -z $BOOTSTRAP_ENDPOINT ]; then
+    if [ -z $NOTIFICATION_ENDPOINT ]; then
         return
     fi
     if [[ $1 =~ ^-?[0-9]+$ ]]; then
         status=$([ "$1" == 0 ] && echo "done" || echo "failed")
-        bootstrap_payload=$(printf '{"status":"%s","return_code":%d,"hostname":"%s"}' "$status" "$1" "$EC2_HOSTNAME")
+        notif_payload=$(printf '{"status":"%s","return_code":%d,"hostname":"%s"}' "$status" "$1" "$EC2_HOSTNAME")
     else
-        bootstrap_payload=$(printf '{"status":"%s","hostname":"%s"}' "$1" "$EC2_HOSTNAME")
+        notif_payload=$(printf '{"status":"%s","hostname":"%s"}' "$1" "$EC2_HOSTNAME")
     fi
-    echo "Posting payload $bootstrap_payload to $BOOTSTRAP_ENDPOINT" >> $LOGFILE
-    curl -H "Content-Type: application/json" -X POST -d $bootstrap_payload $BOOTSTRAP_ENDPOINT
+    echo "Posting payload $notif_payload to $NOTIFICATION_ENDPOINT" >> $LOGFILE
+    curl -H "Content-Type: application/json" -X POST -d $notif_payload $NOTIFICATION_ENDPOINT
 }
 
 set +e

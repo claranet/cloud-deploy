@@ -275,7 +275,7 @@ def generate_userdata(bucket_s3, s3_region, ghost_root_path):
         jinja_env = Environment(loader=loader)
         template = jinja_env.get_template('stage1')
         userdata = template.render(bucket_s3=bucket_s3, bucket_region=s3_region,
-                                   bootstrap_endpoint=config.get('bootstrap_endpoint'))
+                                   notification_endpoint=config.get('notification_endpoint', ''))
         return userdata
     else:
         return ""

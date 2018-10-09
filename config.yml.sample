@@ -83,9 +83,9 @@ api_base_url: http://localhost:5000
 redis_host: localhost
 mongo_host: localhost
 
-# Bootstrap monitoring API endpoint
-#bootstrap_endpoint: https://status.cloud-deploy.io/bootstrap
-#bootstrap_endpoint: http://bastion.local:8000
+# Notifications - events monitoring API endpoint
+#notification_endpoint: https://status.cloud-deploy.io/event
+#notification_endpoint: http://bastion.local:8000
 
 # SSH Keys parameters
 # ===================

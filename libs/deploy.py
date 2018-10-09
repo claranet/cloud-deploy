@@ -408,11 +408,11 @@ def launch_deploy(app, module, hosts_list, fabric_execution_strategy, log_file):
                                                                                          task, log_file)
 
     bucket_region = config.get('bucket_region', app['region'])
-    bootstrap_endpoint = config.get('bootstrap_endpoint', '')
+    notification_endpoint = config.get('notification_endpoint', '')
     stage2 = render_stage2(config, bucket_region)
 
     log("Updating current instances in {}: {}".format(fabric_execution_strategy, hosts_list), log_file)
-    result = fab_execute(task, module, app_ssh_username, key_filename, stage2, bootstrap_endpoint,
+    result = fab_execute(task, module, app_ssh_username, key_filename, stage2, notification_endpoint,
                          log_file, hosts=hosts_list)
 
     _handle_fabric_errors(result, "Deploy error")
