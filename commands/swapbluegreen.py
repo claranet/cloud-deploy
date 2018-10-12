@@ -96,14 +96,14 @@ class Swapbluegreen(object):
         log("'{0}' has been set '{1}' for blue/green".format(app['_id'], 'online' if is_online else 'offline'),
             self._log_file)
 
-    def _wait_draining_connection(self, lb_mgr, elb_names):
+    def _wait_draining_connection(self, lb_mgr, as_name):
         """ Wait until the connection draining is reached.
 
             elb_conn    boto2 obj   Connection object to the ELB endpoint.
-            elb_names    List        A list of ELB names.
+            as_name     List        The ASG name to retrieve LB infos from.
             Return      None
         """
-        wait_before_swap = int(lb_mgr.get_lbs_max_connection_draining_value(elb_names)) + 1
+        wait_before_swap = int(lb_mgr.get_lbs_max_connection_draining_value(as_name)) + 1
         log(_green('Waiting {0}s: The ELB connection draining time'.format(wait_before_swap)), self._log_file)
         time.sleep(wait_before_swap)
 
@@ -175,11 +175,7 @@ class Swapbluegreen(object):
                     'De-register all online instances from ELB {0}'.format(', '.join(elb_online_instances.keys()))),
                     self._log_file)
                 lb_mgr.deregister_all_instances_from_lbs(elb_online_instances, self._log_file)
-                if lb_mgr.lb_type == load_balancing.LB_TYPE_AWS_ALB:
-                    alb_target_groups = lb_mgr._get_targetgroup_arns_from_autoscale(online_app['autoscale']['name'])
-                    self._wait_draining_connection(lb_mgr, alb_target_groups)
-                else:
-                    self._wait_draining_connection(lb_mgr, elb_online_instances.keys())
+                self._wait_draining_connection(lb_mgr, online_app['autoscale']['name'])
                 log(_green('Register and put online new instances to online ELB {0}'.format(
                     ', '.join(elb_online_instances.keys()))), self._log_file)
                 lb_mgr.register_all_instances_to_lbs(elb_online_instances.keys(), elb_tempwarm_instances,

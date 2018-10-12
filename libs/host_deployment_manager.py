@@ -81,7 +81,7 @@ class HostDeploymentManager:
         else:
             lb_mgr.deregister_instances_from_lbs(elb_instances.keys(), [host['id'] for host in instances_list],
                                                  self._log_file)
-            wait_before_deploy = int(lb_mgr.get_lbs_max_connection_draining_value(elb_instances.keys())) + int(
+            wait_before_deploy = int(lb_mgr.get_lbs_max_connection_draining_value(self._as_name)) + int(
                 self._safe_infos['wait_before_deploy'])
             log('Waiting {0}s: The connection draining time plus the custom value set for wait_before_deploy'.format(
                 wait_before_deploy), self._log_file)
@@ -118,7 +118,6 @@ class HostDeploymentManager:
         alb_mgr = load_balancing.get_lb_manager(self._cloud_connection, app_region, load_balancing.LB_TYPE_AWS_ALB)
 
         alb_targets = alb_mgr.get_instances_status_from_autoscale(self._as_name, self._log_file)
-        alb_target_groups = alb_mgr._get_targetgroup_arns_from_autoscale(self._as_name)
 
         if not len(alb_targets):
             raise GCallException('Cannot continue because there is no ALB configured in the AutoScaling Group')
@@ -128,7 +127,7 @@ class HostDeploymentManager:
             alb_mgr.deregister_instances_from_lbs(alb_targets.keys(),
                                                   [host['id'] for host in instances_list],
                                                   self._log_file)
-            wait_before_deploy = int(alb_mgr.get_lbs_max_connection_draining_value(alb_target_groups)) + int(
+            wait_before_deploy = int(alb_mgr.get_lbs_max_connection_draining_value(self._as_name)) + int(
                 self._safe_infos['wait_before_deploy'])
             log('Waiting {0}s: The deregistation delay time plus the custom value set for wait_before_deploy'.format(
                 wait_before_deploy), self._log_file)
