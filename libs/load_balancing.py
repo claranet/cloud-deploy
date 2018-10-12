@@ -56,6 +56,7 @@ class LoadBalancersManager(object):
     def __init__(self, cloud_connection, region):
         self.cloud_connection = cloud_connection
         self.region = region
+        self.lb_type = None
 
     def get_health_check(self, lb_name):
         """
@@ -239,6 +240,11 @@ class AwsClbManager(AwsElbManager):
         'port': None,
         'path': None,
     }
+
+    def __init__(self, cloud_connection, region):
+        super(AwsClbManager, self).__init__(cloud_connection, region)
+        self._connections = {'boto2': {}, 'boto3': {}}
+        self.lb_type = LB_TYPE_AWS_CLB
 
     def _get_elb_connection(self, boto2_compat=False):
         if boto2_compat:
@@ -453,6 +459,11 @@ class AwsAlbManager(AwsElbManager):
         'target': None,
     }
 
+    def __init__(self, cloud_connection, region):
+        super(AwsAlbManager, self).__init__(cloud_connection, region)
+        self._connections = {'boto2': {}, 'boto3': {}}
+        self.lb_type = LB_TYPE_AWS_ALB
+
     def _get_alb_connection(self):
         return self._get_connection(['elbv2'])
 
@@ -480,18 +491,15 @@ class AwsAlbManager(AwsElbManager):
     def get_dns_name(self, lb_name):
         return self.get_by_name(lb_name).dns_name
 
-    def get_lbs_max_connection_draining_value(self, lb_names):
+    def get_lbs_max_connection_draining_value(self, tg_arns):
         alb_conn = self._get_alb_connection()
         values = []
-        alb_arns = ([alb['LoadBalancerArn']
-                     for alb in alb_conn.describe_load_balancers(Names=lb_names)['LoadBalancers']])
-        for alb_arn in alb_arns:
-            for tg_arn in self._get_targetgroup_arns_from_alb(alb_arn):
-                attrs = alb_conn.describe_target_group_attributes(TargetGroupArn=tg_arn)['Attributes']
-                for at in attrs:
-                    if at['Key'] == 'deregistration_delay.timeout_seconds':
-                        values.append(int(at['Value']))
-                        break
+        for tg_arn in tg_arns:
+            attrs = alb_conn.describe_target_group_attributes(TargetGroupArn=tg_arn)['Attributes']
+            for at in attrs:
+                if at['Key'] == 'deregistration_delay.timeout_seconds':
+                    values.append(int(at['Value']))
+                    break
         return max(values)
 
     def copy_lb(self, new_lb_name, source_lb_name, additional_tags, log_file):
