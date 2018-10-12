@@ -1,4 +1,3 @@
-import itertools
 import time
 import os
 
@@ -177,8 +176,7 @@ class Swapbluegreen(object):
                     self._log_file)
                 lb_mgr.deregister_all_instances_from_lbs(elb_online_instances, self._log_file)
                 if lb_mgr.lb_type == load_balancing.LB_TYPE_AWS_ALB:
-                    alb_target_groups = list(itertools.chain([lb_mgr._get_targetgroup_arns_from_alb(alb_name)
-                                                              for alb_name in elb_online_instances.keys()]))
+                    alb_target_groups = lb_mgr._get_targetgroup_arns_from_autoscale(online_app['autoscale']['name'])
                     self._wait_draining_connection(lb_mgr, alb_target_groups)
                 else:
                     self._wait_draining_connection(lb_mgr, elb_online_instances.keys())

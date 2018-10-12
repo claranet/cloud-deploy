@@ -21,7 +21,6 @@
 """
 
 import haproxy
-import itertools
 import time
 
 from ghost_tools import GCallException
@@ -119,8 +118,8 @@ class HostDeploymentManager:
         alb_mgr = load_balancing.get_lb_manager(self._cloud_connection, app_region, load_balancing.LB_TYPE_AWS_ALB)
 
         alb_targets = alb_mgr.get_instances_status_from_autoscale(self._as_name, self._log_file)
-        alb_target_groups = list(itertools.chain([alb_mgr._get_targetgroup_arns_from_alb(alb_name)
-                                                  for alb_name in alb_targets.keys()]))
+        alb_target_groups = alb_mgr._get_targetgroup_arns_from_autoscale(self._as_name)
+
         if not len(alb_targets):
             raise GCallException('Cannot continue because there is no ALB configured in the AutoScaling Group')
         elif len([i for i in alb_targets.values() if 'unhealthy' in i.values()]):
