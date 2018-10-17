@@ -77,10 +77,13 @@ def test_deregister_instance_from_elb():
     connection = MagicMock()
     cloud_connection.get_connection.return_value = connection
 
-    ret = AwsClbManager(cloud_connection, 'region').deregister_instances_from_lbs(['test-elb'], ['id0', 'id1'], LOG_FILE)
+    with mock.patch.object(AwsClbManager, 'list_lbs_from_autoscale',
+                           new=lambda a, b, c: [get_aws_data('elb--describe-load-balancers')["LoadBalancerDescriptions"][0]["LoadBalancerName"]]):
+        clb_manager = AwsClbManager(cloud_connection, 'region')
+        ret = clb_manager.deregister_instances_from_lbs('test-asg', ['id0', 'id1'], LOG_FILE)
 
-    assert ret == True
-    connection.deregister_instances.assert_called_once_with('test-elb', ['id0', 'id1'])
+        assert ret == True
+        connection.deregister_instances.assert_called_once_with('test-elb', ['id0', 'id1'])
 
 
 @mock.patch('libs.load_balancing.log', new=mocked_logger)
@@ -101,10 +104,13 @@ def test_register_instance_from_elb():
     connection = MagicMock()
     cloud_connection.get_connection.return_value = connection
 
-    ret = AwsClbManager(cloud_connection, 'region').register_instances_from_lbs(['test-elb'], ['id0', 'id1'], LOG_FILE)
+    with mock.patch.object(AwsClbManager, 'list_lbs_from_autoscale',
+                           new=lambda a, b, c: [get_aws_data('elb--describe-load-balancers')["LoadBalancerDescriptions"][0]["LoadBalancerName"]]):
+        clb_manager = AwsClbManager(cloud_connection, 'region')
+        ret = clb_manager.register_instances_from_lbs('test-asg', ['id0', 'id1'], LOG_FILE)
 
-    assert ret == True
-    connection.register_instances.assert_called_once_with('test-elb', ['id0', 'id1'])
+        assert ret == True
+        connection.register_instances.assert_called_once_with('test-elb', ['id0', 'id1'])
 
 
 @mock.patch('libs.load_balancing.log', new=mocked_logger)

@@ -198,7 +198,7 @@ class Swapbluegreen(object):
                     get_blue_green_config(self._config, 'swapbluegreen', 'registreation_timeout', 45)):
                 log(_red("Timeout reached while waiting the instances registration. Rollback process launch"),
                     self._log_file)
-                lb_mgr.deregister_instances_from_lbs(elb_online_instances.keys(),
+                lb_mgr.deregister_instances_from_lbs(online_app['autoscale']['name'],
                                                      elb_tempwarm_instances[elb_tempwarm_instances.keys()[0]].keys(),
                                                      self._log_file)
                 lb_mgr.register_all_instances_to_lbs(elb_online_instances.keys(), elb_online_instances, self._log_file)

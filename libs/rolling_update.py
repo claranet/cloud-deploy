@@ -71,12 +71,16 @@ class RollingUpdate:
                 group_size = len(instances_list)
                 original_termination_policies = asg_infos['TerminationPolicies']
 
-                log(_green('Suspending "Terminate" process in the AutoScale and provisioning %s instance(s)' % group_size), self.log_file)
+                log(_green('Suspending "Terminate" process in the AutoScale and provisioning %s instance(s)'
+                           % group_size), self.log_file)
                 suspend_autoscaling_group_processes(as_conn, self.as_name, ['Terminate'], self.log_file)
-                update_auto_scaling_group_attributes(as_conn, self.as_name, asg_infos['MinSize'], asg_infos['MaxSize'] + group_size, asg_infos['DesiredCapacity'] + group_size)
+                update_auto_scaling_group_attributes(as_conn, self.as_name, asg_infos['MinSize'],
+                                                     asg_infos['MaxSize'] + group_size, asg_infos['DesiredCapacity'] + group_size)
 
-                log(_green('Deregister old instances from the Load Balancer (%s)' % str([host['id'] for host in instances_list])), self.log_file)
-                lb_mgr.deregister_instances_from_lbs(elb_instances.keys(), [host['id'] for host in instances_list], self.log_file)
+                log(_green('Deregister old instances from the Load Balancer (%s)' %
+                           str([host['id'] for host in instances_list])), self.log_file)
+                lb_mgr.deregister_instances_from_lbs(self.as_name, [host['id'] for host in instances_list],
+                                                     self.log_file)
                 wait_con_draining = int(lb_mgr.get_lbs_max_connection_draining_value(self.as_name))
                 log('Waiting {0}s: The connection draining time'.format(wait_con_draining), self.log_file)
                 time.sleep(wait_con_draining)
