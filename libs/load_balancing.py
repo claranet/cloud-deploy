@@ -56,7 +56,6 @@ class LoadBalancersManager(object):
     def __init__(self, cloud_connection, region):
         self.cloud_connection = cloud_connection
         self.region = region
-        self.lb_type = None
 
     def get_health_check(self, lb_name):
         """
@@ -240,11 +239,6 @@ class AwsClbManager(AwsElbManager):
         'port': None,
         'path': None,
     }
-
-    def __init__(self, cloud_connection, region):
-        super(AwsClbManager, self).__init__(cloud_connection, region)
-        self._connections = {'boto2': {}, 'boto3': {}}
-        self.lb_type = LB_TYPE_AWS_CLB
 
     def _get_elb_connection(self, boto2_compat=False):
         if boto2_compat:
@@ -459,11 +453,6 @@ class AwsAlbManager(AwsElbManager):
         'path': 'HealthCheckPath',
         'target': None,
     }
-
-    def __init__(self, cloud_connection, region):
-        super(AwsAlbManager, self).__init__(cloud_connection, region)
-        self._connections = {'boto2': {}, 'boto3': {}}
-        self.lb_type = LB_TYPE_AWS_ALB
 
     def _get_alb_connection(self):
         return self._get_connection(['elbv2'])
