@@ -16,7 +16,7 @@ import os
 from threading import Thread
 
 
-ACCOUNTS_FILE = os.path.abspath('accounts.yml')
+ACCOUNTS_FILE = os.path.abspath(os.path.dirname(os.path.realpath(__file__)) + '/accounts.yml')
 ONE_TIME_SECRET_URL = 'https://onetimesecret.com/api/v1/share'
 
 
