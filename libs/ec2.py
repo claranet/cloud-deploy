@@ -45,7 +45,7 @@ def find_ec2_pending_instances(cloud_connection, ghost_app, ghost_env, ghost_rol
         )['AutoScalingGroups'][0]['Instances']
     for autoscale_instance in autoscale_instances:
         # Instances in autoscale "Pending" state may not have their tags set yet
-        if not (autoscale_instance['InstanceId'] in pending_instances_ids and
+        if (not autoscale_instance['InstanceId'] in pending_instances_ids and
                 autoscale_instance['LifecycleState'] in ['Pending', 'Pending:Wait', 'Pending:Proceed']):
             pending_instances.append(conn.get_only_instances(instance_ids=[autoscale_instance['InstanceId']])[0])
     hosts = []
@@ -98,8 +98,9 @@ def find_ec2_instances(cloud_connection, ghost_app, ghost_env, ghost_role, regio
         if not autoscale_instances or not autoscale_instances[0]['LifecycleState'] in ['Terminating',
                                                                                        'Terminating:Wait',
                                                                                        'Terminating:Proceed']:
-            hosts.append(
-                {'id': instance.id, 'private_ip_address': instance.private_ip_address, 'subnet_id': instance.subnet_id})
+            hosts.append({'id': instance.id,
+                          'private_ip_address': instance.private_ip_address,
+                          'subnet_id': instance.subnet_id})
     return hosts
 
 
@@ -232,8 +233,10 @@ def get_block_devices_mapping(cloud_connection, app):
     """
     devices = []
     if 'root_block_device' in app['environment_infos']:
-        devices.append(
-            create_block_device(cloud_connection, app['region'], app, app['environment_infos']['root_block_device']))
+        devices.append(create_block_device(cloud_connection,
+                                           app['region'],
+                                           app,
+                                           app['environment_infos']['root_block_device']))
     else:
         devices.append(create_block_device(cloud_connection, app['region'], app, {}))
     for opt_vol in app['environment_infos'].get('optional_volumes', []):

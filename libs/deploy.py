@@ -350,7 +350,7 @@ def get_key_path(config, region, account, key_name, log_file):
             if isinstance(key_path, dict):
                 key_path = key_path.get(key_name, '')
 
-    # Uncomment the following line for debugging purposes locally (do not commit this change)
+    # Uncomment the following lines for debugging purposes locally (do not commit this change)
     # log("Selected '{}' key path for '{}' keypair name in '{}' region of '{}' account"
     # .format(key_path, key_name, region, account), log_file)
 
