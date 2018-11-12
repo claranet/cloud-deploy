@@ -350,8 +350,9 @@ def get_key_path(config, region, account, key_name, log_file):
             if isinstance(key_path, dict):
                 key_path = key_path.get(key_name, '')
 
-    # Uncomment the following line for debugging purposes locally (do not commit this change)
-    # log("Selected '{}' key path for '{}' keypair name in '{}' region of '{}' account".format(key_path, key_name, region, account), log_file)
+    # Uncomment the following lines for debugging purposes locally (do not commit this change)
+    # log("Selected '{}' key path for '{}' keypair name in '{}' region of '{}' account"
+    # .format(key_path, key_name, region, account), log_file)
 
     return key_path
 
@@ -362,7 +363,8 @@ def _get_fabric_params(app, fabric_execution_strategy, task, log_file):
 
     # FIXME: key_name and ssh_username should be dynamically retrieved from each EC2 instance.
     # Indeed, in case of mixed deployments they may differ from one to another.
-    # This can happen when these values are changed on the Ghost app but not all live instances are replaced to use the new values.
+    # This can happen when these values are changed on the Ghost app
+    # but not all live instances are replaced to use the new values.
     app_key_name = app['environment_infos']['key_name']
     app_ssh_username = app['build_infos']['ssh_username']
 
@@ -396,7 +398,7 @@ def launch_deploy(app, module, hosts_list, fabric_execution_strategy, log_file):
         :param  app:          dict: Ghost object which describe the application parameters.
         :param  module:       dict: Ghost object which describe the module parameters.
         :param  hosts_list:   list: Instances private IP.
-        :param  fabric_execution_strategy  string: Deployment strategy(serial or parallel).
+        :param  fabric_execution_strategy: string: Deployment strategy(serial or parallel).
         :param  log_file:     object for logging.
     """
     # Clone the deploy task function to avoid modifying the original shared instance
@@ -406,10 +408,12 @@ def launch_deploy(app, module, hosts_list, fabric_execution_strategy, log_file):
                                                                                          task, log_file)
 
     bucket_region = config.get('bucket_region', app['region'])
+    notification_endpoint = config.get('notification_endpoint', '')
     stage2 = render_stage2(config, bucket_region)
 
     log("Updating current instances in {}: {}".format(fabric_execution_strategy, hosts_list), log_file)
-    result = fab_execute(task, module, app_ssh_username, key_filename, stage2, log_file, hosts=hosts_list)
+    result = fab_execute(task, module, app_ssh_username, key_filename, stage2, notification_endpoint,
+                         log_file, hosts=hosts_list)
 
     _handle_fabric_errors(result, "Deploy error")
 
@@ -424,7 +428,7 @@ def launch_executescript(app, script, context_path, sudoer_user, jobid, hosts_li
         :param  sudoer_user:  int: user UID to exec the script with
         :param  jobid:        uuid: Job uuid
         :param  hosts_list:   list: Instances private IP.
-        :param  fabric_execution_strategy  string: Deployment strategy(serial or parallel).
+        :param  fabric_execution_strategy:  string: Deployment strategy(serial or parallel).
         :param  log_file:     object for logging.
         :param  ghost_env:    dict: all Ghost env variables
     """
