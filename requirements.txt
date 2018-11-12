@@ -4,7 +4,7 @@
 #
 #    pip-compile --output-file requirements.txt requirements.in
 #
--e git+ssh://git@bitbucket.org/morea/boto-sts-assume-role@v0.0.2#egg=botosts
+-e git+https://github.com/claranet/boto-sts-assume-role@v1.0.3#egg=botosts
 ansible==2.5.11
 appdirs==1.4.3
 argparse==1.4.0
