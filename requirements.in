@@ -14,7 +14,7 @@ chardet
 click
 eve-swagger
 Eve
-Fabric==1.14.0            # Breaking changes in > 2.0 - http://docs.fabfile.org/en/2.0/upgrading.html
+Fabric<2.0                # Breaking changes in >= 2.0 - http://www.fabfile.org/upgrading.html#upgrading-from-1-x - http://docs.fabfile.org/en/2.0/upgrading.html
 Flask
 Flask-Bootstrap
 Flask-Login
