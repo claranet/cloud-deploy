@@ -332,6 +332,16 @@ def post_fetched_deployment(response):
         normalize_app(response.get('app_id'), False)
 
 
+def pre_insert_webhooks(items):
+    user = request.authorization.username if request and request.authorization else 'Nobody'
+    for item in items:
+        item['user'] = user
+
+
+def post_insert_webhooks(items):
+    pass
+
+
 def pre_insert_webhook_invocation(items):
     status = {}
     webhook_id = request.view_args.get('webhook_id')
@@ -431,6 +441,8 @@ ghost.on_delete_item_jobs += pre_delete_job
 ghost.on_delete_resource_job_enqueueings += pre_delete_job_enqueueings
 ghost.on_fetched_item_deployments += post_fetched_deployment
 ghost.on_fetched_resource_deployments += post_fetched_deployments
+ghost.on_insert_webhooks += pre_insert_webhooks
+ghost.on_inserted_webhooks += post_insert_webhooks
 ghost.on_insert_webhook_invocations += pre_insert_webhook_invocation
 ghost.on_inserted_webhook_invocations += post_insert_webhook_invocation
 

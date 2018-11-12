@@ -10,6 +10,10 @@ webhook_schema = {
             'embeddable': True
         }
     },
+    'user': {
+        'type': 'string',
+        'readonly': True
+    },
     'module': {
         'type': 'string'
     },
