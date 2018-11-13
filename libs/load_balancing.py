@@ -200,7 +200,7 @@ class LoadBalancersManager(object):
         raise NotImplementedError()
 
     def get_lbs_max_connection_draining_value(self, as_name):
-        """ Return the biggest connection draining value for the list of LB in parameters.
+        """ Return the biggest connection draining value for the list of LB associated to the AS in parameters.
 
             :param  as_name: The ASG name.
             :return  int  The value in seconds of the connection draining.
