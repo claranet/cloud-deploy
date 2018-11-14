@@ -82,7 +82,7 @@ def test_copy_alb():
 
 
 @mock.patch('libs.load_balancing.log', new=mocked_logger)
-def test_deregister_instance_from_elb():
+def test_deregister_instance_from_alb():
     cloud_connection = MagicMock()
     connection = MagicMock()
     cloud_connection.get_connection.return_value = connection
@@ -90,13 +90,16 @@ def test_deregister_instance_from_elb():
     connection.describe_load_balancers.return_value = get_aws_data('elbv2--describe-load-balancers')
     connection.describe_target_groups.return_value = get_aws_data('elbv2--describe-target-groups')
 
-    ret = AwsAlbManager(cloud_connection, 'region').deregister_instances_from_lbs(['alb-test'], ['id0', 'id1'], LOG_FILE)
+    with mock.patch.object(AwsAlbManager, '_get_targetgroup_arns_from_autoscale',
+                           new=lambda a, b: [get_aws_data('elbv2--describe-target-groups')["TargetGroups"][0]["TargetGroupArn"]]):
+        alb_manager = AwsAlbManager(cloud_connection, 'region')
+        ret = alb_manager.deregister_instances_from_lbs('asg-test', ['id0', 'id1'], LOG_FILE)
 
-    assert ret == True
-    connection.deregister_targets.assert_called_once_with(
-        TargetGroupArn='arn:aws:elasticloadbalancing:eu-central-1:0123456789:targetgroup/tg-test/0123456789',
-        Targets=[{'Id': 'id0'}, {'Id': 'id1'}]
-    )
+        assert ret == True
+        connection.deregister_targets.assert_called_once_with(
+            TargetGroupArn='arn:aws:elasticloadbalancing:eu-central-1:0123456789:targetgroup/tg-test/0123456789',
+            Targets=[{'Id': 'id0'}, {'Id': 'id1'}]
+        )
 
 
 @mock.patch('libs.load_balancing.log', new=mocked_logger)
@@ -118,7 +121,7 @@ def test_deregister_all_instances_from_elb():
 
 
 @mock.patch('libs.load_balancing.log', new=mocked_logger)
-def test_register_instance_from_elb():
+def test_register_instance_from_alb():
     cloud_connection = MagicMock()
     connection = MagicMock()
     cloud_connection.get_connection.return_value = connection
@@ -126,12 +129,15 @@ def test_register_instance_from_elb():
     connection.describe_load_balancers.return_value = get_aws_data('elbv2--describe-load-balancers')
     connection.describe_target_groups.return_value = get_aws_data('elbv2--describe-target-groups')
 
-    AwsAlbManager(cloud_connection, 'region').register_instances_from_lbs(['alb-test'], ['id0', 'id1'], LOG_FILE)
+    with mock.patch.object(AwsAlbManager, '_get_targetgroup_arns_from_autoscale',
+                           new=lambda a, b: [get_aws_data('elbv2--describe-target-groups')["TargetGroups"][0]["TargetGroupArn"]]):
+        alb_manager = AwsAlbManager(cloud_connection, 'region')
+        alb_manager.register_instances_from_lbs('asg-test', ['id0', 'id1'], LOG_FILE)
 
-    connection.register_targets.assert_called_once_with(
-        TargetGroupArn='arn:aws:elasticloadbalancing:eu-central-1:0123456789:targetgroup/tg-test/0123456789',
-        Targets=[{'Id': 'id0'}, {'Id': 'id1'}]
-    )
+        connection.register_targets.assert_called_once_with(
+            TargetGroupArn='arn:aws:elasticloadbalancing:eu-central-1:0123456789:targetgroup/tg-test/0123456789',
+            Targets=[{'Id': 'id0'}, {'Id': 'id1'}]
+        )
 
 @mock.patch('libs.load_balancing.log', new=mocked_logger)
 def test_register_all_instances_to_elb():
