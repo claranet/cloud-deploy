@@ -1,0 +1,59 @@
+{
+  "object_kind": "push",
+  "event_name": "push",
+  "before": "c0857f96cab8be5b1af6d76134e442e66f71fc7a",
+  "after": "c0857f96cab8be5b1af6d76134e442e66f71fc7a",
+  "ref": "refs/heads/master",
+  "checkout_sha": "c0857f96cab8be5b1af6d76134e442e66f71fc7a",
+  "message": null,
+  "user_id": 1234567,
+  "user_name": "test",
+  "user_username": "test",
+  "user_email": "test@test.com",
+  "user_avatar": "https://secure.gravatar.com/avatar/?s=80&d=identicon",
+  "project_id": 1234567,
+  "project": {
+    "id": 1234567,
+    "name": "test",
+    "description": "",
+    "web_url": "https://gitlab.com/test/test",
+    "avatar_url": null,
+    "git_ssh_url": "git@gitlab.com:test/test.git",
+    "git_http_url": "https://gitlab.com/test/test.git",
+    "namespace": "test",
+    "visibility_level": 0,
+    "path_with_namespace": "test/test",
+    "default_branch": "master",
+    "ci_config_path": null,
+    "homepage": "https://gitlab.com/test/test",
+    "url": "git@gitlab.com:test/test.git",
+    "ssh_url": "git@gitlab.com:test/test.git",
+    "http_url": "https://gitlab.com/test/test.git"
+  },
+  "commits": [
+    {
+      "message": "Test",
+      "timestamp": "2018-06-12T14:06:22Z",
+      "url": "https://gitlab.com/test/test/commit/c0857f96cab8be5b1af6d76134e442e66f71fc7a",
+      "author": {
+        "name": "test",
+        "email": "test@test.com"
+      },
+      "added": [
+        "README.md"
+      ],
+      "modified": [],
+      "removed": []
+    }
+  ],
+  "total_commits_count": 1,
+  "repository": {
+    "name": "test",
+    "url": "git@gitlab.com:test/test.git",
+    "description": "",
+    "homepage": "https://gitlab.com/test/test",
+    "git_http_url": "https://gitlab.com/test/test.git",
+    "git_ssh_url": "git@gitlab.com:test/test.git",
+    "visibility_level": 0
+  }
+}

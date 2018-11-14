@@ -3,6 +3,7 @@ from models import jobs
 from models import apps
 from models import deployments
 from models import job_enqueueings
+from models import webhooks, webhook_invocations
 from botosts.aws_connection import AWSConnection
 
 from ghost_tools import config, CURRENT_REVISION_NAME
@@ -72,7 +73,10 @@ DOMAIN = {
     'job_enqueueings': job_enqueueings.job_enqueueings,
     'jobs': jobs.jobs,
     'apps': apps.apps,
-    'deployments': deployments.deployments
+    'deployments': deployments.deployments,
+    'webhook_invocations': webhook_invocations.webhook_invocations,
+    'webhook_all_invocations': webhook_invocations.webhook_all_invocations,
+    'webhooks': webhooks.webhooks,
 }
 
 cloud_connections = {

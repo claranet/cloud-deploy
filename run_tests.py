@@ -31,6 +31,8 @@ modules = [
     "run",
     "run_rqworkers",
     "websocket",
+    "pypacker",
+    "webhooks.parsers.base"
 ]
 
 runner = doctest.DocTestRunner(verbose=True)

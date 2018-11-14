@@ -3,6 +3,7 @@ import flask
 import os
 import sys
 from glob import glob
+import datetime
 
 import simplejson
 from mock import Mock
@@ -226,3 +227,21 @@ def create_test_app_context():
     request_context = app.request_context(app.config)
     request_context.request.environ['wsgi.errors'] = None
     request_context.push()
+
+
+def mock_job_post():
+    return {
+        '_updated': datetime.datetime.now(),
+        '_latest_version': 1,
+        '_version': 1,
+        '_links': {
+            'self': {
+                'href': u'my/test/test',
+                'title': 'job'
+            }
+        },
+        '_created': datetime.datetime.now(),
+        '_status': 'OK',
+        '_id': '5b1e82bae617250001845a81',
+        '_etag': '1c501c0ffcd8212de99e44e1971d6568f19ffb40'
+    }, '', '', 200, ''
