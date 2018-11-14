@@ -11,16 +11,18 @@ from ghost_tools import GCallException, log, split_hosts_list
 from ghost_aws import suspend_autoscaling_group_processes, resume_autoscaling_group_processes
 from libs import load_balancing
 
+from .autoscaling import get_autoscaling_group_object, update_auto_scaling_group_attributes
+from .autoscaling import check_autoscale_instances_lifecycle_state
 from .blue_green import get_blue_green_from_app
 from .ec2 import find_ec2_running_instances, destroy_specific_ec2_instances
-from .autoscaling import get_autoscaling_group_object, update_auto_scaling_group_attributes, check_autoscale_instances_lifecycle_state
 
-class RollingUpdate():
+
+class RollingUpdate:
     """ Class which will manage the safe destroy process """
 
     def __init__(self, cloud_connection, app, safe_infos, log_file):
         """
-            :param  app           dict: Ghost object which describe the application parameters.
+            :param  app:          dict: Ghost object which describe the application parameters.
             :param  safe_infos:   dict: The safe deployment parameters.
             :param  log_file:     object for logging
         """
@@ -75,7 +77,7 @@ class RollingUpdate():
 
                 log(_green('Deregister old instances from the Load Balancer (%s)' % str([host['id'] for host in instances_list])), self.log_file)
                 lb_mgr.deregister_instances_from_lbs(elb_instances.keys(), [host['id'] for host in instances_list], self.log_file)
-                wait_con_draining = int(lb_mgr.get_lbs_max_connection_draining_value(elb_instances.keys()))
+                wait_con_draining = int(lb_mgr.get_lbs_max_connection_draining_value(self.as_name))
                 log('Waiting {0}s: The connection draining time'.format(wait_con_draining), self.log_file)
                 time.sleep(wait_con_draining)
 

@@ -199,10 +199,10 @@ class LoadBalancersManager(object):
         """
         raise NotImplementedError()
 
-    def get_lbs_max_connection_draining_value(self, lb_names):
-        """ Return the biggest connection draining value for the list of LB in parameters.
+    def get_lbs_max_connection_draining_value(self, as_name):
+        """ Return the biggest connection draining value for the list of LB associated to the AS in parameters.
 
-            :param  lb_names: list The name of the Elastic Load Balancers.
+            :param  as_name: The ASG name.
             :return  int  The value in seconds of the connection draining.
         """
         raise NotImplementedError()
@@ -419,7 +419,8 @@ class AwsClbManager(AwsElbManager):
         log("  INFO: Destroying ELB {0}".format(lb_name), log_file)
         elb_conn.delete_load_balancer(LoadBalancerName=lb_name)
 
-    def get_lbs_max_connection_draining_value(self, lb_names):
+    def get_lbs_max_connection_draining_value(self, as_name):
+        lb_names = self.list_lbs_from_autoscale(as_name, None)
         elb_conn2 = self._get_elb_connection(boto2_compat=True)
         return max([elb_conn2.get_all_lb_attributes(elb).connection_draining.timeout for elb in lb_names])
 
@@ -480,18 +481,16 @@ class AwsAlbManager(AwsElbManager):
     def get_dns_name(self, lb_name):
         return self.get_by_name(lb_name).dns_name
 
-    def get_lbs_max_connection_draining_value(self, lb_names):
+    def get_lbs_max_connection_draining_value(self, as_name):
+        tg_arns = self._get_targetgroup_arns_from_autoscale(as_name)
         alb_conn = self._get_alb_connection()
         values = []
-        alb_arns = ([alb['LoadBalancerArn']
-                     for alb in alb_conn.describe_load_balancers(Names=lb_names)['LoadBalancers']])
-        for alb_arn in alb_arns:
-            for tg_arn in self._get_targetgroup_arns_from_alb(alb_arn):
-                attrs = alb_conn.describe_target_group_attributes(TargetGroupArn=tg_arn)['Attributes']
-                for at in attrs:
-                    if at['Key'] == 'deregistration_delay.timeout_seconds':
-                        values.append(int(at['Value']))
-                        break
+        for tg_arn in tg_arns:
+            attrs = alb_conn.describe_target_group_attributes(TargetGroupArn=tg_arn)['Attributes']
+            for at in attrs:
+                if at['Key'] == 'deregistration_delay.timeout_seconds':
+                    values.append(int(at['Value']))
+                    break
         return max(values)
 
     def copy_lb(self, new_lb_name, source_lb_name, additional_tags, log_file):
