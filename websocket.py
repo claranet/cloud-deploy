@@ -14,6 +14,7 @@ import os.path
 from settings import cloud_connections, DEFAULT_PROVIDER
 from ghost_tools import config, get_job_log_remote_path
 from ghost_aws import download_file_from_s3
+from ghost_blueprints import get_websocket_token
 
 LOG_ROOT = '/var/log/ghost'
 
@@ -322,25 +323,32 @@ def create_ws(app):
     def handle_message(data):
         print 'SocketIO: request from ' + request.sid
         formatter = HtmlLogFormatter if data.get('raw_mode') is not True else RawLogFormatter
-        if data and data.get('log_id'):
-            log_id = data.get('log_id')
-            last_pos = data.get('last_pos', 0)
+        if data and data.get('auth_token'):
+            if data.get('log_id'):
+                log_id = data.get('log_id')
+                last_pos = data.get('last_pos', 0)
 
-            if check_log_id(log_id) is None:
-                socketio.emit('job', formatter.format_error('Invalid log_id syntax.'), room=request.sid)
-            else:
-                filename = os.path.join(LOG_ROOT, log_id + '.txt')
-                if not os.path.isfile(filename):
-                    remote_log_path = get_job_log_remote_path(log_id)
-                    download_file_from_s3(cloud_connections.get(DEFAULT_PROVIDER)(None), config['bucket_s3'],
-                                          config['bucket_region'], remote_log_path, filename)
-                if not os.path.isfile(filename):
-                    socketio.emit('job', formatter.format_error('No log file yet.'), room=request.sid)
+                if get_websocket_token(log_id) != data.get('auth_token'):
+                    socketio.emit('job', formatter.format_error('Invalid authentication token.'), room=request.sid)
                     return
 
-                # Spawn the follow loop in another thread to end this request and avoid CLOSED_WAIT connections leaking
-                gevent.spawn(follow, filename, last_pos, request.sid, formatter)
+                if check_log_id(log_id) is None:
+                    socketio.emit('job', formatter.format_error('Invalid log_id syntax.'), room=request.sid)
+                else:
+                    filename = os.path.join(LOG_ROOT, log_id + '.txt')
+                    if not os.path.isfile(filename):
+                        remote_log_path = get_job_log_remote_path(log_id)
+                        download_file_from_s3(cloud_connections.get(DEFAULT_PROVIDER)(None), config['bucket_s3'],
+                                              config['bucket_region'], remote_log_path, filename)
+                    if not os.path.isfile(filename):
+                        socketio.emit('job', formatter.format_error('No log file yet.'), room=request.sid)
+                        return
+
+                    # Spawn the follow loop in another thread to end this request and avoid CLOSED_WAIT connections leaking
+                    gevent.spawn(follow, filename, last_pos, request.sid, formatter)
+            else:
+                socketio.emit('job', formatter.format_error('Undefined log_id.'), room=request.sid)
         else:
-            socketio.emit('job', formatter.format_error('Undefined log_id.'), room=request.sid)
+            socketio.emit('job', formatter.format_error('Undefined authentication token.'), room=request.sid)
 
     return socketio

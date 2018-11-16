@@ -74,4 +74,3 @@ Running unit tests directly (dependencies should be provided by the system or an
 ### Accounts:
 * copy accounts.yml.dist as accounts.yml
 * add account with `python auth.py <user> <password>`. You can also use the `-e <email>` option to specify an email address that will receive account's creation confirmation.
-* restart `ghost` (API/Core) process to reload accounts

@@ -1,3 +1,4 @@
+import random
 import pkgutil
 import os
 
@@ -5,6 +6,7 @@ from eve.auth import requires_auth
 from flask import abort, jsonify, send_from_directory
 from flask import Blueprint
 
+from hashlib import sha512
 from ghost_aws import download_file_from_s3
 from ghost_data import get_app, get_job
 from ghost_tools import config, get_job_log_remote_path, CURRENT_REVISION
@@ -15,6 +17,7 @@ from settings import cloud_connections, DEFAULT_PROVIDER
 commands_blueprint = Blueprint('commands_blueprint', 'commands')
 version_blueprint = Blueprint('version_blueprint', 'version')
 job_logs_blueprint = Blueprint('job_logs_blueprint', 'job_logs')
+websocket_token_blueprint = Blueprint('websocket_token_blueprint', 'websocket_token')
 
 
 def _get_commands(app_context=None):
@@ -107,3 +110,17 @@ def job_logs(job_id=None):
         abort(404, description='No log file yet.')
 
     return send_from_directory(LOG_ROOT, job_id + '.txt', as_attachment=True)
+
+@websocket_token_blueprint.route('/jobs/<regex("[a-f0-9]{24}"):job_id>/websocket_token', methods=['GET'])
+@requires_auth('')
+def websocket_token(job_id=None):
+    job = get_job(job_id)
+    if job is None:
+        abort(404, description='Specified job_id doesn\'t exist.')
+    return jsonify({ 'token': get_websocket_token(job_id) })
+
+
+def get_websocket_token(job_id):
+    return sha512(websocket_token.hash_seed + job_id).hexdigest()
+
+websocket_token.hash_seed = "%032x" % random.getrandbits(2048)

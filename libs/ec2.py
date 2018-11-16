@@ -9,7 +9,7 @@ from fabric.colors import green as _green, yellow as _yellow, red as _red
 from jinja2 import Environment, FileSystemLoader
 
 from ghost_log import log
-from ghost_tools import GCallException
+from ghost_tools import GCallException, config
 
 from .blue_green import get_blue_green_from_app
 
@@ -17,20 +17,24 @@ from .blue_green import get_blue_green_from_app
 def find_ec2_pending_instances(cloud_connection, ghost_app, ghost_env, ghost_role, region, as_group, ghost_color=None):
     """ Return a list of dict info only for the instances in pending state.
 
-        :param  ghost_app  string: The value for the instance tag "app".
-        :param  ghost_env  string: The value for the instance tag "env".
-        :param  ghost_role  string: The value for the instance tag "role".
-        :param  ghost_color  string: The value for the instance tag "color".
-        :param  region  string: The AWS region where the instances are located.
+        :param  cloud_connection:  object: Cloud Connection object
+        :param  ghost_app:  string: The value for the instance tag "app".
+        :param  ghost_env:  string: The value for the instance tag "env".
+        :param  ghost_role:  string: The value for the instance tag "role".
+        :param  region:  string: The AWS region where the instances are located.
+        :param  as_group:  string: The AWS AutoScale Group
+        :param  ghost_color:  string: The value for the instance tag "color".
         :return list of dict(ex: [{'id': instance_idXXX, 'private_ip_address': XXX_XXX_XXX_XXX},{...}])
     """
     conn_as = cloud_connection.get_connection(region, ['autoscaling'], boto_version='boto3')
     conn = cloud_connection.get_connection(region, ["ec2"])
     # Retrieve pending instances
     if ghost_color:
-        pending_instance_filters = {"tag:env": ghost_env, "tag:role": ghost_role, "tag:app": ghost_app, "tag:color": ghost_color, "instance-state-name": "pending"}
+        pending_instance_filters = {"tag:env": ghost_env, "tag:role": ghost_role, "tag:app": ghost_app,
+                                    "tag:color": ghost_color, "instance-state-name": "pending"}
     else:
-        pending_instance_filters = {"tag:env": ghost_env, "tag:role": ghost_role, "tag:app": ghost_app, "instance-state-name": "pending"}
+        pending_instance_filters = {"tag:env": ghost_env, "tag:role": ghost_role, "tag:app": ghost_app,
+                                    "instance-state-name": "pending"}
     pending_instances = conn.get_only_instances(filters=pending_instance_filters)
     pending_instances_ids = [instance.id for instance in pending_instances]
     autoscale_instances = []
@@ -41,34 +45,40 @@ def find_ec2_pending_instances(cloud_connection, ghost_app, ghost_env, ghost_rol
         )['AutoScalingGroups'][0]['Instances']
     for autoscale_instance in autoscale_instances:
         # Instances in autoscale "Pending" state may not have their tags set yet
-        if not autoscale_instance['InstanceId'] in pending_instances_ids and autoscale_instance['LifecycleState'] in ['Pending', 'Pending:Wait', 'Pending:Proceed']:
+        if (not autoscale_instance['InstanceId'] in pending_instances_ids and
+                autoscale_instance['LifecycleState'] in ['Pending', 'Pending:Wait', 'Pending:Proceed']):
             pending_instances.append(conn.get_only_instances(instance_ids=[autoscale_instance['InstanceId']])[0])
     hosts = []
     for instance in pending_instances:
         hosts.append({'id': instance.id, 'private_ip_address': instance.private_ip_address})
     return hosts
 
+
 def find_ec2_running_instances(cloud_connection, ghost_app, ghost_env, ghost_role, region, ghost_color=None):
     """ Return a list of dict info only for the running instances.
 
-        :param  ghost_app  string: The value for the instance tag "app".
-        :param  ghost_env  string: The value for the instance tag "env".
-        :param  ghost_role  string: The value for the instance tag "role".
-        :param  ghost_color  string: The value for the instance tag "color".
-        :param  region  string: The AWS region where the instances are located.
+        :param  cloud_connection:  object: Cloud Connection object
+        :param  ghost_app:  string: The value for the instance tag "app".
+        :param  ghost_env:  string: The value for the instance tag "env".
+        :param  ghost_role:  string: The value for the instance tag "role".
+        :param  region:  string: The AWS region where the instances are located.
+        :param  ghost_color:  string: The value for the instance tag "color".
         :return list of dict(ex: [{'id': instance_idXXX, 'private_ip_address': XXX_XXX_XXX_XXX},{...}])
     """
     return find_ec2_instances(cloud_connection, ghost_app, ghost_env, ghost_role, region, "running", ghost_color)
 
-def find_ec2_instances(cloud_connection, ghost_app, ghost_env, ghost_role, region, ec2_state_filter=None, ghost_color=None):
+
+def find_ec2_instances(cloud_connection, ghost_app, ghost_env, ghost_role, region, ec2_state_filter=None,
+                       ghost_color=None):
     """ Return a list of dict info for the found instances.
 
-        :param  ghost_app  string: The value for the instance tag "app".
-        :param  ghost_env  string: The value for the instance tag "env".
-        :param  ghost_role  string: The value for the instance tag "role".
-        :param  ghost_color  string: The value for the instance tag "color".
-        :param  region  string: The AWS region where the instances are located.
-        :param  ec2_state_filter string: If we need to filter on an EC2 state
+        :param  cloud_connection:  object: Cloud Connection object
+        :param  ghost_app:  string: The value for the instance tag "app".
+        :param  ghost_env:  string: The value for the instance tag "env".
+        :param  ghost_role:  string: The value for the instance tag "role".
+        :param  ghost_color:  string: The value for the instance tag "color".
+        :param  region:  string: The AWS region where the instances are located.
+        :param  ec2_state_filter: string: If we need to filter on an EC2 state
         :return list of dict(ex: [{'id': instance_idXXX, 'private_ip_address': XXX_XXX_XXX_XXX},{...}])
     """
     conn_as = cloud_connection.get_connection(region, ['autoscaling'], boto_version='boto3')
@@ -85,41 +95,53 @@ def find_ec2_instances(cloud_connection, ghost_app, ghost_env, ghost_role, regio
     for instance in found_instances:
         # Instances in autoscale "Terminating:*" states are still "running" but no longer in the Load Balancer
         autoscale_instances = conn_as.describe_auto_scaling_instances(InstanceIds=[instance.id])['AutoScalingInstances']
-        if not autoscale_instances or not autoscale_instances[0]['LifecycleState'] in ['Terminating', 'Terminating:Wait', 'Terminating:Proceed']:
-            hosts.append({'id': instance.id, 'private_ip_address': instance.private_ip_address, 'subnet_id': instance.subnet_id})
+        if not autoscale_instances or not autoscale_instances[0]['LifecycleState'] in ['Terminating',
+                                                                                       'Terminating:Wait',
+                                                                                       'Terminating:Proceed']:
+            hosts.append({'id': instance.id,
+                          'private_ip_address': instance.private_ip_address,
+                          'subnet_id': instance.subnet_id})
     return hosts
+
 
 def get_ec2_instance(cloud_connection, region, instance_filters):
     """
-    Find and return an EC2 object based on criteria given via `instance_filters` parameter.
+        Find and return an EC2 object based on criteria given via `instance_filters` parameter.
+        :param  cloud_connection:  object: Cloud Connection object
+        :param  region:  string: The AWS region where the instances are located.
+        :param  instance_filters: string: If we need to filter on an EC2
+        :return EC2 object
     """
     conn = cloud_connection.get_connection(region, ["ec2"])
     found_instances = conn.get_only_instances(filters=instance_filters)
     return found_instances[0] if len(found_instances) else None
 
+
 def destroy_ec2_instances(cloud_connection, app, log_file, ec2_state_filter=None):
     """ Destroy all EC2 instances which matches the `ghost app` tags
 
         :param  cloud_connection: The app Cloud Connection object
-        :param  app  string: The ghost "app" object.
+        :param  app:  string: The ghost "app" object.
         :param  log_file: Logging path
-        :param  ec2_state_filter string: If we need to filter on an EC2 state
-        :return destroyed instance informations
+        :param  ec2_state_filter: string: If we need to filter on an EC2 state
+        :return destroyed instance information
     """
     app_blue_green, app_color = get_blue_green_from_app(app)
-    found_instances = find_ec2_instances(cloud_connection, app['name'], app['env'], app['role'], app['region'], ec2_state_filter, app_color)
+    found_instances = find_ec2_instances(cloud_connection, app['name'], app['env'], app['role'], app['region'],
+                                         ec2_state_filter, app_color)
     return destroy_specific_ec2_instances(cloud_connection, app, found_instances, log_file)
+
 
 def destroy_specific_ec2_instances(cloud_connection, app, found_instances, log_file):
     """ Destroy EC2 instances given in parameter
 
         :param  cloud_connection: The app Cloud Connection object
-        :param  app  string: The ghost "app" object.
-        :param  found_instances list: List of instances to terminate (ids)
+        :param  app:  string: The ghost "app" object.
+        :param  found_instances: list: List of instances to terminate (ids)
         :param  log_file: Logging path
         :return destroyed instance informations
     """
-    #Terminating instances
+    # Terminating instances
     instances = []
     for r in found_instances:
         instances.append(r['id'])
@@ -132,12 +154,13 @@ def destroy_specific_ec2_instances(cloud_connection, app, found_instances, log_f
         log('No instances to destroy found', log_file)
         return []
 
+
 def get_ec2_instance_status(cloud_connection, aws_region, instance_ids):
     """ Get EC2 instance status
 
         :param  cloud_connection: The app Cloud Connection object
-        :param  aws_region  string: The region to use
-        :param  instance_ids array[] string: Instances IDs to check
+        :param  aws_region:  string: The region to use
+        :param  instance_ids: array[] string: Instances IDs to check
     """
     conn = cloud_connection.get_connection(aws_region, ["ec2"], boto_version='boto3')
     ec2_status = conn.describe_instance_status(
@@ -150,9 +173,9 @@ def test_ec2_instance_status(cloud_connection, aws_region, instance_ids, instanc
     """ Get EC2 instance status
 
         :param  cloud_connection: The app Cloud Connection object
-        :param  aws_region  string: The region to use
-        :param  instance_ids array[] string: Instances IDs to check
-        :param  instance_state string: Instance to check
+        :param  aws_region:  string: The region to use
+        :param  instance_ids: array[] string: Instances IDs to check
+        :param  instance_state: string: Instance to check
         :return True if every instances are in the instance_state provided.
     """
     conn = cloud_connection.get_connection(aws_region, ["ec2"], boto_version='boto3')
@@ -210,7 +233,10 @@ def get_block_devices_mapping(cloud_connection, app):
     """
     devices = []
     if 'root_block_device' in app['environment_infos']:
-        devices.append(create_block_device(cloud_connection, app['region'], app, app['environment_infos']['root_block_device']))
+        devices.append(create_block_device(cloud_connection,
+                                           app['region'],
+                                           app,
+                                           app['environment_infos']['root_block_device']))
     else:
         devices.append(create_block_device(cloud_connection, app['region'], app, {}))
     for opt_vol in app['environment_infos'].get('optional_volumes', []):
@@ -251,7 +277,8 @@ def generate_userdata(bucket_s3, s3_region, ghost_root_path):
         loader = FileSystemLoader(jinja_templates_path)
         jinja_env = Environment(loader=loader)
         template = jinja_env.get_template('stage1')
-        userdata = template.render(bucket_s3=bucket_s3, bucket_region=s3_region)
+        userdata = template.render(bucket_s3=bucket_s3, bucket_region=s3_region,
+                                   notification_endpoint=config.get('notification_endpoint', ''))
         return userdata
     else:
         return ""
@@ -281,16 +308,16 @@ def create_ec2_instance(cloud_connection, app, app_color, config, private_ip_add
 
         conn = cloud_connection.get_connection(app['region'], ["ec2"])
         interface = cloud_connection.launch_service(
-                ["ec2", "networkinterface", "NetworkInterfaceSpecification"],
-                subnet_id=subnet_id,
-                groups=app['environment_infos']['security_groups'],
-                associate_public_ip_address=app['environment_infos'].get('public_ip_address', True),
-                private_ip_address=private_ip_address
-                )
+            ["ec2", "networkinterface", "NetworkInterfaceSpecification"],
+            subnet_id=subnet_id,
+            groups=app['environment_infos']['security_groups'],
+            associate_public_ip_address=app['environment_infos'].get('public_ip_address', True),
+            private_ip_address=private_ip_address
+        )
         interfaces = cloud_connection.launch_service(
-                ["ec2", "networkinterface", "NetworkInterfaceCollection"],
-                interface
-                )
+            ["ec2", "networkinterface", "NetworkInterfaceCollection"],
+            interface
+        )
         devices = get_block_devices_mapping(cloud_connection, app)
         bdm = cloud_connection.launch_service(
             ["ec2", "blockdevicemapping", "BlockDeviceMapping"],
@@ -319,23 +346,28 @@ def create_ec2_instance(cloud_connection, app, app_color, config, private_ip_add
                 instance.update()
 
             # Tagging
-            for ghost_tag_key, ghost_tag_val in {'app': 'name', 'app_id': '_id', 'env': 'env', 'role': 'role'}.iteritems():
-                log("Tagging instance [{id}] with '{tk}':'{tv}'".format(id=instance.id, tk=ghost_tag_key, tv=str(app[ghost_tag_val])), log_file)
+            for ghost_tag_key, ghost_tag_val in {'app': 'name', 'app_id': '_id', 'env': 'env',
+                                                 'role': 'role'}.iteritems():
+                log("Tagging instance [{id}] with '{tk}':'{tv}'".format(id=instance.id, tk=ghost_tag_key,
+                                                                        tv=str(app[ghost_tag_val])), log_file)
                 conn.create_tags([instance.id], {ghost_tag_key: str(app[ghost_tag_val])})
             if app_color:
-                log("Tagging instance [{id}] with '{tk}':'{tv}'".format(id=instance.id, tk='color', tv=app_color), log_file)
+                log("Tagging instance [{id}] with '{tk}':'{tv}'".format(id=instance.id, tk='color', tv=app_color),
+                    log_file)
                 conn.create_tags([instance.id], {"color": app_color})
 
             tag_ec2_name = False
             if 'instance_tags' in app['environment_infos']:
                 for app_tag in app['environment_infos']['instance_tags']:
-                    log("Tagging instance [{id}] with '{tk}':'{tv}'".format(id=instance.id, tk=app_tag['tag_name'], tv=app_tag['tag_value']), log_file)
+                    log("Tagging instance [{id}] with '{tk}':'{tv}'".format(id=instance.id, tk=app_tag['tag_name'],
+                                                                            tv=app_tag['tag_value']), log_file)
                     conn.create_tags([instance.id], {app_tag['tag_name']: app_tag['tag_value']})
                     if app_tag['tag_name'] == 'Name':
                         tag_ec2_name = True
             if not tag_ec2_name:
                 ec2_name = "ec2.{0}.{1}.{2}".format(app['env'], app['role'], app['name'])
-                log("Tagging instance [{id}] with '{tk}':'{tv}'".format(id=instance.id, tk='Name', tv=ec2_name), log_file)
+                log("Tagging instance [{id}] with '{tk}':'{tv}'".format(id=instance.id, tk='Name', tv=ec2_name),
+                    log_file)
                 conn.create_tags([instance.id], {'Name': ec2_name})
 
             log(" CONF: Private IP: %s" % instance.private_ip_address, log_file)
@@ -348,5 +380,3 @@ def create_ec2_instance(cloud_connection, app, app_color, config, private_ip_add
     else:
         log(_red("ERROR: No AMI set, please use buildimage before"), log_file)
         raise GCallException("ERROR: No AMI set, please use buildimage before")
-
-    return None

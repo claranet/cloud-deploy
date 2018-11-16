@@ -1,0 +1,39 @@
+{
+  "object_kind": "tag_push",
+  "before": "0000000000000000000000000000000000000000",
+  "after": "82b3d5ae55f7080f1e6022629cdb57bfae7cccc7",
+  "ref": "refs/tags/master",
+  "checkout_sha": "82b3d5ae55f7080f1e6022629cdb57bfae7cccc7",
+  "user_id": 1,
+  "user_name": "John Smith",
+  "user_avatar": "https://s.gravatar.com/avatar/d4c74594d841139328695756648b6bd6?s=8://s.gravatar.com/avatar/d4c74594d841139328695756648b6bd6?s=80",
+  "project_id": 1,
+  "project":{
+    "id": 1,
+    "name":"Example",
+    "description":"",
+    "web_url":"http://gitlab.com/test/test",
+    "avatar_url":null,
+    "git_ssh_url":"git@gitlab.com:test/test.git",
+    "git_http_url":"http://gitlab.com/test/test.git",
+    "namespace":"Jsmith",
+    "visibility_level":0,
+    "path_with_namespace":"test/test",
+    "default_branch":"master",
+    "homepage":"http://gitlab.com/test/test",
+    "url":"git@gitlab.com:test/test.git",
+    "ssh_url":"git@gitlab.com:test/test.git",
+    "http_url":"http://gitlab.com/test/test.git"
+  },
+  "repository":{
+    "name": "Example",
+    "url": "ssh://git@gitlab.com/test/test.git",
+    "description": "",
+    "homepage": "http://gitlab.com/test/test",
+    "git_http_url":"http://gitlab.com/test/test.git",
+    "git_ssh_url":"git@gitlab.com:test/test.git",
+    "visibility_level":0
+  },
+  "commits": [],
+  "total_commits_count": 0
+}

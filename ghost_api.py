@@ -240,6 +240,14 @@ def check_app_module_path(updates):
     >>> check_app_module_path(app)
 
     >>> app = {'_id': 1111, 'env': 'prod', 'name': 'app1', 'role': 'webfront', 'modules': [
+    ...     {'name': 'bo-sc', 'path': '/home/foobar/bo-sc'}, {'name': 'bo-v2', 'path': '/home/foobar/bo-sc-v2'}]}
+    >>> check_app_module_path(app)
+
+    >>> app = {'_id': 1111, 'env': 'prod', 'name': 'app1', 'role': 'webfront', 'modules': [
+    ...     {'name': 'bo-v2', 'path': '/home/foobar/bo-sc-v2'}, {'name': 'bo-sc', 'path': '/home/foobar/bo-sc'}]}
+    >>> check_app_module_path(app)
+
+    >>> app = {'_id': 1111, 'env': 'prod', 'name': 'app1', 'role': 'webfront', 'modules': [
     ...     {'name': 'mod1', 'path': '/tmp/test/'}, {'name': 'mod2', 'path': '/srv/ok//'}]}
     >>> check_app_module_path(app)
 
@@ -339,11 +347,11 @@ def check_app_module_path(updates):
                 raise GhostAPIInputError('Module "{m}" has a duplicated path ({p}) with another module ("{dm}")'.format(
                     m=mod['name'], p=mod['path'], dm=modules_path.get(abs_path)))
 
-            if abs_path.startswith(tuple(modules_path.keys())):
+            if abs_path.startswith(tuple([s + '/' for s in modules_path.keys()])):
                 raise GhostAPIInputError('Module "{m}" has a path ({p}) in collision with another module'.format(
                     m=mod['name'], p=mod['path']))
 
-            path_included = filter(lambda s: s.startswith(abs_path), modules_path.keys())
+            path_included = filter(lambda s: s.startswith(abs_path + '/'), modules_path.keys())
             if path_included:
                 raise GhostAPIInputError('Module "{m}" has a path ({p}) in collision with other(s) module(s) ("{dm}")'.format(
                     m=mod['name'], p=mod['path'], dm=', '.join([modules_path[x] for x in path_included])))
