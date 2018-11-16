@@ -27,13 +27,14 @@ COLOR_RED='\033[00;31m'
 COLOR_GREEN='\033[00;32m'
 COLOR_YELLOW='\033[00;33m'
 
-function exit_deployment() {
+function exit_stage2() {
     echo "Removing Manifest file" >> $LOGFILE
     rm -f /tmp/MANIFEST
-    echo "Unlocking $LOCK..."
+    echo "Unlocking $LOCK..." | tee -a $LOGFILE
     rmdir $LOCK
-    echo "Unlocked $LOCK"
+    echo "Unlocked $LOCK" | tee -a $LOGFILE
     trap - EXIT
+    notify_status $1
     if [ -z $1 ]; then
         exit -1
     else
@@ -42,7 +43,7 @@ function exit_deployment() {
 }
 
 set -e
-trap exit_deployment EXIT TERM INT
+trap exit_stage2 EXIT TERM INT
 
 INSTANCE_ID=$(curl http://169.254.169.254/latest/meta-data/instance-id)
 EC2_AVAIL_ZONE=$(curl -s http://169.254.169.254/latest/meta-data/placement/availability-zone)
@@ -55,17 +56,17 @@ while [ -z "$APP" ] || [ -z "$ENV" ] || [ -z "$ROLE" ] ; do
 
     TAGS=$($AWS_BIN ec2 describe-tags --filters "Name=resource-id,Values=$INSTANCE_ID" --region "$EC2_REGION")
 
-    NAME=$(echo $TAGS | jq -r ".Tags[] | { key: .Key, value: .Value } | [.] | from_entries" | jq -r '.["Name"] | select (.!=null)')
-    APP=$(echo $TAGS | jq -r ".Tags[] | { key: .Key, value: .Value } | [.] | from_entries" | jq -r '.["app"] | select (.!=null)')
-    ENV=$(echo $TAGS | jq -r ".Tags[] | { key: .Key, value: .Value } | [.] | from_entries" | jq -r '.["env"] | select (.!=null)')
-    ROLE=$(echo $TAGS | jq -r ".Tags[] | { key: .Key, value: .Value } | [.] | from_entries" | jq -r '.["role"] | select (.!=null)')
+    NAME=$(echo  $TAGS | jq -r ".Tags[] | { key: .Key, value: .Value } | [.] | from_entries" | jq -r '.["Name"] | select (.!=null)')
+    APP=$(echo   $TAGS | jq -r ".Tags[] | { key: .Key, value: .Value } | [.] | from_entries" | jq -r '.["app"] | select (.!=null)')
+    ENV=$(echo   $TAGS | jq -r ".Tags[] | { key: .Key, value: .Value } | [.] | from_entries" | jq -r '.["env"] | select (.!=null)')
+    ROLE=$(echo  $TAGS | jq -r ".Tags[] | { key: .Key, value: .Value } | [.] | from_entries" | jq -r '.["role"] | select (.!=null)')
     COLOR=$(echo $TAGS | jq -r ".Tags[] | { key: .Key, value: .Value } | [.] | from_entries" | jq -r '.["color"] | select (.!=null)')
 
     ((retry++))
     if [ $retry -gt 150 ] ; then
         # After 5min, no more hope for tags...
         echo "[ERROR] Cannot retrieve instance tags, exiting."
-        exit_deployment -1
+        exit_stage2 -1
     fi
 done
 
@@ -88,6 +89,25 @@ else
 fi
 
 IP=$(curl -s http://169.254.169.254/latest/meta-data/local-ipv4)
+MAX_NAME=$(($(getconf HOST_NAME_MAX)-16))
+EC2_HOSTNAME=$(echo ${NAME:0:$MAX_NAME}-${IP} | tr -s '.' '-')
+
+function notify_status() {
+    ZABBIX_HOSTNAME=$(grep ^Hostname= /etc/zabbix/zabbix_agentd.conf | cut -d'=' -f2)
+
+    if [ -z $NOTIFICATION_ENDPOINT ]; then
+        return
+    fi
+    # First arg is a status code? (integer)
+    if [[ $1 =~ ^-?[0-9]+$ ]]; then
+        status=$([ "$1" == 0 ] && echo "done" || echo "failed")
+        notif_payload=$(printf '{"status":"%s","return_code":%d,"hostname":"%s","zabbixname":"%s"}' "$status" "$1" "$EC2_HOSTNAME" "$ZABBIX_HOSTNAME")
+    else
+        notif_payload=$(printf '{"status":"%s","hostname":"%s","zabbixname":"%s"}' "$1" "$EC2_HOSTNAME" "$ZABBIX_HOSTNAME")
+    fi
+    echo "Posting payload $notif_payload to $NOTIFICATION_ENDPOINT" >> $LOGFILE
+    curl -H "Content-Type: application/json" -X POST -d $notif_payload $NOTIFICATION_ENDPOINT
+}
 
 set +e
 
@@ -99,8 +119,6 @@ function zabbix_hostname() {
 }
 
 function instance_hostname() {
-    MAX_NAME=$(($(getconf HOST_NAME_MAX)-16))
-    EC2_HOSTNAME=$(echo ${NAME:0:$MAX_NAME}-${IP} | tr -s '.' '-')
     echo "$EC2_HOSTNAME" > /etc/hostname
     which hostnamectl 2> /dev/null && hostnamectl set-hostname "$EC2_HOSTNAME" || hostname "$EC2_HOSTNAME"
     echo "$IP $EC2_HOSTNAME" >> /etc/hosts
@@ -160,21 +178,21 @@ function deploy_module() {
     MODULE_NAME=$1
     if [ -z $MODULE_NAME ]; then
         echo "MODULE_NAME cannot be empty"
-        exit_deployment -10
+        exit_stage2 -10
     fi
     MODULE_FILE=$2
     if [ -z $MODULE_FILE ]; then
         echo "MODULE_FILE cannot be empty"
-        exit_deployment -10
+        exit_stage2 -10
     fi
     TARGET=$3
     if [ -z $TARGET ]; then
         echo "TARGET cannot be empty"
-        exit_deployment -10
+        exit_stage2 -10
     fi
     if [ ${TARGET%%+(/)} == "/tmp" ]; then
         echo "TARGET path cannot be /tmp"
-        exit_deployment -10
+        exit_stage2 -10
     fi
     TARGETDIR=$(dirname $TARGET)
     if [ ! -d $TARGETDIR ]; then
@@ -191,7 +209,7 @@ function deploy_module() {
     tar --warning=no-timestamp -xvzf /tmp/$MODULE_FILE -C /ghost/$UUID > /dev/null
     if [ $? -ne 0 ] || [ ! -f /tmp/$MODULE_FILE ]; then
         echo "Extracting module failed !"
-        exit_deployment -11
+        exit_stage2 -11
     fi
 
     rm -rf /tmp/$MODULE_FILE
@@ -209,7 +227,7 @@ function deploy_module() {
         if [ $status -ne 0 ]; then
             echo -e "${COLOR_RED}[${MODULE_NAME}:${GHOST_MODULE_REV}] Predeploy script exited with error code ${status} ${COLOR_CLR}"
             purge_latest_failed_deploy $MODULE_NAME $UUID
-            exit_deployment -12
+            exit_stage2 -12
         fi
         rm -vf ./predeploy
     fi
@@ -233,7 +251,7 @@ function deploy_module() {
         if [ $status -ne 0 ]; then
             echo -e "${COLOR_RED}[${MODULE_NAME}:${GHOST_MODULE_REV}] Postdeploy script exited with error code ${status} ${COLOR_CLR}"
             purge_latest_failed_deploy $MODULE_NAME $UUID
-            exit_deployment -13
+            exit_stage2 -13
         fi
         rm -vf ./postdeploy
     fi
@@ -269,7 +287,7 @@ function download_and_run_lifecycle_hook_script() {
         GHOST_APP=$APP GHOST_ENV=$ENV GHOST_ENV_COLOR=$COLOR GHOST_ROLE=$ROLE /tmp/ghost_${script_name} 2>&1 | tee -a $LOGFILE
         local status=${PIPESTATUS[0]}
         if [ $status -ne 0 ]; then
-            exit_deployment -5
+            exit_stage2 -5
         fi
         if [ -e /tmp/ghost_custom_env_vars ]; then
             rm -vf /tmp/ghost_custom_env_vars
@@ -277,14 +295,18 @@ function download_and_run_lifecycle_hook_script() {
     fi
 }
 
+notify_status 'starting'
+
 echo "Downloading Manifest" >> $LOGFILE
 $AWS_BIN s3 cp --only-show-errors s3://${S3_BUCKET}/${APP_PATH}/MANIFEST /tmp/ --region "$S3_REGION"
 
 if [ $? -ne 0 ]; then
     echo "Manifest download error...Exiting" >> $LOGFILE
     # init zabbix before quit
-    exit_deployment -3
+    exit_stage2 -3
 fi
+
+notify_status 'started'
 
 if [ -n "$1" ]; then
     # Deploy only one module
@@ -304,4 +326,4 @@ else
     download_and_run_lifecycle_hook_script 'post_bootstrap'
 fi
 
-exit_deployment 0
+exit_stage2 0

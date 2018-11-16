@@ -156,10 +156,10 @@ class LoadBalancersManager(object):
         """
         raise NotImplementedError()
 
-    def deregister_instances_from_lbs(self, lb_names, instances_ids, log_file):
+    def deregister_instances_from_lbs(self, as_name, instances_ids, log_file):
         """ Registrer one or multiple instances in the LB pool.
 
-            :param  lb_names: list The name of the Elastic Load Balancers.
+            :param  as_name: string The ASG name to retrieve Elastic Load Balancers from.
             :param  instances_ids: list of instances ID to add to the LB pool.
             :param  log_file:  string  The log file
             :return boolean(True if succeed otherwise False)
@@ -177,10 +177,10 @@ class LoadBalancersManager(object):
         """
         raise NotImplementedError()
 
-    def register_instances_from_lbs(self, lb_names, instances_ids, log_file):
+    def register_instances_from_lbs(self, as_name, instances_ids, log_file):
         """ Registrer one or multiple instances in the LB pool.
 
-            :param  lb_names: list The name of the Elastic Load Balancers.
+            :param  as_name: string The ASG name to retrieve Elastic Load Balancers from.
             :param  instances_ids: list of instances ID to add to the LB pool.
             :param  log_file:  string  The log file
             :return boolean(True if succeed otherwise False)
@@ -199,10 +199,10 @@ class LoadBalancersManager(object):
         """
         raise NotImplementedError()
 
-    def get_lbs_max_connection_draining_value(self, lb_names):
-        """ Return the biggest connection draining value for the list of LB in parameters.
+    def get_lbs_max_connection_draining_value(self, as_name):
+        """ Return the biggest connection draining value for the list of LB associated to the AS in parameters.
 
-            :param  lb_names: list The name of the Elastic Load Balancers.
+            :param  as_name: The ASG name.
             :return  int  The value in seconds of the connection draining.
         """
         raise NotImplementedError()
@@ -258,9 +258,10 @@ class AwsClbManager(AwsElbManager):
     def get_dns_name(self, lb_name):
         return self.get_by_name(lb_name).dns_name
 
-    def register_instances_from_lbs(self, lb_names, instances_ids, log_file):
+    def register_instances_from_lbs(self, as_name, instances_ids, log_file):
         try:
             elb_conn2 = self._get_elb_connection(boto2_compat=True)
+            lb_names = self.list_lbs_from_autoscale(as_name, log_file)
             for elb_name in lb_names:
                 if not elb_conn2.register_instances(elb_name, instances_ids).status:
                     log("Failed to register instances {0} in the ELB {1}".format(str(instances_ids), elb_name),
@@ -273,9 +274,10 @@ class AwsClbManager(AwsElbManager):
             log("Exception during register operation: {0}".format(str(e)), log_file)
             raise
 
-    def deregister_instances_from_lbs(self, lb_names, instances_ids, log_file):
+    def deregister_instances_from_lbs(self, as_name, instances_ids, log_file):
         try:
             elb_conn2 = self._get_elb_connection(boto2_compat=True)
+            lb_names = self.list_lbs_from_autoscale(as_name, log_file)
             for elb_name in lb_names:
                 if not elb_conn2.deregister_instances(elb_name, instances_ids).status:
                     log("Failed to deregister instances {0} in the ELB {1}".format(str(instances_ids), elb_name),
@@ -419,7 +421,8 @@ class AwsClbManager(AwsElbManager):
         log("  INFO: Destroying ELB {0}".format(lb_name), log_file)
         elb_conn.delete_load_balancer(LoadBalancerName=lb_name)
 
-    def get_lbs_max_connection_draining_value(self, lb_names):
+    def get_lbs_max_connection_draining_value(self, as_name):
+        lb_names = self.list_lbs_from_autoscale(as_name, None)
         elb_conn2 = self._get_elb_connection(boto2_compat=True)
         return max([elb_conn2.get_all_lb_attributes(elb).connection_draining.timeout for elb in lb_names])
 
@@ -480,18 +483,16 @@ class AwsAlbManager(AwsElbManager):
     def get_dns_name(self, lb_name):
         return self.get_by_name(lb_name).dns_name
 
-    def get_lbs_max_connection_draining_value(self, lb_names):
+    def get_lbs_max_connection_draining_value(self, as_name):
+        tg_arns = self._get_targetgroup_arns_from_autoscale(as_name)
         alb_conn = self._get_alb_connection()
         values = []
-        alb_arns = ([alb['LoadBalancerArn']
-                     for alb in alb_conn.describe_load_balancers(Names=lb_names)['LoadBalancers']])
-        for alb_arn in alb_arns:
-            for tg_arn in self._get_targetgroup_arns_from_alb(alb_arn):
-                attrs = alb_conn.describe_target_group_attributes(TargetGroupArn=tg_arn)['Attributes']
-                for at in attrs:
-                    if at['Key'] == 'deregistration_delay.timeout_seconds':
-                        values.append(int(at['Value']))
-                        break
+        for tg_arn in tg_arns:
+            attrs = alb_conn.describe_target_group_attributes(TargetGroupArn=tg_arn)['Attributes']
+            for at in attrs:
+                if at['Key'] == 'deregistration_delay.timeout_seconds':
+                    values.append(int(at['Value']))
+                    break
         return max(values)
 
     def copy_lb(self, new_lb_name, source_lb_name, additional_tags, log_file):
@@ -752,33 +753,31 @@ class AwsAlbManager(AwsElbManager):
             log("Exception during deregister operation: {0}".format(str(e)), log_file)
             raise
 
-    def register_instances_from_lbs(self, lb_names, instances_ids, log_file):
+    def register_instances_from_lbs(self, as_name, instances_ids, log_file):
         try:
             alb_conn = self._get_alb_connection()
-            albs = ({alb['LoadBalancerName']: alb['LoadBalancerArn']
-                     for alb in alb_conn.describe_load_balancers(Names=lb_names)['LoadBalancers']})
-            for alb_name, alb_arn in albs.items():
-                for alb_tg_arn in self._get_targetgroup_arns_from_alb(alb_arn):
-                    alb_conn.register_targets(
-                        TargetGroupArn=alb_tg_arn,
-                        Targets=[{'Id': host_id} for host_id in instances_ids])
-                    log("Instances {0} well registered in the ALB {1}".format(str(instances_ids), alb_name), log_file)
+            tg_arns = self._get_targetgroup_arns_from_autoscale(as_name)
+            for alb_tg_arn in tg_arns:
+                alb_conn.register_targets(
+                    TargetGroupArn=alb_tg_arn,
+                    Targets=[{'Id': host_id} for host_id in instances_ids])
+                log("Instances {0} well registered in the Target Group {1}".format(str(instances_ids), alb_tg_arn),
+                    log_file)
             return True
         except Exception as e:
             log("Exception during deregister operation: {0}".format(str(e)), log_file)
             raise
 
-    def deregister_instances_from_lbs(self, lb_names, instances_ids, log_file):
+    def deregister_instances_from_lbs(self, as_name, instances_ids, log_file):
         try:
             alb_conn = self._get_alb_connection()
-            albs = ({alb['LoadBalancerName']: alb['LoadBalancerArn']
-                     for alb in alb_conn.describe_load_balancers(Names=lb_names)['LoadBalancers']})
-            for alb_name, alb_arn in albs.items():
-                for alb_tg_arn in self._get_targetgroup_arns_from_alb(alb_arn):
-                    alb_conn.deregister_targets(
-                        TargetGroupArn=alb_tg_arn,
-                        Targets=[{'Id': host_id} for host_id in instances_ids])
-                    log("Instances {0} well deregistered in the ALB {1}".format(str(instances_ids), alb_name), log_file)
+            tg_arns = self._get_targetgroup_arns_from_autoscale(as_name)
+            for alb_tg_arn in tg_arns:
+                alb_conn.deregister_targets(
+                    TargetGroupArn=alb_tg_arn,
+                    Targets=[{'Id': host_id} for host_id in instances_ids])
+                log("Instances {0} well deregistered from Target Group {1}".format(str(instances_ids), alb_tg_arn),
+                    log_file)
             return True
         except Exception as e:
             log("Exception during deregister operation: {0}".format(str(e)), log_file)

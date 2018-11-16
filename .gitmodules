@@ -1,9 +1,9 @@
 [submodule "ghost-doc"]
 	path = ghost-doc
-	url = git@github.com:claranet/cloud-deploy-docs.git
+	url = https://github.com/claranet/cloud-deploy-docs.git
 [submodule "ghost-feature-presets"]
 	path = ghost-feature-presets
-	url = git@github.com:claranet/cloud-deploy-presets.git
+	url = https://github.com/claranet/cloud-deploy-presets.git
 [submodule "ansible-playbook-ghost-common"]
 	path = ansible-playbook-ghost-common
-	url = git@github.com:claranet/cloud-deploy-ansible-playbook-common.git
+	url = https://github.com/claranet/cloud-deploy-ansible-playbook-common.git

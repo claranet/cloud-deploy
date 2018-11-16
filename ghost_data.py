@@ -7,7 +7,7 @@ from pymongo import MongoClient
 from bson.objectid import ObjectId
 
 from models.apps import APPS_DEFAULT
-from settings import MONGO_DBNAME, MONGO_HOST, MONGO_PORT, REDIS_HOST
+from settings import MONGO_DBNAME, MONGO_HOST, MONGO_PORT
 
 # DB Access
 db = MongoClient(host=MONGO_HOST, port=MONGO_PORT)[MONGO_DBNAME]
@@ -35,6 +35,13 @@ def get_job(job_id):
         return None
     job = db.jobs.find_one({'_id': ObjectId(job_id)})
     return job
+
+
+def get_webhook(webhook_id):
+    if not webhook_id:
+        return None
+    webhook = db.webhooks.find_one({'_id': ObjectId(webhook_id)})
+    return webhook
 
 
 # Data normalization

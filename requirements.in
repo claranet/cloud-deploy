@@ -1,7 +1,7 @@
 # This file is used by pip-compile to generate requirements.txt
 # Everything you directly use in your source code should be a top-level dependency recorded here.
 # Don't pin them unless you want them pinned, of course.
--e git+ssh://git@bitbucket.org/morea/boto-sts-assume-role@v0.0.2#egg=botosts
+-e git+https://github.com/claranet/boto-sts-assume-role@v1.0.3#egg=botosts
 appdirs>=1.4.0            # Needed by setuptools, pinned version because of https://github.com/ActiveState/appdirs/issues/89
 ansible==2.5.*            # Breaking changes with 2.6, needs more testing
 argparse
@@ -14,7 +14,7 @@ chardet
 click
 eve-swagger
 Eve
-Fabric==1.14.0            # Breaking changes in > 2.0 - http://docs.fabfile.org/en/2.0/upgrading.html
+Fabric<2.0                # Breaking changes in >= 2.0 - http://www.fabfile.org/upgrading.html#upgrading-from-1-x - http://docs.fabfile.org/en/2.0/upgrading.html
 Flask
 Flask-Bootstrap
 Flask-Login
