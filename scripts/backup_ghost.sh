@@ -7,8 +7,12 @@ exec 1<&-
 # Close STDERR FD
 exec 2<&-
 
-# Open STDOUT as $LOG_FILE file for read and write.
 LOG_FILE=/var/log/ghost/ghost-backup.log
+
+# Truncate log file
+> $LOG_FILE
+
+# Open STDOUT as $LOG_FILE file for read and write.
 exec 1<>$LOG_FILE
 
 # Redirect STDERR to STDOUT
