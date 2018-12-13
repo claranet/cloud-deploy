@@ -37,7 +37,7 @@ mkdir $BACKUP
 cd $BACKUP
 
 # Dump mongodb
-mongodump --quiet
+mongodump
 
 # Copy configuration
 ln -snf $SCRIPTPATH/../*.yml .
@@ -60,4 +60,4 @@ cd ..
 tar --dereference -czf $FILE $BACKUP
 
 # Upload archive to S3
-/usr/local/bin/aws s3 cp $FILE --region $S3_REGION s3://$S3/backup/
+/usr/local/bin/aws s3 cp --only-show-errors $FILE --region $S3_REGION s3://$S3/backup/
