@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -e
+
 # Close STDOUT file descriptor
 exec 1<&-
 # Close STDERR FD
@@ -26,36 +28,36 @@ elif [ -z "$S3_REGION" ]; then
     S3_REGION='eu-west-1'
 fi
 
+# Cleanup previous execution
+rm -rf $BACKUP
+rm -f $FILE
+
 # Create backup dir
 mkdir $BACKUP
 cd $BACKUP
 
 # Dump mongodb
-mongodump
+mongodump --quiet
 
 # Copy configuration
-cp $SCRIPTPATH/../*.yml .
-cp -f $SCRIPTPATH/../.ssh/config ./ssh_config
+ln -snf $SCRIPTPATH/../*.yml .
+ln -snf $SCRIPTPATH/../.ssh/config ./ssh_config
 
 # Copy jobs' logs
 mkdir logs
-cp -r /var/log/ghost/*.txt logs/
+ln -snf /var/log/ghost/*.txt logs/
 
 # Copy nginx config
 mkdir nginx
-cp /etc/nginx/sites-enabled/* ./nginx
+ln -snf /etc/nginx/sites-enabled/* ./nginx/
 
 # Copy supervisor config
 mkdir supervisor
-cp /etc/supervisor/conf.d/* ./supervisor
+ln -snf /etc/supervisor/conf.d/* ./supervisor/
 
 # Create archive
 cd ..
-tar -czf $FILE $BACKUP
+tar --dereference -czf $FILE $BACKUP
 
 # Upload archive to S3
 /usr/local/bin/aws s3 cp $FILE --region $S3_REGION s3://$S3/backup/
-
-# Cleanup
-rm -rf $BACKUP
-rm -f $FILE
