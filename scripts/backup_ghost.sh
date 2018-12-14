@@ -1,6 +1,7 @@
 #!/bin/bash
 
-set -e
+# Exit early in case of errors or unset variables
+set -euo pipefail
 
 # Close STDOUT file descriptor
 exec 1<&-
