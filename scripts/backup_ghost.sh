@@ -51,7 +51,7 @@ ln -snf $SCRIPTPATH/../.ssh/config ./ssh_config
 
 # Copy jobs' logs
 mkdir logs
-ln -snf /var/log/ghost/*.txt logs/
+ln -snf /var/log/ghost/*.txt ./logs/
 
 # Copy nginx config
 mkdir nginx
