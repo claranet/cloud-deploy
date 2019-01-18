@@ -1,0 +1,12 @@
+image:
+  name: 845945358136.dkr.ecr.eu-west-1.amazonaws.com/cloud-deploy-ci:2018-05-14
+
+stages:
+  - unit-tests
+
+pipelines:
+  stage: unit-tests
+  tags:
+    - default
+  script:
+    - ./bitbucket-pipelines.sh "${CI_COMMIT_REF_NAME}"
