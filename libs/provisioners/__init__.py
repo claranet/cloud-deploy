@@ -19,7 +19,7 @@ def get_provisioners(config, log_file, unique, job_options, app):
     """
     ret = []
     provisioners_config = get_provisioners_config(config)
-    # Skip_salt_bootstrap option with default value if not set.
+    # Use skip_salt_bootstrap default value if job options not set.
     job_options = job_options or [config.get('skip_provisioner_bootstrap', True)]
     for key, provisioner_config in provisioners_config.iteritems():
         if key == 'salt':
