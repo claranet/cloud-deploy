@@ -619,24 +619,24 @@ def get_ghost_env_variables(app, module=None, user=None):
 
 def get_mirror_path_from_module(app_module):
     """
-    >>> app_module = {'git_repo': 'git@bitbucket.org:morea/ghost.git'}
+    >>> app_module = {'git_repo': 'git@github.com:claranet/ghost.git'}
     >>> get_mirror_path_from_module(app_module)
-    '/ghost/.mirrors/git@bitbucket.org:morea/ghost.git'
-    >>> app_module = {'git_repo': ' git@bitbucket.org:morea/spaces.git '}
+    '/ghost/.mirrors/git@github.com:claranet/ghost.git'
+    >>> app_module = {'git_repo': ' git@github.com:claranet/spaces.git '}
     >>> get_mirror_path_from_module(app_module)
-    '/ghost/.mirrors/git@bitbucket.org:morea/spaces.git'
+    '/ghost/.mirrors/git@github.com:claranet/spaces.git'
     """
     return "/ghost/.mirrors/{remote}".format(remote=app_module['git_repo'].strip())
 
 
 def get_lock_path_from_repo(git_repo):
     """
-    >>> app_module = {'git_repo': 'git@bitbucket.org:morea/ghost.git'}
+    >>> app_module = {'git_repo': 'git@github.com:claranet/ghost.git'}
     >>> get_lock_path_from_repo(app_module['git_repo'])
-    '/ghost/.mirrors/.locks/git@bitbucket.org:morea/ghost.git'
-    >>> app_module = {'git_repo': ' git@bitbucket.org:morea/spaces.git '}
+    '/ghost/.mirrors/.locks/git@github.com:claranet/ghost.git'
+    >>> app_module = {'git_repo': ' git@github.com:claranet/spaces.git '}
     >>> get_lock_path_from_repo(app_module['git_repo'])
-    '/ghost/.mirrors/.locks/git@bitbucket.org:morea/spaces.git'
+    '/ghost/.mirrors/.locks/git@github.com:claranet/spaces.git'
     """
     return "/ghost/.mirrors/.locks/{remote}".format(remote=git_repo.strip())
 
