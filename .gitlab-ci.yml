@@ -10,4 +10,4 @@ pipelines:
   tags:
     - default
   script:
-    - ./bitbucket-pipelines.sh "${CI_COMMIT_REF_NAME}"
+    - ./ci-pipelines.sh "${CI_COMMIT_REF_NAME}"
