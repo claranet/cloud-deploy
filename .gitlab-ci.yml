@@ -1,6 +1,5 @@
 image:
-  #name: 845945358136.dkr.ecr.eu-west-1.amazonaws.com/cloud-deploy-ci:2018-05-14
-  name: eu.gcr.io/cloudpublic-sandbox/cloud-deploy-ci:2018-05-14
+  name: 845945358136.dkr.ecr.eu-west-1.amazonaws.com/cloud-deploy-ci:2018-05-14
 
 stages:
   - unit-tests
