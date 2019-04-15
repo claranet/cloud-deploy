@@ -97,7 +97,7 @@ def get_path_from_app_with_color(app):
 def get_buildpack_clone_path_from_module(app, module):
     """
     >>> app = {'name': 'AppName', 'env': 'prod', 'role': 'webfront'}
-    >>> module = {'name': 'mod1', 'git_repo': 'git@bitbucket.org:morea/ghost.git'}
+    >>> module = {'name': 'mod1', 'git_repo': 'git@github.com:claranet/ghost.git'}
     >>> get_buildpack_clone_path_from_module(app, module)
     '/ghost/AppName/prod/webfront/mod1'
     """
@@ -107,7 +107,7 @@ def get_buildpack_clone_path_from_module(app, module):
 def get_intermediate_clone_path_from_module(app, module):
     """
     >>> app = {'name': 'AppName', 'env': 'prod', 'role': 'webfront'}
-    >>> module = {'name': 'mod1', 'git_repo': 'git@bitbucket.org:morea/ghost.git'}
+    >>> module = {'name': 'mod1', 'git_repo': 'git@github.com:claranet/ghost.git'}
     >>> get_intermediate_clone_path_from_module(app, module)
     '/ghost/.tmp/AppName/prod/webfront/mod1'
     """
@@ -221,40 +221,40 @@ def get_key_path(config, region, account, key_name, log_file):
     Given a configuration with a single key path for all EC2 instances in all regions:
 
     >>> config = yaml.load(\"\"\"
-    ... key_path: /home/admin/key/morea.pem
+    ... key_path: /home/admin/key/claranet.pem
     ... \"\"\")
 
     The same key path is returned, whatever the region or key name:
 
     >>> get_key_path(config, None, None, None, StringIO())
-    '/home/admin/key/morea.pem'
+    '/home/admin/key/claranet.pem'
     >>> get_key_path(config, 'eu-west-1', 'account', None, StringIO())
-    '/home/admin/key/morea.pem'
-    >>> get_key_path(config, 'eu-west-1', 'account', 'morea', StringIO())
-    '/home/admin/key/morea.pem'
+    '/home/admin/key/claranet.pem'
+    >>> get_key_path(config, 'eu-west-1', 'account', 'claranet', StringIO())
+    '/home/admin/key/claranet.pem'
 
     Given a configuration with a mapping from regions to key paths:
 
     >>> config = yaml.load(\"\"\"
     ... key_path:
-    ...   eu-west-1: /home/admin/key/morea-eu-west-1.pem
-    ...   us-west-2: /home/admin/key/morea-us-west-2.pem
+    ...   eu-west-1: /home/admin/key/claranet-eu-west-1.pem
+    ...   us-west-2: /home/admin/key/claranet-us-west-2.pem
     ... \"\"\")
 
     The key path corresponding to the requested region is returned, whatever the key name:
 
     >>> get_key_path(config, 'eu-west-1', 'account', None, StringIO())
-    '/home/admin/key/morea-eu-west-1.pem'
-    >>> get_key_path(config, 'eu-west-1', 'account', 'morea', StringIO())
-    '/home/admin/key/morea-eu-west-1.pem'
+    '/home/admin/key/claranet-eu-west-1.pem'
+    >>> get_key_path(config, 'eu-west-1', 'account', 'claranet', StringIO())
+    '/home/admin/key/claranet-eu-west-1.pem'
     >>> get_key_path(config, 'us-west-2', 'account', None, StringIO())
-    '/home/admin/key/morea-us-west-2.pem'
-    >>> get_key_path(config, 'us-west-2', 'account', 'morea', StringIO())
-    '/home/admin/key/morea-us-west-2.pem'
+    '/home/admin/key/claranet-us-west-2.pem'
+    >>> get_key_path(config, 'us-west-2', 'account', 'claranet', StringIO())
+    '/home/admin/key/claranet-us-west-2.pem'
 
     If a mapping is missing, an empty key path is returned:
 
-    >>> get_key_path(config, 'us-west-1', 'account', 'morea', StringIO())
+    >>> get_key_path(config, 'us-west-1', 'account', 'claranet', StringIO())
     ''
 
     Given a configuration with mappings from regions to accounts to key paths:
@@ -262,29 +262,29 @@ def get_key_path(config, region, account, key_name, log_file):
     >>> config = yaml.load(\"\"\"
     ... key_path:
     ...   eu-west-1:
-    ...     '123456789': /home/admin/key/morea-account-1-eu-west-1.pem
-    ...     '987654321': /home/admin/key/morea-account-2-eu-west-1.pem
+    ...     '123456789': /home/admin/key/claranet-account-1-eu-west-1.pem
+    ...     '987654321': /home/admin/key/claranet-account-2-eu-west-1.pem
     ...   us-west-2:
-    ...     '123456789': /home/admin/key/morea-account-1-us-west-2.pem
-    ...     '987654321': /home/admin/key/morea-account-2-us-west-2.pem
+    ...     '123456789': /home/admin/key/claranet-account-1-us-west-2.pem
+    ...     '987654321': /home/admin/key/claranet-account-2-us-west-2.pem
     ... \"\"\")
 
     The key path corresponding to the requested region and account is returned:
 
-    >>> get_key_path(config, 'eu-west-1', '123456789', 'morea-key', StringIO())
-    '/home/admin/key/morea-account-1-eu-west-1.pem'
-    >>> get_key_path(config, 'eu-west-1', '987654321', 'morea-key', StringIO())
-    '/home/admin/key/morea-account-2-eu-west-1.pem'
-    >>> get_key_path(config, 'us-west-2', '123456789', 'morea-key', StringIO())
-    '/home/admin/key/morea-account-1-us-west-2.pem'
-    >>> get_key_path(config, 'us-west-2', '987654321', 'morea-key', StringIO())
-    '/home/admin/key/morea-account-2-us-west-2.pem'
+    >>> get_key_path(config, 'eu-west-1', '123456789', 'claranet-key', StringIO())
+    '/home/admin/key/claranet-account-1-eu-west-1.pem'
+    >>> get_key_path(config, 'eu-west-1', '987654321', 'claranet-key', StringIO())
+    '/home/admin/key/claranet-account-2-eu-west-1.pem'
+    >>> get_key_path(config, 'us-west-2', '123456789', 'claranet-key', StringIO())
+    '/home/admin/key/claranet-account-1-us-west-2.pem'
+    >>> get_key_path(config, 'us-west-2', '987654321', 'claranet-key', StringIO())
+    '/home/admin/key/claranet-account-2-us-west-2.pem'
 
     If a mapping is missing, an empty key path is returned:
 
-    >>> get_key_path(config, 'us-west-2', 'morea-account-3', 'morea-key', StringIO())
+    >>> get_key_path(config, 'us-west-2', 'claranet-account-3', 'claranet-key', StringIO())
     ''
-    >>> get_key_path(config, 'us-west-1', 'morea-123456789', 'morea-key', StringIO())
+    >>> get_key_path(config, 'us-west-1', 'claranet-123456789', 'claranet-key', StringIO())
     ''
 
     Given a configuration with mappings from regions to accounts to key names to key paths:
@@ -293,53 +293,53 @@ def get_key_path(config, region, account, key_name, log_file):
     ... key_path:
     ...   eu-west-1:
     ...     default:
-    ...       morea-key-1: /home/admin/key/morea-default-key-1-eu-west-1.pem
-    ...       morea-key-2: /home/admin/key/morea-default-key-2-eu-west-1.pem
+    ...       claranet-key-1: /home/admin/key/claranet-default-key-1-eu-west-1.pem
+    ...       claranet-key-2: /home/admin/key/claranet-default-key-2-eu-west-1.pem
     ...     # Account 1
     ...     '123456789':
-    ...       morea-key-1: /home/admin/key/morea-account-1-key-1-eu-west-1.pem
-    ...       morea-key-2: /home/admin/key/morea-account-1-key-2-eu-west-1.pem
+    ...       claranet-key-1: /home/admin/key/claranet-account-1-key-1-eu-west-1.pem
+    ...       claranet-key-2: /home/admin/key/claranet-account-1-key-2-eu-west-1.pem
     ...     # Account 2
     ...     '987654321':
-    ...       morea-key-1: /home/admin/key/morea-account-2-key-1-eu-west-1.pem
-    ...       morea-key-2: /home/admin/key/morea-account-2-key-2-eu-west-1.pem
+    ...       claranet-key-1: /home/admin/key/claranet-account-2-key-1-eu-west-1.pem
+    ...       claranet-key-2: /home/admin/key/claranet-account-2-key-2-eu-west-1.pem
     ...   us-west-2:
-    ...     default:       /home/admin/key/morea-default-us-west-2.pem
+    ...     default:       /home/admin/key/claranet-default-us-west-2.pem
     ...     # Account 1
     ...     '123456789':
-    ...       morea-key-1: /home/admin/key/morea-account-1-key-1-us-west-2.pem
-    ...       morea-key-2: /home/admin/key/morea-account-1-key-2-us-west-2.pem
+    ...       claranet-key-1: /home/admin/key/claranet-account-1-key-1-us-west-2.pem
+    ...       claranet-key-2: /home/admin/key/claranet-account-1-key-2-us-west-2.pem
     ...     '987654321':
-    ...       morea-key-1: /home/admin/key/morea-account-2-key-1-us-west-2.pem
-    ...       morea-key-2: /home/admin/key/morea-account-2-key-2-us-west-2.pem
+    ...       claranet-key-1: /home/admin/key/claranet-account-2-key-1-us-west-2.pem
+    ...       claranet-key-2: /home/admin/key/claranet-account-2-key-2-us-west-2.pem
     ... \"\"\")
 
     The key path corresponding to the requested region, account and key name is returned:
 
-    >>> get_key_path(config, 'eu-west-1', '123456789', 'morea-key-1', StringIO())
-    '/home/admin/key/morea-account-1-key-1-eu-west-1.pem'
-    >>> get_key_path(config, 'eu-west-1', '123456789', 'morea-key-2', StringIO())
-    '/home/admin/key/morea-account-1-key-2-eu-west-1.pem'
-    >>> get_key_path(config, 'us-west-2', '987654321', 'morea-key-1', StringIO())
-    '/home/admin/key/morea-account-2-key-1-us-west-2.pem'
-    >>> get_key_path(config, 'us-west-2', '987654321', 'morea-key-2', StringIO())
-    '/home/admin/key/morea-account-2-key-2-us-west-2.pem'
+    >>> get_key_path(config, 'eu-west-1', '123456789', 'claranet-key-1', StringIO())
+    '/home/admin/key/claranet-account-1-key-1-eu-west-1.pem'
+    >>> get_key_path(config, 'eu-west-1', '123456789', 'claranet-key-2', StringIO())
+    '/home/admin/key/claranet-account-1-key-2-eu-west-1.pem'
+    >>> get_key_path(config, 'us-west-2', '987654321', 'claranet-key-1', StringIO())
+    '/home/admin/key/claranet-account-2-key-1-us-west-2.pem'
+    >>> get_key_path(config, 'us-west-2', '987654321', 'claranet-key-2', StringIO())
+    '/home/admin/key/claranet-account-2-key-2-us-west-2.pem'
 
     If a mapping is missing, an empty key path is returned:
 
-    >>> get_key_path(config, 'us-west-1', '666666666', 'morea-key-1', StringIO())
+    >>> get_key_path(config, 'us-west-1', '666666666', 'claranet-key-1', StringIO())
     ''
-    >>> get_key_path(config, 'us-west-1', '123456789', 'morea-key-3', StringIO())
+    >>> get_key_path(config, 'us-west-1', '123456789', 'claranet-key-3', StringIO())
     ''
 
     Defaults are also available in case no assumed account id is defined on the Ghost application:
 
-    >>> get_key_path(config, 'eu-west-1', '', 'morea-key-1', StringIO())
-    '/home/admin/key/morea-default-key-1-eu-west-1.pem'
-    >>> get_key_path(config, 'eu-west-1', '', 'morea-key-2', StringIO())
-    '/home/admin/key/morea-default-key-2-eu-west-1.pem'
-    >>> get_key_path(config, 'us-west-2', '', 'morea-key-3', StringIO())
-    '/home/admin/key/morea-default-us-west-2.pem'
+    >>> get_key_path(config, 'eu-west-1', '', 'claranet-key-1', StringIO())
+    '/home/admin/key/claranet-default-key-1-eu-west-1.pem'
+    >>> get_key_path(config, 'eu-west-1', '', 'claranet-key-2', StringIO())
+    '/home/admin/key/claranet-default-key-2-eu-west-1.pem'
+    >>> get_key_path(config, 'us-west-2', '', 'claranet-key-3', StringIO())
+    '/home/admin/key/claranet-default-us-west-2.pem'
     """
 
     key_path = config.get('key_path', '')

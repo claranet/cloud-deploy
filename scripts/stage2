@@ -256,6 +256,10 @@ function deploy_module() {
         rm -vf ./postdeploy
     fi
 
+    if [ -e .ghost-metadata ]; then
+        chmod 000 .ghost-metadata
+    fi
+
     purge_oldest_succeed_deploy $MODULE_NAME $UUID
 }
 

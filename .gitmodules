@@ -9,4 +9,4 @@
 	url = https://github.com/claranet/cloud-deploy-ansible-playbook-common.git
 [submodule "web_ui"]
 	path = web_ui
-	url = git@bitbucket.org:morea/ghost-ui
+	url = ../flask-ui.git
