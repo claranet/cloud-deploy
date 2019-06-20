@@ -319,5 +319,8 @@ apps = {
         'source': 'apps'
     },
     'item_title': 'app',
-    'schema': apps_schema
+    'schema': apps_schema,
+    'mongo_indexes': {
+         'name-role-env-blue_green.color': [('name', 1), ('role', 1), ('env', 1), ('blue_green.color', 1)],
+    }
 }
