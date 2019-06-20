@@ -54,5 +54,6 @@ deployments = {
     'item_title': 'deployment',
     'schema': deployment_schema,
     'resource_methods': ['GET'],
-    'item_methods': ['GET']
+    'item_methods': ['GET'],
+    'mongo_indexes': {'app_id-modules': [('app_id', 1), ('module', 1)]}
 }
