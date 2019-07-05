@@ -23,7 +23,10 @@ except:
     try:
         CURRENT_REVISION_NAME = git('describe', '--tags', '--exact-match', _tty_out=False).strip()
     except:
-        CURRENT_REVISION_NAME = git('--no-pager', 'rev-parse', '--short', 'HEAD', _tty_out=False).strip()
+        try:
+            CURRENT_REVISION_NAME = git('--no-pager', 'rev-parse', '--short', 'HEAD', _tty_out=False).strip()
+        except:
+            CURRENT_REVISION_NAME = "unknown"
 
 try:
     CURRENT_REVISION = dict(
