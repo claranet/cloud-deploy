@@ -79,6 +79,9 @@ class Buildimage():
             self._worker.update_status("aborted", message=str(e))
             return
 
+        # Update AMI in current object as this is used for creating the new launch configuration's root block device mapping
+        self._app['ami'] = ami_id
+
         touch_app_manifest(self._app, self._config, self._log_file)
         log("Update app in MongoDB to update AMI: {0}".format(ami_id), self._log_file)
         self._update_app_ami(ami_id, ami_name)
