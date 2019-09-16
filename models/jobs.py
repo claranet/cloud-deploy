@@ -73,7 +73,10 @@ jobs = {
         'source': 'jobs'
     },
     'item_title': 'job',
-    'schema': jobs_schema
+    'schema': jobs_schema,
+    'mongo_indexes': {
+         'app_id-_id-status-_created': [('app_id', 1), ('_id', 1), ('status', 1), ('_created', 1)],
+    }
 }
 
 CANCELLABLE_JOB_STATUSES = ['init']

@@ -4,6 +4,9 @@ image:
 stages:
   - unit-tests
 
+services:
+  - mongo:2.6
+
 pipelines:
   stage: unit-tests
   tags:

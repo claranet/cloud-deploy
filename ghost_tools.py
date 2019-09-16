@@ -23,7 +23,10 @@ except:
     try:
         CURRENT_REVISION_NAME = git('describe', '--tags', '--exact-match', _tty_out=False).strip()
     except:
-        CURRENT_REVISION_NAME = git('--no-pager', 'rev-parse', '--short', 'HEAD', _tty_out=False).strip()
+        try:
+            CURRENT_REVISION_NAME = git('--no-pager', 'rev-parse', '--short', 'HEAD', _tty_out=False).strip()
+        except:
+            CURRENT_REVISION_NAME = "unknown"
 
 try:
     CURRENT_REVISION = dict(
@@ -407,7 +410,7 @@ def get_running_jobs(_db, app_id_1, app_id_2, current_job):
     Get all running jobs for given app Ids
     """
     finished_states = ["done", "failed", "aborted", "cancelled"]
-    date_limit = datetime.utcnow() - timedelta(hours=3)
+    date_limit = datetime.utcnow() - timedelta(seconds=config.get('rq_worker_job_timeout', 3600) * 3)
     jobs = _db.jobs.find({
         "$or": [{"app_id": app_id_1}, {"app_id": app_id_2}],
         "_id": {"$ne": current_job},
