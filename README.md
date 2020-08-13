@@ -16,7 +16,7 @@ Key features:
 - Create, configure and update AWS EC2 instances.
 - Used to deploy customer application code.
 - Cloud Deploy core is built with a REST API that any REST client can use.
-- A Web User Interface, available only for Claranet customers or with Enterprise license.
+- A Web User Interface, available for Claranet customers ~~or with Enterprise license~~ ([Flask UI](https://github.com/claranet/cloud-deploy-flask-ui) is now available).
 - [Casper](https://docs.cloud-deploy.io/rst/cli.html#cli): CLI client.
 
 ## Requirements
